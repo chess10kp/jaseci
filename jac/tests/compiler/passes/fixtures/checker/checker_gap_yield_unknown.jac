@@ -14,24 +14,24 @@ Expected errors:
 
 # Generator declared to yield ints
 def int_generator -> int {
-    yield 1;          # Ok: int -> int
-    yield 2;          # Ok: int -> int
-    yield "hello";    # Error: str -> int
-    yield [1, 2];     # Error: list -> int
-    yield 3.14;       # Error: float -> int
+    yield 1;  # Ok: int -> int
+    yield 2;  # Ok: int -> int
+    yield "hello";  # Error: str -> int
+    yield [1, 2];  # Error: list -> int
+    yield 3.14;  # Error: float -> int
 }
 
 # Generator declared to yield strs
 def str_generator -> str {
-    yield "alice";    # Ok: str -> str
-    yield "bob";      # Ok: str -> str
-    yield 42;         # Error: int -> str
+    yield "alice";  # Ok: str -> str
+    yield "bob";  # Ok: str -> str
+    yield 42;  # Error: int -> str
 }
 
 # Generator with yield from — element types should match
 def chain_generator -> int {
-    yield from [1, 2, 3];         # Ok: list[int] elements -> int
-    yield from ["a", "b", "c"];   # Error: list[str] elements -> int
+    yield from [1, 2, 3];  # Ok: list[int] elements -> int
+    yield from ["a", "b", "c"];  # Error: list[str] elements -> int
 }
 
 with entry {

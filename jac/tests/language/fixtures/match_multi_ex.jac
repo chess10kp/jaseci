@@ -1,5 +1,5 @@
+glob Num = 10;
 with entry {
-    Num = 10;
     match Num {
         case 2:
             print("Two");

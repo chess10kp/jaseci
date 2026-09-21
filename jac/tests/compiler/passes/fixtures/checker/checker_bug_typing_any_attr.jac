@@ -8,8 +8,7 @@ Additionally, attribute access on Any must return Any (not Unknown), so that
 chained access like val.foo.bar.baz works without E1032 errors.
 """
 
-
-def test_any_attr_access(val: any) -> None {
+def test_any_attr_access(val: any) {
     _ = val.origin;  # <-- Ok (was E1030 before fix)
     _ = val.id;  # <-- Ok
     _ = val.anything;  # <-- Ok
@@ -18,14 +17,14 @@ def test_any_attr_access(val: any) -> None {
     val.method();  # <-- Ok
 }
 
-def test_any_subscript(val: any) -> None {
+def test_any_subscript(val: any) {
     _ = val.get('key');  # <-- Ok
     _ = val[0];  # <-- Ok (subscript returns Any)
     _ = val[0].attr;  # <-- Ok (subscript then attr)
     _ = val['key'].nested[0].deep;  # <-- Ok (mixed access)
 }
 
-def test_any_calls(val: any) -> None {
+def test_any_calls(val: any) {
     _ = val();  # <-- Ok (call returns Any)
     _ = val().attr;  # <-- Ok (call then attr)
     _ = val.method().result;  # <-- Ok (method call then attr)
@@ -33,7 +32,7 @@ def test_any_calls(val: any) -> None {
 }
 
 # Contrast: object type does NOT allow arbitrary attribute access (unlike Any)
-def test_object_attr_access(val: object) -> None {
+def test_object_attr_access(val: object) {
     val.__doc__;  # <-- Ok (object has __doc__)
     val.nonexistent;  # <-- Error: object has no attribute "nonexistent"
 }

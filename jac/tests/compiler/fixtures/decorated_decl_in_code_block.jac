@@ -1,33 +1,31 @@
-glob d1 = None;
-glob d2 = None;
+glob d1 = None,
+     d2 = None;
 
 @d1
 class A_TopClass {}
 
 @d1
-def F_top_fn() -> None {}
+def F_top_fn {}
 
-with entry {
-    @d1
-    class A_InEntryClass {}
+@d1
+class A_InEntryClass {}
 
-    @d1
-    obj A_InEntryObj {}
+@d1
+obj A_InEntryObj {}
 
-    @d1
-    def F_in_entry_fn() -> None {}
+@d1
+def F_in_entry_fn {}
 
-    @d1
-    @d2
-    @d1
-    class A_StackedDec {}
+@d1
+@d2
+@d1
+class A_StackedDec {}
 
-    @d1
-    @d2
-    def F_stacked_fn() -> None {}
-}
+@d1
+@d2
+def F_stacked_fn {}
 
-def F_outer() -> None {
+def F_outer {
     @d1
     class A_InDefBodyClass {}
 
@@ -35,15 +33,15 @@ def F_outer() -> None {
     obj A_InDefBodyObj {}
 
     @d1
-    def F_in_def_body_fn() -> None {}
+    def F_in_def_body_fn {}
 }
 
 obj A_Container {
-    def F_method() -> None {
+    def F_method {
         @d1
         class A_InMethodClass {}
 
         @d1
-        def F_in_method_fn() -> None {}
+        def F_in_method_fn {}
     }
 }

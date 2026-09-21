@@ -9,7 +9,7 @@ obj Pair {
         r: Inner = Inner();
 }
 
-def use_int(x: int) { }
+def use_int(x: int) {}
 
 with entry {
     p: own Pair = Pair();

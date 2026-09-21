@@ -1,9 +1,9 @@
 """Defs for test"""
 
-impl MyObject.foo() {
+impl MyObject.foo{
     "hello" |> print;
 }
 
-impl MyObject.bar() {
+impl MyObject.bar{
     "hello" |> print;
 }

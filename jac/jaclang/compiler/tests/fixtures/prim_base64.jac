@@ -74,7 +74,7 @@ def _lower(data: bytes) -> bytes {
 }
 
 
-def base64_py() -> dict[any, any] {
+def base64_py -> dict[any, any] {
     data = b"the quick brown fox jumps over the lazy dog. " * 3;
     s1 = b"f";
     s2 = b"fo";
@@ -295,7 +295,7 @@ def base64_py() -> dict[any, any] {
 }
 
 
-def base64_cl() -> dict[any, any] {
+def base64_cl -> dict[any, any] {
     return {};
 }
 
@@ -581,7 +581,7 @@ def _err_rest_na(r: dict[str, any]) {
     }
 }
 
-def base64_na() -> dict[str, any] {
+def base64_na -> dict[str, any] {
     r: dict[str, any] = {};
     _enc_core_na(r);
     _full_range_na(r);

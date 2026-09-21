@@ -35,7 +35,7 @@ walker Ex {
     }
 }
 
-def exit_ordering_py() -> dict[str, any] {
+def exit_ordering_py -> dict[str, any] {
     root_n = N(val=1);
     a = N(val=2);
     b = N(val=3);
@@ -47,7 +47,7 @@ def exit_ordering_py() -> dict[str, any] {
 }
 
 
-def exit_ordering_na() -> dict[str, any] {
+def exit_ordering_na -> dict[str, any] {
     root_n = N(val=1);
     a = N(val=2);
     b = N(val=3);
@@ -59,7 +59,7 @@ def exit_ordering_na() -> dict[str, any] {
 }
 
 
-def exit_ordering_cl() -> dict[str, any] {
+def exit_ordering_cl -> dict[str, any] {
     root_n = N(val=1);
     a = N(val=2);
     b = N(val=3);

@@ -1,10 +1,10 @@
 """Test: Clean Jac code using common primitives should produce no portability warnings."""
 
-def proper_print() -> None {
+def proper_print {
     print("hello");
 }
 
-def proper_math() -> None {
+def proper_math {
     x = abs(-5);
     y = round(3.5);
     z = min(1, 2);
@@ -12,7 +12,7 @@ def proper_math() -> None {
     p = pow(2, 10);
 }
 
-def proper_list_ops() -> None {
+def proper_list_ops {
     items: list[any] = [1, 2, 3];
     items.append(4);
     items.insert(0, 0);
@@ -21,7 +21,7 @@ def proper_list_ops() -> None {
     found = 2 in items;
 }
 
-def proper_string_ops() -> None {
+def proper_string_ops {
     s = "hello world";
     c = s[0];
     sub = s[0:5];
@@ -29,7 +29,7 @@ def proper_string_ops() -> None {
     n = len(s);
 }
 
-def proper_dict_ops() -> None {
+def proper_dict_ops {
     d: dict[any, any] = {"a": 1};
     k = d.keys();
     v = d.values();

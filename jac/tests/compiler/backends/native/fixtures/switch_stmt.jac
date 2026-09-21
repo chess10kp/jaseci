@@ -69,6 +69,4 @@ def switch_no_default(x: int) -> int {
     return result;
 }
 
-with entry {
-    x = 0;
-}
+glob x = 0;

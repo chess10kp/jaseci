@@ -1,11 +1,15 @@
 """Test for f-string escape sequences."""
 
+glob name = "world";
+
 with entry {
-    name = "world";
     # Test escape sequences in f-strings
     result1 = f"hello\n{name}";
-    result2 = f"tab\there";
-    result3 = f"line1\nline2\nline3";
+}
+glob result2 = f"tab\there",
+     result3 = f"line1\nline2\nline3";
+
+with entry {
     result4 = f"{name}\t{name}\t{name}";
 
     # Print with repr to clearly show escape sequences are decoded

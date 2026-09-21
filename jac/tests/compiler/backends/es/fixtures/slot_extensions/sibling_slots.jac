@@ -7,12 +7,16 @@ first (now-returned) IIFE and throws `ReferenceError: __jac_view_kids is
 not defined` under ES-module strict mode.
 """
 
-
-def:pub app() -> JsxElement {
+def:pub app -> JsxElement {
     a = True;
     b = True;
-    return <div>
-        {if a { <span>A</span> }}
-        {if b { <span>B</span> }}
-    </div>;
+    return
+        <div>
+            {if a {
+                <span>A</span>
+            }}
+            {if b {
+                <span>B</span>
+            }}
+        </div>;
 }

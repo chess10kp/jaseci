@@ -33,16 +33,16 @@ walker Explorer {
 
     can explore with entry {
         # Case 1: Visit a non-node value
-        visit 42;                          # Error: int is not a node
+        visit 42;  # Error: int is not a node
 
         # Case 2: Visit a string (not a node)
-        visit "some_place";                # Error: str is not a node
+        visit "some_place";  # Error: str is not a node
 
         # Case 3: Visit with wrong function arg type in expression
-        visit get_place(123);              # Error: int -> str param
+        visit get_place(123);  # Error: int -> str param
 
         # Case 4: Report with type error in expression
-        report format_report("not_int");   # Error: str -> int param
+        report format_report("not_int");  # Error: str -> int param
 
         # Case 5: Report with nonexistent method
         report self.nonexistent_method();  # Error: no such method
@@ -53,9 +53,9 @@ walker SafeWalker {
     can walk with entry {
         # --- Cases that SHOULD be valid ---
         p = Place(name="test");
-        visit p;                           # Ok: Place is a node
-        report "found something";          # Ok: str expression
-        report format_report(5);           # Ok: correct types
-        disengage;                         # Ok: no expression
+        visit p;  # Ok: Place is a node
+        report "found something";  # Ok: str expression
+        report format_report(5);  # Ok: correct types
+        disengage;  # Ok: no expression
     }
 }

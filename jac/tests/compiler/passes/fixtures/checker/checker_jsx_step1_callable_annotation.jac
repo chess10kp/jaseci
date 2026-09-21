@@ -2,13 +2,15 @@
 Passing a non-callable (int) to onClick via function-call style should error."""
 
 def Button(
-    label: str, onClick: Callable[[MouseEvent], None],
-    variant: str = "primary", disabled: bool = False
+    label: str,
+    onClick: Callable[[MouseEvent], None],
+    variant: str = "primary",
+    disabled: bool = False
 ) -> JsxElement {
     return <button>{label}</button>;
 }
 
-def handle_click(e: MouseEvent) -> None {}
+def handle_click(e: MouseEvent) {}
 
 with entry {
     # OK: correct handler

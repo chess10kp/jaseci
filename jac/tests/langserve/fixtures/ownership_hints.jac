@@ -1,7 +1,7 @@
 obj Counter {
     has n: int = 0;
 
-    def bump -> None {
+    def bump {
         self.n += 1;
     }
 

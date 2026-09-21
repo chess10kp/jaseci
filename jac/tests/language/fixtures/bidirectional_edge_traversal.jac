@@ -50,7 +50,7 @@ glob a = MyNode(val=1),
 
 # Create bidirectional edge
 with entry {
-    a <+: Friend :+> b;
+    a <+:Friend:+> b;
 
     # Test from a to b
     print("From a:");
@@ -87,7 +87,7 @@ glob e = MyNode(val=5),
      f = MyNode(val=6);
 
 with entry {
-    e +>: Follows :+> f;
+    e +>:Follows:+> f;
 
     print("Forward from e:");
     e spawn travel_follows_out();

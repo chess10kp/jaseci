@@ -1,8 +1,8 @@
 """Fixture for E2080: Walker visits node type but no matching visit ability exists."""
 
-node Start { }
-node Middle { }
-node End { }
+node Start {}
+node Middle {}
+node End {}
 
 walker Traverser {
     can on_start with Start entry {

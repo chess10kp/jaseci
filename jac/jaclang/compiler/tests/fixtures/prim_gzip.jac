@@ -39,7 +39,7 @@ def _digest(data: bytes) -> int {
 }
 
 
-def gzip_py() -> dict[any, any] {
+def gzip_py -> dict[any, any] {
     data = b"the quick brown fox jumps over the lazy dog. " * 40;
     comp = compress(data, mtime=0);
     comp0 = compress(data, 0, mtime=0);
@@ -170,7 +170,7 @@ def gzip_py() -> dict[any, any] {
 }
 
 
-def gzip_cl() -> dict[any, any] {
+def gzip_cl -> dict[any, any] {
     return {};
 }
 
@@ -186,7 +186,7 @@ def _digest_na(data: bytes) -> int {
     return acc;
 }
 
-def gzip_na() -> dict[str, any] {
+def gzip_na -> dict[str, any] {
     data = b"the quick brown fox jumps over the lazy dog. " * 40;
     comp = compress(data, mtime=0);
     comp0 = compress(data, 0, mtime=0);

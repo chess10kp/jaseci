@@ -22,7 +22,7 @@ walker Acc {
     }
 }
 
-def multi_walker_py() -> dict[str, any] {
+def multi_walker_py -> dict[str, any] {
     a = Acc();
     b = Acc();
     a spawn Item(val=5);
@@ -32,7 +32,7 @@ def multi_walker_py() -> dict[str, any] {
 }
 
 
-def multi_walker_na() -> dict[str, any] {
+def multi_walker_na -> dict[str, any] {
     a = Acc();
     b = Acc();
     a spawn Item(val=5);
@@ -42,7 +42,7 @@ def multi_walker_na() -> dict[str, any] {
 }
 
 
-def multi_walker_cl() -> dict[str, any] {
+def multi_walker_cl -> dict[str, any] {
     a = Acc();
     b = Acc();
     a spawn Item(val=5);

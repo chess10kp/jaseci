@@ -1,7 +1,9 @@
 obj Counter {
     has n: int = 0;
 
-    def into_total(self: own Counter) -> int { return self.n; }
+    def into_total(self: own Counter) -> int {
+        return self.n;
+    }
 }
 
 with entry {

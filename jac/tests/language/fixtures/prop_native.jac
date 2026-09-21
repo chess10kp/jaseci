@@ -18,21 +18,23 @@ obj Circle {
 
     # 1. Property over explicit backing storage: inline bodies.
     has color: str {
-        getter -> str { return self._color; }
-        setter(value: str) { self._color = value; }
+        getter -> str {
+            return self._color;
+        }
+        setter(value: str) {
+            self._color = value;
+        }
     }
 
     # 2. Read-only computed: no backing needed, getter computes from other fields.
     has diameter: float {
-        getter { return self._radius * 2.0; }
+        getter {
+            return self._radius * 2.0;
+        }
     }
 
     # 3. Full custom property — signatures only; bodies in prop_native.impl.jac.
-    has radius: float {
-        getter -> float;
-        setter(value: float);
-        deleter;
-    }
+    has radius: float { getter -> float; setter(value: float); deleter; }
 }
 
 with entry {

@@ -5,10 +5,12 @@ memory mode (#8984 rule 7)."""
 obj Handle {
     has id: int = 0;
 
-    def drop { print("drop " + str(self.id)); }
+    def drop {
+        print("drop " + str(self.id));
+    }
 }
 
-def close(h: own Handle) -> None {
+def close(h: own Handle) {
     print("close " + str(h.id));
 }
 
@@ -24,4 +26,7 @@ def run -> int {
     return 1;
 }
 
-with entry { print(run()); print("done"); }
+with entry {
+    print(run());
+    print("done");
+}

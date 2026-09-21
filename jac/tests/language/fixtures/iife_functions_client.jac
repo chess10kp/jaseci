@@ -3,7 +3,7 @@
 with entry {
     # Test 1: Basic IIFE with no parameters
     result1 = (
-        def get_value() -> int {
+        def get_value -> int {
             return 42;
         }
     )();
@@ -25,7 +25,7 @@ with entry {
 
     # Test 3: IIFE with local variables
     result3 = (
-        def compute() -> int {
+        def compute -> int {
             a = 10;
             b = 20;
             c = 30;
@@ -86,9 +86,9 @@ with entry {
 
     # Test 7: Nested IIFE
     result7 = (
-        def outer() -> int {
+        def outer -> int {
             x = (
-                def inner() -> int {
+                def inner -> int {
                     return 100;
                 }
             )();
@@ -137,7 +137,7 @@ with entry {
 
     # Test 10: IIFE with object creation
     result10 = (
-        def create_object() -> dict[str, any] {
+        def create_object -> dict[str, any] {
             my_obj = {"name": "Test", "value": 123, "active": True};
             return my_obj;
         }
@@ -162,7 +162,7 @@ with entry {
 
     # Test 12: IIFE with closure
     counter = (
-        def create_counter() {
+        def create_counter {
             count = 0;
             return lambda -> int {
                 count = count + 1;

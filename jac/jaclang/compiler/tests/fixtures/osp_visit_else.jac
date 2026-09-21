@@ -44,7 +44,7 @@ walker Halt {
     }
 }
 
-def visit_else_py() -> dict[str, any] {
+def visit_else_py -> dict[str, any] {
     n1 = P(val=1);
     n2 = P(val=2);
     n3 = P(val=3);
@@ -58,7 +58,7 @@ def visit_else_py() -> dict[str, any] {
 }
 
 
-def visit_else_na() -> dict[str, any] {
+def visit_else_na -> dict[str, any] {
     n1 = P(val=1);
     n2 = P(val=2);
     n3 = P(val=3);
@@ -72,7 +72,7 @@ def visit_else_na() -> dict[str, any] {
 }
 
 
-def visit_else_cl() -> dict[str, any] {
+def visit_else_cl -> dict[str, any] {
     n1 = P(val=1);
     n2 = P(val=2);
     n3 = P(val=3);

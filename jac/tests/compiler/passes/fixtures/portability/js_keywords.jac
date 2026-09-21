@@ -1,13 +1,13 @@
 """Test: JS-specific keywords should produce portability warnings."""
 
-def use_undefined() -> None {
+def use_undefined {
     x = undefined;
 }
 
-def use_typeof() -> None {
+def use_typeof {
     t = typeof(x);
 }
 
-def use_void() -> None {
+def use_void {
     v = void;
 }

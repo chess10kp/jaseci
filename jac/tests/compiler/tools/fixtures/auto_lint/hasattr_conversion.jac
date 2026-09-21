@@ -6,38 +6,37 @@ This file tests the auto-lint rule that converts:
 """
 
 obj SomeClass {
-    has value: int = 0;
-    has name: str = "";
+    has value: int = 0,
+        name: str = "";
 }
 
-glob instance = SomeClass();
+glob instance = SomeClass(),
+     result1 = instance?.value or 0,
+     result2 = instance?.name or "default",
+     result3 = instance?.name,
+     result4 = instance?.value and instance.value > 0,
+     result5 = hasattr(instance, "name") or False,
+     result6 = instance?.value or -1,
+     result7 = instance?.value or (instance?.name or "none"),
+     attr_name = "value",
+     result8 = instance.value if hasattr(instance, attr_name) else 0;
 
 # Basic hasattr in if-else expression
-glob result1 = instance.value if hasattr(instance, "value") else 0;
 
 # hasattr with different attribute
-glob result2 = instance.name if hasattr(instance, "name") else "default";
 
 # hasattr with None as else value
-glob result3 = instance.name if hasattr(instance, "name") else None;
 
 # hasattr in binary expression (and)
-glob result4 = hasattr(instance, "value") and instance.value > 0;
 
 # hasattr in binary expression (or) — should NOT be converted
 # (standalone boolean check with no matching attr access in other operand)
-glob result5 = hasattr(instance, "name") or False;
 
 # hasattr with single quotes
-glob result6 = instance.value if hasattr(instance, 'value') else -1;
 
 # Nested hasattr - should only convert the hasattr calls
-glob result7 = instance.value if hasattr(instance, "value") else (instance.name if hasattr(instance, "name") else "none");
 
 # hasattr that should NOT be converted (variable attribute name)
-glob attr_name = "value";
-glob result8 = instance.value if hasattr(instance, attr_name) else 0;
-
 # hasattr that should NOT be converted (more than 2 args - invalid anyway)
 # This would be a syntax error in real code, but the auto-lint should not touch it
 
@@ -45,4 +44,5 @@ glob result8 = instance.value if hasattr(instance, attr_name) else 0;
 def hasattr_lookalike(`obj: object, attr: str) -> bool {
     return True;
 }
+
 glob result9 = hasattr_lookalike(instance, "value");

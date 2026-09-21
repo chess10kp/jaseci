@@ -7,7 +7,6 @@ module's accessless helpers would instead relocate via the cross-module
 client pull.)
 """
 
-
 def local_helper(n: int) -> str {
     return "item " + str(n);
 }

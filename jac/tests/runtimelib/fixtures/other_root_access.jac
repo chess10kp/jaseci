@@ -29,7 +29,7 @@ walker update_target_node {
         node_id: str;
 
     can enter with Root entry {
-        target_node = & (self.node_id);
+        target_node = &(self.node_id);
         target_node.val = self.val;
     }
 }
@@ -48,7 +48,7 @@ walker read_target_node {
     has node_id: str;
 
     can enter with Root entry {
-        print(& (self.node_id));
+        print(&(self.node_id));
     }
 }
 

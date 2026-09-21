@@ -8,7 +8,7 @@ pre-update value, not the just-assigned one. The compiler warns at
 the read site so the bug is caught at compile time, not at runtime.
 """
 
-def:pub stale_demo() -> JsxElement {
+def:pub stale_demo -> JsxElement {
     has logged_in: bool = False;
 
     can with entry {

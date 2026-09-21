@@ -6,7 +6,7 @@ difference, symmetric_difference, issubset, issuperset, isdisjoint,
 op_or, op_and, op_sub, op_xor, op_eq, op_ne, op_le, op_lt, op_ge, op_gt.
 """
 
-def frozenset_py() -> dict[any, any] {
+def frozenset_py -> dict[any, any] {
     a = frozenset([1, 2, 3, 4]);
     b = frozenset([3, 4, 5, 6]);
 
@@ -123,7 +123,7 @@ def frozenset_py() -> dict[any, any] {
     };
 }
 
-def frozenset_cl() -> dict[any, any] {
+def frozenset_cl -> dict[any, any] {
     a = frozenset([1, 2, 3, 4]);
     b = frozenset([3, 4, 5, 6]);
 
@@ -191,7 +191,7 @@ def frozenset_cl() -> dict[any, any] {
 }
 
 
-def frozenset_na() -> dict[str, any] {
+def frozenset_na -> dict[str, any] {
     a: frozenset[int] = frozenset({1, 2, 3, 4});
     b: frozenset[int] = frozenset({3, 4, 5, 6});
 

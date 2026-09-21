@@ -22,6 +22,6 @@ with entry {
     node1 spawn W();
     W() spawn MyNode(15);
     edge1 = MyEdge(100);
-    root +>: edge1 :+> MyNode(30);
+    root +>:edge1:+> MyNode(30);
     W() spawn [MyNode(20), MyNode(25), edge1];
 }

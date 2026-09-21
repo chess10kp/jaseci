@@ -13,10 +13,9 @@ class type by _apply_type_map().
 """
 
 # Note: This test uses Python builtins that return Self
+glob items: list[int] = [1, 2, 3];
 
 with entry {
-    items: list[int] = [1, 2, 3];
-
     # enumerate.__iter__() returns Self
     # Self should be resolved to enumerate[int]
     e = enumerate(items);
@@ -28,9 +27,12 @@ with entry {
     copied = items.copy();
     # When fixed, this should error (copied is list[int], not int)
     wrong_copied: int = copied;  # <-- Should Error: Cannot assign list[int] to int
+}
 
-    # dict.copy() returns Self
-    d: dict[str, int] = {"a": 1};
+glob
+     # dict.copy() returns Self
+     d: dict[str, int] = {"a": 1};
+with entry {
     d_copy = d.copy();
     # When fixed, this should error (d_copy is dict[str, int], not str)
     wrong_d: str = d_copy;  # <-- Should Error: Cannot assign dict[str, int] to str

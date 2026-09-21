@@ -7,7 +7,6 @@ coroutine. Calling it without `await` silently assigns a coroutine to
 type checker must raise E1042 here.
 """
 
-
 import from type_E1042_sv_missing_await_server { Task, get_tasks }
 
 def:pub app -> JsxElement {

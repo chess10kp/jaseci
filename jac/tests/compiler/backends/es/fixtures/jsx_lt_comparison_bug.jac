@@ -15,10 +15,10 @@ def filter_points(points: list[any], limit: int) -> list[any] {
     return result;
 }
 
-def:pub app() -> any {
+def:pub app -> any {
     data = [10, 5, 30, 2, 20];
     filtered = filter_points(data, 15);
-    items = filtered.map(lambda (x: any) -> any { return <li>{x}</li>; });
+    items = [<li>{x}</li> for x in filtered];
 
     return (
         <div>

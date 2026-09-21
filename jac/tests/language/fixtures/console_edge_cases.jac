@@ -83,6 +83,7 @@ with entry {
 
 # === Real-world data structures ===
 glob table_data = [[i, "name_" + str(i), "city", i * 100] for i in range(3)];
+
 with entry {
     print(table_data);
     print([[1, 2], [3, 4], [5, 6]]);

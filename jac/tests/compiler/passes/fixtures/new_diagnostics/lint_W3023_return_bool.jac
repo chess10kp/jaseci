@@ -2,7 +2,7 @@
 
 def bad(x: int) -> bool {
     if x > 0 {
-        return True;   # <-- Warning W3023: simplify to 'return x > 0'
+        return True;  # <-- Warning W3023: simplify to 'return x > 0'
     } else {
         return False;
     }

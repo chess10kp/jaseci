@@ -101,7 +101,7 @@ impl app.handleSignup -> None {
         authUsername = "";
         authPassword = "";
     } else {
-        error = result.error if result.error else "Signup failed";
+        error = result.error or "Signup failed";
     }
 }
 

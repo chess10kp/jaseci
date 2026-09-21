@@ -8,10 +8,10 @@ Expected: comparison expressions should infer as bool, so assigning to str
 should produce a type error.
 """
 
-with entry {
-    a = 10;
-    b = 20;
+glob a = 10,
+     b = 20;
 
+with entry {
     # All of these should be bool
     r1: bool = a < b;  # <-- Should be Ok
     r2: bool = a > b;  # <-- Should be Ok

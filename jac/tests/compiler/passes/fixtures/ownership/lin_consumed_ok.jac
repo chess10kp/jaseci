@@ -4,11 +4,11 @@ obj Handle {
     has id: int = 0;
 }
 
-def close(h: own Handle) -> None {
+def close(h: own Handle) {
     print(h.id);
 }
 
-def run -> None {
+def run {
     h: lin Handle = Handle(id=1);
     close(h);
 }

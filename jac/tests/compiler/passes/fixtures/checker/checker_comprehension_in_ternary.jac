@@ -21,5 +21,5 @@ def comprehension_in_true_branch(c: Container) -> list[str] {
 # -- This must produce exactly 1 error (no guard at all) --
 
 def no_guard(c: Container) -> list[str] {
-    return [x for x in c.items.data];   # Error: E1099
+    return [x for x in c.items.data];  # Error: E1099
 }

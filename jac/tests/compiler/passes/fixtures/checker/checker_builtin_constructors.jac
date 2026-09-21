@@ -1,6 +1,5 @@
 # Test builtin constructors: set(), list(), dict()
 # These should all work without errors
-
 with entry {
     # Test empty constructors (should work)
     x = set();

@@ -5,10 +5,12 @@ with its container or when handed back out (#8984 rule 3)."""
 obj Box {
     has tag: int = 0;
 
-    def drop { print("drop " + str(self.tag)); }
+    def drop {
+        print("drop " + str(self.tag));
+    }
 }
 
-def sink(b: own Box) -> None {
+def sink(b: own Box) {
     print("sink " + str(b.tag));
 }
 
@@ -38,4 +40,7 @@ def run -> int {
     return xs[0].tag;
 }
 
-with entry { print(run()); print("done"); }
+with entry {
+    print(run());
+    print("done");
+}

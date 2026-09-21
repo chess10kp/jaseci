@@ -1,4 +1,3 @@
-
 # Function impl
 impl process_data{
     x: int = 10;

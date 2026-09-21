@@ -1,4 +1,4 @@
-def foo()  -> int {
+def foo -> int {
     return 42;
 }
 

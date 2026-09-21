@@ -19,8 +19,8 @@ walker Creator {
 }
 
 walker Walk {
-    has count: int = 0;
-    has value: int = 0;
+    has count: int = 0,
+        value: int = 0;
 
     can skip_root with Root entry {
         visit [-->];

@@ -21,8 +21,8 @@ with entry {
         line of code.""");
 }
 
+glob a2 = {"a": "apple", "b": "ball", "c": "cat"};
 with entry {
-    a2 = {"a": "apple", "b": "ball", "c": "cat"};
     y = {** a2, "d": "dog", "e": "elephant"};
     print(y);
 }

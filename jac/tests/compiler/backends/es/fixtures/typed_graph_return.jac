@@ -62,7 +62,7 @@ def:pub app -> JsxElement {
         departments = result.reports;
     }
 
-    async def addEmployee(name: str, role: str) -> None {
+    async def addEmployee(name: str, role: str) {
         if selectedDept {
             result = jid(selectedDept) spawn add_employee(
                 name=name, role=role, dept_id=jid(selectedDept)

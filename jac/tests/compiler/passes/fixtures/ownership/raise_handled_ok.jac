@@ -19,7 +19,7 @@ def load_or_default(s: &str) -> int {
     }
 }
 
+glob p: own str = "80";
 with entry {
-    p: own str = "80";
     print(load_or_default(&p));
 }

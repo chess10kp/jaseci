@@ -3,7 +3,7 @@ obj MyResult {
     has value: str = "";
 
     '''docstring for def'''
-    def get_value() -> str {
+    def get_value -> str {
         return self.value;
     }
 

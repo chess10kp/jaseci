@@ -5,7 +5,6 @@ dropped from the signature entirely, leaving the body referencing an undefined
 name (e.g. the shadcn `cn(*inputs)` helper -> `function cn() { ...clsx(inputs) }`).
 """
 
-
 def:pub collect(*items: any) -> any {
     return items;
 }

@@ -40,10 +40,13 @@ with entry {
     while check_int("not_a_number") {  # Error: str -> int param
         break;
     }
+}
 
-    # Case 3: Binary operation with incompatible types in condition
-    name: str = "hello";
-    while name > 5 {                  # Error: str > int comparison
+glob
+     # Case 3: Binary operation with incompatible types in condition
+     name: str = "hello";
+with entry {
+    while name > 5 {  # Error: str > int comparison
         break;
     }
 
@@ -54,15 +57,15 @@ with entry {
     }
 
     # --- Cases that SHOULD be valid ---
-    while c.count < 10 {               # Ok
+    while c.count < 10 {  # Ok
         c.increment();
     }
 
-    while not c.is_done() {            # Ok
+    while not c.is_done() {  # Ok
         c.increment();
     }
 
-    while True {                        # Ok
+    while True {  # Ok
         break;
     }
 }

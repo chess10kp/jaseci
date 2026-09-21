@@ -14,8 +14,8 @@ obj MyClass {
 
 def main {
     # Import inside a function - might accidentally have semicolon
-    import from typing { Optional };
-    import from sys { argv };
+    import from typing { Optional }
+    import from sys { argv }
 
     x = 5;
     print(x);

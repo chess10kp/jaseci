@@ -1,6 +1,5 @@
 """Test fixture for JavaScript export semantics with :pub annotations."""
 
-
 # Public items - should be in final export { ... } statement
 glob:pub PUBLIC_API_URL: str = "https://api.example.com";
 

@@ -1,3 +1,3 @@
-impl Bar.postinit {
+impl Bar.postinit{
     self.msg = "hello";
 }

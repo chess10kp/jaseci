@@ -8,12 +8,18 @@ the `any` seam yielded 0/garbage. This is exactly the portable OSP kernel's work
 stack shape (`stack.append((child, 0))` with `child` a raw handle).
 """
 
-def unwrap_i(x: any) -> int { return x as int; }
+def unwrap_i(x: any) -> int {
+    return x as int;
+}
 
-def unwrap_f(x: any) -> float { return x as float; }
+def unwrap_f(x: any) -> float {
+    return x as float;
+}
 
 """An `any`-typed seed value, so the list's first element fixes an `any` slot."""
-def any_seed() -> any { return 99; }
+def any_seed -> any {
+    return 99;
+}
 
 """OSP shape: seed a list with an `any`-slot tuple, then append a concrete-int tuple."""
 def osp_append(seed: any) -> int {
@@ -23,7 +29,9 @@ def osp_append(seed: any) -> int {
     return unwrap_i(a);
 }
 
-def osp_append_entry() -> int { return osp_append(any_seed()); }
+def osp_append_entry -> int {
+    return osp_append(any_seed());
+}
 
 """Two concrete-int appends into the `any` slot, popped LIFO."""
 def many_append(seed: any) -> int {
@@ -35,7 +43,9 @@ def many_append(seed: any) -> int {
     return unwrap_i(b) + unwrap_i(c);
 }
 
-def many_append_entry() -> int { return many_append(any_seed()); }
+def many_append_entry -> int {
+    return many_append(any_seed());
+}
 
 """List literal mixing an `any`-slot tuple with a concrete-int tuple."""
 def lit_mix(seed: any) -> int {
@@ -44,7 +54,9 @@ def lit_mix(seed: any) -> int {
     return unwrap_i(a);
 }
 
-def lit_mix_entry() -> int { return lit_mix(any_seed()); }
+def lit_mix_entry -> int {
+    return lit_mix(any_seed());
+}
 
 """A concrete `float` boxed into an `any` slot round-trips."""
 def flt_append(seed: any) -> float {
@@ -54,7 +66,9 @@ def flt_append(seed: any) -> float {
     return unwrap_f(d);
 }
 
-def flt_append_entry() -> float { return flt_append(99.0); }
+def flt_append_entry -> float {
+    return flt_append(99.0);
+}
 
 """The already-working control: an `any` value entering the slot stays boxed."""
 def via_param(seed: any) -> int {
@@ -63,4 +77,6 @@ def via_param(seed: any) -> int {
     return unwrap_i(a);
 }
 
-def via_param_entry() -> int { return via_param(7); }
+def via_param_entry -> int {
+    return via_param(7);
+}

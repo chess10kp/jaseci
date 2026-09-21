@@ -13,9 +13,10 @@ Expected errors: 3
   3. bad3: int = val                 — ternary with Unknown -> not int
 """
 
+glob
+     # Any + int -> Unknown (magic method __add__ unresolved on Any)
+     items: list[any] = [1, 2, 3];
 with entry {
-    # Any + int -> Unknown (magic method __add__ unresolved on Any)
-    items: list[any] = [1, 2, 3];
     any_val = items.pop();
     x = any_val + 1;
 

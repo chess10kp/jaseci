@@ -7,6 +7,7 @@ obj Obj1 {
         self.var = 1;
     }
 }
+
 # with entry {  # allowed but discouraged
 #    o1 = spawn Obj1; o1::init;
 # }
@@ -17,6 +18,7 @@ obj Obj2 {
         self.var = 2;
     }
 }
+
 # with entry {  # allowed but discouraged
 #     o2 = spawn Obj2; o2::init;
 # }
@@ -27,6 +29,7 @@ obj Obj3 {
         self.var = 3;
     }
 }
+
 # with entry {  # allowed but discouraged
 #     o3 = spawn Obj1; o3::init;
 # }

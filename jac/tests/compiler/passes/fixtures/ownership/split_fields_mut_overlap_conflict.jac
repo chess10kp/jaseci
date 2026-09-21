@@ -9,7 +9,7 @@ obj Pair {
         r: Inner = Inner();
 }
 
-def touch(a: Inner, b: Inner) { }
+def touch(a: Inner, b: Inner) {}
 
 with entry {
     p: own Pair = Pair();

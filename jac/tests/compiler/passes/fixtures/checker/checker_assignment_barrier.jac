@@ -16,7 +16,6 @@ def widen_via_reassign(x: int | None) -> int {
     if x is not None {
         x = maybe_int();
         return x;  # error: `x` is `int | None` again.
-
     }
     return 0;
 }

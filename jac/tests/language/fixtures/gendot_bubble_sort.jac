@@ -53,11 +53,9 @@ impl walker3.adjust{
 walker walker4 {
     can skipmain with main_node entry {
         visit [-->];  #  print(f"iteration {here.no} started  {list1}");
-
     }
 
     can skipin with inner_node entry {
-
         j = here.sub - 1;
         if list1[j] > list1[j + 1] {
             x = list1[j];

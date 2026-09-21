@@ -15,11 +15,10 @@ obj MyPrinter {
     has thing_to_print: str;
 
     def my_print(messag: str) -> str;  # method declaration
-
 }
 
 # Definition
-impl MyPrinter.my_print(message: str) -> str {
+impl MyPrinter.my_print(messag: str) -> str {
     y = ".".join([i for i in range(10)]);
     output = f"from me: {message} {y}";
     print(f"from me: {output}");

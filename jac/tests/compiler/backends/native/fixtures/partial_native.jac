@@ -11,6 +11,7 @@ obj Literal {
     def length -> int {
         return len(self.raw);
     }  # native-eligible
+
     def evaluate -> int {
         return eval(self.raw);
     }  # eval -> NOT native, stays Python

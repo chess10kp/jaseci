@@ -4,7 +4,7 @@ obj Handle {
     has id: int = 0;
 }
 
-def close(h: own Handle) -> None {
+def close(h: own Handle) {
     print(h.id);
 }
 

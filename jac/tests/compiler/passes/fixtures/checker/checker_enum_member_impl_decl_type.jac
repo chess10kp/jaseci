@@ -8,7 +8,7 @@ evaluator can find the owning enum from an impl-based declaration site.
 
 enum Color;
 
-impl Color {
+impl Color{
     RED = 1,
     GREEN = 2,
     BLUE = 3

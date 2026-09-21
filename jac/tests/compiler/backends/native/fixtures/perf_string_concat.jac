@@ -9,7 +9,9 @@ Timing and RSS are measured externally by run_perf.sh via /usr/bin/time.
 with entry {
     s: str = "";
 }
+
 glob chunk: str = "0123456789";  # 10 chars
+
 with entry {
     i: int = 0;
     while i < 5000 {

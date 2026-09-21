@@ -12,8 +12,8 @@ os.path.join(base_dir, ...) — stdlib stubs can no longer shadow it.
 """
 
 obj:pub Node {
-    has kind: int;
-    has value: int;
+    has kind: int,
+        value: int;
 }
 
 def:pub make_node(kind: int, value: int) -> Node {
@@ -33,5 +33,3 @@ def:pub collect_kinds(nodes: list[Node]) -> int {
     }
     return total;
 }
-
-with entry {}

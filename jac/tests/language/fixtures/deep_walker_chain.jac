@@ -24,19 +24,19 @@ walker Traverse {
     }
 }
 
+glob LIST_SIZE = 1500;
 with entry {
-    LIST_SIZE = 1500;
     head = Item(value=0);
     root ++> head;
 
     prev = head;
     for i in range(1, LIST_SIZE) {
         curr = Item(value=i);
-        prev +>: Next :+> curr;
+        prev +>:Next:+> curr;
         prev = curr;
     }
 
     result = root spawn Traverse();
     print(result.count);
-    assert result.count == LIST_SIZE, f"Expected {LIST_SIZE} but visited {result.count}";
+    assert result.count == LIST_SIZE , f"Expected {LIST_SIZE} but visited {result.count}";
 }

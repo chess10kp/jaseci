@@ -18,7 +18,6 @@ def make_pair -> tuple[int, str] {
 def narrow_tuple_literal_pos0(x: int | None) -> int {
     (x, _) = (5, "ok");
     return x;  # <-- ok
-
 }
 
 
@@ -26,7 +25,6 @@ def narrow_tuple_literal_pos0(x: int | None) -> int {
 def narrow_tuple_literal_pos1(x: int | None) -> int {
     (_, x) = ("ok", 5);
     return x;  # <-- ok
-
 }
 
 
@@ -34,7 +32,6 @@ def narrow_tuple_literal_pos1(x: int | None) -> int {
 def narrow_typed_return(x: int | None) -> int {
     (x, _) = make_pair();
     return x;  # <-- ok
-
 }
 
 
@@ -42,7 +39,6 @@ def narrow_typed_return(x: int | None) -> int {
 def narrow_nested(b: int | None) -> int {
     ((_, b), _) = ((1, 2), 3);
     return b;  # <-- ok
-
 }
 
 
@@ -50,7 +46,6 @@ def narrow_nested(b: int | None) -> int {
 def narrow_named_tuple(x: int | None, p: Point) -> int {
     (x, _) = p;
     return x;  # <-- ok
-
 }
 
 
@@ -61,5 +56,4 @@ def narrow_named_tuple(x: int | None, p: Point) -> int {
 def no_narrow_non_strict(x: int | str, y: int | str) -> int {
     (x, _) = (y, "ok");
     return x;  # <-- error
-
 }

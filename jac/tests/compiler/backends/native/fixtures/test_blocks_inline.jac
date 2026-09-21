@@ -11,6 +11,3 @@ test "inline double works" {
 test "inline deliberate failure" {
     assert double(2) == 5;
 }
-
-
-with entry { }

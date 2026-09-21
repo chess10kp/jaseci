@@ -1,11 +1,14 @@
-def foo(x: object) -> None {
+def foo(x: object) {
     match x {
         case int():
             print("int");
+
         case str():
             print("str");
+
         case _:
             ;
+
     }
 }
 

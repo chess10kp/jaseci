@@ -5,8 +5,7 @@ The transpiler outputs JSX text containing quote characters as ""text""
 and Rollup reject with "Expected ',', got 'ident'".
 """
 
-
-def:pub app() -> any {
+def:pub app -> any {
     return (
         <div>
             <h1>Results</h1>

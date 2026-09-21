@@ -24,14 +24,14 @@ edge Edge_c {
 
 impl creator.create{
     for i = 0 while i < 2 with i += 1 {
-        here +>: Edge_c : value2=30 :+> (node_a(val=i + 1));
+        here +>:Edge_c:value2=30:+> (node_a(val=i + 1));
         visit [-->];
     }
-    here +>: Edge_a : value=10 :+> (end := node_a(val=i + 10));
-    end +>: Edge_b : value1=20 :+> (last := node_a(val=i + 20));
+    here +>:Edge_a:value=10:+> (end := node_a(val=i + 10));
+    end +>:Edge_b:value1=20:+> (last := node_a(val=i + 20));
     for j = 0 while j < 2 with j += 1 {
-        last +>: Edge_c : value2=40 :+> (node_a(val=i + 40));
-        last +>: Edge_c : value2=40 :+> (node_b(val=i + 40));
+        last +>:Edge_c:value2=40:+> (node_a(val=i + 40));
+        last +>:Edge_c:value2=40:+> (node_b(val=i + 40));
     }
 }
 

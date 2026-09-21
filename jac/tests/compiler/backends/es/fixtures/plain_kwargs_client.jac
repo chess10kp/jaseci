@@ -32,7 +32,7 @@ def:pub index -> JsxElement {
         spread_override_total: int = 0,
         method_total: int = 0;
 
-    def call_add -> None {
+    def call_add {
         total = add(b=10, a=5);
         mixed = add(1, b=2);
         defaulted = add_defaults(b=99);

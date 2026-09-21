@@ -6,12 +6,15 @@ glob is a module-level construct that doesn't work inside classes.
 """
 import from typing { TYPE_CHECKING }
 
+glob a = 5;
 with entry {
-    a = 5;
     if TYPE_CHECKING {
         import from math { SupportsFloat }
     }
-    b = 6;
+}
+
+glob b = 6;
+with entry {
     if TYPE_CHECKING {
         import from math { SupportsIndex }
     }
@@ -19,10 +22,9 @@ with entry {
 
 class MyClass {
     """A class with entry block for initialization."""
-    has instance_var: int = 0;
-
-    has another_var: str = "";
-    has list_var: list[any] = [];
+    has instance_var: int = 0,
+        another_var: str = "",
+        list_var: list[any] = [];
 
     with entry {
         instance_var = 42;
@@ -36,7 +38,7 @@ class MyClass {
 }
 
 # Module level with entry - this SHOULD be extracted
+glob module_var = 100;
 with entry {
-    module_var = 100;
     cls_obj = MyClass();
 }

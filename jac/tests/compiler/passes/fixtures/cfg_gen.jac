@@ -1,6 +1,7 @@
+glob x = 5,
+     y = 3;
+
 with entry {
-    x = 5;
-    y = 3;
     if x > 3 {
         z = x + y;
     } elif x == 0 {

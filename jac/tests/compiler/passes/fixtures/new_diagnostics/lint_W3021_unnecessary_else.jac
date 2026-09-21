@@ -3,7 +3,7 @@
 def bad(x: int) -> int {
     if x > 0 {
         return x;
-    } else {             # <-- Warning W3021: unnecessary else after return
+    } else {  # <-- Warning W3021: unnecessary else after return
         return -x;
     }
 }

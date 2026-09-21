@@ -1,4 +1,6 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
 with entry {
     v: &Buffer;

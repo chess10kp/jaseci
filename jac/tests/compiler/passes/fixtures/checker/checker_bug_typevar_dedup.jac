@@ -9,10 +9,9 @@ type_params = [K, K, V] (3 entries) but type_args only has 2 entries,
 so V at index 2 never gets matched.
 """
 
-
-glob K = TypeVar('K');
-glob V = TypeVar('V');
-glob T = TypeVar('T');
+glob K = TypeVar('K'),
+     V = TypeVar('V'),
+     T = TypeVar('T');
 
 obj BaseCollection(Generic[T]) {
     def first_key -> T {}
@@ -34,5 +33,5 @@ with entry {
     # If TypeVar dedup works, lookup returns int (V=int).
     # Without dedup, V is unresolved -> Unknown, and this assignment should error.
     good: int = m.lookup("key");  # <-- Should be OK (V resolved to int)
-    bad: str = m.lookup("key");   # <-- Should be Error (int not assignable to str)
+    bad: str = m.lookup("key");  # <-- Should be Error (int not assignable to str)
 }

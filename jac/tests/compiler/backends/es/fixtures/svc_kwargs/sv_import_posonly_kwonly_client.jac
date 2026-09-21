@@ -7,7 +7,6 @@ The generated JS wrapper for ``query`` must include both ``filter``
 two params silently disappeared from the wrapper.
 """
 
-
 import from sv_import_posonly_kwonly_server { query, SearchFilter, SearchScope }
 
 def:pub app -> JsxElement {

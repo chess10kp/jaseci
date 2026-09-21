@@ -18,6 +18,7 @@ tags 99 + 7 = 106, first neighbour tag 99.
 node Spot {
     has tag: int = 0;
 }
+
 edge Portal: Spot --> Spot {}  # typed endpoints -- Spot --> Spot
 
 walker Reader {
@@ -37,7 +38,7 @@ walker Reader {
     }
 }
 
-def typed_endpoint_py() -> dict[str, any] {
+def typed_endpoint_py -> dict[str, any] {
     a = Spot(tag=1);
     b = Spot(tag=99);
     c = Spot(tag=7);
@@ -49,7 +50,7 @@ def typed_endpoint_py() -> dict[str, any] {
 }
 
 
-def typed_endpoint_na() -> dict[str, any] {
+def typed_endpoint_na -> dict[str, any] {
     a = Spot(tag=1);
     b = Spot(tag=99);
     c = Spot(tag=7);

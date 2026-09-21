@@ -28,16 +28,12 @@ def MixedComp(props: any, tone: str = "flat") -> JsxElement {
     return <div>{props.children}{tone}</div>;
 }
 
-with entry {
-    # OK: untyped bag accepts arbitrary attributes — no E1101.
-    a = <UntypedComp title="hi" anything={42} whatever="x"/>;
-
-    # OK: typed bag with valid props.
-    b = <TypedComp title="hi" count={3}/>;
-
-    # Error: 'bogus' is not a member of TypedProps -> E1101.
-    c = <TypedComp title="hi" count={3} bogus={1}/>;
-
-    # Error: 'count' expects int, got str -> E1100.
-    d = <TypedComp title="hi" count="nope"/>;
-}
+glob
+     # OK: untyped bag accepts arbitrary attributes — no E1101.
+     a = <UntypedComp title="hi" anything={42} whatever="x"/>,
+     # OK: typed bag with valid props.
+     b = <TypedComp title="hi" count={3}/>,
+     # Error: 'bogus' is not a member of TypedProps -> E1101.
+     c = <TypedComp title="hi" count={3} bogus={1}/>,
+     # Error: 'count' expects int, got str -> E1100.
+     d = <TypedComp title="hi" count="nope"/>;

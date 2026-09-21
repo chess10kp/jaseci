@@ -7,7 +7,7 @@ format_map, translate, title, rfind, zfill.
 """
 
 # --- All string methods and operators ---
-def str_py() -> dict[any, any] {
+def str_py -> dict[any, any] {
     s1: str = "HELLO WORLD";
     s2: str = "hello world";
     s3: str = "  Hello, World!  ";
@@ -305,7 +305,7 @@ def str_py() -> dict[any, any] {
     };
 }
 
-def str_cl() -> dict[any, any] {
+def str_cl -> dict[any, any] {
     s1: str = "HELLO WORLD";
     s2: str = "hello world";
     s3: str = "  Hello, World!  ";
@@ -561,7 +561,7 @@ def str_cl() -> dict[any, any] {
 }
 
 
-def str_na() -> dict[str, any] {
+def str_na -> dict[str, any] {
     s1: str = "  Hello, World!  ";
     s2: str = "\thello\t";
     s3: str = "a,b,c";

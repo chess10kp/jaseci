@@ -1,5 +1,5 @@
 obj Bar {
-    def bar()  -> int {
+    def bar -> int {
         return 42;
     }
 }

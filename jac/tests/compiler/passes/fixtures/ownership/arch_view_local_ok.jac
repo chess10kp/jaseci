@@ -1,9 +1,13 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 obj Cursor {
     has buf: &Buffer,
         pos: int = 0;
 
-    def peek -> int { return self.buf.n + self.pos; }
+    def peek -> int {
+        return self.buf.n + self.pos;
+    }
 }
 
 def scan(b: &Buffer) -> int {

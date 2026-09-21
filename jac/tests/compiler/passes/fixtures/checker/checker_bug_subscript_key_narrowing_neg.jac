@@ -1,5 +1,9 @@
-obj Item { has value: str = ""; }
-obj Other { has code: int = 0; }
+obj Item {
+    has value: str = "";
+}
+obj Other {
+    has code: int = 0;
+}
 
 def bad_variable_index(items: list[Item | Other], i: int) -> str {
     if isinstance(items[i], Item) {

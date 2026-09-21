@@ -2,9 +2,9 @@ obj Buffer {
     has n: int = 0;
 }
 
-def use_shared(v: &Buffer) -> None {}
+def use_shared(v: &Buffer) {}
 
-def use_mut(m: &mut Buffer) -> None {}
+def use_mut(m: &mut Buffer) {}
 
 with entry {
     a: own Buffer = Buffer();

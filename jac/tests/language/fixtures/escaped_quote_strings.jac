@@ -1,25 +1,41 @@
+glob
+     # Test escaped double quotes
+     s1 = "He said \"Hello World\"";
 with entry {
-    # Test escaped double quotes
-    s1 = "He said \"Hello World\"";
     print(s1);
+}
 
-    # Test escaped single quotes
-    s2 = 'It\'s a beautiful day';
+glob
+     # Test escaped single quotes
+     s2 = 'It\'s a beautiful day';
+with entry {
     print(s2);
+}
 
-    # Test mixed quotes
-    s3 = "It's a \"great\" day";
+glob
+     # Test mixed quotes
+     s3 = "It's a \"great\" day";
+with entry {
     print(s3);
+}
 
-    # Test multiple escapes
-    s4 = "She said \"Don't forget the \\backslash\\\"";
+glob
+     # Test multiple escapes
+     s4 = "She said \"Don't forget the \\backslash\\\"";
+with entry {
     print(s4);
+}
 
-    # Test newline and tab escapes
-    s5 = "Line 1\nLine 2\tTabbed";
+glob
+     # Test newline and tab escapes
+     s5 = "Line 1\nLine 2\tTabbed";
+with entry {
     print(s5);
+}
 
-    # Test backslash
-    s6 = "Path: C:\\Users\\Documents\\file.txt";
+glob
+     # Test backslash
+     s6 = "Path: C:\\Users\\Documents\\file.txt";
+with entry {
     print(s6);
 }

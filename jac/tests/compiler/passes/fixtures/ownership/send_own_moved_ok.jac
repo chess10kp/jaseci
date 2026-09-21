@@ -1,8 +1,10 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
-def use1(x: Buffer) -> None {}
+def use1(x: Buffer) {}
 
 with entry {
     a: own Buffer = Buffer();
-    flow use1(a);
+    flow use1(a) ;
 }

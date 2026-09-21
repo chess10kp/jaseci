@@ -1,14 +1,14 @@
 class Foo {
-    def bar(self: Foo, a: int) -> None { }
-    static def baz(self: int, a: int) -> None { }
+    def bar(self: Foo, a: int) {}
+    static def baz(self: int, a: int) {}
 }
 
 def foo(
     a: int, b: int, /, c: int, d: int, *args: int, e: int, f: int, **kwargs: int
-) -> None { }
+) {}
 
-def bar(a: int, b: int, /, c: int, d: int, e: int, f: int) -> None { }
-def baz(a: int, *, b: int) -> None { }
+def bar(a: int, b: int, /, c: int, d: int, e: int, f: int) {}
+def baz(a: int, *, b: int) {}
 
 with entry {
     f = Foo();

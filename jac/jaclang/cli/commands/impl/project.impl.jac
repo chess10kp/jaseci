@@ -16,6 +16,65 @@ import from jaclang.dist.seal {
     build_jab
 }
 import type from jaclang.project.template_registry { ProjectTemplate, TemplateRegistry }
+import type from jaclang.project.config { JacConfig }
+import type from jaclang.project.dependency_model { PackageOperation }
+
+def _plan_and_commit(config: JacConfig, operation: PackageOperation) -> int {
+    # Single plan/commit/except seam for every pure-jac package operation:
+    # plan the generation, print the dry-run view, or commit it. Returns the
+    # CLI exit code; success messages stay with the caller.
+    import from jaclang.project.jac_store { JacDepError }
+    import from jaclang.project.package_manager { commit_plan, plan_operation }
+    try {
+        plan_result = plan_operation(config, operation);
+        if operation.dry_run {
+            jac_nodes = [
+                graph_node
+                for graph_node in plan_result.nodes.values()
+                if graph_node.ecosystem == "jac"
+            ];
+            if jac_nodes {
+                console.print(
+                    f"\nWould install {len(jac_nodes)} pure-jac package(s):",
+                    style="bold"
+                );
+                for graph_node in jac_nodes {
+                    console.print(
+                        f"  {graph_node.alias} ({graph_node.commit[:12]
+                            or graph_node.source})"
+                    );
+                }
+            }
+            return 0;
+        }
+        commit_plan(config, plan_result);
+        return 0;
+    } except (JacDepError, OSError, ValueError) as e {
+        console.error(str(e));
+        return 1;
+    }
+}
+
+def _harvest_lock(config: JacConfig) -> bool {
+    # Refresh the harvested pin sections ([python], [python_graph], [npm])
+    # of jac.lock from the live venv and node_modules. Explicit
+    # add/remove/update flows mutate the manifest and the environment
+    # outside the plan/commit pipeline; this keeps the lock's pins from
+    # drifting until the next full transactional sync (which folds the same
+    # harvest into its single commit).
+    import from jaclang.project.lockfile {
+        harvest_npm_lock,
+        harvest_python_lock,
+        update_python_rows
+    }
+    harvest = harvest_python_lock(config, config.get_venv_dir());
+    return update_python_rows(
+        config.project_root or Path.cwd(),
+        harvest[0] if harvest else None,
+        harvest[1] if harvest else None,
+        npm_pins=harvest_npm_lock(config)
+    );
+}
 
 impl create(
     name: str = '',
@@ -822,11 +881,7 @@ impl install(
         import from jaclang.project.config { get_config }
         import from jaclang.project.dependency_model { PackageOperation }
         import from jaclang.project.jac_store { JacDepError }
-        import from jaclang.project.package_manager {
-            commit_plan,
-            dependency_spec_from_cli,
-            plan_operation
-        }
+        import from jaclang.project.package_manager { dependency_spec_from_cli }
         config = get_config();
         if config is None {
             console.error(
@@ -846,86 +901,32 @@ impl install(
                 aliases.add(parsed.alias);
                 specs.append(parsed);
             }
-            operation = PackageOperation(
-                action="install",
-                ecosystem="jac",
-                specs=specs,
-                include_dev=dev,
-                frozen=frozen,
-                dry_run=dry_run,
-                save=not no_save
-            );
-            plan_result = plan_operation(config, operation);
-            if dry_run {
-                console.print(
-                    f"\nWould install {len(plan_result.nodes)} pure-jac package(s):",
-                    style="bold"
-                );
-                for graph_node in plan_result.nodes.values() {
-                    console.print(
-                        f"  {graph_node.alias} ({graph_node.commit[:12]
-                            or graph_node.source})"
-                    );
-                }
-                return 0;
-            }
-            if not commit_plan(config, plan_result) {
-                return 1;
-            }
-        } except (JacDepError, OSError, ValueError) as e {
+        } except JacDepError as e {
             console.error(str(e));
             return 1;
         }
-        console.print(
-            f"\n  ✔ Installed {len(specs)} pure-jac package(s)", style="success"
+        operation = PackageOperation(
+            action="install",
+            ecosystem="jac",
+            specs=specs,
+            include_dev=dev,
+            frozen=frozen,
+            dry_run=dry_run,
+            save=not no_save
         );
+        exit_code = _plan_and_commit(config, operation);
+        if exit_code {
+            return exit_code;
+        }
+        if not dry_run {
+            console.print(
+                f"\n  ✔ Installed {len(specs)} pure-jac package(s)", style="success"
+            );
+        }
         return 0;
     }
     import from jaclang.project.config { get_config }
-    import from jaclang.project.jac_provider { manifest_jac_deps }
     import from jaclang.project.dependency_model { PackageOperation }
-    import from jaclang.project.jac_store { JacDepError }
-    import from jaclang.project.package_manager { commit_plan, plan_operation }
-    jac_config = get_config();
-    if not packages and not git and jac_config is not None {
-        (manifest_main, manifest_dev) = manifest_jac_deps(jac_config);
-        if (
-            (manifest_main or (dev and manifest_dev))
-            and not jac_config.dependencies
-            and not jac_config.dev_dependencies
-            and not jac_config.git_dependencies
-            and not jac_config.plugin_dependencies.get("npm", {})
-        ) {
-            try {
-                plan_result = plan_operation(
-                    jac_config,
-                    PackageOperation(
-                        action="install",
-                        ecosystem="jac",
-                        include_dev=dev,
-                        frozen=frozen,
-                        dry_run=dry_run,
-                        save=not no_save
-                    )
-                );
-                if dry_run {
-                    console.print(
-                        f"\nWould install {len(plan_result.nodes)} pure-jac package(s)",
-                        style="bold"
-                    );
-                    return 0;
-                }
-                if not commit_plan(jac_config, plan_result) {
-                    return 1;
-                }
-                console.success("All pure-jac dependencies installed");
-                return 0;
-            } except (JacDepError, OSError, ValueError) as e {
-                console.error(str(e));
-                return 1;
-            }
-        }
-    }
     import from pathlib { Path }
     import from jaclang.project.pyvenv {
         ensure_venv,
@@ -1049,6 +1050,7 @@ impl install(
                 console.print(
                     f"\n  ✔ Updated jac.toml [dependencies.git]", style="muted"
                 );
+                _harvest_lock(config);
             }
             return 0;
         }
@@ -1081,6 +1083,7 @@ impl install(
             console.error(f"Could not save jac.toml: {e}");
             return 1;
         }
+        _harvest_lock(config);
         return 0;
     }
 
@@ -1197,114 +1200,85 @@ impl install(
     console.print(f"\nInstalling dependencies for {config.project.name}", style="bold");
     console.print(f"  Virtual environment: {config.get_venv_dir()}", style="muted");
     console.print();
-    try {
-        dep_plan = resolve_plan(config, include_dev=dev, extras=extras, scale=scale);
-    } except ValueError as e {
-        console.error(str(e));
-        return 1;
-    }
+    install_success = True;
+    plugin_failed = False;
     if extras {
         console.print(f"  Extras: {', '.join(extras)}", style="muted");
     }
-    if dep_plan.is_empty() {
-        console.info("No dependencies to install.");
-        return 0;
-    }
 
-    install_success = True;
-    python_deps = dep_plan.for_ecosystem("python");
-    import from jaclang.project.lockfile {
-        harvest_npm_lock,
-        harvest_python_lock,
-        read_lock,
-        update_python_rows
-    }
-    lock = read_lock(config.project_root or Path.cwd());
-    py_pins = lock.get("python", {});
-    py_pins = py_pins if isinstance(py_pins, dict) else {};
-    if python_deps {
-        import from jaclang.project.versioning { norm_pkg_name }
-
-        pin_names = {norm_pkg_name(p) for p in py_pins.keys()};
-        manifest_names = {norm_pkg_name(d.name) for d in python_deps};
-        git_dep_names = {
-            norm_pkg_name(d.name)
-            for d in python_deps
-            if d.source == "git"
-        };
-
-        pin_specs = [
-            f"{name}{py_pins[name]}"
-            for name in sorted(py_pins.keys())
-            if norm_pkg_name(name) in manifest_names
-                and norm_pkg_name(name) not in git_dep_names
-        ];
-        fresh_specs = python.specs_for(
-            [
-                d
-                for d in python_deps
-                if norm_pkg_name(d.name) not in pin_names or d.source == "git"
-            ]
-        );
-        specs = pin_specs + fresh_specs;
-        if specs {
-            with console.status(
-                f"Installing {len(specs)} package(s)...", spinner="dots"
-            ) as status {
-                install_success = python.install_specs(config, specs, ctx);
+    # npm deps stay bundle-time by design (the client bundler re-syncs them
+    # at build/serve); pre-sync here so plain `jac install` keeps
+    # materializing node_modules today.
+    if npm is not False {
+        npm_provider = get_provider_registry().get("npm");
+        if npm_provider is not None {
+            npm_deps = npm_provider.resolve(config, include_dev=dev);
+            if npm_deps {
+                console.print("\n  Installing npm dependencies", style="muted");
+                installed = True;
+                try {
+                    installed = npm_provider.install_all(config, npm_deps, ctx);
+                } except Exception as e {
+                    console.error(f"  ✗ npm dependencies failed: {e}");
+                    installed = False;
+                }
+                if installed {
+                    console.print("  ✔ npm dependencies installed", style="success");
+                } else {
+                    plugin_failed = True;
+                }
             }
         }
     }
 
-    if not dry_run and install_success and not no_save {
-        harvest = harvest_python_lock(config, config.get_venv_dir());
-        update_python_rows(
-            config.project_root or Path.cwd(),
-            harvest[0] if harvest else None,
-            harvest[1] if harvest else None,
-            npm_pins=harvest_npm_lock(config)
+    # One transactional sync for the whole closure: jac packages, python
+    # requirements (manifest, extras, capabilities) plan and commit together.
+    import from jaclang.project.jac_provider { manifest_jac_specs }
+    (jac_main_specs, jac_dev_specs) = manifest_jac_specs(config);
+    committed = False;
+    if (
+        jac_main_specs
+        or (dev and jac_dev_specs)
+        or config.dependencies
+        or config.dev_dependencies
+        or extras
+    ) {
+        exit_code = _plan_and_commit(
+            config,
+            PackageOperation(
+                action="install",
+                ecosystem="jac",
+                include_dev=dev,
+                frozen=frozen,
+                dry_run=dry_run,
+                save=not no_save,
+                extras=extras,
+                scale=scale
+            )
         );
+        if exit_code {
+            return exit_code;
+        }
+        # commit_plan folds the venv/node_modules pin harvest into the
+        # transaction's single jac.lock write; nothing left to rewrite here.
+        committed = True;
+    }
+
+    if not dry_run and install_success and not no_save and not committed {
+        # No plan/commit ran (nothing jac/python to sync, e.g. an npm-only
+        # manifest): refresh the harvested pin sections directly.
+        _harvest_lock(config);
     }
 
     if dry_run {
         return 0 if install_success else 1;
     }
-    plugin_failed = False;
-    for provider in get_provider_registry().all() {
-        if provider.name == "python" {
-            continue;
-        }
-        if provider.name == "npm" and npm is False {
-            console.print("\n  Skipping npm dependencies (--no-npm)", style="muted");
-            continue;
-        }
-        provider_deps = dep_plan.for_ecosystem(provider.name);
-        if not provider_deps {
-            continue;
-        }
-        console.print(f"\n  Installing {provider.name} dependencies", style="muted");
-        installed = True;
-        try {
-            installed = provider.install_all(config, provider_deps, ctx);
-        } except Exception as e {
-            console.error(f"  ✗ {provider.name} dependencies failed: {e}");
-            installed = False;
-        }
-        if installed {
-            console.print(
-                f"  ✔ {provider.name} dependencies installed", style="success"
-            );
-        } else {
-            plugin_failed = True;
-        }
-    }
     if install_success and not plugin_failed {
         console.success("All dependencies installed");
         return 0;
-    } else {
-        console.error("Some dependencies failed to install");
-        return 1;
     }
+    console.error("Some dependencies failed to install");
+    return 1;
 }
 
 def _bootstrap_project_deps(project_path: Path) -> bool {
@@ -1352,9 +1326,9 @@ impl remove(
         console.error("No packages specified.");
         return 1;
     }
-    import from jaclang.project.jac_provider { manifest_jac_deps }
-    (jac_deps, jac_dev) = manifest_jac_deps(config);
-    jac_names = set(jac_deps.keys()) | set(jac_dev.keys());
+    import from jaclang.project.jac_provider { manifest_jac_specs }
+    (jac_main_specs, jac_dev_specs) = manifest_jac_specs(config);
+    jac_names = {spec.alias for spec in jac_main_specs + jac_dev_specs};
     jac_targets: list[str] = [];
     remaining: list[str] = [];
     for raw_name in packages {
@@ -1376,25 +1350,18 @@ impl remove(
     }
     if jac_targets {
         import from jaclang.project.dependency_model { PackageOperation }
-        import from jaclang.project.jac_store { JacDepError }
-        import from jaclang.project.package_manager { commit_plan, plan_operation }
-        try {
-            plan_result = plan_operation(
-                config,
-                PackageOperation(
-                    action="remove",
-                    ecosystem="jac",
-                    targets=jac_targets,
-                    include_dev=dev,
-                    save=True
-                )
-            );
-            if not commit_plan(config, plan_result) {
-                return 1;
-            }
-        } except (JacDepError, OSError, ValueError) as e {
-            console.error(str(e));
-            return 1;
+        exit_code = _plan_and_commit(
+            config,
+            PackageOperation(
+                action="remove",
+                ecosystem="jac",
+                targets=jac_targets,
+                include_dev=dev,
+                save=True
+            )
+        );
+        if exit_code {
+            return exit_code;
         }
         for alias in jac_targets {
             console.success(f"Removed {alias} from jac.toml");
@@ -1420,6 +1387,7 @@ impl remove(
         console.error(f"Could not save jac.toml: {e}");
         return 1;
     }
+    _harvest_lock(config);
     return 0;
 }
 
@@ -1429,24 +1397,6 @@ def _major_minor(version: str) -> str {
         return f"{parts[0]}.{parts[1]}";
     }
     return version;
-}
-
-def _requirer_closure(requirers: dict[str, any], seeds: list[str]) -> set[str] {
-    reach: set[str] = set(seeds);
-    frontier: list[str] = list(seeds);
-    while frontier {
-        cur = frontier.pop();
-        for (child, parents) in requirers.items() {
-            if child in reach or not isinstance(parents, list) {
-                continue;
-            }
-            if cur in parents {
-                reach.add(child);
-                frontier.append(child);
-            }
-        }
-    }
-    return reach;
 }
 
 impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) -> int {
@@ -1460,58 +1410,21 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
         );
         return 1;
     }
-    import from jaclang.project.jac_provider { manifest_jac_deps }
+    import from jaclang.project.jac_provider { manifest_jac_specs }
     import from jaclang.project.dependency_model { PackageOperation }
-    import from jaclang.project.jac_store { JacDepError }
-    import from jaclang.project.package_manager { commit_plan, plan_operation }
-    (manifest_main, manifest_dev) = manifest_jac_deps(config);
-    selected = manifest_dev if dev else manifest_main;
-    selected_names = set(selected.keys());
+    (main_specs, dev_specs) = manifest_jac_specs(config);
+    selected = dev_specs if dev else main_specs;
+    selected_names = {spec.alias for spec in selected};
     requested = [str(p) for p in (packages or [])];
     jac_targets = [
-        str(p)[len("jac:"):] if str(p).startswith("jac:") else str(p)
-        for p in requested
-        if (str(p).startswith("jac:") or str(p) in selected_names)
+        name[len("jac:"):] if name.startswith("jac:") else name
+        for name in requested
+        if name.startswith("jac:") or name in selected_names
     ];
-    if (
-        (jac_targets or (not requested and selected))
-        and not config.dependencies
-        and not config.dev_dependencies
-        and not config.git_dependencies
-    ) {
-        if not jac_targets {
-            jac_targets = sorted(selected_names);
-        }
-        try {
-            plan_result = plan_operation(
-                config,
-                PackageOperation(
-                    action="update",
-                    ecosystem="jac",
-                    targets=jac_targets,
-                    include_dev=dev,
-                    save=True
-                )
-            );
-            if not commit_plan(config, plan_result) {
-                return 1;
-            }
-            console.success("Dependencies updated");
-            return 0;
-        } except (JacDepError, OSError, ValueError) as e {
-            console.error(str(e));
-            return 1;
-        }
-    }
-    import from jaclang.project.dep_roots { read_deps_map }
-    import from jaclang.project.jac_provider { get_jac_dep_provider }
-    (jac_deps, jac_dev) = manifest_jac_deps(config);
-
-    section_deps = jac_dev if dev else jac_deps;
-    other_deps = jac_deps if dev else jac_dev;
+    other_deps = main_specs if dev else dev_specs;
     misplaced = [
         str(p)
-        for p in (packages or [])
+        for p in requested
         if str(p) in other_deps
     ];
     if misplaced {
@@ -1522,115 +1435,40 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
         );
         return 1;
     }
-    jac_names = set(section_deps.keys());
-    jac_targets = [
-        str(p)
-        for p in (packages or [])
-        if str(p) in jac_names
-    ];
-    leftover = [
-        str(p)
-        for p in (packages or [])
-        if str(p) not in jac_names
-    ];
-    python = get_python_provider();
-    ctx = InstallContext(verbose=verbose);
-    if jac_targets or ((not packages) and section_deps) {
-        jac_provider = get_jac_dep_provider();
-        if not jac_targets {
-            jac_targets = sorted(section_deps.keys());
+    if jac_targets or (not requested and selected) {
+        jac_targets = jac_targets or sorted(selected_names);
+        exit_code = _plan_and_commit(
+            config,
+            PackageOperation(
+                action="update",
+                ecosystem="jac",
+                targets=jac_targets,
+                include_dev=dev,
+                save=True
+            )
+        );
+        if exit_code {
+            return exit_code;
         }
-        old_shas: dict[str, str] = {};
-        old_map = read_deps_map(config);
-        old_shas = {
-            p.get("name", ""): str(p.get("sha", ""))
-            for p in old_map.get("packages", [])
-            if isinstance(p, dict)
-        };
-        import from jaclang.project.lockfile {
-            jac_lock_rows,
-            read_lock,
-            update_jac_rows
+        remaining = [
+            str(p)
+            for p in requested
+            if not str(p).startswith("jac:") and str(p) not in jac_targets
+        ];
+        if requested and not remaining {
+            console.success("Dependencies updated");
+            return 0;
         }
-        try {
-            all_pins = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
-            refresh: set[str] = set();
-            if jac_targets {
-                old_requirers = {
-                    name: row.get("requested_by", [])
-                    for (name, row) in all_pins.items()
-                    if isinstance(row, dict)
-                };
-                refresh = _requirer_closure(old_requirers, jac_targets);
-            }
-            while True {
-                pins = (
-                    {
-                        name: row
-                        for (name, row) in all_pins.items()
-                        if name not in refresh
-                    }
-                        if jac_targets
-                        else {}
-                );
-                resolved = jac_provider.resolve_closure(
-                    config, ctx, frozen_pins=pins, collect_only=True
-                );
-                if not jac_targets {
-                    break;
-                }
-                extra = _requirer_closure(
-                    {name: pkg.requested_by for (name, pkg) in resolved.items()},
-                    jac_targets
-                );
-                grew = False;
-                for dep_name in extra {
-                    if dep_name not in refresh {
-                        refresh.add(dep_name);
-                        grew = True;
-                    }
-                }
-                if not grew {
-                    break;
-                }
-            }
-        } except (JacDepError, OSError) as e {
-            console.error(str(e));
-            return 1;
+        if requested {
+            packages = remaining;
         }
-
-        try {
-            jac_provider.materialize_closure(config, resolved, ctx);
-        } except (JacDepError, OSError) as e {
-            console.error(str(e));
-            jac_provider._rematerialize(config);
-            return 1;
-        }
-        jac_provider.save_deps_map(config, resolved);
-        update_jac_rows(config.project_root or Path.cwd(), resolved);
-        for pkg in resolved.values() {
-            if jac_targets and pkg.name not in jac_targets {
-                continue;
-            }
-            old_sha = old_shas.get(pkg.name, "");
-            if pkg.sha and old_sha and old_sha != pkg.sha {
-                console.print(
-                    f"  ✔ {pkg.name}: {old_sha[:12]} -> {pkg.sha[:12]}", style="success"
-                );
-            } else {
-                via = f"{pkg.sha[:12]}" if pkg.sha else "path dep";
-                console.print(f"  ✔ {pkg.name}: up to date ({via})", style="muted");
-            }
-        }
-        if packages {
-            packages = leftover;
-            if not packages {
-                console.success("Dependencies updated");
-                return 0;
-            }
-        }
+        # No explicit packages: fall through so the python update section
+        # below re-resolves the manifest closure (it no-ops when the project
+        # has no python deps).
     }
 
+    python = get_python_provider();
+    ctx = InstallContext(verbose=verbose);
     specs_to_update: list[str] = [];
     names_to_update: list[str] = [];
     if packages {
@@ -1735,18 +1573,11 @@ impl update(packages: list[str] = [], dev: bool = False, verbose: bool = False) 
             return 1;
         }
     }
-    import from jaclang.project.lockfile {
-        harvest_npm_lock,
-        harvest_python_lock,
-        update_python_rows
-    }
-    harvest = harvest_python_lock(config, config.get_venv_dir());
-    update_python_rows(
-        config.project_root or Path.cwd(),
-        harvest[0] if harvest else None,
-        harvest[1] if harvest else None,
-        npm_pins=harvest_npm_lock(config)
-    );
+    # The jac section above (if any) already committed a fresh lock; the
+    # python update just changed the venv, so this rewrite of the pin
+    # sections is the only point where the final state is observable.
+    # (Two-phase by design until python updates route through plan/commit.)
+    _harvest_lock(config);
     console.success("Dependencies updated");
     return 0;
 }

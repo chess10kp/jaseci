@@ -20,6 +20,9 @@ import os;
 with entry {
     current_path: str = os.environ.get("PATH", "");
     parts: list[str] = current_path.split(os.pathsep);
-    first_sep: str = os.sep;
+}
+
+glob first_sep: str = os.sep;
+with entry {
     print(parts, first_sep);
 }

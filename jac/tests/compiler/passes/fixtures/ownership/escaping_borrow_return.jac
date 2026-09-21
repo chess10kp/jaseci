@@ -1,6 +1,8 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
-def borrow_and_return() -> Buffer {
+def borrow_and_return -> Buffer {
     a: own Buffer = Buffer();
     v: &Buffer = &a;
     return v;

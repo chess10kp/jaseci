@@ -6,7 +6,7 @@ obj Sub(Base) {
     has flag: bool = False;
 }
 
-def take(b: Base) -> None {
+def take(b: Base) {
     print(b);
 }
 

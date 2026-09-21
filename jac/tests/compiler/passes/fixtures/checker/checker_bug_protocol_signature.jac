@@ -21,10 +21,10 @@ obj WrongSignature {
 }
 
 obj CorrectSignature {
-    def draw(canvas: str) -> None { }
+    def draw(canvas: str) {}
 }
 
-def render(item: Drawable) -> None {
+def render(item: Drawable) {
     item.draw("canvas");
 }
 

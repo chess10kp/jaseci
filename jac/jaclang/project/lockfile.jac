@@ -93,7 +93,9 @@ def jac_lock_rows(lock_data: dict[str, any]) -> dict[str, any] {
 }
 
 
-def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
+def _lock_doc(lock_data: dict[str, any]) -> dict[str, any] {
+    # The single jac.lock document builder: v2 graph plus the legacy `[jac]`
+    # rows derived from it via jac_lock_rows (the one compat seam).
     doc: dict[str, any] = {};
     doc["version"] = LOCK_VERSION;
     if lock_data.get("manifest_fingerprint") {
@@ -116,14 +118,6 @@ def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
             graph_edge
             for graph_edge in graph_edges
             if isinstance(graph_edge, dict)
-        ];
-    }
-    unresolved_backend = lock_data.get("unresolved_backend", []);
-    if isinstance(unresolved_backend, list) and unresolved_backend {
-        doc["unresolved_backend"] = [
-            backend_entry
-            for backend_entry in unresolved_backend
-            if isinstance(backend_entry, dict)
         ];
     }
     jac_rows = jac_lock_rows(lock_data);
@@ -178,60 +172,40 @@ def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
         }
         doc["npm"] = npm_doc;
     }
-    text = serialize_toml(doc) + "\n";
-    target = lock_path(project_root);
+    return doc;
+}
+
+
+def write_atomic(path: Path, text: str) -> None {
+    # The one durable temp-and-replace writer for generated lock/manifest
+    # documents: write a sibling temp file, fsync it, then atomically swap
+    # it into place so a crash can never leave a torn file behind.
+    path.parent.mkdir(parents=True, exist_ok=True);
+    (fd, tmp_name) = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent));
+    tmp = Path(tmp_name);
     try {
-        (fd, tmp_name) = tempfile.mkstemp(
-            prefix=LOCK_FILE_NAME + ".", dir=str(target.parent)
-        );
-        tmp = Path(tmp_name);
-        try {
-            with os.fdopen(fd, "w", encoding="utf-8") as f {
-                f.write(text);
-            }
-            os.replace(str(tmp), str(target));
-        } except Exception {
-            tmp.unlink(True);
-            raise;
+        with os.fdopen(fd, "w", encoding="utf-8") as stream {
+            stream.write(text);
+            stream.flush();
+            os.fsync(stream.fileno());
         }
+        os.replace(str(tmp), str(path));
+    } except Exception {
+        tmp.unlink(missing_ok=True);
+        raise;
+    }
+}
+
+
+def write_lock(project_root: Path, lock_data: dict[str, any]) -> bool {
+    text = serialize_toml(_lock_doc(lock_data)) + "\n";
+    try {
+        write_atomic(lock_path(project_root), text);
     } except OSError as e {
         console.error(f"Could not write {LOCK_FILE_NAME}: {e}");
         return False;
     }
     return True;
-}
-
-
-def update_jac_rows(
-    project_root: Path, resolved: dict[str, any], preserve: set[str] = set()
-) -> bool {
-    lock_data = read_lock(project_root);
-    rows: dict[str, any] = {};
-    for pkg in resolved.values() {
-        row = {
-            "version": pkg.version,
-            "ref": pkg.ref,
-            "sha": pkg.sha,
-            "tree": pkg.tree,
-            "requested_by": sorted(pkg.requested_by),
-
-        };
-        if pkg.source == "path" {
-            row["path"] = pkg.key;
-        } else {
-            row["git"] = pkg.key;
-        }
-        rows[pkg.name] = row;
-    }
-    if preserve {
-        for (prior_name, prior_row) in jac_lock_rows(lock_data).items() {
-            if prior_name not in rows and prior_name in preserve {
-                rows[prior_name] = prior_row;
-            }
-        }
-    }
-    lock_data["jac"] = rows;
-    return write_lock(project_root, lock_data);
 }
 
 
@@ -424,10 +398,8 @@ def _walk_chains(
 
 
 def why_chains(lock_data: dict[str, any], name: str) -> list[tuple[str, list[str]]] {
-    if isinstance(lock_data.get("nodes", {}), dict) and lock_data.get("nodes", {}) {
-        (graph_chains, graph_target) = graph_why_chains(lock_data, name);
-        return [("graph", chain) for chain in graph_chains];
-    }
+    # Legacy (pre-v2) lock rows only; v2 graph locks go through
+    # graph_why_chains (see the `why` command impl).
     jac_rows = jac_lock_rows(lock_data);
     py_graph = lock_data.get("python_graph", {});
     if not isinstance(py_graph, dict) {

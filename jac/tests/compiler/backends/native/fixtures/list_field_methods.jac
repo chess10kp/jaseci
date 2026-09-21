@@ -11,6 +11,7 @@ obj ModeStack {
     def push(m: Mode) {
         self.st.append(m);
     }
+
     def pop_top -> Mode | None {
         if len(self.st) > 0 {
             return self.st.pop();

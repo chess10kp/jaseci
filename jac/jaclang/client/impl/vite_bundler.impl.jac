@@ -303,41 +303,6 @@ impl ViteBundler.install_packages(
     }
 }
 
-impl ViteBundler.add_packages(
-    self: ViteBundler,
-    packages: list[str],
-    install_dir: Optional[Path] = None,
-    dev: bool = False
-) -> None {
-    import json;
-    import subprocess;
-    import from jaclang.client { get_bun }
-    target_dir = install_dir if install_dir is not None else self.project_dir;
-    pkg_json = target_dir / 'package.json';
-    if not pkg_json.exists() {
-        pkg_data = {
-            'name': 'jac-mobile-app',
-            'version': '1.0.0',
-            'private': True,
-            'type': 'module'
-        };
-        pkg_json.write_text(json.dumps(pkg_data, indent=2), encoding='utf-8');
-        console.print("  ✔ Created package.json");
-    }
-
-    bun = get_bun();
-    if bun is None {
-        raise RuntimeError("bun unavailable: cannot install client dependencies");
-    }
-    cmd = [bun, 'add'];
-    if dev {
-        cmd.append('--dev');
-    }
-    cmd.extend(packages);
-    console.print(f"  Installing: {' '.join(packages)}");
-    subprocess.run(cmd, cwd=target_dir, check=True, capture_output=False);
-}
-
 impl ViteBundler._format_config_object(
     self: ViteBundler, config: dict[str, any], indent: int = 0
 ) -> str {

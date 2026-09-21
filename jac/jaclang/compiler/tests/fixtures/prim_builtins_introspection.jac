@@ -13,7 +13,7 @@ class _I {
     has x: int = 0;
 }
 
-def builtins_introspection_py() -> dict[any, any] {
+def builtins_introspection_py -> dict[any, any] {
     # emit_enumerate
     enum_pairs: list[any] = list(enumerate(["a", "b", "c"]));
 
@@ -32,9 +32,9 @@ def builtins_introspection_py() -> dict[any, any] {
     setattr_ok: int = 1 if o.x == 99 else 0;
     vars_ok: int = 1 if isinstance(vars(o), dict) else 0;
     setattr(o, "_d", "tmp");
-    has_dyn: int = 1 if hasattr(o, "_d") else 0;
+    has_dyn: int = 1 if o?._d else 0;
     delattr(o, "_d");
-    del_ok: int = 0 if hasattr(o, "_d") else 1;
+    del_ok: int = 0 if o?._d else 1;
 
     return {
         # emit_enumerate
@@ -77,8 +77,8 @@ def builtins_introspection_py() -> dict[any, any] {
         "iter_next_10": next(iter([10, 20, 30])),
         "iter_next_99": next(iter([99])),
         # emit_hasattr / emit_getattr
-        "hasattr_t": 1 if hasattr([], "append") else 0,
-        "hasattr_f": 1 if hasattr([], "_missing_xxx") else 0,
+        "hasattr_t": 1 if []?.append else 0,
+        "hasattr_f": 1 if []?._missing_xxx else 0,
         "getattr_ok": getattr("hello", "upper")(),
         # emit_setattr / emit_vars
         "setattr_ok": setattr_ok,
@@ -98,11 +98,11 @@ def builtins_introspection_py() -> dict[any, any] {
     };
 }
 
-def builtins_introspection_cl() -> dict[any, any] {
+def builtins_introspection_cl -> dict[any, any] {
     return {};
 }
 
 
-def builtins_introspection_na() -> dict[str, any] {
+def builtins_introspection_na -> dict[str, any] {
     return {};
 }

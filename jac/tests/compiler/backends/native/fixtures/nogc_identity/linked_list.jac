@@ -2,8 +2,13 @@
 `take()` moving the old head, reverse in place with `take()` and `swap()`, walk
 by recursive borrow (#8984 A1b, rule 3)."""
 
-obj Node { has v: int = 0, next: own Node | None = None; }
-obj List { has head: own Node | None = None; }
+obj Node {
+    has v: int = 0,
+        next: own Node | None = None;
+}
+obj List {
+    has head: own Node | None = None;
+}
 
 def push_front(l: &mut List, v: int) {
     l.head = Node(v=v, next=take(l.head));
@@ -26,13 +31,17 @@ def first_v(l: &List) -> int {
 }
 
 def sum_rec(n: &Node | None) -> int {
-    if n is None { return 0; }
+    if n is None {
+        return 0;
+    }
     return n.v + sum_rec(&n.next);
 }
 
 def run -> int {
     l: own List = List();
-    for i in range(5) { push_front(&mut l, i); }
+    for i in range(5) {
+        push_front(&mut l, i);
+    }
     total = sum_rec(&l.head);
     head_before = first_v(&l);
     reverse(&mut l);
@@ -43,4 +52,6 @@ def run -> int {
     return total * 1000 + head_before * 100 + head_after * 10 + first_v(&l);
 }
 
-with entry { print(run()); }
+with entry {
+    print(run());
+}

@@ -1,5 +1,5 @@
+glob x = {"a": "apple", "b": "banana"};
 with entry {
-    x = {"a": "apple", "b": "banana"};
     ((a, apple), (b, banana)) = x.items();
     [[a2, apple2], [b2, banana2]] = x.items();
     ([a3, apple3], [b3, banana3]) = x.items();

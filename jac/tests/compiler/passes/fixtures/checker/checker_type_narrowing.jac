@@ -29,9 +29,7 @@ obj Cat {
 # 1. isinstance narrowing inside if-branch
 #    Without narrowing: Dog | Cat cannot be assigned to Dog  -> Error
 #    With narrowing:    Dog can be assigned to Dog            -> Ok
-def test_isinstance_narrowing(
-    animal: Dog | Cat
-) -> str {
+def test_isinstance_narrowing(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         d: Dog = animal;  # <-- Ok after narrowing (Dog)
         return d.bark();
@@ -42,9 +40,7 @@ def test_isinstance_narrowing(
 # 2. isinstance narrowing with else — negative narrowing
 #    True branch:  animal narrowed to Dog
 #    Else branch:  animal narrowed to Cat (Dog excluded)
-def test_isinstance_else_narrowing(
-    animal: Dog | Cat
-) -> str {
+def test_isinstance_else_narrowing(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         d: Dog = animal;  # <-- Ok after narrowing (Dog)
         return d.bark();
@@ -57,9 +53,7 @@ def test_isinstance_else_narrowing(
 # 3. None narrowing with `is not None`
 #    Without narrowing: int | None cannot be assigned to int  -> Error
 #    With narrowing:    int can be assigned to int             -> Ok
-def test_none_narrowing(
-    val: int | None
-) -> int {
+def test_none_narrowing(val: int | None) -> int {
     if val is not None {
         result: int = val;  # <-- Ok after narrowing (int)
         return result;
@@ -71,9 +65,7 @@ def test_none_narrowing(
 #    After the if-block returns on None, val must be str.
 #    Without narrowing: str | None cannot be assigned to str  -> Error
 #    With narrowing:    str can be assigned to str             -> Ok
-def test_none_else_narrowing(
-    val: str | None
-) -> str {
+def test_none_else_narrowing(val: str | None) -> str {
     if val is None {
         return "default";
     }
@@ -85,9 +77,7 @@ def test_none_else_narrowing(
 #    After an if/else where both branches fall through, the type at the
 #    join point must be the original union.
 #    This assignment should ALWAYS fail (even with narrowing).
-def test_narrowing_expires_at_join(
-    animal: Dog | Cat
-) -> str {
+def test_narrowing_expires_at_join(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         d: Dog = animal;  # <-- Ok inside branch
     } else {
@@ -122,9 +112,7 @@ def test_elif_narrowing(animal: Dog | Cat | Fish) -> str {
 
 # 7. Parenthesized isinstance narrowing (AtomUnit unwrap)
 #    Handles: (isinstance(x, T)), ((isinstance(x, T)))
-def test_parenthesized_isinstance(
-    animal: Dog | Cat
-) -> str {
+def test_parenthesized_isinstance(animal: Dog | Cat) -> str {
     if (isinstance(animal, Dog)) {
         d: Dog = animal;  # <-- Ok after narrowing (Dog)
         return d.bark();
@@ -142,9 +130,7 @@ def test_double_parenthesized(animal: Dog | Cat) -> str {
 
 # 8. NOT isinstance narrowing (UnaryExpr)
 #    Handles: not isinstance(x, T) -> excludes T in true branch
-def test_not_isinstance(
-    animal: Dog | Cat
-) -> str {
+def test_not_isinstance(animal: Dog | Cat) -> str {
     if not isinstance(animal, Dog) {
         c: Cat = animal;  # <-- Ok after narrowing (Cat)
         return c.meow();
@@ -165,9 +151,7 @@ def test_not_none(val: int | None) -> int {
 # 9. Compound AND narrowing (BoolExpr with and)
 #    Handles: isinstance(x, A) and isinstance(y, B)
 #    Returns narrowing for the first matching symbol
-def test_and_isinstance(
-    animal: Dog | Cat, other: Dog | Cat
-) -> str {
+def test_and_isinstance(animal: Dog | Cat, other: Dog | Cat) -> str {
     if isinstance(animal, Dog) and isinstance(other, Cat) {
         d: Dog = animal;  # <-- Ok after narrowing (Dog)
         c: Cat = other;  # <-- Ok after narrowing (Cat)
@@ -186,13 +170,10 @@ def test_and_none_check(val: int | None, flag: bool) -> int {
 
 # 10. Compound OR narrowing (BoolExpr with or)
 #     Handles: isinstance(x, A) or isinstance(x, B) -> narrows to A | B
-def test_or_isinstance(
-    animal: Dog | Cat | Fish
-) -> str {
+def test_or_isinstance(animal: Dog | Cat | Fish) -> str {
     if isinstance(animal, Dog) or isinstance(animal, Cat) {
         # animal is narrowed to Dog | Cat
         return animal.name;  # <-- Ok, both Dog and Cat have 'name'
-
     } else {
         f: Fish = animal;  # <-- Ok after narrowing (Fish)
         return f.swim();
@@ -201,12 +182,9 @@ def test_or_isinstance(
 
 # 11. isinstance with tuple of types
 #     Handles: isinstance(x, (A, B, C)) -> narrows to A | B | C
-def test_isinstance_tuple(
-    animal: Dog | Cat | Fish
-) -> str {
+def test_isinstance_tuple(animal: Dog | Cat | Fish) -> str {
     if isinstance(animal, (Dog, Cat)) {
         return animal.name;  # <-- Ok, both Dog and Cat have 'name'
-
     } else {
         f: Fish = animal;  # <-- Ok after narrowing (Fish)
         return f.swim();
@@ -223,9 +201,7 @@ def test_isinstance_tuple_single(animal: Dog | Cat) -> str {
 
 # 12. Truthiness narrowing (if x:)
 #     Handles: if x: -> excludes None in true branch
-def test_truthiness_narrowing(
-    val: str | None
-) -> str {
+def test_truthiness_narrowing(val: str | None) -> str {
     if val {
         result: str = val;  # <-- Ok after narrowing (str)
         return result;
@@ -236,17 +212,13 @@ def test_truthiness_narrowing(
 def test_truthiness_else(val: int | None) -> int {
     if val {
         return val;  # <-- Ok after narrowing (int)
-
     } else {
         return 0;  # val is None here
-
     }
 }
 
 # 13. Combined patterns - NOT with parentheses
-def test_not_parenthesized(
-    animal: Dog | Cat
-) -> str {
+def test_not_parenthesized(animal: Dog | Cat) -> str {
     if not (isinstance(animal, Dog)) {
         c: Cat = animal;  # <-- Ok after narrowing (Cat)
         return c.meow();
@@ -255,9 +227,7 @@ def test_not_parenthesized(
 }
 
 # 14. Nested compound expressions
-def test_nested_and_or(
-    animal: Dog | Cat | Fish, flag: bool
-) -> str {
+def test_nested_and_or(animal: Dog | Cat | Fish, flag: bool) -> str {
     if isinstance(animal, Dog) and flag {
         d: Dog = animal;  # <-- Ok after narrowing (Dog)
         return d.bark();
@@ -291,7 +261,6 @@ def test_inheritance_isinstance(creature: Animal | Lion | Reptile | str) -> str 
         # creature should narrow to Lion (since Lion is a subclass of Mammal)
         # and any Mammal instances in the union
         return str(creature.legs);  # <-- Ok, Mammal has 'legs'
-
     }
     return "not a mammal";
 }
@@ -300,16 +269,13 @@ def test_inheritance_isinstance_base(creature: Lion | Reptile | str) -> str {
     if isinstance(creature, Animal) {
         # creature should narrow to Lion | Reptile (both are subclasses of Animal)
         return creature.species;  # <-- Ok, Animal has 'species'
-
     }
     return "not an animal";
 }
 
 # E1. Wrong type assignment inside narrowed branch
 #     Even with narrowing, assigning to the wrong type should error.
-def test_error_wrong_type_in_branch(
-    animal: Dog | Cat
-) -> str {
+def test_error_wrong_type_in_branch(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         c: Cat = animal;  # <-- Error: Dog cannot be assigned to Cat
         return c.meow();
@@ -319,9 +285,7 @@ def test_error_wrong_type_in_branch(
 
 # E2. Narrowing expires at join point (same as test 5, but explicit error)
 #     After if/else where both branches fall through, type is widened.
-def test_error_narrowing_expired(
-    animal: Dog | Cat
-) -> str {
+def test_error_narrowing_expired(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         d: Dog = animal;  # <-- Ok inside branch
     } else {
@@ -333,12 +297,9 @@ def test_error_narrowing_expired(
 }
 
 # E3. After early return, type is narrowed but can't assign to wrong type
-def test_error_after_early_return(
-    animal: Dog | Cat
-) -> str {
+def test_error_after_early_return(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         return animal.bark();  # <-- Ok, Dog has bark()
-
     }
     # animal is Cat here (Dog was excluded by early return)
     d: Dog = animal;  # <-- Error: Cat cannot assign to Dog
@@ -347,9 +308,7 @@ def test_error_after_early_return(
 
 # E4. Incorrect narrowing assumption in else branch
 #     If we narrow to Dog, else should be Cat, not Dog.
-def test_error_wrong_else_narrowing(
-    animal: Dog | Cat
-) -> str {
+def test_error_wrong_else_narrowing(animal: Dog | Cat) -> str {
     if isinstance(animal, Dog) {
         return animal.bark();
     } else {
@@ -359,9 +318,7 @@ def test_error_wrong_else_narrowing(
 }
 
 # E5. Truthiness narrowing doesn't help with non-None types
-def test_error_truthiness_wrong_type(
-    val: str | int
-) -> str {
+def test_error_truthiness_wrong_type(val: str | int) -> str {
     if val {
         s: str = val;  # <-- Error: str | int cannot assign to str
         return s;
@@ -370,9 +327,7 @@ def test_error_truthiness_wrong_type(
 }
 
 # E6. OR narrowing - can't assign to single type when narrowed to union
-def test_error_or_narrowing_single(
-    animal: Dog | Cat | Fish
-) -> str {
+def test_error_or_narrowing_single(animal: Dog | Cat | Fish) -> str {
     if isinstance(animal, Dog) or isinstance(animal, Cat) {
         d: Dog = animal;  # <-- Error: Dog | Cat cannot assign to Dog
         return d.bark();
@@ -381,9 +336,7 @@ def test_error_or_narrowing_single(
 }
 
 # E7. Tuple isinstance - can't assign to single type
-def test_error_tuple_isinstance_single(
-    animal: Dog | Cat | Fish
-) -> str {
+def test_error_tuple_isinstance_single(animal: Dog | Cat | Fish) -> str {
     if isinstance(animal, (Dog, Cat)) {
         d: Dog = animal;  # <-- Error: Dog | Cat cannot assign to Dog
         return d.bark();
@@ -392,9 +345,7 @@ def test_error_tuple_isinstance_single(
 }
 
 # E8. NOT narrowing - else branch has the positive type
-def test_error_not_narrowing_wrong(
-    animal: Dog | Cat
-) -> str {
+def test_error_not_narrowing_wrong(animal: Dog | Cat) -> str {
     if not isinstance(animal, Dog) {
         d: Dog = animal;  # <-- Error: Cat cannot assign to Dog
         return d.bark();
@@ -403,9 +354,7 @@ def test_error_not_narrowing_wrong(
 }
 
 # E9. Inheritance narrowing - wrong subclass assignment
-def test_error_inheritance_wrong_subclass(
-    creature: Lion | Reptile | str
-) -> str {
+def test_error_inheritance_wrong_subclass(creature: Lion | Reptile | str) -> str {
     if isinstance(creature, Mammal) {
         # creature is Lion (the only Mammal subclass in union)
         r: Reptile = creature;  # <-- Error: Lion cannot assign to Reptile
@@ -432,47 +381,35 @@ obj SemiNode(CFGNode) {
 }
 
 # 16a. Simple isinstance with single class base type
-def test_single_class_isinstance(
-    nd: BaseNode
-) -> list[CFGNode] | None {
+def test_single_class_isinstance(nd: BaseNode) -> list[CFGNode] | None {
     if isinstance(nd, CFGNode) {
         # nd should be narrowed to CFGNode here
         return nd.bb_out;  # <-- Ok after narrowing (CFGNode has bb_out)
-
     }
     return None;
 }
 
 # 16b. isinstance with 'and' condition
-def test_single_class_isinstance_and(
-    nd: BaseNode, flag: bool
-) -> list[CFGNode] | None {
+def test_single_class_isinstance_and(nd: BaseNode, flag: bool) -> list[CFGNode] | None {
     if isinstance(nd, CFGNode) and flag {
         return nd.bb_out;  # <-- Ok after narrowing
-
     }
     return None;
 }
 
 # 16c. isinstance with 'and not isinstance' pattern (from cfg_build_pass)
-def test_single_class_isinstance_and_not(
-    nd: BaseNode, to_connect: list[CFGNode]
-) -> None {
+def test_single_class_isinstance_and_not(nd: BaseNode, to_connect: list[CFGNode]) {
     if isinstance(nd, CFGNode) and not isinstance(nd, SemiNode) {
         if not nd.bb_out {  # <-- Ok after narrowing (CFGNode has bb_out)
-
             to_connect.append(nd);  # <-- Ok after narrowing
         }
     }
 }
 
 # 16d. Nested isinstance with single class type
-def test_single_class_nested(
-    nd: BaseNode
-) -> str {
+def test_single_class_nested(nd: BaseNode) -> str {
     if isinstance(nd, CFGNode) {
         if nd.bb_out {  # <-- Ok after narrowing
-
             return "has_out";
         }
         return "no_out";
@@ -481,9 +418,7 @@ def test_single_class_nested(
 }
 
 # E10. Single class narrowing - cannot assign base type to subtype
-def test_error_single_class_no_narrow(
-    nd: BaseNode, to_connect: list[CFGNode]
-) -> None {
+def test_error_single_class_no_narrow(nd: BaseNode, to_connect: list[CFGNode]) {
     # Without isinstance check, nd is still BaseNode, cannot append to list[CFGNode]
     to_connect.append(nd);  # <-- Error: BaseNode cannot assign to CFGNode
 }
@@ -548,7 +483,7 @@ def test_not_isinstance_or_method(animal: Dog | Cat) -> bool | str {
 # E11. OR narrowing does NOT persist past the expression
 #      Two errors: E1099 (attribute access on None) + E1002 (return type mismatch)
 def test_error_or_no_persist(x: Dog | None) -> str {
-    discard = (not x or x.bark());
+    discard = not x or x.bark();
     return x.bark();  # <-- Error: x is still Dog | None here
 }
 
@@ -597,27 +532,27 @@ def test_error_ternary_true_branch_none(x: Dog | None) -> Dog {
 # =========================================================================
 
 # 20a. `x or []` where x: list[str] | None → list[str]
-def test_or_none_default_list(x: list[str] | None) -> None {
+def test_or_none_default_list(x: list[str] | None) {
     result: list[str] = x or [];  # <-- Ok: None excluded, result is list[str]
 }
 
 # 20b. Assignment-based narrowing: `x = x or []` narrows x to list[str]
-def test_or_reassign_narrows(x: list[str] | None) -> None {
+def test_or_reassign_narrows(x: list[str] | None) {
     x = x or [];
     result: list[str] = x;  # <-- Ok: x narrowed to list[str] via assignment
 }
 
 # 20c. `x or "default"` where x: str | None → str
-def test_or_none_default_str(x: str | None) -> None {
+def test_or_none_default_str(x: str | None) {
     result: str = x or "default";  # <-- Ok: None excluded, result is str
 }
 
 # 20d. Multi-operand OR: `a or b or c`
-def test_or_chain_none_default(a: str | None, b: str | None) -> None {
+def test_or_chain_none_default(a: str | None, b: str | None) {
     result: str = a or b or "fallback";  # <-- Ok: None excluded from all non-last operands
 }
 
 # 20e. OR with non-None union preserves non-falsy members
-def test_or_preserves_truthy_types(x: Dog | None) -> None {
+def test_or_preserves_truthy_types(x: Dog | None) {
     result: Dog = x or Dog(name="default");  # <-- Ok: None excluded, result is Dog
 }

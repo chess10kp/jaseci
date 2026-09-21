@@ -6,10 +6,7 @@ only bind a single iteration variable per `for` clause.
 """
 
 def:pub HourGrid(hours: list[any], items: list[any]) -> JsxElement {
-    hourLabels = hours.map(
-        lambda (hour: any) -> any { return
-            <div className="text-xs text-center">{hour}</div>; }
-    );
+    hourLabels = [<div className="text-xs text-center">{hour}</div> for hour in hours];
 
     return (
         <div>

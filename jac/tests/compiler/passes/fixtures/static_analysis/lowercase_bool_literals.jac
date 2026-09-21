@@ -4,14 +4,18 @@
 # targeted "did you mean ...?" hint instead of only a confusing downstream
 # type error.
 def truthy(n: int) -> bool {
-    if n > 0 { return true; }
+    if n > 0 {
+        return true;
+    }
     return false;
 }
 
-def nullable() -> int {
+def nullable -> int {
     x = null;
     y = none;
     return 0;
 }
 
-with entry { print(truthy(5)); }
+with entry {
+    print(truthy(5));
+}

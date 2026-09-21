@@ -1,17 +1,20 @@
 """Fixture for E1120: Type does not implement protocol."""
 
-
 class Drawable(Protocol) {
-    def draw(self) -> None { ... }
-    def resize(self, factor: float) -> None { ... }
+    def draw(self) -> None {
+        ...
+    }
+    def resize(self, factor: float) -> None {
+        ...
+    }
 }
 
 obj Circle {
-    def draw(self: Circle) -> None { }
+    def draw(self: Circle) {}
     # Missing resize! -- should trigger E1120
 }
 
-def render(item: Drawable) -> None {
+def render(item: Drawable) {
     item.draw();
 }
 

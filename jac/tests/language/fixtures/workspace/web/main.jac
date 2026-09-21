@@ -4,5 +4,9 @@ import from core.helper { label }
 import from core.ui.Card { Card }
 
 def:pub app -> JsxElement {
-    return <section><Card count={2}/><span>{label(2)}</span></section>;
+    return
+        <section>
+            <Card count={2}/>
+            <span>{label(2)}</span>
+        </section>;
 }

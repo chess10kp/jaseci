@@ -1,7 +1,6 @@
-
 class Foo {
-    has bar: int;
-    has baz: int;
+    has bar: int,
+        baz: int;
 }
 
 with entry {

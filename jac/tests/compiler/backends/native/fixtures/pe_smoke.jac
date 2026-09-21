@@ -15,6 +15,7 @@ def total(xs: list[int]) -> int {
 }
 
 glob nums: list[int] = [];
+
 with entry {
     i = 0;
     while i < 5 {
@@ -25,6 +26,7 @@ with entry {
 }
 
 glob ratio = 7.0 / 2.0;
+
 with entry {
     print(f"ratio = {ratio}");
 }

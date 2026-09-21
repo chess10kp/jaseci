@@ -61,7 +61,7 @@ def:pub app -> JsxElement {
         projects = [project];
     }
 
-    async def loadTasks(projectId: str) -> None {
+    async def loadTasks(projectId: str) {
         result = projectId spawn get_project_tasks();
         tasks = result.reports;
     }

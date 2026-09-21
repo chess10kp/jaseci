@@ -11,6 +11,7 @@ glob RAD = 5;
 def calculate_area(radius: float) -> float {
     return math.pi * radius * radius;
 }
+
 #* (This is multiline comments in Jac)
 Above we have the demonstration of a function to calculate the area of a circle.
 Below we have the demonstration of a class to calculate the area of a circle.
@@ -45,12 +46,14 @@ obj Circle(Shape) {
 with entry {
     c = Circle(RAD);
 }
+
 # Global also works here
 with entry:__main__ {
     # To run the program functionality
     print(f"Area of a circle with radius {RAD} using function: {calculate_area(RAD)}");
     print(f"Area of a {c.shape_type.value} with radius {RAD} using class: {c.area()}");
 }
+
 # Unit Tests!
 glob expected_area = 78.53981633974483;
 

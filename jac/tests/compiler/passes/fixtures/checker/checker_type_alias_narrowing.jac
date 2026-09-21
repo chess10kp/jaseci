@@ -11,9 +11,9 @@ obj Foo {
 }
 
 # TypeAlias with expression RHS (non-string)
-glob MaybeFoo: TypeAlias = Foo | None;
-glob HandlerOrStr: TypeAlias = Callable[[int], str] | str;
-glob MultiNonCallable: TypeAlias = Callable[[str], int] | str | int;
+glob MaybeFoo: TypeAlias = Foo | None,
+     HandlerOrStr: TypeAlias = Callable[[int], str] | str,
+     MultiNonCallable: TypeAlias = Callable[[str], int] | str | int;
 
 # 1. isinstance narrows TypeAlias'd union
 def test_isinstance_through_alias(val: MaybeFoo) -> int {

@@ -9,17 +9,20 @@ Expected errors: 3
   3. bad3: dict[int, int] = d2 — dict[str, int] not assignable to dict[int, int]
 """
 
-with entry {
-    names: list[str] = ["alice", "bob", "charlie"];
+glob names: list[str] = ["alice", "bob", "charlie"];
 
+with entry {
     # Dict from enumeration — should infer dict[int, str] or similar
     d = {i: name for (i, name) in enumerate(names)};
     ok1: dict[any, any] = d;  # Ok (broad dict[any, any])
     bad1: str = d;  # Error: dict -> str
     bad2: list[any] = d;  # Error: dict -> list[any]
+}
 
-    # Dict with explicit types
-    words: list[str] = ["hello", "world"];
+glob
+     # Dict with explicit types
+     words: list[str] = ["hello", "world"];
+with entry {
     d2 = {w: len(w) for w in words};
     ok2: dict[str, int] = d2;  # Ok
     bad3: dict[int, int] = d2;  # Error: dict[str,int] -> dict[int,int]

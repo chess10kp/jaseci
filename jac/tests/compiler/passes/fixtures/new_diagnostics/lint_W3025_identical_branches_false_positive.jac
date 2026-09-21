@@ -2,12 +2,12 @@
 subscript-target assignments and call-argument kwargs (must NOT warn), plus
 one pair that genuinely matches (must warn exactly once)."""
 
-with entry {
-    flag = True;
-    model_fields: dict[any, any] = {};
-    default_val = 42;
-    description = "hi";
+glob flag = True,
+     model_fields: dict[any, any] = {},
+     default_val = 42,
+     description = "hi";
 
+with entry {
     # Subscript-target assignment, tuple value: old key was just "Assignment"
     # for both branches. The tuple contents clearly differ.
     if flag {
@@ -18,7 +18,10 @@ with entry {
 
     # Assignment to same Name, call value with different **kwargs shapes.
     result = 0;
-    extra = {"a": 1};
+}
+
+glob extra = {"a": 1};
+with entry {
     if flag {
         result = sum({1: 10, ** extra}.values());
     } else {

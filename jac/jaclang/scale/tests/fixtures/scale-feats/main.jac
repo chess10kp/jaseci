@@ -22,9 +22,7 @@ walker:pub upload_file {
     can process with Root entry {
         # Generate unique filename
         filename = self.file.filename or '';
-        ext = filename.rsplit(".", 1)[-1]
-            if "." in filename
-            else "";
+        ext = filename.rsplit(".", 1)[-1] if "." in filename else "";
         unique_name = f"{uuid4()}.{ext}" if ext else str(uuid4());
         path = f"{self.folder}/{unique_name}";
 

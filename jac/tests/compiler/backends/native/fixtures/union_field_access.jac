@@ -14,6 +14,7 @@ is resolvable via either member's layout.
 obj A {
     has val: int;
 }
+
 obj B {
     has val: int;
 }
@@ -25,6 +26,7 @@ def get_val(x: A | B) -> int {
 node Sub {
     has val: int;
 }
+
 node Other {
     has val: int;
 }

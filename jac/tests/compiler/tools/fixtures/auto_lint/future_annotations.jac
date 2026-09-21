@@ -1,6 +1,5 @@
 """Test fixture for future annotations removal."""
 
-import from __future__ { annotations }
 import from os { path }
 
 obj Person {

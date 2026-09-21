@@ -21,7 +21,7 @@ walker Rep {
     }
 }
 
-def report_py() -> dict[str, any] {
+def report_py -> dict[str, any] {
     n1 = N(val=10);
     n2 = N(val=20);
     n3 = N(val=30);
@@ -33,7 +33,7 @@ def report_py() -> dict[str, any] {
 }
 
 
-def report_na() -> dict[str, any] {
+def report_na -> dict[str, any] {
     n1 = N(val=10);
     n2 = N(val=20);
     n3 = N(val=30);
@@ -45,7 +45,7 @@ def report_na() -> dict[str, any] {
 }
 
 
-def report_cl() -> dict[str, any] {
+def report_cl -> dict[str, any] {
     n1 = N(val=10);
     n2 = N(val=20);
     n3 = N(val=30);

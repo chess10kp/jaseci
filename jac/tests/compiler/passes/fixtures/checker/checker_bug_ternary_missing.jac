@@ -7,9 +7,9 @@ case for IfExpr, it returns UnknownType.
 Expected: ternary expressions should infer the type of their branches.
 """
 
-with entry {
-    flag = True;
+glob flag = True;
 
+with entry {
     # Same types in both branches -> should be that type
     r1 = "yes" if flag else "no";
     check1: str = r1;  # <-- Should be Ok (str if ... else str -> str)

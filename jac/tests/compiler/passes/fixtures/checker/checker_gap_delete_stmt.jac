@@ -25,20 +25,20 @@ with entry {
     c = Container();
 
     # Case 1: Deleting nonexistent attribute
-    del c.nonexistent;           # Error: no such attribute on Container
+    del c.nonexistent;  # Error: no such attribute on Container
 
     # Case 2: Deleting with wrong index type on dict (should accept str keys)
     c.items["key"] = 1;
-    del c.items[42];             # Error: int key on dict[str, int]
+    del c.items[42];  # Error: int key on dict[str, int]
 
     # Case 3: Nested nonexistent attribute
     o = Outer();
-    del o.inner.missing_attr;    # Error: no such attribute on Container
+    del o.inner.missing_attr;  # Error: no such attribute on Container
 
     # Case 4: Deleting nonexistent attribute on outer
-    del o.nonexistent.something; # Error: no such attribute on Outer
+    del o.nonexistent.something;  # Error: no such attribute on Outer
 
     # --- Cases that SHOULD be valid ---
-    del c.name;                  # Ok: attribute exists
-    del c.items["key"];          # Ok: str key on dict[str, int]
+    del c.name;  # Ok: attribute exists
+    del c.items["key"];  # Ok: str key on dict[str, int]
 }

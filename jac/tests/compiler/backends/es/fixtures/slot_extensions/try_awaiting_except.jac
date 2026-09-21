@@ -8,7 +8,6 @@ around the existing `<JacAwaiting>` so both the loading and error states
 are first-class on the `cl` target.
 """
 
-
 obj User {
     has name: str,
         bio: str;

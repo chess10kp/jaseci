@@ -16,9 +16,9 @@ obj Token {
 }
 
 glob KEYWORDS: dict[str, TokenKind] = {
-    "if": TokenKind.KW_IF,
-    "else": TokenKind.KW_ELSE
-};
+         "if": TokenKind.KW_IF,
+         "else": TokenKind.KW_ELSE
+     };
 
 def lookup_keyword(text: str) -> int {
     if text in KEYWORDS {
@@ -35,6 +35,4 @@ def token_kind_value(kind: TokenKind) -> str {
     return kind.value;
 }
 
-with entry {
-    _x: int = 1;
-}
+glob _x: int = 1;

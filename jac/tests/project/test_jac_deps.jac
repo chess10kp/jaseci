@@ -18,6 +18,7 @@ import from tests.deps_fixtures {
     git_commit_all,
     git_head,
     isolate_store,
+    jac_sync,
     make_git_repo,
     make_project,
     restore_store
@@ -34,20 +35,13 @@ import from jaclang.project.jac_store {
 import from jaclang.project.dep_roots { read_deps_map, read_deps_roots }
 import from jaclang.project.jac_provider {
     JacDepProvider,
-    JacPackage,
     manifest_jac_deps,
     parse_jac_spec,
-    pth_lines,
     version_satisfied
 }
 import from jaclang.project.providers { InstallContext, get_provider_registry }
 import from jaclang.project.dependency_model { ResolutionPlan }
-import from jaclang.project.lockfile {
-    jac_lock_rows,
-    read_lock,
-    update_jac_rows,
-    write_lock
-}
+import from jaclang.project.lockfile { jac_lock_rows, read_lock, write_lock }
 
 
 # ===== URL and spec parsing =====
@@ -203,15 +197,26 @@ test "path dep closure writes deps map" {
         assert sorted(resolved.keys()) == ["libb", "libc"];
         assert resolved["libc"].requested_by == ["libb"];
         assert resolved["libc"].local_path == libc.resolve();
-        provider.save_deps_map(config, resolved);
+        jac_sync(config);
         map_path = config.get_build_dir() / "deps.json";
         assert map_path.is_file();
         roots = read_deps_roots(config.project_root or Path.cwd());
         assert len(roots) == 2;
-        assert str(libb.resolve()) in [str(Path(r).resolve()) for r in roots];
-        lines = pth_lines(resolved);
-        assert sorted(str(Path(p).resolve()) for p in lines)
-            == sorted([str(libb.resolve()), str(libc.resolve())]);
+        # Roots point at the materialized generation snapshot, not the
+        # source tree.
+        libb_root = [
+            Path(r)
+            for r in roots
+            if (Path(r) / "libb.jac").is_file()
+        ];
+        libc_root = [
+            Path(r)
+            for r in roots
+            if (Path(r) / "libc.jac").is_file()
+        ];
+        assert libb_root and libc_root , f"generation roots incomplete: {roots}";
+        assert (libb_root[0] / "jac.toml").is_file();
+        assert (libc_root[0] / "jac.toml").is_file();
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -325,8 +330,7 @@ test "git dep end-to-end through the provider" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            ok = provider.install_all(config, [], InstallContext());
-            assert ok;
+            jac_sync(config);
             roots = read_deps_roots(config.project_root or Path.cwd());
             assert len(roots) == 1;
             assert (Path(roots[0]) / "mylib.jac").is_file();
@@ -337,10 +341,18 @@ test "git dep end-to-end through the provider" {
             resolved = provider.resolve_closure(config, InstallContext());
             assert resolved["mylib"].version == "1.2.0";
             assert resolved["mylib"].sha;
-            ok2 = provider.remove_package(config, "mylib", False, InstallContext());
-            assert ok2;
+            import from jaclang.project.dependency_model { PackageOperation }
+            import from jaclang.project.package_manager { commit_plan, plan_operation }
+            remove_plan = plan_operation(
+                config,
+                PackageOperation(action="remove", ecosystem="jac", targets=["mylib"])
+            );
+            commit_plan(config, remove_plan);
             assert read_deps_roots(config.project_root or Path.cwd()) == [];
-            (deps, _) = manifest_jac_deps(config);
+            fresh_config = JacConfig.load(
+                (config.project_root or Path.cwd()) / "jac.toml"
+            );
+            (deps, _) = manifest_jac_deps(fresh_config);
             assert "mylib" not in deps;
         } finally {
             shutil.rmtree(tmp, ignore_errors=True);
@@ -376,8 +388,7 @@ test "lock rows round-trip through install" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            ok = provider.install_all(config, [], InstallContext());
-            assert ok;
+            jac_sync(config);
             lock_file = (config.project_root or Path.cwd()) / "jac.lock";
             assert lock_file.is_file();
             rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
@@ -414,8 +425,7 @@ test "frozen replay keeps the recorded commit" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            ok = provider.install_all(config, [], InstallContext());
-            assert ok;
+            jac_sync(config);
             rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
             pinned_sha = rows["mylib"]["sha"];
             (origin_path / "extra.jac").write_text(
@@ -450,7 +460,18 @@ test "frozen replay keeps the recorded commit" {
             assert replayed["mylib"].sha == pinned_sha;
             fresh = provider.resolve_closure(config, InstallContext());
             assert fresh["mylib"].sha != pinned_sha;
-            assert update_jac_rows(config.project_root or Path.cwd(), fresh);
+            # Advancing the lock is an update: plain install keeps pins.
+            import from jaclang.project.dependency_model { PackageOperation }
+            import from jaclang.project.package_manager { commit_plan, plan_operation }
+            commit_plan(
+                config,
+                plan_operation(
+                    config,
+                    PackageOperation(
+                        action="update", ecosystem="jac", targets=["mylib"]
+                    )
+                )
+            );
             rows2 = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
             assert rows2["mylib"]["sha"] == fresh["mylib"].sha;
         } finally {
@@ -463,7 +484,7 @@ test "frozen replay keeps the recorded commit" {
 }
 
 
-test "frozen install_all replays a moved branch from the recorded commit" {
+test "frozen install replays a moved branch from the recorded commit" {
     (store_tmp, old_env) = isolate_store();
     try {
         outer = tempfile.mkdtemp(prefix="jac_lock_fzb_");
@@ -482,7 +503,7 @@ test "frozen install_all replays a moved branch from the recorded commit" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            assert provider.install_all(config, [], InstallContext());
+            jac_sync(config);
             rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
             assert rows["mylib"]["ref"] == "main";
             pinned_sha = rows["mylib"]["sha"];
@@ -502,7 +523,7 @@ test "frozen install_all replays a moved branch from the recorded commit" {
                     item.unlink();
                 }
             }
-            assert provider.install_all(config, [], InstallContext(frozen=True));
+            jac_sync(config, frozen=True);
             rows2 = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
             assert rows2["mylib"]["sha"] == pinned_sha;
             assert rows2["mylib"]["ref"] == "main";
@@ -539,15 +560,17 @@ test "frozen install errors when manifest is ahead of lock" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            ok = provider.install_all(config, [], InstallContext());
-            assert ok;
+            jac_sync(config);
             section = config.plugin_dependencies.setdefault("jac", {});
             section["newdep"] = {"git": origin2};
             config.save();
-            frozen_ok = provider.install_all(config, [], InstallContext(frozen=True));
-            assert not frozen_ok;
-            fresh_ok = provider.install_all(config, [], InstallContext());
-            assert fresh_ok;
+            try {
+                jac_sync(config, frozen=True);
+                assert False , "frozen install accepted a manifest ahead of the lock";
+            } except JacDepError {
+                handled = True;
+            }
+            jac_sync(config);
             rows = jac_lock_rows(read_lock(config.project_root or Path.cwd()));
             assert "newdep" in rows;
         } finally {
@@ -600,17 +623,6 @@ test "dependency paths with control characters are rejected" {
 }
 
 
-test "pth lines reject executable injection" {
-    pkg = JacPackage(name="x", local_path=Path("/tmp/x\nimport os"));
-    try {
-        pth_lines({"x": pkg});
-        assert False;
-    } except JacDepError as e {
-        assert "import map" in str(e);
-    }
-}
-
-
 test "override resolves a genuine cross-parent conflict" {
     toml_text = (
         '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
@@ -653,107 +665,6 @@ test "override resolves a genuine cross-parent conflict" {
     }
 }
 
-test "failed replacement restores the previous dependency entry" {
-    # Replacing an existing dep with a spec that fails to resolve must
-    # restore the overwritten entry in jac.toml: the valid dependency
-    # survives, only the failed spec is discarded.
-    toml_text = (
-        '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
-        '[dependencies.jac]\nlibb = { path = "../libb" }\n'
-    );
-    (config, tmp) = make_project(toml_text);
-    try {
-        base = Path(tmp);
-        make_plain_pkg(
-            base / "libb",
-            '[project]\nname = "libb"\nversion = "1.0.0"\n',
-            {"libb.jac": "def b() -> int { return 2; }\n"}
-        );
-        broken = base / "broken" / "libb";
-        broken.mkdir(parents=True);
-        provider = JacDepProvider();
-        via = provider.add_spec(config, "jac:file://" + str(broken));
-        assert via is None;
-        (deps, dev_deps) = manifest_jac_deps(config);
-        assert "libb" in deps;
-        assert str(deps["libb"].get("path", "")) == "../libb";
-        reloaded = JacConfig.load(Path(str(config.project_root)) / "jac.toml");
-        (disk_deps, disk_dev) = manifest_jac_deps(reloaded);
-        assert "libb" in disk_deps;
-        assert str(disk_deps["libb"].get("path", "")) == "../libb";
-    } finally {
-        shutil.rmtree(tmp, ignore_errors=True);
-    }
-}
-
-
-test "failed no-save install restores the recorded package state" {
-    # A mid-closure materialization failure must not leave .jac/packages
-    # holding code the deps map does not describe: the sweep failure rolls
-    # package dirs back to the deps map recorded on disk.
-    (store_tmp, old_env) = isolate_store();
-    try {
-        outer = tempfile.mkdtemp(prefix="jac_nosave_t_");
-        libb_origin = make_git_repo(
-            Path(outer) / "libb",
-            '[project]\nname = "libb"\nversion = "1.0.0"\n',
-            {"libb.jac": "def b() -> int { return 2; }\n"}
-        );
-        fresh_origin = make_git_repo(
-            Path(outer) / "fresh1",
-            '[project]\nname = "fresh1"\nversion = "1.0.0"\n',
-            {"fresh1.jac": "def f() -> int { return 1; }\n"}
-        );
-        broken_origin = make_git_repo(
-            Path(outer) / "breakme",
-            '[project]\nname = "breakme"\nversion = "1.0.0"\n',
-            {"breakme.jac": "def m() -> int { return 0; }\n"}
-        );
-        toml_text = (
-            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
-            '[dependencies.jac]\nlibb = { git = "file://'
-            + libb_origin
-            + '" }\n'
-        );
-        (config, tmp) = make_project(toml_text);
-        provider = JacDepProvider();
-        # Seed a good recorded state: resolve, materialize, save the map.
-        seeded = provider.resolve_closure(config, InstallContext());
-        provider.save_deps_map(config, seeded);
-        packages_root = config.get_build_dir() / "packages";
-        assert (packages_root / "libb").is_dir();
-        def fake_materialize(src: Path, dest: Path) -> Path {
-            if Path(str(dest)).name == "breakme" {
-                raise OSError("simulated mid-sweep failure");
-            }
-            return materialize(src, dest);
-        }
-        with patch("jaclang.project.jac_provider.materialize", fake_materialize) {
-            ok = provider.install_no_save(
-                config,
-                ["jac:file://" + fresh_origin, "jac:file://" + broken_origin],
-                InstallContext()
-            );
-        }
-        assert ok is False;
-        data = read_deps_map(config);
-        names = sorted(
-            p.get("name", "")
-            for p in data.get("packages", [])
-            if isinstance(p, dict)
-        );
-        assert names == ["libb"];
-        assert (packages_root / "libb").is_dir();
-        assert not (packages_root / "fresh1").exists();
-        assert not (packages_root / "breakme").exists();
-        shutil.rmtree(outer, ignore_errors=True);
-    } finally {
-        restore_store(store_tmp, old_env);
-        shutil.rmtree(tmp, ignore_errors=True);
-    }
-}
-
-
 test "frozen install fails when a transitive dep misses the lock" {
     (store_tmp, old_env) = isolate_store();
     try {
@@ -776,14 +687,19 @@ test "frozen install fails when a transitive dep misses the lock" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            assert provider.install_all(config, [], InstallContext());
+            jac_sync(config);
             lock = read_lock(config.project_root or Path.cwd());
             rows = jac_lock_rows(lock);
             assert "sub" in rows;
             del rows["sub"];
             lock["jac"] = rows;
             assert write_lock(config.project_root or Path.cwd(), lock);
-            assert not provider.install_all(config, [], InstallContext(frozen=True));
+            try {
+                jac_sync(config, frozen=True);
+                assert False , "frozen install missed a transitive lock row";
+            } except JacDepError {
+                handled = True;
+            }
         } finally {
             shutil.rmtree(tmp, ignore_errors=True);
         }
@@ -817,7 +733,7 @@ test "targeted replay keeps non-targeted deps pinned" {
         (config, tmp) = make_project(toml_text);
         try {
             provider = JacDepProvider();
-            assert provider.install_all(config, [], InstallContext());
+            jac_sync(config);
             old_b = jac_lock_rows(read_lock(config.project_root or Path.cwd()))[
                 "otherlib"
             ]["sha"];
@@ -1104,9 +1020,12 @@ test "transitive dependency with unsafe name is rejected" {
         );
         try {
             provider = JacDepProvider();
-            assert not provider.install_all(config, [], InstallContext()) , (
-                "unsafe transitive dependency name was accepted"
-            );
+            try {
+                jac_sync(config);
+                assert False , ("unsafe transitive dependency name was accepted");
+            } except JacDepError {
+                handled = True;
+            }
             packages_root = config.get_build_dir() / "packages";
             assert not (config.get_build_dir() / "escaped").exists();
             assert not (Path(tmp) / "escaped").exists();
@@ -1145,28 +1064,33 @@ test "frozen install validates path dependency tree hashes" {
         project_dir = Path(tmp) / "proj";
         try {
             provider = JacDepProvider();
-            assert provider.install_all(config, [], InstallContext());
+            jac_sync(config);
             rows = jac_lock_rows(read_lock(project_dir));
-            assert os.path.realpath(rows["utils"]["path"])
+            assert os.path.realpath(str(project_dir / rows["utils"]["path"]))
                 == os.path.realpath(str(utils)) , f"lock row path mismatch: {rows[
                 'utils'
             ]}";
             assert rows["utils"]["tree"] , "lock row records no tree hash";
 
             # Unchanged content: frozen replay succeeds.
-            assert provider.install_all(config, [], InstallContext(frozen=True));
+            jac_sync(config, frozen=True);
 
             # Content drift must fail the frozen replay.
             (utils / "utils.jac").write_text(
                 "def u() -> int { return 999; }\n", encoding="utf-8"
             );
-            assert not provider.install_all(config, [], InstallContext(frozen=True)) , "frozen replay accepted drifted path dependency content";
+            try {
+                jac_sync(config, frozen=True);
+                assert False , "frozen replay accepted drifted path dependency content";
+            } except JacDepError {
+                handled = True;
+            }
 
             # Restoring the recorded content unblocks the replay.
             (utils / "utils.jac").write_text(
                 "def u() -> int { return 1; }\n", encoding="utf-8"
             );
-            assert provider.install_all(config, [], InstallContext(frozen=True));
+            jac_sync(config, frozen=True);
         } finally {
             shutil.rmtree(tmp, ignore_errors=True);
         }
@@ -1198,24 +1122,41 @@ test "frozen install requires lock rows for transitive path deps" {
         );
         project_dir = Path(tmp) / "proj";
         try {
-            provider = JacDepProvider();
-            assert provider.install_all(config, [], InstallContext());
+            jac_sync(config);
             rows = jac_lock_rows(read_lock(project_dir));
             assert "tv" in rows , f"transitive path dep not locked: {rows.keys()}";
 
-            # Drop the transitive path row: frozen replay must fail.
+            # Drop the transitive path row from the v2 graph: frozen replay
+            # must fail.
             import from jaclang.project.lockfile { write_lock }
+            original_lock = read_lock(project_dir);
             trimmed = {
-                name: row
-                for (name, row) in rows.items()
-                if name != "tv"
+                node_id: node
+                for (node_id, node) in original_lock.get("nodes", {}).items()
+                if node_id != "jac:tv"
             };
-            assert write_lock(project_dir, {"jac": trimmed});
-            assert not provider.install_all(config, [], InstallContext(frozen=True)) , "frozen replay accepted a missing transitive path lock row";
+            trimmed_lock = dict(original_lock);
+            trimmed_lock["nodes"] = trimmed;
+            trimmed_lock["edges"] = [
+                graph_edge
+                for graph_edge in original_lock.get("edges", [])
+                if graph_edge.get("to_id") != "jac:tv"
+            ];
+            # Drop the derived [jac] compat rows too: jac_lock_rows prefers
+            # explicit rows over graph derivation, so leaving them would
+            # keep tv pinned.
+            trimmed_lock.pop("jac", None);
+            assert write_lock(project_dir, trimmed_lock);
+            try {
+                jac_sync(config, frozen=True);
+                assert False , "frozen replay accepted a missing transitive path lock row";
+            } except JacDepError {
+                handled = True;
+            }
 
             # Restore the full lock: frozen replay succeeds again.
-            assert write_lock(project_dir, {"jac": rows});
-            assert provider.install_all(config, [], InstallContext(frozen=True));
+            assert write_lock(project_dir, original_lock);
+            jac_sync(config, frozen=True);
         } finally {
             shutil.rmtree(tmp, ignore_errors=True);
         }
@@ -1229,7 +1170,7 @@ test "frozen install requires lock rows for transitive path deps" {
 test "no-save install materializes without touching manifest or lock" {
     import from jaclang.cli.commands { project }
     import from jaclang.project.config { set_config }
-    import from jaclang.project.jac_provider { read_deps_map }
+    import from jaclang.project.dep_roots { read_deps_map }
     (store_tmp, old_env) = isolate_store();
     cwd = os.getcwd();
     try {
@@ -1420,72 +1361,6 @@ test "lock carries a schema version" {
         assert data["version"] == 2;
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
-    }
-}
-
-
-test "add_spec persists the manifest only after resolution succeeds" {
-    (store_tmp, old_env) = isolate_store();
-    try {
-        outer = tempfile.mkdtemp(prefix="jac_addspec_");
-        origin = make_git_repo(
-            Path(outer) / "mylib",
-            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
-            {"mylib.jac": "def hello() -> int { return 42; }\n"}
-        );
-        (config, tmp) = make_project('[project]\nname = "proj"\nversion = "0.1.0"\n');
-        try {
-            project_dir = Path(tmp) / "proj";
-            provider = JacDepProvider();
-            via = provider.add_spec(config, "jac:file://" + str(origin));
-            assert via is not None;
-            reloaded = JacConfig.load(project_dir / "jac.toml");
-            (deps, _) = manifest_jac_deps(reloaded);
-            assert deps["mylib"]["git"] == "file://" + str(origin);
-            assert not provider.add_spec(
-                config, "jac:file://" + str(Path(outer) / "missing")
-            );
-            reloaded2 = JacConfig.load(project_dir / "jac.toml");
-            (deps2, _) = manifest_jac_deps(reloaded2);
-            assert "missing" not in deps2;
-            assert "mylib" in deps2 , "failed add_spec lost the previous entry";
-        } finally {
-            shutil.rmtree(tmp, ignore_errors=True);
-        }
-        shutil.rmtree(outer, ignore_errors=True);
-    } finally {
-        restore_store(store_tmp, old_env);
-    }
-}
-
-
-test "add_spec reports failure when jac.lock cannot be written" {
-    (store_tmp, old_env) = isolate_store();
-    try {
-        outer = tempfile.mkdtemp(prefix="jac_addspec_lockfail_");
-        origin = make_git_repo(
-            Path(outer) / "mylib",
-            '[project]\nname = "mylib"\nversion = "1.2.0"\n',
-            {"mylib.jac": "def hello() -> int { return 42; }\n"}
-        );
-        (config, tmp) = make_project('[project]\nname = "proj"\nversion = "0.1.0"\n');
-        try {
-            project_dir = Path(tmp) / "proj";
-            (project_dir / "jac.lock").mkdir();
-            provider = JacDepProvider();
-            via = provider.add_spec(config, "jac:file://" + str(origin));
-            assert via is None , "add_spec must fail when jac.lock cannot be written";
-            reloaded = JacConfig.load(project_dir / "jac.toml");
-            (deps, _) = manifest_jac_deps(reloaded);
-            assert deps["mylib"]["git"] == "file://" + str(origin) , (
-                "saved metadata must stay consistent so 'jac install' can repair"
-            );
-        } finally {
-            shutil.rmtree(tmp, ignore_errors=True);
-        }
-        shutil.rmtree(outer, ignore_errors=True);
-    } finally {
-        restore_store(store_tmp, old_env);
     }
 }
 
@@ -1714,7 +1589,7 @@ test "commit plan pins resolved backend deps into the venv" {
         with patch("jaclang.project.providers.ensure_venv") as _ev, patch.object(
             PythonProvider, "_run_project_pip", pip
         ) {
-            assert commit_plan(config, plan);
+            commit_plan(config, plan);
         }
         install_calls = [
             list(call.args[1])
@@ -1802,10 +1677,333 @@ test "commit plan stays offline when no backend plan is staged" {
         with patch("jaclang.project.providers.ensure_venv") as _ev, patch.object(
             PythonProvider, "_run_project_pip", pip
         ) {
-            assert commit_plan(config, plan);
+            commit_plan(config, plan);
         }
         assert pip.call_args_list == [] , "no staged backend plan must not touch pip";
         assert (config.project_root / "jac.lock").is_file();
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+# ===== provider lock-graph resolution =====
+
+glob _PIP_REPORT: dict[str, any] = {
+         "install": [
+             {
+                 "is_direct": True,
+                 "metadata": {
+                     "name": "requests",
+                     "version": "2.31.0",
+                     "requires_dist": ["urllib3<3,>=1.21.1"]
+                 },
+                 "download_info": {
+                     "url": "https://files.pythonhosted.org/requests-2.31.0.whl",
+                     "archive_info": {
+                         "hashes": {"sha256": "f0f0"},
+                         "hash": "sha256:f0f0"
+                     }
+                 }
+             },
+             {
+                 "is_direct": False,
+                 "metadata": {
+                     "name": "urllib3",
+                     "version": "2.2.0",
+                     "requires_dist": []
+                 },
+                 "download_info": {
+                     "url": "https://files.pythonhosted.org/urllib3-2.2.0.whl"
+                 }
+             }
+         ]
+     };
+
+
+def _write_pip_report(args: list[str], **kwargs: any) -> any {
+    # Stand-in for `pip install --dry-run --report <path>`: writes the
+    # pinned report and returns a successful CompletedProcess-like value.
+    import json;
+    import from types { SimpleNamespace }
+    report_path = str(args[list(args).index("--report") + 1]);
+    Path(report_path).write_text(json.dumps(_PIP_REPORT), encoding="utf-8");
+    return SimpleNamespace(returncode=0, stderr="", stdout="");
+}
+
+
+test "python provider records transitive edges from requires_dist" {
+    import from unittest.mock { patch }
+    import from jaclang.project.dependency_model {
+        LockGraph,
+        ProviderRequirement,
+        ResolutionContext
+    }
+    import from jaclang.project.providers { PythonProvider }
+    project_root = tempfile.mkdtemp(prefix="jac_py_transitive_");
+    requirements = [
+        ProviderRequirement(
+            consumer_id="root",
+            ecosystem="python",
+            name="requests",
+            constraint=">=2.0",
+            location=project_root
+        )
+    ];
+    try {
+        with patch("subprocess.run", _write_pip_report) {
+            resolution = PythonProvider().resolve_requirements(
+                ResolutionContext(), requirements, LockGraph()
+            );
+        }
+        assert "python:requests" in resolution.nodes;
+        assert resolution.nodes["python:urllib3"].version == "2.2.0";
+        edges = {(edge.from_id, edge.to_id, edge.kind) for edge in resolution.edges};
+        assert ("root", "python:requests", "requirement") in edges , (
+            f"missing direct requirement edge, got {edges}"
+        );
+        assert ("python:requests", "python:urllib3", "dependency") in edges , (
+            f"transitive python edge never added to the graph, got {edges}"
+        );
+        plan_ids = {row["id"] for row in resolution.install_plan};
+        assert plan_ids == {"python:requests", "python:urllib3"};
+        assert resolution.nodes["python:requests"].source == "artifact";
+    } finally {
+        shutil.rmtree(project_root, ignore_errors=True);
+    }
+}
+
+
+test "npm provider resolves lockfile nodes and transitive edges" {
+    import json;
+    import from jaclang.client.npm_provider { NpmProvider }
+    import from jaclang.project.dependency_model {
+        LockGraph,
+        ProviderRequirement,
+        ResolutionContext
+    }
+    tmp = tempfile.mkdtemp(prefix="jac_npm_resolve_");
+    try {
+        (Path(tmp) / "package-lock.json").write_text(
+            json.dumps(
+                {
+                    "packages": {
+                        "": {"name": "proj"},
+                        "node_modules/react": {
+                            "version": "19.2.0",
+                            "resolved": (
+                                "https://registry.npmjs.org/react/-/" "react-19.2.0.tgz"
+                            ),
+                            "integrity": "sha512-abc",
+                            "dependencies": {"scheduler": "^0.26.0"}
+                        },
+                        "node_modules/react/node_modules/scheduler": {
+                            "version": "0.26.0"
+                        },
+                        "node_modules/vite": {
+                            "version": "6.4.1",
+                            "dev": True,
+                            "dependencies": {"esbuild": "^0.21.0"}
+                        },
+                        "node_modules/esbuild": {"version": "0.21.0"}
+                    }
+                }
+            ),
+            encoding="utf-8"
+        );
+        requirements = [
+            ProviderRequirement(
+                consumer_id="root",
+                ecosystem="npm",
+                name="react",
+                constraint="^19.2.0",
+                location=str(tmp)
+            ),
+            ProviderRequirement(
+                consumer_id="root",
+                ecosystem="npm",
+                name="vite",
+                constraint="^6.4.1",
+                location=str(tmp)
+            )
+        ];
+        resolution = NpmProvider().resolve_requirements(
+            ResolutionContext(), requirements, LockGraph()
+        );
+        # A nested node_modules path must resolve to the leaf package name
+        # (regression: package_name was read before it was assigned).
+        scheduler = resolution.nodes.get("npm:scheduler");
+        assert scheduler is not None , "nested lockfile entry produced no node";
+        assert scheduler.project_name == "scheduler";
+        assert scheduler.version == "0.26.0";
+        assert resolution.nodes["npm:vite"].dev is True;
+        edges = {
+            (edge.from_id, edge.to_id, edge.kind, edge.requirement)
+            for edge in resolution.edges
+        };
+        assert ("root", "npm:react", "requirement", "^19.2.0") in edges;
+        assert ("root", "npm:vite", "requirement", "^6.4.1") in edges;
+        assert ("npm:react", "npm:scheduler", "dependency", "^0.26.0") in edges , (
+            f"forward-referenced child edge missing, got {edges}"
+        );
+        assert ("npm:vite", "npm:esbuild", "dependency", "^0.21.0") in edges;
+        assert len(resolution.install_plan) == 4;
+        react_row = [
+            row
+            for row in resolution.install_plan
+            if row["name"] == "react"
+        ][0];
+        assert react_row["resolved"].endswith("react-19.2.0.tgz");
+        assert react_row["integrity"] == "sha512-abc";
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+# ===== unified plan/commit pipeline (mixed manifests) =====
+test "mixed manifest installs through one transaction" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        import json;
+        (config, tmp) = make_project(
+            '[project]\nname = "mx"\nversion = "0.1.0"\n\n'
+            '[dependencies]\npackaging = "*"\n\n'
+            '[dependencies.jac]\nlib = { path = "../lib" }\n'
+        );
+        try {
+            make_plain_pkg(
+                Path(tmp) / "lib",
+                '[project]\nname = "lib"\nversion = "1.0.0"\n',
+                {"lib.jac": "def l() -> int { return 1; }\n"}
+            );
+            jac_sync(config);
+            build = config.get_build_dir();
+            packages_dir = build / "packages";
+            assert packages_dir.is_symlink() , (
+                "build/packages is not a generation symlink"
+            );
+            deps_doc = json.loads((build / "deps.json").read_text(encoding="utf-8"));
+            assert deps_doc.get("version") == 2 , (
+                f"deps.json is not v2: {deps_doc.get('version')}"
+            );
+            assert deps_doc.get("generation");
+            lock_data = read_lock(config.project_root or Path.cwd());
+            assert "jac:lib" in lock_data.get("nodes", {});
+            assert "python:packaging" in lock_data.get("nodes", {});
+            import from jaclang.project.pyvenv { get_venv_site_packages }
+            site = Path(get_venv_site_packages(config.get_venv_dir()));
+            assert site.is_dir();
+            assert any(p.name.startswith("packaging") for p in site.iterdir()) , "packaging missing from the project venv";
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "frozen install pins python deps from the lock" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        (config, tmp) = make_project(
+            '[project]\nname = "mx"\nversion = "0.1.0"\n\n'
+            '[dependencies]\npackaging = "*"\n'
+        );
+        try {
+            project_dir = Path(tmp) / "proj";
+            jac_sync(config);
+            lock_data = read_lock(project_dir);
+            locked_version = str(
+                lock_data.get("nodes", {}).get("python:packaging", {}).get(
+                    "version", ""
+                )
+            );
+            assert locked_version , "lock recorded no python:packaging version";
+
+            # Wipe the venv: a frozen replay must re-pin from the lock.
+            shutil.rmtree(config.get_venv_dir(), ignore_errors=True);
+            jac_sync(config, frozen=True);
+            import from jaclang.project.pyvenv { get_venv_site_packages }
+            site = Path(get_venv_site_packages(config.get_venv_dir()));
+            dists = [
+                p.name
+                for p in site.iterdir()
+                if p.name.startswith("packaging-") and p.name.endswith(".dist-info")
+            ];
+            assert dists , "packaging missing after frozen replay";
+            assert locked_version in dists[0] , (
+                f"frozen replay installed {dists[0]}, lock pinned " f"{locked_version}"
+            );
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "mixed update re-resolves python alongside the jac closure" {
+    (store_tmp, old_env) = isolate_store();
+    try {
+        import from jaclang.project.dependency_model { PackageOperation }
+        import from jaclang.project.package_manager { plan_operation }
+        (config, tmp) = make_project(
+            '[project]\nname = "mx"\nversion = "0.1.0"\n\n'
+            '[dependencies]\npackaging = "*"\n\n'
+            '[dependencies.jac]\nlib = { path = "../lib" }\n'
+        );
+        try {
+            make_plain_pkg(
+                Path(tmp) / "lib",
+                '[project]\nname = "lib"\nversion = "1.0.0"\n',
+                {"lib.jac": "def l() -> int { return 1; }\n"}
+            );
+            jac_sync(config);
+            plan = plan_operation(
+                config,
+                PackageOperation(action="update", ecosystem="jac", targets=["lib"])
+            );
+            assert "jac:lib" in plan.nodes , "update plan dropped the jac node";
+            assert "python:packaging" in plan.nodes , (
+                "update plan dropped the python node"
+            );
+            assert "python" in plan.provider_resolutions , (
+                "update plan skipped python re-resolution"
+            );
+            assert plan.provider_resolutions["python"].install_plan , (
+                "update plan carries no python install rows"
+            );
+        } finally {
+            shutil.rmtree(tmp, ignore_errors=True);
+        }
+    } finally {
+        restore_store(store_tmp, old_env);
+    }
+}
+
+
+test "version conflict raises JacDepError with requirer context" {
+    (config, tmp) = make_project(
+        '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+        '[dependencies.jac]\nb = { path = "../b", version = "^2.0" }\n'
+    );
+    try {
+        make_plain_pkg(
+            Path(tmp) / "b",
+            '[project]\nname = "b"\nversion = "1.0.0"\n',
+            {"b.jac": "def b() -> int { return 1; }\n"}
+        );
+        try {
+            jac_sync(config);
+            assert False , "manifest/lock version conflict was accepted";
+        } except JacDepError as e {
+            assert "Version conflict for 'b'" in str(e) , (
+                f"wrong conflict message: {e}"
+            );
+        }
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }

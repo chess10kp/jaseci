@@ -12,12 +12,10 @@ sem Person = "A person entity.";
 sem Person.name = "The person's name.";
 sem Person.age = "The person's age.";
 
-glob mock_person = Person(name="Test", age=30);
-
-glob simple_llm = MockLLM(
-    model_name="mockllm",
-    config={"outputs": [mock_person], "verbose": False}
-);
+glob mock_person = Person(name="Test", age=30),
+     simple_llm = MockLLM(
+         model_name="mockllm", config={"outputs": [mock_person], "verbose": False}
+     );
 
 """Generate a person."""
 def generate_person(criteria: str) -> Person by simple_llm();

@@ -1,16 +1,23 @@
 """Test __getattr__ support in type checker."""
 
 class StrProxy {
-    def __getattr__(self: StrProxy, name: str) -> str { return ""; }
+    def __getattr__(self: StrProxy, name: str) -> str {
+        return "";
+    }
 }
 
 class AnyProxy {
-    def __getattr__(self: AnyProxy, name: str) -> any { return None; }
+    def __getattr__(self: AnyProxy, name: str) -> any {
+        return None;
+    }
 }
 
 class MixedClass {
     has real_attr: int = 42;
-    def __getattr__(self: MixedClass, name: str) -> str { return ""; }
+
+    def __getattr__(self: MixedClass, name: str) -> str {
+        return "";
+    }
 }
 
 # Class without __getattr__ - for negative test

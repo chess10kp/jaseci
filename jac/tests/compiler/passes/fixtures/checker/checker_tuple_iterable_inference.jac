@@ -1,4 +1,5 @@
 """Fixed tuple positions all contribute to the inherited iterable parameter."""
+
 with entry {
     forward = list((1, "two"));
     reverse = list(("two", 1));

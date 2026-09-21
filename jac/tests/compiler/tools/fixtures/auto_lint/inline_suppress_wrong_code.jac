@@ -5,6 +5,6 @@ which is unrelated to the no-print rule (E3012). The no-print error must still
 fire on that line; inline suppression only applies to the code(s) it names.
 """
 
-def greet(name: str) -> None {
+def greet(name: str) {
     print("still flagged");  # jac:ignore[W3001]
 }

@@ -10,7 +10,9 @@ obj Cfg {
 obj Guard {
     has id: int = 0;
 
-    def drop { print("drop " + str(self.id)); }
+    def drop {
+        print("drop " + str(self.id));
+    }
 }
 
 def parse_port(s: &str) -> int {
@@ -33,7 +35,7 @@ def load_or_default(cfg: &Cfg) -> int {
     }
 }
 
-def run -> None {
+def run {
     c: own Cfg = Cfg();
     print(load_or_default(&c));
     c.port_text = "";
@@ -47,4 +49,7 @@ def run -> None {
     }
 }
 
-with entry { run(); print("done"); }
+with entry {
+    run();
+    print("done");
+}

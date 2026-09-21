@@ -4,7 +4,7 @@ Cross-backend equivalence fixture.
 """
 
 # --- Dict methods and operators ---
-def dict_py() -> dict[any, any] {
+def dict_py -> dict[any, any] {
     d: dict[any, any] = {"a": 1, "b": 2, "c": 3};
 
     get_hit: int = d.get("a", 0);
@@ -134,7 +134,7 @@ def dict_py() -> dict[any, any] {
     };
 }
 
-def dict_cl() -> dict[any, any] {
+def dict_cl -> dict[any, any] {
     d: dict[any, any] = {"a": 1, "b": 2, "c": 3};
 
     get_hit: int = d.get("a", 0);
@@ -240,7 +240,7 @@ def dict_cl() -> dict[any, any] {
 }
 
 
-def dict_na() -> dict[str, any] {
+def dict_na -> dict[str, any] {
     d: dict[str, int] = {"a": 100, "b": 200, "c": 300};
 
     # dict_copy
@@ -346,7 +346,7 @@ def dict_na() -> dict[str, any] {
     };
 }
 
-def dict_ctor_py() -> dict[any, any] {
+def dict_ctor_py -> dict[any, any] {
     base: dict[any, any] = {"a": 1, "b": 2};
     copy1: dict[any, any] = dict(base);
     copy1["c"] = 3;
@@ -364,7 +364,7 @@ def dict_ctor_py() -> dict[any, any] {
     };
 }
 
-def dict_ctor_cl() -> dict[any, any] {
+def dict_ctor_cl -> dict[any, any] {
     base: dict[any, any] = {"a": 1, "b": 2};
     copy1: dict[any, any] = dict(base);
     copy1["c"] = 3;
@@ -382,11 +382,11 @@ def dict_ctor_cl() -> dict[any, any] {
     };
 }
 
-def dict_ctor_na() -> dict[any, any] {
+def dict_ctor_na -> dict[any, any] {
     return {};
 }
 
-def dict_iter_py() -> dict[any, any] {
+def dict_iter_py -> dict[any, any] {
     d: dict[any, any] = {"a": 1, "b": 2, "c": 3};
     seen: list[any] = [];
     total: int = 0;
@@ -411,7 +411,7 @@ def dict_iter_py() -> dict[any, any] {
     };
 }
 
-def dict_iter_cl() -> dict[any, any] {
+def dict_iter_cl -> dict[any, any] {
     d: dict[any, any] = {"a": 1, "b": 2, "c": 3};
     seen: list[any] = [];
     total: int = 0;
@@ -436,6 +436,6 @@ def dict_iter_cl() -> dict[any, any] {
     };
 }
 
-def dict_iter_na() -> dict[any, any] {
+def dict_iter_na -> dict[any, any] {
     return {};
 }

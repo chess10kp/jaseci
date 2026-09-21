@@ -17,13 +17,7 @@ obj OuterClass {
 
     # Another nested class with yet another signature
     class AnotherInner {
-        def init(
-            self: AnotherInner,
-            x: int,
-            y: int,
-            *,
-            z: int = 0
-        ) -> None;
+        def init(self: AnotherInner, x: int, y: int, *, z: int = 0) -> None;
     }
 
     def process(data: str) -> str;

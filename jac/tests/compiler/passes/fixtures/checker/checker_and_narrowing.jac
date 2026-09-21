@@ -39,17 +39,15 @@ def test_and_with_flag(x: Animal, flag: bool) {
 def test_progressive_narrowing_method(x: Animal) -> None {
     if isinstance(x, Mammal) and x.offspring {
         return;  # Ok
-
     }
 }
 
 def test_progressive_narrowing_multi(x: Animal) -> None {
     if isinstance(x, Animal)
-    and isinstance(x, Mammal)
-    and isinstance(x, Primate)
-    and x.is_primate {
+        and isinstance(x, Mammal)
+        and isinstance(x, Primate)
+        and x.is_primate {
         return;  # Ok
-
     }
 }
 
@@ -60,7 +58,6 @@ obj Container {
 def test_progressive_narrowing_member_access(c: Container) -> None {
     if isinstance(c.field, Mammal) and c.field.offspring {
         return;  # Ok
-
     }
 }
 
@@ -79,7 +76,6 @@ def use_dog_or_cat(x: Dog | Cat) -> str {
 def test_tuple_isinstance_in_and(x: Animal, flag: bool) -> str {
     if isinstance(x, (Dog, Cat)) and flag {
         return use_dog_or_cat(x);  # Ok
-
     }
     return "";
 }
@@ -91,7 +87,6 @@ def use_mammal(m: Mammal) -> str {
 def test_is_not_none_in_and(x: Mammal | None, flag: bool) -> str {
     if x is not None and flag {
         return use_mammal(x);  # Ok
-
     }
     return "";
 }
@@ -103,7 +98,6 @@ obj MaybeContainer {
 def test_member_is_not_none_in_and(c: MaybeContainer, flag: bool) -> str {
     if c.field is not None and flag {
         return use_mammal(c.field);  # Ok
-
     }
     return "";
 }
@@ -121,16 +115,13 @@ def use_none(n: None) -> str {
 def test_is_none_narrowing(x: Mammal | None) -> str {
     if x is None {
         return use_none(x);  # Ok
-
     }
     return x.name;  # Ok
-
 }
 
 def test_is_none_in_and(x: Mammal | None, flag: bool) -> str {
     if x is None and flag {
         return use_none(x);  # Ok
-
     }
     return "";
 }
@@ -146,7 +137,6 @@ obj ExprNode {
 def test_isinstance_then_member_access(expr: NamedNode | ExprNode) -> str {
     if isinstance(expr, NamedNode) and expr.value {
         return expr.value;  # Ok
-
     }
     return "";
 }
@@ -159,7 +149,6 @@ def test_nested_isinstance_member_narrowing(w: Wrapper) -> str {
     if isinstance(w.inner, Mammal) {
         if w.inner.offspring and len(w.inner.offspring) > 0 {
             return w.inner.name;  # Ok
-
         }
     }
     return "";
@@ -173,7 +162,6 @@ def test_deep_nested_narrowing(dw: DeepWrapper) -> str {
     if dw.data is not None {
         if isinstance(dw.data.inner, Mammal) and dw.data.inner.offspring {
             return dw.data.inner.name;  # Ok
-
         }
     }
     return "";
@@ -186,11 +174,10 @@ obj DualWrapper {
 
 def test_and_chain_multiple_members(dw: DualWrapper) -> str {
     if isinstance(dw.left, Mammal)
-    and isinstance(dw.right, Primate)
-    and dw.left.offspring
-    and dw.right.is_primate {
+        and isinstance(dw.right, Primate)
+        and dw.left.offspring
+        and dw.right.is_primate {
         return dw.left.name + dw.right.name;  # Ok
-
     }
     return "";
 }
@@ -198,10 +185,8 @@ def test_and_chain_multiple_members(dw: DualWrapper) -> str {
 def test_error_after_and_block(x: Animal) -> list[Mammal] | None {
     if isinstance(x, Mammal) {
         return x.offspring;  # Ok
-
     }
     return x.offspring;  # Error: Animal has no attribute offspring
-
 }
 
 def use_mammal_for_truthy(m: Mammal) -> str {
@@ -211,7 +196,6 @@ def use_mammal_for_truthy(m: Mammal) -> str {
 def test_truthy_name_and_narrowing(x: Mammal | None) -> str {
     if x and use_mammal_for_truthy(x) {
         return use_mammal_for_truthy(x);  # Ok: x narrowed to Mammal on RHS of `and`
-
     }
     return "";
 }
@@ -219,18 +203,18 @@ def test_truthy_name_and_narrowing(x: Mammal | None) -> str {
 def test_truthy_and_with_nested_or(x: Mammal | None) -> str {
     if x and (use_mammal_for_truthy(x) or use_mammal_for_truthy(x)) {
         return use_mammal_for_truthy(x);  # Ok
-
     }
     return "";
 }
 
 def test_truthy_and_with_three_operand_or(x: Mammal | None) -> str {
     if x
-    and (
-        use_mammal_for_truthy(x) or use_mammal_for_truthy(x) or use_mammal_for_truthy(x)
-    ) {
+        and (
+            use_mammal_for_truthy(x)
+            or use_mammal_for_truthy(x)
+            or use_mammal_for_truthy(x)
+        ) {
         return use_mammal_for_truthy(x);  # Ok
-
     }
     return "";
 }
@@ -238,7 +222,6 @@ def test_truthy_and_with_three_operand_or(x: Mammal | None) -> str {
 def test_truthy_and_with_nested_and(x: Mammal | None, flag: bool) -> str {
     if x and (use_mammal_for_truthy(x) and flag) {
         return use_mammal_for_truthy(x);  # Ok
-
     }
     return "";
 }
@@ -246,7 +229,6 @@ def test_truthy_and_with_nested_and(x: Mammal | None, flag: bool) -> str {
 def test_truthy_member_and_with_nested_or(c: MaybeContainer) -> str {
     if c.field and (use_mammal(c.field) or use_mammal(c.field)) {
         return use_mammal(c.field);  # Ok
-
     }
     return "";
 }
@@ -254,7 +236,6 @@ def test_truthy_member_and_with_nested_or(c: MaybeContainer) -> str {
 def test_truthy_and_with_deeply_nested_or(x: Mammal | None, flag: bool) -> str {
     if x and (use_mammal_for_truthy(x) or (use_mammal_for_truthy(x) and flag)) {
         return use_mammal_for_truthy(x);  # Ok
-
     }
     return "";
 }

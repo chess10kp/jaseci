@@ -5,6 +5,5 @@ walker W {
         # however we can allow here to return early with no
         # return value, so this is fine.
         return;  # <-- Ok
-
     }
 }

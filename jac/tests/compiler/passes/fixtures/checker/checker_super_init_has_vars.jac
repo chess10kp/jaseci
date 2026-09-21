@@ -32,6 +32,7 @@ obj ColoredCircle(ColoredShape) {
 # ERROR: Wrong type - passing int instead of str
 obj BadCircle1(Shape) {
     has radius: float;
+
     def init(radius: float) {
         super.init(123);  # ERROR
         self.radius = radius;
@@ -41,6 +42,7 @@ obj BadCircle1(Shape) {
 # ERROR: Too many arguments
 obj BadCircle2(Shape) {
     has radius: float;
+
     def init(radius: float) {
         super.init("Circle", "extra_arg");  # ERROR
         self.radius = radius;
@@ -50,6 +52,7 @@ obj BadCircle2(Shape) {
 # ERROR: Missing required argument
 obj BadCircle3(Shape) {
     has radius: float;
+
     def init(radius: float) {
         super.init();  # ERROR
         self.radius = radius;

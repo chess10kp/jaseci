@@ -5,8 +5,10 @@ with entry {
     print(x);
     x += 1000;
     print(x);
+}
 
-    pp = 0x4e;
+glob pp = 0x4e;
+with entry {
     print(pp);
     print(0b1100);
 }

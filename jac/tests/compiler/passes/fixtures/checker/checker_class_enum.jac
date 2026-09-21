@@ -13,8 +13,8 @@ class Tokens(BaseClass) {
 
 # StrEnum member assignments
 glob a: Tokens = Tokens.FLOAT,  # OK: enum member to enum type
-     c: str = Tokens.FLOAT,     # OK: StrEnum member is assignable to str
-     d: int = Tokens.FLOAT;     # Error: StrEnum member is NOT assignable to int
+     c: str = Tokens.FLOAT,  # OK: StrEnum member is assignable to str
+     d: int = Tokens.FLOAT;  # Error: StrEnum member is NOT assignable to int
 
 class Tokens2(BaseClass2) {
     with entry {
@@ -36,30 +36,36 @@ class AccessLevel(IntEnum) {
         return None;
     }
 
-    static def get_default() -> int {
+    static def get_default -> int {
         return 99;
     }
 }
 
 # Test: IntEnum member assignment to IntEnum typed variable
-glob level: AccessLevel = AccessLevel.READ;  # OK: IntEnum member to IntEnum type
-glob level_int: int = AccessLevel.READ;      # OK: IntEnum member is assignable to int
-glob level_str: str = AccessLevel.READ;      # Error: IntEnum member is NOT assignable to str
+glob level: AccessLevel = AccessLevel.READ,
+     level_int: int = AccessLevel.READ,
+     level_str: str = AccessLevel.READ;  # OK: IntEnum member to IntEnum type
 
+# OK: IntEnum member is assignable to int
+# Error: IntEnum member is NOT assignable to str
 def check_level(min_level: AccessLevel) -> bool {
     return True;
 }
-glob check_result = check_level(AccessLevel.WRITE);  # OK: IntEnum member as argument
+
+glob check_result = check_level(AccessLevel.WRITE),
+     static_method_ref = AccessLevel.cast,
+     cast_result: AccessLevel | None = AccessLevel.cast(1),
+     default_val: int = AccessLevel.get_default(),
+     cast_wrong: int = AccessLevel.cast(1),
+     default_wrong: str = AccessLevel.get_default();  # OK: IntEnum member as argument
 
 # Static method member access (no call) should return FunctionType
-glob static_method_ref = AccessLevel.cast;
 
 # Static method call should return the declared return type
-glob cast_result: AccessLevel | None = AccessLevel.cast(1);  # OK
-glob default_val: int = AccessLevel.get_default();  # OK
-glob cast_wrong: int = AccessLevel.cast(1);  # Error: Cannot assign AccessLevel | None to int
-glob default_wrong: str = AccessLevel.get_default();  # Error: Cannot assign int to str
-
+# OK
+# OK
+# Error: Cannot assign AccessLevel | None to int
+# Error: Cannot assign int to str
 # Test: enum.auto() should return int type (similar to Pyright's handling)
 class Priority(IntEnum) {
     with entry {
@@ -70,6 +76,8 @@ class Priority(IntEnum) {
 }
 
 # auto() members should work like regular IntEnum members
-glob priority: Priority = Priority.LOW;  # OK: IntEnum member to IntEnum type
-glob priority_int: int = Priority.MEDIUM;  # OK: IntEnum member is assignable to int
-glob priority_str: str = Priority.HIGH;  # Error: IntEnum member is NOT assignable to str
+glob priority: Priority = Priority.LOW,
+     priority_int: int = Priority.MEDIUM,
+     priority_str: str = Priority.HIGH;  # OK: IntEnum member to IntEnum type
+# OK: IntEnum member is assignable to int
+# Error: IntEnum member is NOT assignable to str

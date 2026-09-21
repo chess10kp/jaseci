@@ -11,7 +11,7 @@ class MyContext {
         user_root: str;
 }
 
-def maybe_get() -> MyContext | None {
+def maybe_get -> MyContext | None {
     return None;
 }
 

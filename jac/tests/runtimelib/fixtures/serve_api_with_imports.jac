@@ -11,8 +11,8 @@ import from serve_api_importable {
 
 # Local node definition
 node LocalTask {
-    has title: str;
-    has done: bool = False;
+    has title: str,
+        done: bool = False;
 }
 
 # Local walker definition

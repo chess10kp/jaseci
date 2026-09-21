@@ -1,19 +1,26 @@
+glob rows: list[dict[str, int]] = [{"n": 2}, {"n": 1}];
 with entry {
-    rows: list[dict[str, int]] = [{"n": 2}, {"n": 1}];
     by_key = sorted(rows, key=lambda (d) { d["n"]; });
+}
 
-    nums: list[int] = [3, 1, 2];
+glob nums: list[int] = [3, 1, 2];
+with entry {
     descending = sorted(nums, key=lambda (x) { -x; });
-    biggest = max(nums, key=lambda (x) { x; } );
-    smallest = min(nums, key=lambda (x) { x; } );
+    biggest = max(nums, key=lambda (x) { x; });
+    smallest = min(nums, key=lambda (x) { x; });
+}
 
-    words: list[str] = ["bb", "a", "ccc"];
+glob words: list[str] = ["bb", "a", "ccc"];
+with entry {
     by_len = sorted(words, key=lambda (s) { len(s); });
     only_long = list(filter(lambda (s) { len(s) > 1; }, words));
 
     # Operators, subscripts, and method/attr access on the inferred param.
     arithmetic = sorted(nums, key=lambda (x) { x * 2 - 1; });
-    captured_bias: int = 10;
+}
+
+glob captured_bias: int = 10;
+with entry {
     with_capture = sorted(nums, key=lambda (x) { x + captured_bias; });
     dict_arith = sorted(rows, key=lambda (d) { d["n"] + 1; });
     by_upper = sorted(words, key=lambda (s) { s.upper(); });

@@ -31,7 +31,7 @@ import from .typed_args_obj { search, bulk_update }
 def:pub app -> JsxElement {
     has results: any = None;
 
-    async def doSearch(query: str) -> None {
+    async def doSearch(query: str) {
         filter = SearchFilter(query=query, max_results=20);
         results = await search(filter);
     }

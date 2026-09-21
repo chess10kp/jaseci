@@ -23,7 +23,7 @@ node MyNode {
         return self.label;
     }
 
-    def good_method() -> str {
+    def good_method -> str {
         return self.label;
     }
 }
@@ -35,7 +35,7 @@ edge MyEdge {
         return self.weight;
     }
 
-    def good_method() -> float {
+    def good_method -> float {
         return self.weight;
     }
 }
@@ -47,13 +47,13 @@ walker MyWalker {
         return self.data;
     }
 
-    def good_method() -> str {
+    def good_method -> str {
         return self.data;
     }
 }
 
 class PyClass {
-    def __init__(self: PyClass) -> None {
+    def init(self: PyClass) {
         self.val = 42;
     }
 

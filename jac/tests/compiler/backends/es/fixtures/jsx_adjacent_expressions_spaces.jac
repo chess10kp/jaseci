@@ -14,8 +14,7 @@ on a new line) is structural and must still be dropped, matching Babel's
 JSX text normalization rules.
 """
 
-
-def:pub app() -> any {
+def:pub app -> any {
     count: int = 5;
     amount: float = 1.5;
     unit: str = "lb";

@@ -7,8 +7,8 @@ obj Project {
 }
 
 glob llm = MockLLM(
-    model_name="mockllm",
-    config={"outputs": [Project(title="test_project")], "verbose": False}
-);
+         model_name="mockllm",
+         config={"outputs": [Project(title="test_project")], "verbose": False}
+     );
 
 def create_proj -> Project by llm();

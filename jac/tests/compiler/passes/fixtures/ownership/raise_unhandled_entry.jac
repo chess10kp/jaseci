@@ -11,7 +11,7 @@ def load(s: &str) -> int {
     return parse_port(s) + 1;
 }
 
+glob p: own str = "80";
 with entry {
-    p: own str = "80";
     print(load(&p));
 }

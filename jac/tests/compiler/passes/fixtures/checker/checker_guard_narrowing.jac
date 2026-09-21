@@ -11,7 +11,6 @@ def use_int(x: int) -> int {
 def test_guard_narrowing(prefetch: Prefetch) -> int {
     if prefetch.list_class {
         return use_int(prefetch.list_class);  # Error: int | None to int
-
     }
     return 0;
 }

@@ -9,8 +9,8 @@ obj Foo {
     has name: str = "foo";
 }
 
+glob x: object = "hello";
 with entry {
-    x: object = "hello";
     y: str = cast(str, x);
     z: Foo = cast(Foo, x);
     w: int = cast(int, x);

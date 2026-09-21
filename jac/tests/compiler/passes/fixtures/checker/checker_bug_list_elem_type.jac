@@ -7,13 +7,13 @@ would fail even though the list contains strings.
 Expected: heterogeneous lists should infer the union of element types.
 """
 
+glob
+     # Homogeneous list - first element determines type (works today)
+     ints: list[int] = [1, 2, 3],  # <-- Ok
+     # Heterogeneous list - BUG: type is list[int] not list[int | str]
+     mixed = [1, "hello", 2, "world"];
+
 with entry {
-    # Homogeneous list - first element determines type (works today)
-    ints: list[int] = [1, 2, 3];  # <-- Ok
-
-    # Heterogeneous list - BUG: type is list[int] not list[int | str]
-    mixed = [1, "hello", 2, "world"];
-
     # If the type system correctly inferred list[int | str], then:
     # - Assigning to list[int] should Error (str not assignable to int)
     # - Assigning to list should be Ok

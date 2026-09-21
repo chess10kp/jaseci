@@ -1,6 +1,5 @@
 """Test fixture for class with separate impl file."""
 
-
 obj Calculator {
     has value: float;
 

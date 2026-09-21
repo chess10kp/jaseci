@@ -8,14 +8,12 @@ import from datetime { datetime, timezone }
 
 def case_stdlib_chained -> str {
     return datetime.now(timezone.utc).isoformat();  # ok
-
 }
 
 
 def case_stdlib_indirected -> str {
     f = datetime.now;
     return f(timezone.utc).isoformat();  # ok
-
 }
 
 
@@ -35,7 +33,6 @@ class Box {
 
 def case_user_classmethod -> int {
     return Box.make().kick();  # ok
-
 }
 
 
@@ -54,5 +51,4 @@ class Builder {
 
 def case_instance_fluent -> int {
     return Builder().again().total();  # ok
-
 }

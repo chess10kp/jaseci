@@ -7,11 +7,9 @@ obj Stage {
 }
 
 
-glob NOTHING: tuple[()] = ();
-
-glob NESTED_EMPTY: list[tuple[()]] = [];
-
-glob MAYBE_EMPTY: tuple[()] | None = None;
+glob NOTHING: tuple[()] = (),
+     NESTED_EMPTY: list[tuple[()]] = [],
+     MAYBE_EMPTY: tuple[()] | None = None;
 
 
 def bare_still_errors(rows: dict[str, tuple]) -> int {

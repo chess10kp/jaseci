@@ -8,7 +8,7 @@ def returns_bare_list -> list {
 }
 
 # Bare param type
-def takes_bare_dict(x: dict) -> None {
+def takes_bare_dict(x: dict) {
     print(x);
 }
 
@@ -27,7 +27,7 @@ def returns_typed_list -> list[int] {
     return [1, 2, 3];
 }
 
-def takes_typed_dict(x: dict[str, int]) -> None {
+def takes_typed_dict(x: dict[str, int]) {
     print(x);
 }
 

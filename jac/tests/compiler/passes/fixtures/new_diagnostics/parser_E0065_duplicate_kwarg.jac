@@ -5,7 +5,7 @@ def foo(a: int, b: int) -> int {
 }
 
 with entry {
-    foo(a=1, b=2);        # <-- Ok
-    foo(a=1, a=2);        # <-- Error E0065: duplicate keyword 'a'
-    foo(a=1, b=2, b=3);   # <-- Error E0065: duplicate keyword 'b'
+    foo(a=1, b=2);  # <-- Ok
+    foo(a=1, a=2);  # <-- Error E0065: duplicate keyword 'a'
+    foo(a=1, b=2, b=3);  # <-- Error E0065: duplicate keyword 'b'
 }

@@ -7,7 +7,7 @@ __jacCallFunction injection in the child pass if not deduplicated.
 import from defpub_impl_dedup_server { create_item, list_items }
 
 impl app{
-    async def addItem -> None {
+    async def addItem {
         if itemName.strip() {
             item = await create_item(itemName.strip());
             items = items.concat([item]);
@@ -15,7 +15,7 @@ impl app{
         }
     }
 
-    async def loadItems -> None {
+    async def loadItems {
         items = await list_items();
     }
 }

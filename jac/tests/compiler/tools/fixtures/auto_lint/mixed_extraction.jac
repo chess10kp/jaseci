@@ -4,8 +4,8 @@ The extractable assignments (x, y) become globs, but the non-extractable
 statement (print) stays in the with entry block.
 """
 
+glob x = 5;
 with entry {
-    x = 5;
     print("hello");
-    y = 10;
 }
+glob y = 10;

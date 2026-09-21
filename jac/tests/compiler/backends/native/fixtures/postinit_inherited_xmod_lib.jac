@@ -7,7 +7,7 @@ inherited chain."""
 obj BaseA {
     has a: int = 1;
 
-    def touch() -> int {
+    def touch -> int {
         return self.a;
     }
 }
@@ -19,7 +19,7 @@ obj BaseB {
 obj BaseC {
     has c: int = 3;
 
-    def touch() -> int {
+    def touch -> int {
         return self.c;
     }
 }
@@ -27,7 +27,7 @@ obj BaseC {
 obj Mid(BaseA, BaseB, BaseC) {
     has m: int = 0;
 
-    def touch() -> int {
+    def touch -> int {
         return self.m;
     }
 
@@ -37,7 +37,7 @@ obj Mid(BaseA, BaseB, BaseC) {
 }
 
 obj Leaf(Mid) {
-    def touch() -> int {
+    def touch -> int {
         return self.m + 1;
     }
 }

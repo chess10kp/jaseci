@@ -1,6 +1,8 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
-def use2(x: Buffer, y: Buffer) -> None {}
+def use2(x: Buffer, y: Buffer) {}
 
 with entry {
     a: own Buffer = Buffer();

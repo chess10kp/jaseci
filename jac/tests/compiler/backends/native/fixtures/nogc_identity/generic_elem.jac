@@ -2,9 +2,13 @@
 the element layout is decided by the element type, so the generic body and the
 caller agree on it."""
 
-obj Box { has v: int = 0; }
+obj Box {
+    has v: int = 0;
+}
 
-def first[T](xs: &list[T]) -> &T { return &xs[0]; }
+def first[T](xs: &list[T]) -> &T {
+    return &xs[0];
+}
 
 def run -> int {
     xs: list[own Box] = [];
@@ -13,4 +17,6 @@ def run -> int {
     return first(&xs).v * 10 + first(&xs).v;
 }
 
-with entry { print(run()); }
+with entry {
+    print(run());
+}

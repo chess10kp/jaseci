@@ -309,6 +309,43 @@ def _tree_matches(tree_dir: Path, expected: str) -> bool {
 }
 
 
+def _publish_tree(
+    store_dir: Path, tree_dest: Path, tree_hash: str, meta: dict[str, any]
+) -> Path {
+    # Publish a staged tree into the content-addressed store. Lock-free by
+    # design: publication is a single atomic rename, and a lost race with a
+    # concurrent publisher of the same tree is resolved by re-checking the
+    # published copy (content-identical by definition of the hash) instead
+    # of holding a lock file a crash could leak. Keep this in sync with
+    # _recover_generation in dep_roots.py, which replays the commit swap.
+    final = store_dir / tree_hash;
+    if _tree_matches(final, tree_hash) {
+        shutil.rmtree(tree_dest, ignore_errors=True);
+    } else {
+        try {
+            if final.exists() or final.is_symlink() {
+                quarantine = store_dir
+                    / (f".{tree_hash}.quarantine-{os.getpid()}-{id(final)}");
+                os.rename(str(final), str(quarantine));
+                if quarantine.is_dir() and not quarantine.is_symlink() {
+                    shutil.rmtree(quarantine, ignore_errors=True);
+                } else {
+                    quarantine.unlink(missing_ok=True);
+                }
+            }
+            os.rename(str(tree_dest), str(final));
+        } except OSError {
+            if not _tree_matches(final, tree_hash) {
+                raise;
+            }
+            shutil.rmtree(tree_dest, ignore_errors=True);
+        }
+    }
+    _write_sidecar(store_dir, tree_hash, meta);
+    return final;
+}
+
+
 def fetch_package(
     url: str,
     ref: str = "",
@@ -348,70 +385,19 @@ def fetch_package(
         }
     }
     staging = Path(tempfile.mkdtemp(prefix="jac_stage_", dir=store_dir / TMP_DIR_NAME));
-    publication_lock: Path | None = None;
     try {
         tree_dest = staging / "tree";
         checkout_ref = "" if (frozen and sha) else ref;
         resolved_sha = checkout_tree(url, checkout_ref, sha, tree_dest);
         tree_hash = dirhash(tree_dest);
-        final = store_dir / tree_hash;
-        publication_lock = store_dir / f"{tree_hash}.lock";
-        try {
-            publication_lock.mkdir();
-        } except OSError {
-            import time;
-            for _ in range(1000) {
-                if _tree_matches(final, tree_hash) {
-                    return FetchResult(
-                        path=str(final), sha=resolved_sha, tree=tree_hash
-                    );
-                }
-                if not publication_lock.exists() {
-                    break;
-                }
-                time.sleep(0.01);
-            }
-            if _tree_matches(final, tree_hash) {
-                return FetchResult(path=str(final), sha=resolved_sha, tree=tree_hash);
-            }
-            try {
-                publication_lock.mkdir();
-            } except OSError {
-                raise JacDepError(
-                    f"Store publication for {tree_hash} is already in progress"
-                );
-            }
-        }
-        try {
-            if _tree_matches(final, tree_hash) {
-                shutil.rmtree(tree_dest, ignore_errors=True);
-            } else {
-                if final.exists() or final.is_symlink() {
-                    quarantine = store_dir
-                        / (f".{tree_hash}.quarantine-{os.getpid()}-{id(final)}");
-                    os.rename(str(final), str(quarantine));
-                    if quarantine.is_dir() and not quarantine.is_symlink() {
-                        shutil.rmtree(quarantine, ignore_errors=True);
-                    } else {
-                        quarantine.unlink(missing_ok=True);
-                    }
-                }
-                os.rename(str(tree_dest), str(final));
-            }
-            _write_sidecar(
-                store_dir,
-                tree_hash,
-                {"url": url, "sha": resolved_sha, "tree": tree_hash}
-            );
-        } finally {
-            publication_lock.rmdir();
-            publication_lock = None;
-        }
+        final = _publish_tree(
+            store_dir,
+            tree_dest,
+            tree_hash,
+            {"url": url, "sha": resolved_sha, "tree": tree_hash}
+        );
         return FetchResult(path=str(final), sha=resolved_sha, tree=tree_hash);
     } finally {
-        if publication_lock is not None {
-            publication_lock.rmdir();
-        }
         shutil.rmtree(staging, ignore_errors=True);
     }
 }
@@ -457,51 +443,15 @@ def snapshot_path(source: Path) -> FetchResult {
     store_dir = store_root();
     (store_dir / TMP_DIR_NAME).mkdir(parents=True, exist_ok=True);
     staging = Path(tempfile.mkdtemp(prefix="jac_path_", dir=store_dir / TMP_DIR_NAME));
-    publication_lock: Path | None = None;
     try {
         tree_dest = staging / "tree";
         _copy_tree(source, tree_dest);
         tree_hash = dirhash(tree_dest);
-        final = store_dir / tree_hash;
-        publication_lock = store_dir / f"{tree_hash}.lock";
-        try {
-            publication_lock.mkdir();
-        } except OSError {
-            if _tree_matches(final, tree_hash) {
-                return FetchResult(path=str(final), sha="", tree=tree_hash);
-            }
-            raise JacDepError(
-                f"Store publication for {tree_hash} is already in progress"
-            );
-        }
-        try {
-            if _tree_matches(final, tree_hash) {
-                shutil.rmtree(tree_dest, ignore_errors=True);
-            } else {
-                if final.exists() or final.is_symlink() {
-                    quarantine = store_dir
-                        / (f".{tree_hash}.quarantine-{os.getpid()}-{id(final)}");
-                    os.rename(str(final), str(quarantine));
-                    if quarantine.is_dir() and not quarantine.is_symlink() {
-                        shutil.rmtree(quarantine, ignore_errors=True);
-                    } else {
-                        quarantine.unlink(missing_ok=True);
-                    }
-                }
-                os.rename(str(tree_dest), str(final));
-            }
-            _write_sidecar(
-                store_dir, tree_hash, {"path": str(source), "tree": tree_hash}
-            );
-        } finally {
-            publication_lock.rmdir();
-            publication_lock = None;
-        }
+        final = _publish_tree(
+            store_dir, tree_dest, tree_hash, {"path": str(source), "tree": tree_hash}
+        );
         return FetchResult(path=str(final), sha="", tree=tree_hash);
     } finally {
-        if publication_lock is not None {
-            publication_lock.rmdir();
-        }
         shutil.rmtree(staging, ignore_errors=True);
     }
 }

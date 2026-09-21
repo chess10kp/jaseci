@@ -14,7 +14,7 @@ weekday, isoformat). `now()` is non-deterministic, so only structural invariants
 import from datetime { datetime, timezone }
 
 
-def datetime_py() -> dict[any, any] {
+def datetime_py -> dict[any, any] {
     dt = datetime.fromtimestamp(1700000000.0, timezone.utc);
     # A pre-1970 (negative) POSIX timestamp pins the floor-division/modulo path:
     # 1969-12-30T23:59:59 UTC, a Tuesday (weekday 1).
@@ -49,12 +49,12 @@ def datetime_py() -> dict[any, any] {
 }
 
 
-def datetime_cl() -> dict[any, any] {
+def datetime_cl -> dict[any, any] {
     return {};
 }
 
 
-def datetime_na() -> dict[str, any] {
+def datetime_na -> dict[str, any] {
     dt: datetime = datetime.fromtimestamp(1700000000.0, timezone.utc);
     dt_neg: datetime = datetime.fromtimestamp(-86401.0, timezone.utc);
     now: datetime = datetime.now(timezone.utc);

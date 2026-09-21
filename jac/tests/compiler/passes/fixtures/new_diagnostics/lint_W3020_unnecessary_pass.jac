@@ -2,6 +2,7 @@
 
 obj Foo {
     has x: int = 5;
+
     pass;  # <-- Warning W3020: body is not empty
 }
 

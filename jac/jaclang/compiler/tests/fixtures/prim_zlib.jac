@@ -12,7 +12,7 @@ CPython exactly. ES/JS opts out.
 
 import from zlib { compress, decompress, crc32, adler32 }
 
-def zlib_py() -> dict[any, any] {
+def zlib_py -> dict[any, any] {
     data = b"hello world, hello world, hello zlib zlib zlib!";
     comp = compress(data, 6);
     back = decompress(comp);
@@ -33,12 +33,12 @@ def zlib_py() -> dict[any, any] {
     };
 }
 
-def zlib_cl() -> dict[any, any] {
+def zlib_cl -> dict[any, any] {
     return {};
 }
 
 
-def zlib_na() -> dict[str, any] {
+def zlib_na -> dict[str, any] {
     data = b"hello world, hello world, hello zlib zlib zlib!";
     comp = compress(data, 6);
     back = decompress(comp);

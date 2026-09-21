@@ -1,9 +1,9 @@
 # Test keyword-only parameters
-def simple_kwonly( * , x: int)  -> int {
+def simple_kwonly(*, x: int) -> int {
     return x;
 }
 
-def kwonly_with_defaults( * , x: int = 10 , y: str = "def")  -> str {
+def kwonly_with_defaults(*, x: int = 10, y: str = "def") -> str {
     return f"{x}-{y}";
 }
 
@@ -15,7 +15,7 @@ def mixed_kwonly(pos: int, reg: str = "def", *, kw1: float, kw2: bool = True) ->
     return f"{pos}-{reg}-{kw1}-{kw2}";
 }
 
-def all_kwonly( * , a: int , b: str = "test" , c: float = 1.0)  -> str {
+def all_kwonly(*, a: int, b: str = "test", c: float = 1.0) -> str {
     return f"{a}:{b}:{c}";
 }
 

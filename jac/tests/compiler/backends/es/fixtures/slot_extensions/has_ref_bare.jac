@@ -4,8 +4,7 @@
 hold; it is rejected by E2025 directing the author to `= Ref()`.
 """
 
-
-def:pub Bad() -> JsxElement {
+def:pub Bad -> JsxElement {
     has r: Ref[HTMLInputElement];
-    return <input ref={r} />;
+    return <input ref={r}/>;
 }

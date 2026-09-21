@@ -22,8 +22,5 @@ glob gen_items = [(1, 2), (3, 4)],
      gen_result = (a + b for (a, b) in gen_items);
 
 # 7. Nested iteration with unpacking
-glob nested_data = [
-         [('a', 1), ('b', 2)],
-         [('c', 3)]
-     ],
+glob nested_data = [[('a', 1), ('b', 2)], [('c', 3)]],
      nested_result = [name for row in nested_data for (name, val) in row];

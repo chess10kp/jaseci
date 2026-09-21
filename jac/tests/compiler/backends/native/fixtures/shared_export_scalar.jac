@@ -16,8 +16,6 @@ def:pub jmul(a: int, b: int) -> int {
     return a * b;
 }
 
-def:pub get_counter() -> int {
+def:pub get_counter -> int {
     return counter;
 }
-
-with entry {}

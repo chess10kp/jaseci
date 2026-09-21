@@ -9,6 +9,8 @@ with entry {
     print(f"Init reexport - E: {E}");
     calc = Calculator();
     print(
-        f"Init reexport - Calculator.compute(10, 2, 'add'): {calc.compute(10, 2, 'add')}"
+        f"Init reexport - Calculator.compute(10, 2, 'add'): {calc.compute(
+            10, 2, 'add'
+        )}"
     );
 }

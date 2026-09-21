@@ -18,7 +18,7 @@ def opaque(x: any) -> any {
     return x;
 }
 
-def test_poly_get_custom() -> dict[any, any] {
+def test_poly_get_custom -> dict[any, any] {
     c = opaque(Cache());
     val_hit = c.get("x", -1);
     val_miss = c.get("z", -1);

@@ -1,11 +1,13 @@
+glob x = lambda (a: int, b: int) { b + a; };
 with entry {
-    x = lambda  (a: int , b: int) { b + a; };
     print(x(5, 4));
-    y = lambda { 567; } ;
+}
+glob y = lambda { 567; };
+with entry {
     print(y());
 }
 
 with entry {
-    f = lambda  (x: any) { "even" if x % 2 == 0 else "odd"; };
+    f = lambda (x: any) { "even" if x % 2 == 0 else "odd"; };
     print(f(7));
 }

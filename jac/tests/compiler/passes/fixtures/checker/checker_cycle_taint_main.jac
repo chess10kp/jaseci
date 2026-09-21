@@ -15,7 +15,7 @@ import from checker_cycle_taint_reg { REGISTRY }
 
 glob CONFIG = REGISTRY.defaults;
 
-def show() -> int {
+def show -> int {
     return len(CONFIG);
 }
 

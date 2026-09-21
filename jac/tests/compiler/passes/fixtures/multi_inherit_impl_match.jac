@@ -2,8 +2,10 @@
 
 class MyClass {
     has value: int = 10;
+
     def get_value -> int;
 }
+
 with entry {
     (_, MyClass) = (1, MyClass);
 }

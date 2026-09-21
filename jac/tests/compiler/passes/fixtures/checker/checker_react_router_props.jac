@@ -10,7 +10,6 @@ bundle time) so JSX prop validation accepts React Router's prop names
 Tracking: GitHub issue #5847.
 """
 
-
 import from "@jac/runtime" { Route, Link }
 
 def DashboardPage -> JsxElement {

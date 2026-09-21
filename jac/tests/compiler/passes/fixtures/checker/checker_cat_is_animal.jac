@@ -4,7 +4,7 @@ obj Lion(Cat) {}
 
 obj NotAnimal {}
 
-def animal_func(a: Animal) -> None { }
+def animal_func(a: Animal) {}
 
 with entry {
     cat: Cat = Cat();

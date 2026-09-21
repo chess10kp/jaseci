@@ -12,6 +12,7 @@ obj Circle1 {
 with entry {
     c1 = Circle1(RAD);
 }
+
 # ---------------------------------------------------------------
 glob length = 5.0;
 
@@ -23,6 +24,7 @@ obj Square {
 with entry {
     c2 = Square(length);
 }
+
 # ---------------------------------------------------------------
 glob name = "John";
 

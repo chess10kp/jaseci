@@ -146,6 +146,46 @@ obj NpmProvider(EcosystemProvider) {
         manifest_key: str = "npm",
         cli_flag: str = "--npm";
 
+    def install_global(packages: list[str], dev: bool) -> bool {
+        # Global npm tools live in the shared jac npm root (~/.jac/npm),
+        # outside any project manifest and jac.lock, mirroring the python
+        # provider's --global path (which also skips the lock).
+        import subprocess;
+        import from jaclang.cli.console { console }
+        import from jaclang.client.bun_installer { get_bun, bun_unavailable_message }
+        import from jaclang.project.tool_paths { node_root }
+        bun = get_bun();
+        if bun is None {
+            console.error(bun_unavailable_message());
+            return False;
+        }
+        dest = node_root("global");
+        assert dest is not None , "the global npm root is always resolvable";
+        dest.mkdir(parents=True, exist_ok=True);
+        pkg_json = dest / "package.json";
+        if not pkg_json.exists() {
+            pkg_json.write_text(
+                '{\n  "name": "jac-global-tools",\n  "private": true\n}\n',
+                encoding="utf-8"
+            );
+        }
+        cmd: list[str] = [bun, "add"];
+        if dev {
+            cmd.append("--dev");
+        }
+        cmd.extend(packages);
+        console.print(
+            f"\n📦 Installing {len(packages)} npm tool(s) globally into {dest}",
+            style="bold"
+        );
+        result = subprocess.run(cmd, cwd=str(dest));
+        if result.returncode != 0 {
+            console.error("Global npm install failed.");
+            return False;
+        }
+        return True;
+    }
+
     override def resolve_requirements(
         context: ResolutionContext,
         requirements: list[ProviderRequirement],
@@ -169,6 +209,10 @@ obj NpmProvider(EcosystemProvider) {
         package_rows = lock_payload.get("packages", {});
         package_rows = package_rows if isinstance(package_rows, dict) else {};
         by_name: dict[str, str] = {};
+        # One pass builds the node table; dependency edges are collected
+        # here and resolved in a second pass because a child may appear
+        # before its parent in the lockfile.
+        child_requirements: list[tuple[str, dict[str, any]]] = [];
         for (package_path, package_data) in package_rows.items() {
             if (
                 not isinstance(package_data, dict)
@@ -176,6 +220,7 @@ obj NpmProvider(EcosystemProvider) {
             ) {
                 continue;
             }
+            package_name = package_path[len("node_modules/"):];
             if "/node_modules/" in package_name {
                 package_name = package_name.rsplit("/node_modules/", 1)[1];
             }
@@ -200,6 +245,9 @@ obj NpmProvider(EcosystemProvider) {
                     "resolved": str(package_data.get("resolved", "")),
                     "integrity": str(package_data.get("integrity", ""))
                 }
+            );
+            child_requirements.append(
+                (normalized, package_data.get("dependencies", {}))
             );
         }
         for requirement in selected {
@@ -228,27 +276,12 @@ obj NpmProvider(EcosystemProvider) {
                 )
             );
         }
-        for (package_path, package_data) in package_rows.items() {
-            if (
-                not isinstance(package_data, dict)
-                or not package_path.startswith("node_modules/")
-            ) {
-                continue;
-            }
-            package_name = package_path[len("node_modules/"):];
-            if "/node_modules/" in package_name {
-                package_name = package_name.rsplit("/node_modules/", 1)[1];
-            }
-            from_id: str = by_name.get(
-                normalize_dependency_name(self.name, package_name)
-            )
-                or "";
+        for (parent_name, children) in child_requirements {
+            from_id: str = by_name.get(parent_name) or "";
             if not from_id {
                 continue;
             }
-            for (child_name, child_constraint) in package_data.get(
-                "dependencies", {}
-            ).items() {
+            for (child_name, child_constraint) in children.items() {
                 to_id = by_name.get(normalize_dependency_name(self.name, child_name));
                 if to_id is not None {
                     resolution.edges.append(

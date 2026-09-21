@@ -6,18 +6,17 @@ site. This is the canonical pattern for React/JSX event handlers — a handler
 written `def click() { ... }` should satisfy `Callable[[MouseEvent], None]`.
 """
 
-
 class MouseEvent {
     button: int = 0;
 }
 
 
-def no_args() -> None {}
-def one_int(x: int) -> None {}
-def two_ints(x: int, y: int) -> None {}
+def no_args {}
+def one_int(x: int) {}
+def two_ints(x: int, y: int) {}
 
 
-def takes_mouse_handler(cb: Callable[[MouseEvent], None]) -> None {
+def takes_mouse_handler(cb: Callable[[MouseEvent], None]) {
     cb(MouseEvent());
 }
 
@@ -26,26 +25,23 @@ class Widget {
     label: str = "";
 
     def click {}
-
     def click_one(x: int) {}
 }
 
 
+glob
+     # --- Valid: shorter source assignable to longer destination (extras dropped) ---
+
+     # Zero-arg function -> one-arg Callable
+     f1: Callable[[MouseEvent], None] = no_args,  # Ok
+     # Zero-arg function -> two-arg Callable
+     f2: Callable[[int, int], None] = no_args,  # Ok
+     # One-arg function -> two-arg Callable (drops trailing param)
+     f3: Callable[[int, int], None] = one_int,  # Ok
+     # Zero-arg lambda -> Callable expecting an event
+     f4: Callable[[MouseEvent], None] = lambda {};  # Ok
+
 with entry {
-    # --- Valid: shorter source assignable to longer destination (extras dropped) ---
-
-    # Zero-arg function -> one-arg Callable
-    f1: Callable[[MouseEvent], None] = no_args;  # Ok
-
-    # Zero-arg function -> two-arg Callable
-    f2: Callable[[int, int], None] = no_args;  # Ok
-
-    # One-arg function -> two-arg Callable (drops trailing param)
-    f3: Callable[[int, int], None] = one_int;  # Ok
-
-    # Zero-arg lambda -> Callable expecting an event
-    f4: Callable[[MouseEvent], None] = lambda { };  # Ok
-
     # Pass shorter callable through a higher-order call site
     takes_mouse_handler(no_args);  # Ok
 
@@ -56,9 +52,10 @@ with entry {
 
     # Bound one-arg method -> two-arg Callable.
     f6: Callable[[int, int], None] = w.click_one;  # Ok
-
-    # --- Invalid: longer source NOT assignable to shorter destination ---
-
-    # Two-arg function -> zero-arg Callable (extra src param without default)
-    bad: Callable[[], None] = two_ints;  # Error: extra src params have no defaults
 }
+
+glob
+     # --- Invalid: longer source NOT assignable to shorter destination ---
+
+     # Two-arg function -> zero-arg Callable (extra src param without default)
+     bad: Callable[[], None] = two_ints;  # Error: extra src params have no defaults

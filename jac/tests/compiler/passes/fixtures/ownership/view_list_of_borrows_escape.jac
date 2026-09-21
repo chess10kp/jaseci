@@ -1,9 +1,13 @@
-obj Item { has id: int = 0; }
+obj Item {
+    has id: int = 0;
+}
 
 def evens(xs: &list[own Item]) -> list[&Item] {
     picked: list[&Item] = [];
     for it in &xs {
-        if it.id % 2 == 0 { picked.append(it); }
+        if it.id % 2 == 0 {
+            picked.append(it);
+        }
     }
     return picked;
 }
@@ -14,4 +18,6 @@ def build -> list[&Item] {
     return evens(&xs);
 }
 
-with entry { print(len(build())); }
+with entry {
+    print(len(build()));
+}

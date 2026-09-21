@@ -14,10 +14,10 @@ async def get_nums -> list[int] {
     return [1, 2, 3];
 }
 
-async def main_async -> None {
-    bad_num: int = get_num();              # E1042: coroutine, missing await
-    ok_num: int = await get_num();         # ok
+async def main_async {
+    bad_num: int = get_num();  # E1042: coroutine, missing await
+    ok_num: int = await get_num();  # ok
 
-    bad_list: list[int] = get_nums();      # E1042: coroutine, missing await
-    ok_list: list[int] = await get_nums(); # ok
+    bad_list: list[int] = get_nums();  # E1042: coroutine, missing await
+    ok_list: list[int] = await get_nums();  # ok
 }

@@ -100,10 +100,7 @@ def ok_attr_truthiness_loop(w: Walker) -> str {
 def ok_attr_isinstance_loop(w: Walker) -> str {
     # Full runtime.impl.jac pattern: loop + truthiness + isinstance + fn call
     for sf in w.funcs {
-        if (
-            sf.trigger
-            and all_issubclass(sf.trigger, object)
-        ) {
+        if (sf.trigger and all_issubclass(sf.trigger, object)) {
             return "matched";
         }
     }
@@ -204,27 +201,19 @@ def ok_ternary_isinstance_excludes_generic(
     # The else branch should see expr as NodeArch | EdgeArch only.
     return []
         if isinstance(expr, `list)
-        else [expr.__jac__]
-            if isinstance(expr, (NodeArch, EdgeArch))
-            else [];
+        else [expr.__jac__] if isinstance(expr, (NodeArch, EdgeArch)) else [];
 }
 
-def ok_ternary_isinstance_simple_generic(
-    expr: list[int] | str
-) -> str {
+def ok_ternary_isinstance_simple_generic(expr: list[int] | str) -> str {
     # Simple case: isinstance(expr, list) false → expr is str
-    return ""
-        if isinstance(expr, `list)
-        else expr.upper();
+    return "" if isinstance(expr, `list) else expr.upper();
 }
 
 def ok_ternary_isinstance_nested_generic(
     expr: list[NodeArch] | NodeArch | EdgeArch
 ) -> str {
     # isinstance(expr, list) false → expr is NodeArch | EdgeArch
-    return ""
-        if isinstance(expr, `list)
-        else expr.__jac__;
+    return "" if isinstance(expr, `list) else expr.__jac__;
 }
 
 # ============================================================================
@@ -240,9 +229,7 @@ def ok_ternary_isinstance_nested_generic(
 
 # --- ok_ functions: patterns that should work (lines 240-290) ---
 
-def ok_isinstance_preserves_single_generic(
-    expr: list[NodeArch] | str
-) -> str {
+def ok_isinstance_preserves_single_generic(expr: list[NodeArch] | str) -> str {
     # isinstance(expr, list) true → should be list[NodeArch], not bare list
     if isinstance(expr, `list) {
         for item in expr {
@@ -264,13 +251,9 @@ def ok_isinstance_preserves_multi_generic(
     return "";
 }
 
-def ok_isinstance_preserves_generic_ternary(
-    expr: list[NodeArch] | NodeArch
-) -> str {
+def ok_isinstance_preserves_generic_ternary(expr: list[NodeArch] | NodeArch) -> str {
     # Ternary true branch: isinstance(expr, list) → list[NodeArch]
-    return expr[0].__jac__
-        if isinstance(expr, `list)
-        else expr.__jac__;
+    return expr[0].__jac__ if isinstance(expr, `list) else expr.__jac__;
 }
 
 def ok_isinstance_preserves_dict_generic(
@@ -283,9 +266,7 @@ def ok_isinstance_preserves_dict_generic(
     return 0;
 }
 
-def ok_isinstance_preserves_set_generic(
-    data: set[str] | list[str] | int
-) -> str {
+def ok_isinstance_preserves_set_generic(data: set[str] | list[str] | int) -> str {
     # isinstance(data, set) true → set[str]
     if isinstance(data, `set) {
         for item in data {

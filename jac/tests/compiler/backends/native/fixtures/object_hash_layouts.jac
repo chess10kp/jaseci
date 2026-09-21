@@ -1,5 +1,9 @@
-obj First { has value: int = 3; }
-obj Second { has value: int = 7; }
+obj First {
+    has value: int = 3;
+}
+obj Second {
+    has value: int = 7;
+}
 
 def probe -> int {
     words: set[str] = {"one", "two"};
@@ -15,7 +19,12 @@ def probe -> int {
     second_values: dict[Second, int] = {second: 70};
     first_values[first] = 31;
     firsts.discard(equal_fields);
-    return len(words) + len(firsts) + len(seconds) + len(from_list)
-        + word_values["one"] + first_values[first] + first_values[equal_fields]
+    return len(words)
+        + len(firsts)
+        + len(seconds)
+        + len(from_list)
+        + word_values["one"]
+        + first_values[first]
+        + first_values[equal_fields]
         + second_values[second];
 }

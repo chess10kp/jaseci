@@ -9,7 +9,7 @@ parallel path ever consumes them again. The bodies stay empty on
 purpose: a local accumulator write is not a licensed reduction shape
 under the rc sendability check (E1308), and the else flag alone is
 what discriminates a dropped else suite."""
-def flow_else_exhausts() -> bool {
+def flow_else_exhausts -> bool {
     ran: bool = False;
     xs: list[int] = [1, 2, 3];
     flow for v in &xs {} else {
@@ -18,7 +18,7 @@ def flow_else_exhausts() -> bool {
     return ran;
 }
 
-def flow_else_zero_iter() -> bool {
+def flow_else_zero_iter -> bool {
     ran: bool = False;
     xs: list[int] = [];
     flow for v in &xs {} else {

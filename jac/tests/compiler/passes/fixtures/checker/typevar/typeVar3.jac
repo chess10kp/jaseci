@@ -11,18 +11,15 @@ with entry {
 }
 
 class OuterClass(Generic[_T, AnyStr]) {
-    has my_var1: _S;  # Error: _S isn't defined in this context
-    has my_var2: AnyStr;  # Ok
+    has my_var1: _S,
+        my_var2: AnyStr;  # Error: _S isn't defined in this context
 
     # Error: _T is already in use
     class InnerClass1(Generic[_T]) {}
-
     # Error: AnyStr is already in use
     class InnerClass2(Generic[_S, AnyStr]) {
-        has my_var1: _S;  # Ok
-
-        # Error: _T is already in use in the outer class
-        has my_var2: _T;  # Error
+        has my_var1: _S,
+            my_var2: _T;  # Ok
     }
 
     class InnerClass3 {
@@ -33,13 +30,17 @@ class OuterClass(Generic[_T, AnyStr]) {
             ...;
         }
 
-        def g(self: InnerClass3, x: AnyStr) -> None {
+        def g(self: InnerClass3, x: AnyStr) {
             # Error: _T is not in scope
             y: list[_T];  # Error
         }
     }
 }
 
+# Ok
+
+# Error: _T is already in use in the outer class
+# Error
 def func1(a: _T) -> _T | None {
     my_var1: _T;  # Ok
 
@@ -50,20 +51,19 @@ def func1(a: _T) -> _T | None {
     class InnerClass3(Generic[_T]) {}  # Error
 }
 
+glob
+     # Error: TypeVar used outside of function/class scope
+     a: _S = 3,  # Error
+     # Error: TypeVar used outside of function/class scope
+     b: list[_T] = [],  # Error
+     # Error: TypeVar used outside of function/class scope
+     c: list[AnyStr] = [];  # Error
+
 with entry {
-    # Error: TypeVar used outside of function/class scope
-    a: _S = 3;  # Error
-
-    # Error: TypeVar used outside of function/class scope
-    b: list[_T] = [];  # Error
-
-    # Error: TypeVar used outside of function/class scope
-    c: list[AnyStr] = [];  # Error
-
     T = TypeVar("T");
 }
 
-def foo() -> Callable[[T], T] {
+def foo -> Callable[[T], T] {
     def inner(v: T) -> T {
         return v;
     }

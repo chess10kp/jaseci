@@ -9,7 +9,6 @@ with entry {
     with open("/tmp/test.txt", "w") as f {
         # f should be TextIOWrapper, not Unknown
         f.write("hello");
-
         # These should produce type errors
         bad: int = f;  # Error: TextIOWrapper not assignable to int
     }

@@ -1,2 +1,2 @@
-glob APP_NAME = "MyApp";
-glob VERSION = "1.0.0";
+glob APP_NAME = "MyApp",
+     VERSION = "1.0.0";

@@ -1,6 +1,6 @@
 """Test: Mix of clean and JS-idiomatic code."""
 
-def mostly_clean() -> None {
+def mostly_clean {
     items: list[any] = [1, 2, 3];
     items.append(4);
     print(len(items));
@@ -8,7 +8,7 @@ def mostly_clean() -> None {
     console.log("debug");
 }
 
-def mostly_js() -> None {
+def mostly_js {
     arr: list[any] = [1, 2, 3];
     arr.push(4);
     arr.forEach(print);

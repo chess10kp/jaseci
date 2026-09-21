@@ -1,6 +1,7 @@
+glob a = 4,
+     b = 7;
+
 with entry {
-    a = 4;
-    b = 7;
     c = a + b;  # OpExpr.
     d = a + b + c;
 

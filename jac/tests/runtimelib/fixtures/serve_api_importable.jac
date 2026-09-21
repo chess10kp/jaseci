@@ -12,8 +12,8 @@ def format_message(prefix: str, message: str) -> str {
 
 # An importable node
 node ImportedItem {
-    has name: str;
-    has value: int = 0;
+    has name: str,
+        value: int = 0;
 }
 
 # An importable walker

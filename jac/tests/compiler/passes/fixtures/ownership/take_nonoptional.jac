@@ -1,4 +1,4 @@
+glob n = 1;
 with entry {
-    n = 1;
     print(take(n));
 }

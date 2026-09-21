@@ -1,6 +1,7 @@
 obj Box {
     has item: any = None;
 }
+
 obj Buffer {
     has n: int = 0;
 }

@@ -46,8 +46,8 @@ walker OtherGetter {
     }
 }
 
+glob todos = [root-->][?:Todo];
 with entry {
-    todos = [root-->][?:Todo];
     ok1: list[Todo] = todos;  # Ok — exact match
     ok2: list[any] = todos;  # Ok — broad list[any]
     bad1: str = todos;  # Error: list[Todo] -> str

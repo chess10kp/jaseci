@@ -1,5 +1,9 @@
-obj Item { has value: str = ""; }
-obj Other { has code: int = 0; }
+obj Item {
+    has value: str = "";
+}
+obj Other {
+    has code: int = 0;
+}
 
 obj Segment {
     has start: int | None = None,

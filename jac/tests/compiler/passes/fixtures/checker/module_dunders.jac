@@ -8,16 +8,15 @@ uses like getLogger(__name__) do not produce false E1053 errors.
 import from logging { getLogger }
 
 # __name__: str — must be assignable to str parameter
-glob logger = getLogger(__name__);
-
+glob logger = getLogger(__name__),
+     current_file: str | None = __file__,
+     module_doc: str | None = __doc__,
+     pkg: str | None = __package__,
+     spec: object = __spec__;
 # __file__: str | None
-glob current_file: str | None = __file__;
 
 # __doc__: str | None
-glob module_doc: str | None = __doc__;
 
 # __package__: str | None
-glob pkg: str | None = __package__;
 
 # __spec__: object
-glob spec: object = __spec__;

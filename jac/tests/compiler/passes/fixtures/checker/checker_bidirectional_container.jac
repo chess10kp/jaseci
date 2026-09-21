@@ -57,12 +57,12 @@ def bad_set -> set[int] {
 }
 
 # --- assignment bidirectional inference ---
-
 with entry {
     ok_list: list[Animal] = [Dog(), Cat()];  # Ok
     bad_assign: list[int] = [Dog()];  # Error
-
-    # type[X] covariance
-    ok_type: type[Animal] = Dog;  # Ok: Dog is subclass of Animal
-    bad_type: type[int] = Dog;  # Error: Dog is not subclass of int
 }
+
+glob
+     # type[X] covariance
+     ok_type: type[Animal] = Dog,  # Ok: Dog is subclass of Animal
+     bad_type: type[int] = Dog;  # Error: Dog is not subclass of int

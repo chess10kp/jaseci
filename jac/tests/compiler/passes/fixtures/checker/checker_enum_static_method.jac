@@ -18,12 +18,12 @@ class Priority(IntEnum) {
         HIGH = 1;
     }
 
-    static def default_level() -> int {
+    static def default_level -> int {
         return 0;
     }
 }
 
-def test_enum_static_methods() -> int {
+def test_enum_static_methods -> int {
     x: int = Color.from_int(1);
     y: int = Priority.default_level();
     return x + y;

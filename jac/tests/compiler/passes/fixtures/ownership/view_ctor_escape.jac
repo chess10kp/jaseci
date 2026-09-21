@@ -1,5 +1,9 @@
-obj Buffer { has n: int = 0; }
-obj View { has target: &Buffer; }
+obj Buffer {
+    has n: int = 0;
+}
+obj View {
+    has target: &Buffer;
+}
 
 def make_view -> own View {
     b: own Buffer = Buffer(n=3);

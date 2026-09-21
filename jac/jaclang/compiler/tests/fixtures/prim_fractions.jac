@@ -9,7 +9,7 @@ yield identical output. ES/JS opts out.
 import from fractions { Fraction }
 
 
-def fractions_py() -> dict[any, any] {
+def fractions_py -> dict[any, any] {
     a = Fraction(3, 6);
     b = Fraction(2, 5);
     sub_neg = b - a;
@@ -61,12 +61,12 @@ def fractions_py() -> dict[any, any] {
 }
 
 
-def fractions_cl() -> dict[any, any] {
+def fractions_cl -> dict[any, any] {
     return {};
 }
 
 
-def fractions_na() -> dict[str, any] {
+def fractions_na -> dict[str, any] {
     a = Fraction(3, 6);
     b = Fraction(2, 5);
     sum_s = str(a.__add__(b));

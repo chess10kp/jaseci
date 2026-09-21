@@ -16,12 +16,11 @@ import from tests.deps_fixtures {
     git_commit_all,
     git_head,
     isolate_store,
+    jac_sync,
     make_git_repo,
     restore_store
 }
 
-import from jaclang.project.jac_provider { JacDepProvider }
-import from jaclang.project.providers { InstallContext }
 import from jaclang.project.lockfile { jac_lock_rows, read_lock }
 
 
@@ -75,8 +74,7 @@ test "targeted update advances target-reachable transitives and freezes the rest
         assert config is not None;
 
         # Seed the lock with everything at commit1.
-        provider = JacDepProvider();
-        assert provider.install_all(config, [], InstallContext());
+        jac_sync(config);
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["t"]["sha"] == t1;
         assert rows["r"]["sha"] == r1;
@@ -162,8 +160,7 @@ test "targeted update advances transitives newly reachable from the fresh manife
         assert config is not None;
 
         # Seed the lock: T is dep-free, D is reachable only through U.
-        provider = JacDepProvider();
-        assert provider.install_all(config, [], InstallContext());
+        jac_sync(config);
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["t"]["sha"] == t1;
         assert rows["u"]["sha"] == u1;
@@ -234,8 +231,7 @@ test "failed convergence leaves materialized state and metadata untouched" {
         config = get_config();
         assert config is not None;
 
-        provider = JacDepProvider();
-        assert provider.install_all(config, [], InstallContext());
+        jac_sync(config);
         build = config.get_build_dir();
         rows_before = jac_lock_rows(read_lock(project_dir));
         deps_before = (build / "deps.json").read_bytes();
@@ -324,8 +320,7 @@ test "update -d advances the dev closure and freezes main deps" {
         config = get_config();
         assert config is not None;
 
-        provider = JacDepProvider();
-        assert provider.install_all(config, [], InstallContext(include_dev=True));
+        jac_sync(config, include_dev=True);
         rows = jac_lock_rows(read_lock(project_dir));
         assert rows["u"]["sha"] == u1;
         assert rows["d"]["sha"] == d1;
@@ -460,8 +455,7 @@ test "frozen operations reject stale and legacy lock state" {
         import from jaclang.project.config { get_config }
         config = get_config();
         assert config is not None;
-        provider = JacDepProvider();
-        assert provider.install_all(config, [], InstallContext());
+        jac_sync(config);
 
         import from jaclang.project.dependency_model { PackageOperation }
         import from jaclang.project.jac_store { JacDepError }
@@ -488,7 +482,9 @@ test "frozen operations reject stale and legacy lock state" {
         }
         assert raised , "--frozen accepted a stale manifest fingerprint";
 
-        # A pre-v2 lock with harvested python state must also be rejected.
+        # A pre-v2 lock with harvested python state must also be rejected,
+        # as must a pure-jac v1 lock (no fingerprint at all): both predate
+        # the v2 graph and can only be replayed after 'jac install'.
         (project_dir / "jac.lock").write_text(
             'version = 1\n\n[python]\nrequests = "2.31.0"\n', encoding="utf-8"
         );
@@ -501,9 +497,95 @@ test "frozen operations reject stale and legacy lock state" {
                 fresh, PackageOperation(action="install", ecosystem="jac", frozen=True)
             );
         } except JacDepError as e {
-            raised = "legacy" in str(e);
+            raised = "pre-v2" in str(e);
         }
         assert raised , "--frozen accepted legacy partial lock state";
+
+        (project_dir / "jac.lock").write_text(
+            'version = 1\n\n[jac]\n' '[jac.m]\ngit = "https://example.com/m"\nsha = "'
+                + "a" * 40
+                + '"\n',
+            encoding="utf-8"
+        );
+        set_config(None);
+        fresh = get_config();
+        assert fresh is not None;
+        raised = False;
+        try {
+            plan_operation(
+                fresh, PackageOperation(action="install", ecosystem="jac", frozen=True)
+            );
+        } except JacDepError as e {
+            raised = "pre-v2" in str(e);
+        }
+        assert raised , "--frozen accepted a pre-v2 pure-jac lock";
+    } finally {
+        os.chdir(cwd);
+        set_config(None);
+        restore_store(store_tmp, old_env);
+        shutil.rmtree(outer, ignore_errors=True);
+    }
+}
+
+
+test "mixed jac+npm update preserves harvested lock pins" {
+    # The transactional pipeline owns the graph ([jac] rows, nodes/edges)
+    # but not the harvested [python]/[npm] pin sections: a mixed update
+    # must carry them forward through the commit instead of dropping them
+    # (npm installs stay with the client bundler either way).
+    (store_tmp, old_env) = isolate_store();
+    cwd = os.getcwd();
+    try {
+        outer = Path(tempfile.mkdtemp(prefix="jac_update_mixed_"));
+
+        origin_m = outer / "m_repo";
+        make_git_repo(
+            origin_m,
+            '[project]\nname = "m"\nversion = "1.0.0"\n',
+            {"m.jac": "def m() -> int { return 1; }\n"},
+            branch="main"
+        );
+        m1 = git_head(origin_m);
+
+        project_dir = outer / "proj";
+        project_dir.mkdir();
+        (project_dir / "jac.toml").write_text(
+            '[project]\nname = "proj"\nversion = "0.1.0"\n\n'
+            f'[dependencies.jac]\nm = {{ git = "{origin_m}", branch = "main" }}\n\n'
+            '[dependencies.npm]\nleft-pad = "^1.3.0"\n',
+            encoding="utf-8"
+        );
+        os.chdir(project_dir);
+        set_config(None);
+        import from jaclang.project.config { get_config }
+        import from jaclang.project.lockfile { write_lock }
+        config = get_config();
+        assert config is not None;
+        jac_sync(config);
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["m"]["sha"] == m1;
+
+        # Seed the lock with the python/npm pin sections 'jac install'
+        # harvests, then make upstream move.
+        lock_data = read_lock(project_dir);
+        lock_data["python"] = {"six": "==1.16.0"};
+        lock_data["npm"] = {"left-pad": "1.3.0"};
+        assert write_lock(project_dir, lock_data);
+
+        (origin_m / "changes.log").write_text("m2\n", encoding="utf-8");
+        m2 = git_commit_all(origin_m, "advance m");
+
+        result = project.update(packages=[]);
+        assert result == 0 , f"mixed update failed: {result}";
+        rows = jac_lock_rows(read_lock(project_dir));
+        assert rows["m"]["sha"] == m2 , "update did not advance the jac dep";
+        lock_data = read_lock(project_dir);
+        assert lock_data.get("npm", {}).get("left-pad") == "1.3.0" , (
+            "update rewrote the lock and dropped the harvested npm pins"
+        );
+        assert lock_data.get("python", {}).get("six") == "==1.16.0" , (
+            "update rewrote the lock and dropped the harvested python pins"
+        );
     } finally {
         os.chdir(cwd);
         set_config(None);

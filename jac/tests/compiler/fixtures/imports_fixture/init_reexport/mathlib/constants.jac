@@ -1,3 +1,3 @@
-glob PI = 3.14159;
-glob E = 2.71828;
-glob GOLDEN_RATIO = 1.61803;
+glob PI = 3.14159,
+     E = 2.71828,
+     GOLDEN_RATIO = 1.61803;

@@ -8,21 +8,23 @@ obj ImportedData {
 }
 
 glob llm = MockLLM(
-    model_name="mockllm",
-    config={"outputs": [ImportedData(name="test_import")], "verbose": False}
-);
+         model_name="mockllm",
+         config={"outputs": [ImportedData(name="test_import")], "verbose": False}
+     );
 
 def get_imported_data(txt: str) -> ImportedData by llm();
 
 # Helper to verify MTIR can be retrieved at runtime
-def verify_mtir_retrieval() -> bool {
+def verify_mtir_retrieval -> bool {
     # Try to get MTIR for get_imported_data using JacRuntime
     # The scope should be based on this module's path
     try {
         mtir_map = JacRuntime.program.mtir_map if JacRuntime.program else {};
         # Find the scope containing get_imported_data
         matching_scopes = [
-            scope for scope in mtir_map.keys() if "get_imported_data" in scope
+            scope
+            for scope in mtir_map.keys()
+            if "get_imported_data" in scope
         ];
         if len(matching_scopes) > 0 {
             print(f"MTIR_TEST: Found scopes: {matching_scopes}");
@@ -34,7 +36,9 @@ def verify_mtir_retrieval() -> bool {
                     break;
                 }
             }
-            print(f"MTIR_TEST: Has correct scope with 'importable_schema': {has_correct_scope}");
+            print(
+                f"MTIR_TEST: Has correct scope with 'importable_schema': {has_correct_scope}"
+            );
             return has_correct_scope;
         } else {
             print(f"MTIR_TEST: No scopes found containing 'get_imported_data'");

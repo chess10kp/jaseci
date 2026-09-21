@@ -11,6 +11,8 @@ obj Person {
     }
 }
 
-glob a = Person(name=Name(first_name="Bob", last_name="Brown"));# Error: named arg to parameterless init
-glob b = Person('Jac');# Error: positional arg to parameterless init
-glob c = Person();# OK: no arguments
+glob a = Person(name=Name(first_name="Bob", last_name="Brown")),
+     b = Person('Jac'),
+     c = Person();  # Error: named arg to parameterless init
+# Error: positional arg to parameterless init
+# OK: no arguments

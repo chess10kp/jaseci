@@ -6,8 +6,8 @@ comprehensions fall through to UnknownType.
 Expected: `{k: v for k, v in items}` should infer as dict.
 """
 
+glob items = [("a", 1), ("b", 2)];
 with entry {
-    items = [("a", 1), ("b", 2)];
     d = {k: v for (k, v) in items};
 
     # Should infer as dict, so assigning to str should error

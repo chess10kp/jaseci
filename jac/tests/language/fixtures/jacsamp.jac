@@ -1,6 +1,6 @@
 """Python function."""
 
 """Print function."""
-def my_print(x: object) -> None {
+def my_print(x: object) {
     print(x);
 }

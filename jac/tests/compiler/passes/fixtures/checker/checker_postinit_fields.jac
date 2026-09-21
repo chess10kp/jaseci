@@ -6,7 +6,7 @@ obj SomeObj {
     def postinit -> None;
 }
 
-impl SomeObj.postinit {
+impl SomeObj.postinit{
     self.b = self.a * 3;
     self.c = 5 + 6;
 }

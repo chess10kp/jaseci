@@ -25,7 +25,7 @@ walker Dedupe {
     }
 }
 
-def _dedupe_count() -> int {
+def _dedupe_count -> int {
     a = Cell(tag=1);
     d = Dedupe();
     d spawn a;
@@ -34,13 +34,13 @@ def _dedupe_count() -> int {
 }
 
 # --- py reference (sv runtime) ---
-def skip_guard_py() -> dict[str, any] {
+def skip_guard_py -> dict[str, any] {
     return {"count": _dedupe_count()};
 }
 
 # --- na (native LLVM) ---
 
-def skip_guard_na() -> dict[str, any] {
+def skip_guard_na -> dict[str, any] {
     a = Cell(tag=1);
     d = Dedupe();
     d spawn a;
@@ -51,7 +51,7 @@ def skip_guard_na() -> dict[str, any] {
 
 # --- cl (ECMAScript, in-process via the kernel) ---
 
-def skip_guard_cl() -> dict[str, any] {
+def skip_guard_cl -> dict[str, any] {
     a = Cell(tag=1);
     d = Dedupe();
     d spawn a;

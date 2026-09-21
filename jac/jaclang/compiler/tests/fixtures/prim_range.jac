@@ -4,7 +4,7 @@ Cross-backend equivalence fixture.
 """
 
 # --- Range constructor and methods ---
-def range_py() -> dict[any, any] {
+def range_py -> dict[any, any] {
     # range_builtin_py
     r1: list[any] = list(range(5));
     r2: list[any] = list(range(2, 7));
@@ -82,7 +82,7 @@ def range_py() -> dict[any, any] {
     };
 }
 
-def range_cl() -> dict[any, any] {
+def range_cl -> dict[any, any] {
     r1: list[any] = list(range(5));
     r2: list[any] = list(range(2, 7));
     r3: list[any] = list(range(0, 10, 2));
@@ -159,7 +159,7 @@ def range_cl() -> dict[any, any] {
 }
 
 
-def range_na() -> dict[str, any] {
+def range_na -> dict[str, any] {
     r1_len: int = len(list(range(5)));
     r1_first: int = list(range(5))[0];
     r1_last: int = list(range(5))[4];

@@ -2,18 +2,18 @@
 
 glob x: int = 10;
 
-def foo() -> None {
+def foo {
     x: int = 20;  # <-- Warning W2027: shadows module-level x
     print(x);
 }
 
-def bar() -> None {
+def bar {
     for x in [1, 2, 3] {  # <-- Warning W2027: shadows module-level x
         print(x);
     }
 }
 
-def no_shadow() -> None {
+def no_shadow {
     y = 30;  # <-- Ok: no outer 'y'
     print(y);
 }

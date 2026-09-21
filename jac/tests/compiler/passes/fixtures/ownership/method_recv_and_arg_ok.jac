@@ -1,6 +1,7 @@
 obj Buffer {
     has n: int = 0;
-    def eat(x: Buffer) -> None {}
+
+    def eat(x: Buffer) {}
 }
 
 with entry {

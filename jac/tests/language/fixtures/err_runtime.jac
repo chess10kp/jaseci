@@ -3,7 +3,7 @@ def bar(some_list: list[any]) {
     print(some_list[invalid_index]);  # This should fail.
 }
 
-def foo() {
+def foo {
     bar([0, 1, 2, 3]);
 }
 

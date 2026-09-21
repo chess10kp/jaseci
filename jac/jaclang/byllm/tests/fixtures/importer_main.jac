@@ -4,7 +4,6 @@ import from import_dir.importable_schema { get_imported_data, verify_mtir_retrie
 
 # This file doesn't define any GenAI functions itself,
 # just imports and uses them
-
 with entry {
     # First verify that MTIR can be retrieved at runtime
     mtir_ok = verify_mtir_retrieval();

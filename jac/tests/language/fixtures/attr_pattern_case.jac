@@ -6,8 +6,8 @@ obj B {
     has c: str;
 }
 
+glob expr = "Hello Jaseci!";
 with entry {
-    expr = "Hello Jaseci!";
     a = A(B(expr));
     match expr {
         case a.b.c:

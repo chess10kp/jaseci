@@ -8,16 +8,21 @@ emit E1005 on assignment.
 
 obj Circle {
     has _radius: float = 1.0;
-
     # writable: declared type is float — assignment must validate against it
     has radius: float {
-        getter -> float { return self._radius; }
-        setter(value: float) { self._radius = value; }
+        getter -> float {
+            return self._radius;
+        }
+        setter(value: float) {
+            self._radius = value;
+        }
     }
 
     # read-only: no setter declared — assignment must emit E1005
     has area: float {
-        getter { return self._radius * self._radius * 3.14159; }
+        getter {
+            return self._radius * self._radius * 3.14159;
+        }
     }
 }
 
@@ -34,5 +39,5 @@ with entry {
     c.radius = "wrong";  # <-- type-error here
 
     # ERROR — area has no setter (read-only property)
-    c.area = 12.5;       # <-- E1005 read-only property here
+    c.area = 12.5;  # <-- E1005 read-only property here
 }

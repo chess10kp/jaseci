@@ -2,12 +2,12 @@
 
 import from asyncio { sleep }
 
-async def fetch_data() -> str {
+async def fetch_data -> str {
     await sleep(1);
     return "data";
 }
 
-async def process() -> None {
-    result = fetch_data();   # <-- Warning W1172: missing await, result is coroutine
+async def process {
+    result = fetch_data();  # <-- Warning W1172: missing await, result is coroutine
     result2 = await fetch_data();  # <-- Ok
 }

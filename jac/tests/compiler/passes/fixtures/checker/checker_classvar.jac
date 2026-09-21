@@ -5,8 +5,8 @@ obj DSFunc {
 }
 
 obj Archetype {
-    has _jac_entry_funcs_: ClassVar[list[DSFunc]] = [];
-    has _jac_exit_funcs_: ClassVar[list[DSFunc]] = [];
+    has _jac_entry_funcs_: ClassVar[list[DSFunc]] = [],
+        _jac_exit_funcs_: ClassVar[list[DSFunc]] = [];
 }
 
 obj NodeArchetype(Archetype) {}
@@ -14,10 +14,7 @@ obj NodeArchetype(Archetype) {}
 obj WalkerArchetype(Archetype) {}
 
 # Test: accessing ClassVar members and iterating over them
-def execute_entries(
-    warch: WalkerArchetype,
-    current_loc: NodeArchetype
-) -> bool {
+def execute_entries(warch: WalkerArchetype, current_loc: NodeArchetype) -> bool {
     # ClassVar[list[DSFunc]] should unwrap to list[DSFunc]
     # and be iterable without errors
     for i in warch._jac_entry_funcs_ {

@@ -1,7 +1,7 @@
 """Advanced Jac constructs combined fixture for ECMAScript generator tests."""
 
 # Lambdas and higher-order helpers
-def lambda_examples() -> dict[any, any] {
+def lambda_examples -> dict[any, any] {
     adder = lambda (a: int, b: int) { a + b; };
     scaler = lambda (value: int, factor: int) { value * factor; };
     numbers = [1, 2, 3, 4];
@@ -41,7 +41,7 @@ def generator_examples(limit: int) {
 }
 
 # Spread and rest patterns
-def spread_and_rest_examples() -> dict[any, any] {
+def spread_and_rest_examples -> dict[any, any] {
     base = [1, 2, 3];
     extras = [4, 5];
     combined = [*base, *extras, 6];
@@ -83,7 +83,7 @@ def template_literal_examples(user: str, score: int) -> str {
 }
 
 # Destructuring & rest patterns
-def advanced_destructuring() -> dict[any, any] {
+def advanced_destructuring -> dict[any, any] {
     (first, *middle, last) = [10, 20, 30, 40, 50];
     point = (100, 200);
     (x, y) = point;
@@ -120,7 +120,7 @@ def optional_access_examples(payload: dict[any, any]) -> dict[any, any] {
 }
 
 # Update expression stand-ins
-def update_expression_examples() -> dict[any, any] {
+def update_expression_examples -> dict[any, any] {
     counter = 0;
     for _ in range(5) {
         counter += 1;
@@ -152,7 +152,7 @@ def build_advanced_report(values: list[any]) -> dict[any, any] {
     optional = optional_access_examples({"config": {"value": 7, "mode": "strict"}});
     destructured = advanced_destructuring();
 
-    async def gather_async() -> dict[any, any] {
+    async def gather_async -> dict[any, any] {
         return await async_pipeline(values);
     }
 
@@ -185,16 +185,15 @@ def TodoList(filteredTodos: any, toggleTodo: any, deleteTodo: any) -> JsxElement
 
     return
         <div>
-            {filteredTodos.map(
-                lambda (todo: any) -> any { return
-                    <TodoItem
-                        key={jid(todo)}
-                        todo={todo}
-                        toggleTodo={toggleTodo}
-                        deleteTodo={props.deleteTodo}
-                        children={props.children}
-                    />; }
-            )}
+            {[
+                <TodoItem
+                    key={jid(todo)}
+                    todo={todo}
+                    toggleTodo={toggleTodo}
+                    deleteTodo={props.deleteTodo}
+                    children={props.children}
+                /> for todo in filteredTodos
+            ]}
         </div>;
 }
 
@@ -208,16 +207,15 @@ def PropTodoList(props: any) -> JsxElement {
 
     return
         <div>
-            {props.filteredTodos.map(
-                lambda (todo: any) -> any { return
-                    <TodoItem
-                        key={jid(todo)}
-                        todo={todo}
-                        toggleTodo={props.toggleTodo}
-                        deleteTodo={props.deleteTodo}
-                        children={props.children}
-                    />; }
-            )}
+            {[
+                <TodoItem
+                    key={jid(todo)}
+                    todo={todo}
+                    toggleTodo={props.toggleTodo}
+                    deleteTodo={props.deleteTodo}
+                    children={props.children}
+                /> for todo in props.filteredTodos
+            ]}
         </div>;
 }
 

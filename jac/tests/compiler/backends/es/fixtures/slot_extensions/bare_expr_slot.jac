@@ -13,7 +13,6 @@ statement -- string, f-string, identifier, number -- becomes a child, in
 both the `if`/`else` and `for` slot bodies.
 """
 
-
 def:pub Repro(show: bool) -> JsxElement {
     return
         <div>
@@ -22,16 +21,12 @@ def:pub Repro(show: bool) -> JsxElement {
                     "BARE_STRING_A";
                 }}
             </div>
-
             <div data-test="element">
                 {if show {
                     <span>ELEMENT_STRING_B</span>
                 }}
             </div>
-
-            <div data-test="ternary">
-                {"TERNARY_STRING_C" if show else ""}
-            </div>
+            <div data-test="ternary">{"TERNARY_STRING_C" if show else ""}</div>
         </div>;
 }
 
@@ -42,7 +37,7 @@ def:pub Kinds(name: str, count: int) -> JsxElement {
                 f"have {count}";
             } else {
                 "EMPTY_BRANCH";
-            }}
+            } }
             {for label in [name, "tail"] {
                 label;
             }}

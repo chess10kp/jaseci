@@ -1,11 +1,11 @@
 obj Foo {
-    def compile()  -> None {
+    def compile -> None {
         return None;
     }
 }
 
 obj Bar(Foo) {
-    def some() {
+    def some {
         self.compile();  # <-- Ok: should resolve to Foo.compile()
     }
 }

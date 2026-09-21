@@ -330,6 +330,7 @@ obj JacConfig {
     def get_client_dir -> Path;
     def is_valid -> bool;
     def save -> None;
+    def to_doc(base_doc: dict[str, any] | None = None) -> dict[str, any];
     def persist_doc(doc: dict[str, any]) -> None;
     def _write_toml_text(text: str) -> None;
     def add_dependency(

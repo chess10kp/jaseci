@@ -18,7 +18,7 @@ def app -> str {
 
     var = 5;
 
-    def foo() {
+    def foo {
         var: int = 3;
     }
 

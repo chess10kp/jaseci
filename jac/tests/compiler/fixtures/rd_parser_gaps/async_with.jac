@@ -1,6 +1,6 @@
 """Test async with statement parsing."""
 
-def demo_async_with -> None {
+def demo_async_with {
     async with open("file.txt") as fh {
         data = fh.read();
         print(data);

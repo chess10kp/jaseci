@@ -4,11 +4,8 @@ import from enum { IntEnum }
 enum Color { RED = 1, GREEN = 2, BLUE = 3 }
 enum Status { PENDING = "pending", ACTIVE = "active" }
 enum AutoValueTest { FIRST, SECOND = 10, THIRD }
-enum BaseEnum ( IntEnum ) { BASE = 100 }
-enum DerivedEnum ( BaseEnum ) {
-    A = 1,
-    B = "jac"
-}  # Error: IntEnum requires int values, got str
+enum BaseEnum(IntEnum) { BASE = 100 }
+enum DerivedEnum(BaseEnum) { A = 1, B = "jac" }  # Error: IntEnum requires int values, got str
 
 
 enum ShapeType;

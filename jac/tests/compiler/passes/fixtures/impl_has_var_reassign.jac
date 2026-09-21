@@ -9,8 +9,7 @@ Expected: no type errors — `tasks` should resolve to the HasVar from the
 enclosing def-component, matching the inline behavior.
 """
 
-
-def:pub taskManager -> None {
+def:pub taskManager {
     has tasks: list[dict[str, any]] = [];
     async def addTask(task: dict[str, any]) -> None;
     async def listTasks -> None;

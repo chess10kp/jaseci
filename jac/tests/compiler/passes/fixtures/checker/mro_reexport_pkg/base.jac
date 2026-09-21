@@ -5,7 +5,7 @@ import from abc { ABC }
 class Node {}
 
 class BaseContainer[T](ABC) {
-    def init(self: BaseContainer[T], data: T) -> None {
+    def init(self: BaseContainer[T], data: T) {
         self.data: T = data;
     }
 }

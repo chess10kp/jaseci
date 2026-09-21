@@ -5,18 +5,24 @@ through the element drop hook (#8984 A2, rule 3)."""
 obj Cell {
     has v: int = 0;
 
-    def drop { print("drop " + str(self.v)); }
+    def drop {
+        print("drop " + str(self.v));
+    }
 }
 
 def digest(xs: &list[own Cell]) -> str {
     parts: list[str] = [];
-    for c in &xs { parts.append(str(c.v)); }
+    for c in &xs {
+        parts.append(str(c.v));
+    }
     return ",".join(parts);
 }
 
 def run -> int {
     xs: list[own Cell] = [];
-    for i in range(5) { xs.append(Cell(v=i)); }
+    for i in range(5) {
+        xs.append(Cell(v=i));
+    }
     mid: own Cell = xs.pop(1);
     print("popped " + str(mid.v) + " -> " + digest(&xs));
     xs.insert(0, Cell(v=9));
@@ -33,4 +39,7 @@ def run -> int {
     return len(xs);
 }
 
-with entry { print(run()); print("done"); }
+with entry {
+    print(run());
+    print("done");
+}

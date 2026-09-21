@@ -4,11 +4,11 @@ in signatures, closing the import cycle at type-resolution time."""
 import from checker_cycle_import_sig_a { AThing }
 
 obj BThing {
-    has tag: str = "b";
-    has friend: AThing | None = None;
+    has tag: str = "b",
+        friend: AThing | None = None;
 }
 
-def make_b() -> BThing {
+def make_b -> BThing {
     return BThing();
 }
 

@@ -3,7 +3,7 @@
 obj Foo {
     has x: int = 0;
 
-    def bar -> None {
+    def bar {
         x = 5;
     }
 }

@@ -1,8 +1,8 @@
 """Test native sys module: argv and exit."""
 import sys;
 
+glob args = sys.argv;
 with entry {
-    args = sys.argv;
     print("argc:", len(args));
     for i in range(0, len(args)) {
         print("arg:", args[i]);

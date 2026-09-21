@@ -10,6 +10,4 @@ def imported_enum_tally -> int {
     return tally_program();
 }
 
-with entry {
-    _x: int = 1;
-}
+glob _x: int = 1;

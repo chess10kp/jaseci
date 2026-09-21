@@ -1,12 +1,16 @@
 """Test unparenthesized lambda with special var ref keyword parameter names."""
 
+glob a = lambda (props: any) -> any { return props; };
 with entry {
-    a = lambda (props: any) -> any { return props; };
     print(a("hello"));
+}
 
-    b = lambda (`root: any) -> any { return `root; };
+glob b = lambda (`root: any) -> any { return `root; };
+with entry {
     print(b("world"));
+}
 
-    c = lambda (here: any) -> any { return here; };
+glob c = lambda (here: any) -> any { return here; };
+with entry {
     print(c("!"));
 }

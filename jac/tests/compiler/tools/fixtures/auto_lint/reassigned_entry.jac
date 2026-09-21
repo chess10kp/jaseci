@@ -7,8 +7,8 @@ variable stays in the with entry block. A name bound exactly once is still
 extracted.
 """
 
+glob once = 5;
 with entry {
-    once = 5;
     count = 0;
     count = count + 1;
     count = count + 1;

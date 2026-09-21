@@ -1,7 +1,8 @@
+obj A {
+    has i: int = 0;
+}
+
 with entry {
-    obj A {
-        has i: int = 0;
-    }
     a = A();
 
     # For-to-by loop

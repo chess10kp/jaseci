@@ -3,14 +3,16 @@
 import from functools { cached_property }
 
 obj Foo {
-    @property
-    def bar -> int {
-        return 1;
+    has bar: int {
+        getter {
+            return 1;
+        }
     }
 
-    @property
-    def name -> str {
-        return "foo";
+    has name: str {
+        getter {
+            return "foo";
+        }
     }
 
     @cached_property
@@ -24,9 +26,10 @@ obj Foo {
 }
 
 obj Bar {
-    @property
-    def value -> int {
-        return 100;
+    has value: int {
+        getter {
+            return 100;
+        }
     }
 
     @cached_property

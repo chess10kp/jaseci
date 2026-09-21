@@ -148,8 +148,11 @@ obj EcosystemProvider {
     def execute_install_plan(
         config: JacConfig, resolution: ProviderResolution, ctx: InstallContext
     ) -> bool {
-        # Recorded-only providers (e.g. npm, whose packages are installed by
-        # the client bundler at build time) have nothing to sync here.
+        # Plan/commit is a recorded-only pass for npm: resolution reads
+        # package-lock.json and commit_plan records the rows in jac.lock,
+        # while node_modules itself is synced by the bare-install pre-sync
+        # and the client bundler. npm's install_all/add_package/
+        # remove_package spawn bun directly, never through here.
         return True;
     }
 
@@ -193,6 +196,10 @@ obj EcosystemProvider {
         config: JacConfig, name: str, dev: bool, ctx: InstallContext
     ) -> bool {
         raise NotImplementedError(f"provider '{self.name}' cannot remove packages");
+    }
+
+    def install_global(packages: list[str], dev: bool) -> bool {
+        raise NotImplementedError(f"provider '{self.name}' has no global install path");
     }
 
     def list_installed(config: JacConfig) -> list[str] {
@@ -267,8 +274,21 @@ obj PythonProvider(EcosystemProvider) {
         }
         if context.frozen {
             for (node_id, graph_node) in prior_lock.nodes.items() {
-                if graph_node.ecosystem == self.name {
-                    resolution.nodes[node_id] = graph_node;
+                if graph_node.ecosystem != self.name {
+                    continue;
+                }
+                if graph_node.dev and not context.include_dev {
+                    continue;
+                }
+                resolution.nodes[node_id] = graph_node;
+                if graph_node.version {
+                    resolution.install_plan.append(
+                        {
+                            "id": node_id,
+                            "name": graph_node.project_name or graph_node.alias,
+                            "version": graph_node.version
+                        }
+                    );
                 }
             }
             for graph_edge in prior_lock.edges {
@@ -282,17 +302,21 @@ obj PythonProvider(EcosystemProvider) {
                     resolution.edges.append(graph_edge);
                 }
             }
-            resolution.install_plan = [];
             return resolution;
         }
         project_root = Path(selected[0].location or Path.cwd());
-        report_path = Path(tempfile.mktemp(prefix="jac-pip-", suffix=".json"));
+        import os;
+        (report_fd, report_name) = tempfile.mkstemp(prefix="jac-pip-", suffix=".json");
+        os.close(report_fd);
+        report_path = Path(report_name);
         specs: list[str] = [];
         for requirement in selected {
-            specs.append(requirement.name + requirement.constraint);
+            specs.append(make_pip_spec(requirement.name, requirement.constraint));
         }
+
+        probe_interpreter = context.interpreter or sys.executable;
         command: list[str] = [
-            sys.executable,
+            probe_interpreter,
             "-m",
             "pip",
             "install",
@@ -352,6 +376,7 @@ obj PythonProvider(EcosystemProvider) {
                     )
                 );
                 resolution.nodes[node_id] = dist_node;
+                by_name[normalized] = node_id;
                 metadata_by_id[node_id] = metadata;
                 resolution.install_plan.append(
                     {

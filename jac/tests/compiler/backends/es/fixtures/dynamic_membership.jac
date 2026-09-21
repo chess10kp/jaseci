@@ -13,7 +13,7 @@ def opaque(x: any) -> any {
     return x;
 }
 
-def membership() -> dict[any, any] {
+def membership -> dict[any, any] {
     s = opaque("hello world");
     nums = opaque([10, 20, 30]);
     mapping = opaque({"alpha": 1, "beta": 2});

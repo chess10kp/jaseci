@@ -5,9 +5,9 @@ import from typing { Union, Optional }
 obj Foo {}
 obj Bar {}
 
-glob MyTypeTuple = Union[('Foo', 'Bar')];
-glob MyTypeSingle = Union['Foo'];
-glob MyTypeOptional = Optional['Foo'];
+glob MyTypeTuple = Union[('Foo', 'Bar')],
+     MyTypeSingle = Union['Foo'],
+     MyTypeOptional = Optional['Foo'];
 
 def make_tuple -> MyTypeTuple {
     return Foo();

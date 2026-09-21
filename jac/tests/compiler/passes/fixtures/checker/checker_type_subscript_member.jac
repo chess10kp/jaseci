@@ -13,8 +13,8 @@ obj DSFunc {
 }
 
 obj Archetype {
-    has _jac_entry_funcs_: ClassVar[list[DSFunc]] = [];
-    has _jac_exit_funcs_: ClassVar[list[DSFunc]] = [];
+    has _jac_entry_funcs_: ClassVar[list[DSFunc]] = [],
+        _jac_exit_funcs_: ClassVar[list[DSFunc]] = [];
 }
 
 obj NodeArchetype(Archetype) {}
@@ -59,6 +59,6 @@ def get_class_name(cls: type[Archetype]) -> str {
 }
 
 # Test 5: Assigning to ClassVar on type[T]
-def update_entries(cls: type[Archetype], new_entries: list[DSFunc]) -> None {
+def update_entries(cls: type[Archetype], new_entries: list[DSFunc]) {
     cls._jac_entry_funcs_ = new_entries;
 }

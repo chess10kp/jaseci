@@ -45,11 +45,11 @@ with entry {
     p = make_path("/tmp/test.txt");
 
     # Forward ref 'Path' should resolve to pathlib.Path
-    good1: str = p.name;               # Ok: Path.name is str
-    good2: str = get_name(p);          # Ok: returns str
-    good3: str = accept_path(p);       # Ok: returns str
+    good1: str = p.name;  # Ok: Path.name is str
+    good2: str = get_name(p);  # Ok: returns str
+    good3: str = accept_path(p);  # Ok: returns str
 
     # True errors (type mismatches)
-    bad1: int = get_name(p);           # Error: str not assignable to int
-    bad2: int = p.stem;                # Error: str not assignable to int
+    bad1: int = get_name(p);  # Error: str not assignable to int
+    bad2: int = p.stem;  # Error: str not assignable to int
 }

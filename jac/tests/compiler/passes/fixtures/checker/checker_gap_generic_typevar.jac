@@ -24,7 +24,7 @@ obj Box[T] {
         return self.value;
     }
 
-    def set_(new_val: T) -> None {
+    def set_(new_val: T) {
         self.value = new_val;
     }
 }
@@ -34,15 +34,19 @@ obj Pair[A, B] {
     has first_val: A,
         second_val: B;
 
-    def first -> A { return self.first_val; }
-    def second -> B { return self.second_val; }
+    def first -> A {
+        return self.first_val;
+    }
+    def second -> B {
+        return self.second_val;
+    }
 }
 
 # Generic with internal state
 obj Stack[T] {
     has items: list[T] = [];
 
-    def push(item: T) -> None {
+    def push(item: T) {
         self.items.append(item);
     }
 
@@ -63,33 +67,33 @@ with entry {
     # --- Box[int] ---
     b = Box[int](value=42);
 
-    ok1: int = b.get();         # Ok: T=int -> int
-    bad1: str = b.get();        # Error: int -> str
+    ok1: int = b.get();  # Ok: T=int -> int
+    bad1: str = b.get();  # Error: int -> str
 
-    b.set_(10);                 # Ok: int -> T=int
-    b.set_("hello");            # Error: str -> T=int param
+    b.set_(10);  # Ok: int -> T=int
+    b.set_("hello");  # Error: str -> T=int param
 
     # --- Pair[str, int] ---
     p = Pair[str, int](first_val="hello", second_val=42);
 
-    ok2: str = p.first();       # Ok: A=str -> str
-    bad3: int = p.first();      # Error: str -> int
+    ok2: str = p.first();  # Ok: A=str -> str
+    bad3: int = p.first();  # Error: str -> int
 
-    ok3: int = p.second();      # Ok: B=int -> int
-    bad4: str = p.second();     # Error: int -> str
+    ok3: int = p.second();  # Ok: B=int -> int
+    bad4: str = p.second();  # Error: int -> str
 
     # --- Stack[float] ---
     s = Stack[float]();
-    s.push(3.14);               # Ok: float -> T=float
-    s.push("pi");               # Error: str -> T=float param
+    s.push(3.14);  # Ok: float -> T=float
+    s.push("pi");  # Error: str -> T=float param
 
-    ok4: float = s.peek();      # Ok: T=float -> float
-    bad5: str = s.peek();       # Error: float -> str
+    ok4: float = s.peek();  # Ok: T=float -> float
+    bad5: str = s.peek();  # Error: float -> str
 
-    ok5: int = s.size();        # Ok: int -> int (non-generic method)
+    ok5: int = s.size();  # Ok: int -> int (non-generic method)
 
     # --- Nested generics ---
     nested = Box[list[int]](value=[1, 2, 3]);
-    ok6: list[int] = nested.get();     # Ok
-    bad6: list[str] = nested.get();    # Error: list[int] -> list[str]
+    ok6: list[int] = nested.get();  # Ok
+    bad6: list[str] = nested.get();  # Error: list[int] -> list[str]
 }

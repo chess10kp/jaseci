@@ -2,8 +2,7 @@ glob a: str,
      b: str;
 glob c: str;
 
-def do() {
-
+def do {
     (a, b, c) = ("Welcome", "to", "Jaseci!");
 }
 

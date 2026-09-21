@@ -1,6 +1,7 @@
 """Inherited destruction follows method resolution even before wrappers exist."""
 glob base_drops: int = 0,
      override_drops: int = 0;
+
 obj Base {
     has amount: int;
 
@@ -28,6 +29,7 @@ def probe -> int {
 def base_count -> int {
     return base_drops;
 }
+
 def override_count -> int {
     return override_drops;
 }

@@ -5,5 +5,6 @@ node City {
 with entry {
     c: City = City("Metropolis");
     root ++> c;
-    x: str = root;  # <- error
 }
+
+glob x: str = root;  # <- error

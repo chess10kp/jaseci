@@ -8,15 +8,18 @@ error too.
 
 obj Widget {
     has size: int = 0;
-    def render() -> str { return "ok"; }
+
+    def render -> str {
+        return "ok";
+    }
 }
 
-def build() -> str {
+def build -> str {
     w = new(Widget, 5);
     return w.render();
 }
 
-def broken() -> str {
+def broken -> str {
     w = new(Widget);
     return w.nope();
 }

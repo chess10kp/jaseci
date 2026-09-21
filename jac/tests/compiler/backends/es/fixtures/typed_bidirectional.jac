@@ -47,7 +47,7 @@ def:pub app -> JsxElement {
     has cart: list[any] = [],
         order: any = None;
 
-    async def checkout -> None {
+    async def checkout {
         items = [
             CartItem(product_id="p1", name="Widget", quantity=2, price=9.99),
             CartItem(product_id="p2", name="Gadget", quantity=1, price=24.99)

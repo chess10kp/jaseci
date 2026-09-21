@@ -49,7 +49,7 @@ obj TypedManager {
 with entry {
     # Case 1: Object with __enter__ but no __exit__
     eo = EnterOnlyManager();
-    with eo as val {              # Error: no __exit__ method
+    with eo as val {  # Error: no __exit__ method
         print(val);
     }
 
@@ -57,24 +57,24 @@ with entry {
     vm = ValidManager();
     with vm as resource {
         # resource should be str (from __enter__ return type)
-        bad1: int = resource;     # Error: str -> int (if alias binding works)
+        bad1: int = resource;  # Error: str -> int (if alias binding works)
     }
 
     # Case 3: Typed manager — alias should get list[int] type
     tm = TypedManager();
     with tm as items {
         # items should be list[int] (from __enter__ return type)
-        bad2: str = items;        # Error: list[int] -> str
+        bad2: str = items;  # Error: list[int] -> str
     }
 
     # Case 4: Multiple context managers, one invalid
-    with vm as r1, eo as r2 {    # Error: eo has no __exit__
+    with vm as r1, eo as r2 {  # Error: eo has no __exit__
         print(r1);
         print(r2);
     }
 
     # --- Cases that SHOULD be valid ---
-    with vm as s {                # Ok: ValidManager has both __enter__ and __exit__
-        good: str = s;            # Ok if alias binding works (str -> str)
+    with vm as s {  # Ok: ValidManager has both __enter__ and __exit__
+        good: str = s;  # Ok if alias binding works (str -> str)
     }
 }

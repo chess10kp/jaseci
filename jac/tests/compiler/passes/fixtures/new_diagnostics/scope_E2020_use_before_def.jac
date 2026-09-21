@@ -2,10 +2,10 @@
 
 with entry {
     print(x);  # <-- Error E2020: 'x' used before definition
-    x = 5;
 }
+glob x = 5;
 
-def ok_func() -> None {
+def ok_func {
     x = 10;
     print(x);  # <-- Ok: defined before use
 }

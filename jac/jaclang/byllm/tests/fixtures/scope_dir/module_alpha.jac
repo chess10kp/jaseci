@@ -7,8 +7,8 @@ obj AlphaResult {
 }
 
 glob llm = MockLLM(
-    model_name="mockllm",
-    config={"outputs": [AlphaResult(value="alpha_result")], "verbose": False}
-);
+         model_name="mockllm",
+         config={"outputs": [AlphaResult(value="alpha_result")], "verbose": False}
+     );
 
 def process_data -> AlphaResult by llm();

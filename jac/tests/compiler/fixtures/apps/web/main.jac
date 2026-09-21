@@ -14,6 +14,6 @@ async def run_it -> str {
     return shout(p.name) + w.name;
 }
 
-def fire_and_forget -> None {
+def fire_and_forget {
     Greet(name="z");
 }

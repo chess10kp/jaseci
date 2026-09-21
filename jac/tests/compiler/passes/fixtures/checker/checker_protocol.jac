@@ -1,29 +1,29 @@
-
 obj SizeProtocol {
-    def __len__()  -> int {
+    def __len__ -> int {
         return 0;
     }
 }
 
 obj Runnable(Protocol) {
-    def run()  -> None { }
+    def run {}
 }
 
 obj Thread {
-    def run()  -> None {
+    def run {
         print("Thread Running");
     }
 }
 
 obj Foo {}
 
-def run(runnable: Runnable) -> None {
+def run(runnable: Runnable) {
     runnable.run();
 }
 
+glob
+     # len() expect protocol with __len__ method
+     lst: list[int] = [1, 2, 3];
 with entry {
-    # len() expect protocol with __len__ method
-    lst: list[int] = [1, 2, 3];
     len(lst);  # <-- Ok
     len(SizeProtocol());  # <-- OK
     len(Foo());  # <-- Error

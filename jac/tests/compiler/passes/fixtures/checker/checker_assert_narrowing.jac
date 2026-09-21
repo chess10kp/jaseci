@@ -13,20 +13,20 @@ obj SubDerived(Derived) {
 }
 
 # 1. Basic assert isinstance narrowing
-def test_assert_isinstance(x: Base) -> None {
+def test_assert_isinstance(x: Base) {
     assert isinstance(x, Derived);
     x.value;  # <-- Ok after narrowing (x is Derived)
 }
 
 # 2. Assert narrows to most specific subclass
-def test_assert_subclass(x: Base) -> None {
+def test_assert_subclass(x: Base) {
     assert isinstance(x, SubDerived);
     x.flag;  # <-- Ok after narrowing (x is SubDerived)
     x.value;  # <-- Ok (SubDerived inherits from Derived)
 }
 
 # 3. Multiple asserts chain narrowing
-def test_assert_chain(x: Base) -> None {
+def test_assert_chain(x: Base) {
     assert isinstance(x, Derived);
     x.value;  # <-- Ok
     assert isinstance(x, SubDerived);
@@ -34,13 +34,13 @@ def test_assert_chain(x: Base) -> None {
 }
 
 # 4. Assert is not None narrows optional type
-def test_assert_not_none(x: Derived | None) -> None {
+def test_assert_not_none(x: Derived | None) {
     assert x is not None;
     x.value;  # <-- Ok after narrowing (x is Derived)
 }
 
 # 5. Assert is not None with error message
-def test_assert_not_none_msg(x: Derived | None) -> None {
+def test_assert_not_none_msg(x: Derived | None) {
     assert x is not None , "x must not be None";
     x.value;  # <-- Ok after narrowing
 }

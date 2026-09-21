@@ -3,9 +3,9 @@ node test_node {
 }
 
 walker test_walker {
-    has visited_nodes: list[any] = [];
-    has entry_count: int = 0;
-    has exit_count: int = 0;
+    has visited_nodes: list[any] = [],
+        entry_count: int = 0,
+        exit_count: int = 0;
 
     can traverse with Root entry {
         visit [-->][?:test_node];

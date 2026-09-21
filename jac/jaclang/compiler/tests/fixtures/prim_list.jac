@@ -4,7 +4,7 @@ Cross-backend equivalence fixture.
 """
 
 # --- List methods and operators ---
-def list_py() -> dict[any, any] {
+def list_py -> dict[any, any] {
     # methods
     a1: list[any] = [1, 2, 3];
     a1.append(4);
@@ -252,7 +252,7 @@ def list_py() -> dict[any, any] {
     };
 }
 
-def list_cl() -> dict[any, any] {
+def list_cl -> dict[any, any] {
     a1: list[any] = [1, 2, 3];
     a1.append(4);
 
@@ -427,7 +427,7 @@ def list_cl() -> dict[any, any] {
 }
 
 
-def list_na() -> dict[str, any] {
+def list_na -> dict[str, any] {
     # basic methods
     a: list[int] = [10, 20, 30];
     a.append(40);

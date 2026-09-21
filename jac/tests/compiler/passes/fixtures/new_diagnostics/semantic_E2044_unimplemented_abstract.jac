@@ -17,6 +17,7 @@ obj Cat(Animal) {
     def speak(self: Cat) -> str {
         return "Meow";
     }
+
     def move(self: Cat) -> str {
         return "slink";
     }

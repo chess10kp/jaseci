@@ -18,7 +18,5 @@ with entry {
     # Raising a non-exception should be an error
     try {
         raise 42;  # <-- Should be Error (int is not an exception type)
-    } except Exception as e {
-        ;
-    }
+    } except Exception as e {}
 }

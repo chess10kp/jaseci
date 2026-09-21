@@ -27,21 +27,21 @@ walker OuterRep {
     }
 }
 
-def nested_report_py() -> dict[str, any] {
+def nested_report_py -> dict[str, any] {
     o = OuterRep();
     o spawn Item(val=3);
     return {"reports": o.reports};
 }
 
 
-def nested_report_na() -> dict[str, any] {
+def nested_report_na -> dict[str, any] {
     o = OuterRep();
     o spawn Item(val=3);
     return {"reports": o.reports};
 }
 
 
-def nested_report_cl() -> dict[str, any] {
+def nested_report_cl -> dict[str, any] {
     o = OuterRep();
     o spawn Item(val=3);
     return {"reports": o.reports};

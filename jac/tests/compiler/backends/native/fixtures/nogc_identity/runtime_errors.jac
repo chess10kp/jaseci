@@ -7,8 +7,8 @@ def checked_assert(value: int) -> int {
     return value;
 }
 
+glob xs: own list[int] = [1];
 with entry {
-    xs: own list[int] = [1];
     try {
         print(checked_index(&xs, 3));
     } except IndexError {

@@ -4,16 +4,16 @@ When a walrus operator is used with an `is not None` check,
 the type should be narrowed inside the if block.
 """
 
-def get_optional_int() -> int | None {
+def get_optional_int -> int | None {
     return 42;
 }
 
-def get_optional_str() -> str | None {
+def get_optional_str -> str | None {
     return "hello";
 }
 
 # Test 1: Basic walrus narrowing with is not None
-def test_walrus_is_not_none() -> int {
+def test_walrus_is_not_none -> int {
     if (x := get_optional_int()) is not None {
         # x should be narrowed to int here
         return x;  # Should NOT error
@@ -35,11 +35,11 @@ obj Result {
     has value: int;
 }
 
-def get_optional_result() -> Result | None {
+def get_optional_result -> Result | None {
     return Result(value=10);
 }
 
-def test_walrus_object_narrowing() -> int {
+def test_walrus_object_narrowing -> int {
     if (result := get_optional_result()) is not None {
         # result should be narrowed to Result here
         return result.value;  # Should NOT error
@@ -48,7 +48,7 @@ def test_walrus_object_narrowing() -> int {
 }
 
 # Test 4: Nested walrus narrowing
-def test_nested_walrus() -> int {
+def test_nested_walrus -> int {
     if (outer := get_optional_int()) is not None {
         if (inner := get_optional_int()) is not None {
             return outer + inner;  # Should NOT error
@@ -58,7 +58,7 @@ def test_nested_walrus() -> int {
 }
 
 # Test 5: Walrus with isinstance narrowing (two-step)
-def test_walrus_isinstance() -> str {
+def test_walrus_isinstance -> str {
     val: int | str | None = "test";
     if (x := val) is not None and isinstance(x, str) {
         # x should be narrowed to str here
@@ -72,11 +72,11 @@ obj Anchor {
     has access: int = 0;
 }
 
-def get_optional_anchor() -> Anchor | None {
+def get_optional_anchor -> Anchor | None {
     return Anchor();
 }
 
-def test_isinstance_walrus() -> int {
+def test_isinstance_walrus -> int {
     if isinstance((anchor := get_optional_anchor()), Anchor) {
         # anchor should be narrowed to Anchor here, not Anchor | None
         return anchor.access;  # Should NOT error
@@ -96,15 +96,15 @@ def test_isinstance_walrus_compound(flag: bool) -> int {
 # Regression: narrowing was lost after a nested if/while inside the isinstance-guarded block
 # because get_narrowing_key did not unwrap AtomUnit around the walrus expression.
 obj AnchorWithName {
-    has access: int = 0;
-    has name: str = "default";
+    has access: int = 0,
+        name: str = "default";
 }
 
-def get_optional_anchor_with_name() -> AnchorWithName | None {
+def get_optional_anchor_with_name -> AnchorWithName | None {
     return AnchorWithName();
 }
 
-def test_isinstance_walrus_nested_if() -> str {
+def test_isinstance_walrus_nested_if -> str {
     if isinstance((a := get_optional_anchor_with_name()), AnchorWithName) {
         if (a.access > 10) {
             x = 1;

@@ -8,13 +8,13 @@ obj B {
     has ok: bool = False;
 }
 
-def concat(xs: list[A], ys: list[B]) -> None {
+def concat(xs: list[A], ys: list[B]) {
     for i in xs + ys {
         i.ok = True;
     }
 }
 
-def homogeneous(xs: list[A], ys: list[A]) -> None {
+def homogeneous(xs: list[A], ys: list[A]) {
     for i in xs + ys {
         i.ok = True;
     }

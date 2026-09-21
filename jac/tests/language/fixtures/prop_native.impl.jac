@@ -16,6 +16,6 @@ impl Circle.radius.setter(value: float) {
     self._radius = value;
 }
 
-impl Circle.radius.deleter {
+impl Circle.radius.deleter{
     self._radius = 0.0;
 }

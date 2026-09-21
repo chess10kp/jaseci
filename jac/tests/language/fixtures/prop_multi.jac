@@ -13,9 +13,7 @@ obj Boxes {
         _c: int = 3;
 
     has a: int { getter; setter(value: int); }
-
     has b: int { getter; }
-
     has c: int { getter; }
 }
 

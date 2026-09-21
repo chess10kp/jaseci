@@ -7,9 +7,9 @@ still casts.
 
 import from contextlib { suppress }
 
-with entry {
-    flag = True;
+glob flag = True;
 
+with entry {
     # `with` over a ternary context expression, then its own `as` alias.
     with (suppress(ValueError) if flag else suppress(KeyError)) as ctx {
         print("with-ternary-ok");

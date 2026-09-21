@@ -1,10 +1,10 @@
 """Test closure support in Jac client code."""
 
 # Test 1: Simple closure with outer variable
-def make_counter() -> any {
+def make_counter -> any {
     count = 0;
 
-    def increment() -> int {
+    def increment -> int {
         count = count + 1;
         return count;
     }
@@ -16,11 +16,11 @@ def make_counter() -> any {
 def create_signal_simple(initialValue: any) -> list[any] {
     value = initialValue;
 
-    def readVal() -> any {
+    def readVal -> any {
         return value;
     }
 
-    def writeVal(newValue: any) -> None {
+    def writeVal(newValue: any) {
         value = newValue;
     }
 
@@ -33,20 +33,20 @@ def make_adder(x: int) -> any {
 }
 
 # Test 4: Multiple closures sharing state
-def create_shared_counter() -> dict[str, any] {
+def create_shared_counter -> dict[str, any] {
     counter = 0;
 
-    def increment() -> int {
+    def increment -> int {
         counter = counter + 1;
         return counter;
     }
 
-    def decrement() -> int {
+    def decrement -> int {
         counter = counter - 1;
         return counter;
     }
 
-    def get_value() -> int {
+    def get_value -> int {
         return counter;
     }
 
@@ -54,7 +54,7 @@ def create_shared_counter() -> dict[str, any] {
 }
 
 # Test entry point
-def test_all_closures() -> dict[str, any] {
+def test_all_closures -> dict[str, any] {
     # Test 1
     counter = make_counter();
     val1 = counter();

@@ -16,14 +16,14 @@ Expected errors: 4
   4. bad4: int = obj_result        — None not assignable to int
 """
 
-def side_effect() {
+def side_effect {
     x = 42;
 }
 
 obj Foo {
     has x: int = 0;
 
-    def mutate() {
+    def mutate {
         self.x = 10;
     }
 }

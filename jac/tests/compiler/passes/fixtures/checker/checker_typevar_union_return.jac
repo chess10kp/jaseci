@@ -10,18 +10,22 @@ obj MyObj {
     has x: int = 0;
 }
 
+glob
+     # dict.get() overload 1: get(key, default=None) -> _VT | None
+     d: dict[str, MyObj] = {};
 with entry {
-    # dict.get() overload 1: get(key, default=None) -> _VT | None
-    d: dict[str, MyObj] = {};
     v1 = d.get("key");
     y1: MyObj | None = v1;
 
     # ContextVar.get() overload 1: get() -> _T
     cv: ContextVar[MyObj] = ContextVar('cv');
     v2: MyObj = cv.get();
+}
 
-    # dict.get() with builtin value type (baseline)
-    d2: dict[str, int] = {};
+glob
+     # dict.get() with builtin value type (baseline)
+     d2: dict[str, int] = {};
+with entry {
     v3 = d2.get("key");
     y3: int | None = v3;
 }

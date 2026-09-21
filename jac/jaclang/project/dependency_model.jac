@@ -78,7 +78,11 @@ obj ResolutionContext {
     has include_dev: bool = False,
         frozen: bool = False,
         update_targets: set[str] = set(),
-        manifest_fingerprint: str = "";
+        manifest_fingerprint: str = "",
+        # Interpreter the resolved pins will actually be installed with
+        # (the project venv's python). Empty means "unknown, fall back to
+        # sys.executable", which is what the venv will be created from.
+        interpreter: str = "";
 }
 
 
@@ -92,8 +96,7 @@ obj LockGraph {
     has nodes: dict[str, DependencyNode] = {},
         edges: list[DependencyEdge] = [],
         manifest_fingerprint: str = "",
-        include_dev: bool = False,
-        version: int = 2;
+        include_dev: bool = False;
 }
 
 
@@ -102,9 +105,10 @@ obj ResolutionPlan {
         edges: list[DependencyEdge] = [],
         manifest_text: str = "",
         lock_data: dict[str, any] = {},
-        staged_cas_objects: list[str] = [],
         staged_materializations: dict[str, any] = {},
-        provider_resolutions: dict[str, ProviderResolution] = {};
+        provider_resolutions: dict[str, ProviderResolution] = {},
+        save_manifest: bool = True,
+        dry_run: bool = False;
 }
 
 
@@ -116,7 +120,9 @@ obj PackageOperation {
         include_dev: bool = False,
         frozen: bool = False,
         dry_run: bool = False,
-        save: bool = True;
+        save: bool = True,
+        extras: list[str] = [],
+        scale: bool = False;
 }
 
 
@@ -174,10 +180,8 @@ def validate_alias(alias: str) -> str {
         or any(c in value for c in ("/", "\\", ":"))
         or any(ord(c) < 32 or ord(c) == 127 for c in value)
         or value.endswith(".")
+        or not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", value)
     ) {
-        raise ValueError(f"Unsafe dependency alias '{alias}'");
-    }
-    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", value) {
         raise ValueError(
             f"Unsafe dependency alias '{alias}'; use a single path component"
         );
@@ -203,8 +207,8 @@ def validate_source(source: str) -> str {
     value = str(source).strip().lower();
     if value not in VALID_SOURCES {
         raise ValueError(
-            f"Unsupported dependency source '{source}'; "
-            "expected git, path, pypi, npm, registry, url, or workspace"
+            f"Unsupported dependency source '{source}'; expected one of: "
+                + ", ".join(sorted(VALID_SOURCES))
         );
     }
     return value;
@@ -238,36 +242,4 @@ def validate_dependency_spec(spec: DependencySpec) -> DependencySpec {
         raise ValueError(f"Dependency '{spec.alias}' has an invalid commit");
     }
     return spec;
-}
-
-
-def validate_dependency_node(dependency_node: DependencyNode) -> DependencyNode {
-    expected = canonical_dependency_id(
-        dependency_node.ecosystem, dependency_node.alias
-    );
-    if dependency_node.id and dependency_node.id != expected {
-        raise ValueError(
-            f"Dependency node id '{dependency_node.id}' is not '{expected}'"
-        );
-    }
-    dependency_node.id = expected;
-    dependency_node.ecosystem = normalize_ecosystem(dependency_node.ecosystem);
-    dependency_node.alias = validate_alias(dependency_node.alias);
-    if dependency_node.import_root {
-        dependency_node.import_root = validate_import_root(dependency_node.import_root);
-    }
-    if dependency_node.source {
-        dependency_node.source = validate_source(dependency_node.source);
-    }
-    return dependency_node;
-}
-
-def validate_dependency_edge(dependency_edge: DependencyEdge) -> DependencyEdge {
-    if not dependency_edge.from_id or not dependency_edge.to_id {
-        raise ValueError("Dependency edges require both from_id and to_id");
-    }
-    if dependency_edge.kind.strip() == "" {
-        dependency_edge.kind = "dependency";
-    }
-    return dependency_edge;
 }

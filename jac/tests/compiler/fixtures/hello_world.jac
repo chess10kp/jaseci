@@ -1,5 +1,5 @@
 """ Basic Hello World function """
 
-def hello() -> str {
+def hello -> str {
     return "Hello World!";
 }

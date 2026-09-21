@@ -1,6 +1,8 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
-def make() -> Buffer {
+def make -> Buffer {
     a: own Buffer = Buffer();
     return a;
 }

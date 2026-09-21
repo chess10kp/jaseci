@@ -12,6 +12,6 @@ resolves to its declared llvm Type.
 
 import from jaclang.compiler.backends.native.llvm { ir }
 
-def value_type(v: ir.Value) -> None {
+def value_type(v: ir.Value) {
     print(v.type);
 }

@@ -5,17 +5,16 @@ and names with backtick that should be preserved (actual Jac keywords).
 """
 
 # Regular variable names with unnecessary backtick escaping - should be removed
-glob foo = 1;
-glob bar = 2;
-glob myvar = 3;
-glob count = 4;
-glob data = 5;
+glob foo = 1,
+     bar = 2,
+     myvar = 3,
+     count = 4,
+     data = 5,
+     `node = 10,
+     `edge = 20,
+     `walker = 30;
 
 # Jac keywords used as variable names - escaping should be preserved
-glob `node = 10;
-glob `edge = 20;
-glob `walker = 30;
-
 # Object with mixed escaped names
 obj TestClass {
     # Unnecessary escaping in has variables - should be removed
@@ -32,9 +31,7 @@ obj TestClass {
 }
 
 # Function with unnecessary escaping - should be removed
-def compute(
-    input_val: int, output_val: int
-) -> int {
+def compute(input_val: int, output_val: int) -> int {
     total = input_val + output_val;
     return total;
 }

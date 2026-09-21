@@ -23,16 +23,18 @@ def process_point(p: Point) -> int {
 }
 
 # Test helper function that expects tuple
-def process_tuple(t: tuple[any, ...]) -> None {
+def process_tuple(t: tuple[any, ...]) {
     print(t);
 }
 
+glob
+     # ==========================================================================
+     # TEST 1: Constructor with positional arguments
+     # ==========================================================================
+     import_pieces: list[str] = ["a", "b"],
+     bundled_module_names: set[str] = {"x", "y"};
+
 with entry {
-    # ==========================================================================
-    # TEST 1: Constructor with positional arguments
-    # ==========================================================================
-    import_pieces: list[str] = ["a", "b"];
-    bundled_module_names: set[str] = {"x", "y"};
     result = ProcessedImports(import_pieces, bundled_module_names);
 
     # With literals
@@ -83,11 +85,14 @@ with entry {
     # TEST 7: NamedTuple is a tuple subtype
     # ==========================================================================
     process_tuple(p);
+}
 
-    # ==========================================================================
-    # TEST 8: Special methods (_fields, _asdict, _replace, _make)
-    # ==========================================================================
-    fields = Point._fields;
+glob
+     # ==========================================================================
+     # TEST 8: Special methods (_fields, _asdict, _replace, _make)
+     # ==========================================================================
+     fields = Point._fields;
+with entry {
     as_dict = p._asdict();
     replaced = p._replace();
     made = Point._make([7, 8]);

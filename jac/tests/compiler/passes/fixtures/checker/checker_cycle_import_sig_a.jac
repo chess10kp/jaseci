@@ -8,11 +8,11 @@ being resolved. The whole pair must check clean.
 import from checker_cycle_import_sig_b { BThing, make_b }
 
 obj AThing {
-    has label: str = "a";
-    has partner: BThing | None = None;
+    has label: str = "a",
+        partner: BThing | None = None;
 }
 
-def describe_a() -> str {
+def describe_a -> str {
     bt = make_b();
     return bt.tag;
 }

@@ -9,7 +9,9 @@ process avoided a crash.
 """
 import sys;
 
-def add(a: int, b: int) -> int { return a + b; }
+def add(a: int, b: int) -> int {
+    return a + b;
+}
 
 with entry {
     total = add(40, 2);

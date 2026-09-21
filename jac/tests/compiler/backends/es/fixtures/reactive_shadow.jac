@@ -12,8 +12,7 @@ Do NOT "fix" the asserted output for this fixture without first landing contract
 acceptance matrix test pins the CURRENT (wrong-on-Solid) output on purpose.
 """
 
-
-def:pub shadow_app() -> JsxElement {
+def:pub shadow_app -> JsxElement {
     has count: int = 0;
 
     def formatted(count: int) -> JsxElement {
@@ -22,8 +21,9 @@ def:pub shadow_app() -> JsxElement {
         return <span>{count}</span>;
     }
 
-    return <div>
-        <p>Field: {count}</p>
-        {formatted(99)}
-    </div>;
+    return
+        <div>
+            <p>Field: {count}</p>
+            {formatted(99)}
+        </div>;
 }

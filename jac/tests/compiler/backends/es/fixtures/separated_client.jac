@@ -1,23 +1,21 @@
-import from react { useState }
-
 # Import walker from server module
 import from .separated { create_todo }
 
-def:pub app() -> JsxElement {
-    [todos, setTodos] = useState([]);
-    [input, setInput] = useState("");
+def:pub app -> JsxElement {
+    has todos: list = [],
+        input: str = "";
 
     # Event Handler
-    async def addTodo() -> None {
+    async def addTodo -> None {
         if not input.strip() {
             return;
         }
         response = root spawn create_todo(text=input.strip());
         new_todo = response.reports[0][0];
-        setTodos(todos + [new_todo]);
-        setInput("");
+        todos = todos + [new_todo];
+        input = "";
 
-        def foo { }
+        def foo {}
     }
 
     return
@@ -25,19 +23,16 @@ def:pub app() -> JsxElement {
             <h2>My Todos</h2>
             <input
                 value={input}
-                onChange={lambda (e: any) -> None { setInput(e.target.value); }}
-                onKeyPress={lambda (e: any) -> None { if e.key == "Enter" {
-                    addTodo();
-                }}}
+                onChange={lambda (e: any) { setInput(e.target.value); }}
+                onKeyPress={lambda (e: any) { if e.key == "Enter" { addTodo(); }}}
             />
             <button onClick={addTodo}>Add Todo</button>
             <div>
-                {todos.map(
-                    lambda (todo: any) -> any { return
-                        <div key={jid(todo)}>
-                            <span>{todo.text}</span>
-                        </div>; }
-                )}
+                {[
+                    <div key={jid(todo)}>
+                        <span>{todo.text}</span>
+                    </div> for todo in todos
+                ]}
             </div>
         </div>;
 }

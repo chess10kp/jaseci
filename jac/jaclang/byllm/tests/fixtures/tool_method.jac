@@ -26,7 +26,9 @@ obj CalculatorService {
             ],
             "verbose": False
         }
-    )(tools=[self.add, self.multiply]);
+    )(
+        tools=[self.add, self.multiply]
+    );
 }
 
 sem CalculatorService = "A calculator service with basic operations.";

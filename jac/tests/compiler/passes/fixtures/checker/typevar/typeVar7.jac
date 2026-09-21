@@ -9,13 +9,10 @@ Known behaviors:
    previously assigned an int type, not a TypeVar validation issue.
 """
 
-
 class Foo {
     has var1: int;
 
-    def __call__(self: Foo, val: int) {
-        ;
-    }
+    def __call__(self: Foo, val: int) {}
 
     def do_stuff(self: Foo) -> int {
         return 0;
@@ -27,12 +24,10 @@ class Foo {
 }
 
 class Bar {
-    has var1: int;
-    has var2: int;
+    has var1: int,
+        var2: int;
 
-    def __call__(self: Bar, val: int) {
-        ;
-    }
+    def __call__(self: Bar, val: int) {}
 
     def do_stuff(self: Bar) -> float {
         return 0;
@@ -64,9 +59,7 @@ class ClassA(Generic[_T1, _T2]) {
         _ = -a;  # Error
         a += 3;  # Error
         _ = await a;  # Error
-        for _ in a {  # Error (two errors)
-            ;
-        }
+        for _ in a {}  # Error (two errors)
         a.do_stuff();  # Ok
         a.do_other_stuff();  # Error: Foo doesn't have it
         _ = a.__class__;  # Ok
@@ -85,9 +78,7 @@ class ClassA(Generic[_T1, _T2]) {
         _ = -a;  # Error
         a += 3;  # Error
         _ = await a;  # Error
-        for _ in a {  # Error
-            ;
-        }
+        for _ in a {}  # Error
         a.do_other_stuff();  # Error
         _ = a.__class__;  # Ok
         _ = a.__doc__;  # Ok
@@ -112,6 +103,7 @@ class Thing1 {
     def __add__(self: Thing1, value: float) -> Thing1 {
         return self;
     }
+
     def __radd__(self: Thing1, value: float) -> Thing1 {
         return self;
     }
@@ -121,6 +113,7 @@ class Thing2 {
     def __add__(self: Thing2, value: float) -> Thing2 {
         return self;
     }
+
     def __radd__(self: Thing2, value: float) -> Thing2 {
         return self;
     }

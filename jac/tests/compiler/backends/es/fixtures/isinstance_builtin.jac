@@ -12,7 +12,6 @@ a tuple of types, plus issubclass over builtin-type tags, so codegen must lower
 each form to a correct runtime check.
 """
 
-
 obj Widget {
     has name: str;
 }
@@ -46,7 +45,7 @@ def is_scalar(value: any) -> bool {
     return isinstance(value, (int, float, str, bool));
 }
 
-def subclass_probe() -> list[bool] {
+def subclass_probe -> list[bool] {
     # issubclass over builtin-type tags: bool is a subclass of int (Python
     # semantics), identity holds, and unrelated builtins are not subclasses.
     return [

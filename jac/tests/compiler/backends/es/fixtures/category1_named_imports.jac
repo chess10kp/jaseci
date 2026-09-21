@@ -6,7 +6,6 @@ This fixture tests the following patterns from the proposal:
 3. Named import with alias: import { foo as bar } from 'lib'
 """
 
-
 # Single named import
 import from react { useState }
 
@@ -28,7 +27,7 @@ import from ...config { settings }
 import from "@jac/runtime" { renderJsxTree, jacLogin, jacLogout }
 
 # Using imported functions in a simple client function
-def example_usage() -> int {
+def example_usage -> int {
     count = 0;
     httpGet("/api/data");
     jacLogin("user", "pass");

@@ -5,7 +5,7 @@ obj Player {
         score: int = 0;
 }
 
-def use_name(x: str) { }
+def use_name(x: str) {}
 
 with entry {
     p: own Player = Player();

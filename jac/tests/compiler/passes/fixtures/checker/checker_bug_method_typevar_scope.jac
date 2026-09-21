@@ -28,7 +28,7 @@ obj Leaf(Mid) {
     }
 }
 
-def use(nd: Node, lf: Leaf) -> None {
+def use(nd: Node, lf: Leaf) {
     for a in Leaf.pick(nd, Alpha) {
         print(a);
     }

@@ -17,7 +17,7 @@ class MyPass(StrTransform) {
     def sync(self: MyPass, value: T) -> T;
 }
 
-def test_typevar_shadow(p: MyPass) -> None {
+def test_typevar_shadow(p: MyPass) {
     # Should NOT error - sync returns T (bound=int), not str
     check: int = p.sync(42);
 

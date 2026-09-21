@@ -27,7 +27,7 @@ def needs_task(t: Task) {
 }
 
 with entry {
-    a = make_any();           # a: any (inferred destination)
+    a = make_any();  # a: any (inferred destination)
 
     # Inferred destination keeps PEP 484 — OK.
     x = a;

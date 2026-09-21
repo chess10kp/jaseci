@@ -7,7 +7,6 @@ the raw path. The name carries its own security review hint at the use
 site.
 """
 
-
 obj Comment {
     has author: str,
         body_html: str;

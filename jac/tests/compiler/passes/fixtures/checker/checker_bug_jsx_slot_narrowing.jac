@@ -16,13 +16,15 @@ After the fix, every attribute access below must type-check.
 """
 
 obj Recipe {
-    has title: str;
-    has ingredients: list[str] = [];
+    has title: str,
+        ingredients: list[str] = [];
 }
 
 # Slot for-loop iterator depends on a narrowed attribute access.
 def use_for(recipe: Recipe | None) -> JsxElement {
-    if recipe is None { return <div>loading</div>; }
+    if recipe is None {
+        return <div>loading</div>;
+    }
     return
         <ul>
             {for ing in recipe.ingredients {
@@ -46,7 +48,9 @@ def use_positive_guard(recipe: Recipe | None) -> JsxElement {
 
 # Slot `if` whose condition references a narrowed value.
 def use_if_cond(recipe: Recipe | None) -> JsxElement {
-    if recipe is None { return <div>loading</div>; }
+    if recipe is None {
+        return <div>loading</div>;
+    }
     return
         <section>
             {if len(recipe.ingredients) == 0 {
@@ -59,7 +63,9 @@ def use_if_cond(recipe: Recipe | None) -> JsxElement {
 
 # Slot interpolation reads a narrowed attribute.
 def use_interp(recipe: Recipe | None) -> JsxElement {
-    if recipe is None { return <div>loading</div>; }
+    if recipe is None {
+        return <div>loading</div>;
+    }
     return
         <ul>
             {for ing in ["a", "b"] {
@@ -70,7 +76,9 @@ def use_interp(recipe: Recipe | None) -> JsxElement {
 
 # Slot nested inside another slot - narrowing must reach the inner one too.
 def use_nested(recipe: Recipe | None) -> JsxElement {
-    if recipe is None { return <div>loading</div>; }
+    if recipe is None {
+        return <div>loading</div>;
+    }
     return
         <section>
             {if len(recipe.ingredients) > 0 {

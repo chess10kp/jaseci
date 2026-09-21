@@ -5,8 +5,10 @@ return statements, or default to None when no return statement is present.
 This is critical for JSX event handlers like onClick={lambda e: MouseEvent { doStuff(); }}
 which must match Callable[[MouseEvent], None]."""
 
-def do_nothing() -> None {}
-def get_number() -> int { return 42; }
+def do_nothing {}
+def get_number -> int {
+    return 42;
+}
 
 # --- Cases that SHOULD pass (no errors) ---
 
@@ -17,14 +19,10 @@ with entry {
 }
 
 # Case 2: Block lambda with bare return → return type is None.
-with entry {
-    ok_bare: Callable[[MouseEvent], None] = lambda (e: MouseEvent) { return; };
-}
+glob ok_bare: Callable[[MouseEvent], None] = lambda (e: MouseEvent) { return; },
+     ok_int: Callable[[MouseEvent], int] = lambda (e: MouseEvent) { return 42; };
 
 # Case 3: Block lambda with explicit return value → inferred from return expr.
-with entry {
-    ok_int: Callable[[MouseEvent], int] = lambda (e: MouseEvent) { return 42; };
-}
 
 # Case 4: Block lambda with assignment (no return) → None.
 with entry {
@@ -39,15 +37,10 @@ with entry {
 
 # Case 6: Mixed return — if branch returns int, else falls through.
 # Inferred type should be int | None.
-with entry {
-    ok_mixed: Callable[[MouseEvent], int | None] = lambda (e: MouseEvent) {
-        if True { return 42; }
-    };
-}
-
+glob ok_mixed: Callable[[MouseEvent], int | None] = lambda (e: MouseEvent) { if True {
+         return 42;
+     }},
+     bad_ret: Callable[[MouseEvent], str] = lambda (e: MouseEvent) { return 42; };
 # --- Cases that SHOULD produce errors ---
 
 # Case 7: Block lambda returns int but assigned to Callable[..., str] → type error.
-with entry {
-    bad_ret: Callable[[MouseEvent], str] = lambda (e: MouseEvent) { return 42; };
-}

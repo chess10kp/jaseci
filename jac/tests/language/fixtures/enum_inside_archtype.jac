@@ -5,7 +5,7 @@ obj outer {
         has i1: int = 8;
     }
 
-    def foo() -> str {
+    def foo -> str {
         return 'foo';
     }
 

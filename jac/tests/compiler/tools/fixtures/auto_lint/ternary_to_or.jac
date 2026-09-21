@@ -6,33 +6,32 @@ This file tests the auto-lint rule that converts:
 """
 
 obj SomeClass {
-    has value: int = 0;
-    has name: str = "";
+    has value: int = 0,
+        name: str = "";
 }
 
-glob instance = SomeClass();
+glob instance = SomeClass(),
+     result1 = instance.value or 0,
+     result2 = instance?.name or "default",
+     result3 = instance.value if instance.name else 0;
 
 # Basic ternary with identical value and condition (should be converted)
-glob result1 = instance.value if instance.value else 0;
 
 # Null-safe ternary with identical value and condition (should be converted)
-glob result2 = instance?.name if instance?.name else "default";
 
 # Different value and condition (should NOT be converted)
-glob result3 = instance.value if instance.name else 0;
-
 # Function call in ternary (should be converted if identical)
 def get_value -> int {
     return 42;
 }
-glob result4 = get_value() if get_value() else -1;
 
+glob result4 = get_value() if get_value() else -1,
+     result5 = (instance.value + 1) if (instance.value + 1) else 0,
+     result6 = instance?.value or -1,
+     result7 = instance?.name or "",
+     result8 = instance?.value;
 # Complex expression (should be converted if identical)
-glob result5 = (instance.value + 1) if (instance.value + 1) else 0;
 
 # Nested null-safe access (should be converted)
-glob result6 = instance?.value if instance?.value else -1;
 
 # Different types of defaults
-glob result7 = instance?.name if instance?.name else "";
-glob result8 = instance?.value if instance?.value else None;

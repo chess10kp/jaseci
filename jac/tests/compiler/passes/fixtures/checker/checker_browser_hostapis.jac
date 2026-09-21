@@ -12,7 +12,6 @@ bottom (`resp.nope()`), which pins that `Response` is a real strict type,
 not a permissive escape hatch.
 """
 
-
 async def read_stream(url: str) -> str {
     resp = await fetch(url);
     ok: bool = resp.ok;
@@ -54,15 +53,15 @@ def encode_roundtrip(s: str) -> str {
     return dec.decode(encoded);
 }
 
-async def copy_text(t: str) -> None {
+async def copy_text(t: str) {
     await navigator.clipboard.writeText(t);
 }
 
-async def paste_text() -> str {
+async def paste_text -> str {
     return await navigator.clipboard.readText();
 }
 
-def release_pointer() -> bool {
+def release_pointer -> bool {
     if document.pointerLockElement {
         document.exitPointerLock();
         return True;
@@ -72,7 +71,7 @@ def release_pointer() -> bool {
 
 # The ONE deliberate error: a member missing from the WHATWG Response
 # surface must still be flagged (E1030).
-async def bad(url: str) -> None {
+async def bad(url: str) {
     resp = await fetch(url);
     resp.nope();
 }

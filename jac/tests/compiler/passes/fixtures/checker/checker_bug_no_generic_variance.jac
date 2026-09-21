@@ -11,12 +11,11 @@ def make_int_list -> list[int] {
     return [1, 2, 3];
 }
 
-def take_str_list(items: list[str]) -> None {
-    for item in items {
-        ;  # Would crash at runtime if items contains ints
-    }
+def take_str_list(items: list[str]) {
+    for item in items {}
 }
 
+# Would crash at runtime if items contains ints
 with entry {
     int_list: list[int] = make_int_list();
 

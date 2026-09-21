@@ -5,11 +5,10 @@ without triggering one. `Ref(initial)` seeds `.current`; the seed is
 lifted into `useRef(initial)`.
 """
 
-
-def:pub Counter() -> JsxElement {
+def:pub Counter -> JsxElement {
     has renderCount: Ref[int] = Ref(0);
 
-    def bump -> None {
+    def bump {
         renderCount.current = (renderCount.current or 0) + 1;
     }
     return <button onClick={bump}>bump</button>;

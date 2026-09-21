@@ -21,18 +21,22 @@ sem format_name.first = "First name.";
 sem format_name.last = "Last name.";
 
 glob tool_llm = MockLLM(
-    model_name="mockllm",
-    config={
-        "outputs": [
-            MockToolCall(tool=calculate_age, args={"birth_year": 1990, "current_year": 2025}),
-            "The person is 35 years old."
-        ],
-        "verbose": False
-    }
-);
+         model_name="mockllm",
+         config={
+             "outputs": [
+                 MockToolCall(
+                     tool=calculate_age, args={"birth_year": 1990, "current_year": 2025}
+                 ),
+                 "The person is 35 years old."
+             ],
+             "verbose": False
+         }
+     );
 
 """Get person details using tools."""
-def get_person_details(birth_year: int) -> str by tool_llm(tools=[calculate_age, format_name]);
+def get_person_details(birth_year: int) -> str by tool_llm(
+    tools=[calculate_age, format_name]
+);
 
 sem get_person_details = "Get detailed person information using helper tools.";
 sem get_person_details.birth_year = "Birth year to calculate age from.";

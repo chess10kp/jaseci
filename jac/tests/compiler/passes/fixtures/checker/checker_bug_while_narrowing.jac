@@ -12,7 +12,7 @@ def sum_chain(start: Item | None) -> int {
     total = 0;
     cur = start;
     while cur {
-        total += cur.count;   # cur: Item (not Item | None)
+        total += cur.count;  # cur: Item (not Item | None)
         cur = cur.prev;
     }
     return total;

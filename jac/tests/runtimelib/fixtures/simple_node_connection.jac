@@ -8,8 +8,8 @@ edge simple_edge {
 
 with entry {
     if (not [root-->]) {
-        root +>: simple_edge : index=0 :+> simple(tag="first");
-        root +>: simple_edge : index=1 :+> simple(tag="second");
+        root +>:simple_edge:index=0:+> simple(tag="first");
+        root +>:simple_edge:index=1:+> simple(tag="second");
     }
 }
 

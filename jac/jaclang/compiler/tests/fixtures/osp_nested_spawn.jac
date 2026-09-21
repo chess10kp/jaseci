@@ -32,21 +32,21 @@ walker Outer {
     }
 }
 
-def nested_spawn_py() -> dict[str, any] {
+def nested_spawn_py -> dict[str, any] {
     o = Outer();
     o spawn Item(val=4);
     return {"sum": o.sum};
 }
 
 
-def nested_spawn_na() -> dict[str, any] {
+def nested_spawn_na -> dict[str, any] {
     o = Outer();
     o spawn Item(val=4);
     return {"sum": o.sum};
 }
 
 
-def nested_spawn_cl() -> dict[str, any] {
+def nested_spawn_cl -> dict[str, any] {
     o = Outer();
     o spawn Item(val=4);
     return {"sum": o.sum};

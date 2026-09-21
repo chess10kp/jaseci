@@ -28,7 +28,7 @@ obj Color {
 obj Base {
     static has tag: int = 7;
 
-    static def origin() -> int {
+    static def origin -> int {
         return 100;
     }
 }
@@ -47,13 +47,13 @@ obj Point {
         return Point(x=x, y=y);
     }
 
-    def sum() -> int {
+    def sum -> int {
         return self.x + self.y;
     }
 }
 
 
-def static_members_py() -> dict[any, any] {
+def static_members_py -> dict[any, any] {
     p = Point.at(3, 4);
     return {
         "shade": Color.shade(5),
@@ -68,12 +68,12 @@ def static_members_py() -> dict[any, any] {
 }
 
 
-def static_members_cl() -> dict[any, any] {
+def static_members_cl -> dict[any, any] {
     return {};
 }
 
 
-def static_members_na() -> dict[str, any] {
+def static_members_na -> dict[str, any] {
     p: Point = Point.at(3, 4);
     return {
         "shade": Color.shade(5),

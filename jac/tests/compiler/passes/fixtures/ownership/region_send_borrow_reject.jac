@@ -13,7 +13,7 @@ def run {
         b = Buffer();
         s = b;
     }
-    h = flow consume(r);
-    wait h;
+    h = flow consume(r) ;
+    wait h ;
     print(s.n);
 }

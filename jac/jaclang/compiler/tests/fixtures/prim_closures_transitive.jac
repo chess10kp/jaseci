@@ -14,7 +14,7 @@ def transitive_py -> dict[any, any] {
     def kind_at -> str {
         return toks[pos] if pos < len(toks) else "";
     }
-    def advance -> None {
+    def advance {
         pos = pos + 1;
     }
     def is_a -> bool {
@@ -66,7 +66,7 @@ def transitive_na -> dict[str, any] {
     def kind_at -> str {
         return toks[pos] if pos < len(toks) else "";
     }
-    def advance -> None {
+    def advance {
         pos = pos + 1;
     }
     def is_a -> bool {

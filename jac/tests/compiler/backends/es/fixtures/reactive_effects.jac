@@ -3,9 +3,9 @@
 Note: useEffect import is auto-injected from @jac/runtime when `can with entry/exit` is used.
 """
 
-def:pub app() -> JsxElement {
-    has items: list[any] = [];
-    has loading: bool = True;
+def:pub app -> JsxElement {
+    has items: list[any] = [],
+        loading: bool = True;
 
     # Mount effect - runs once on component mount
     async can with entry {

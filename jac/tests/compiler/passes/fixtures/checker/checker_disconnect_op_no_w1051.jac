@@ -20,7 +20,7 @@ edge MyEdge {
 with entry {
     a: NodeA = NodeA(0);
     b: NodeB = NodeB("b");
-    a +>: MyEdge :+> b;
+    a +>:MyEdge:+> b;
 
     # Bare untyped disconnect — must not emit W1051.
     a del --> b;

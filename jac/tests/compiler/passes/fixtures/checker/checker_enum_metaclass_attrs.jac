@@ -15,7 +15,7 @@ class Tokens(StrEnum) {
     B = "b";
 }
 
-def member_names() -> list[str] {
+def member_names -> list[str] {
     out: list[str] = [];
     for k in Tokens.__members__ {
         out.append(k);
@@ -23,13 +23,11 @@ def member_names() -> list[str] {
     return out;
 }
 
-with entry {
-    names_ok: list[str] = Tokens._member_names_;
-    members_ok: dict[str, Tokens] = Tokens._member_map_;
-    v2m_ok: dict[str, Tokens] = Tokens._value2member_map_;
-    # __members__ is a read-only mappingproxy, not a plain dict.
-    proxy_ok: MappingProxyType[str, Tokens] = Tokens.__members__;
-    val_ok: str = Tokens.__members__["A"].value;
-    # __members__ is MappingProxyType[str, Tokens], not int: this must error.
-    bad: int = Tokens.__members__;
-}
+glob names_ok: list[str] = Tokens._member_names_,
+     members_ok: dict[str, Tokens] = Tokens._member_map_,
+     v2m_ok: dict[str, Tokens] = Tokens._value2member_map_,
+     # __members__ is a read-only mappingproxy, not a plain dict.
+     proxy_ok: MappingProxyType[str, Tokens] = Tokens.__members__,
+     val_ok: str = Tokens.__members__["A"].value,
+     # __members__ is MappingProxyType[str, Tokens], not int: this must error.
+     bad: int = Tokens.__members__;

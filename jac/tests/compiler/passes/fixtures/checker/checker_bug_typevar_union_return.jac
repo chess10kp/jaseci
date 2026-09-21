@@ -10,9 +10,8 @@ because TypeVarType.is_any_type() returns True. This prevented the BW_OR union
 handler from ever running, so the return type was Unknown instead of V | None.
 """
 
-
-glob K = TypeVar('K');
-glob V = TypeVar('V');
+glob K = TypeVar('K'),
+     V = TypeVar('V');
 
 obj Store(Generic[K, V]) {
     """Generic class with a method returning V | None (union with TypeVar)."""
@@ -28,6 +27,6 @@ with entry {
 
     # If TypeVar union resolution works, lookup returns int | None.
     # Without the fix, V | None resolves to Unknown, suppressing errors.
-    good: int | None = s.lookup("key");   # <-- Should be OK
-    bad: str = s.lookup("key");           # <-- Should be Error (int | None not assignable to str)
+    good: int | None = s.lookup("key");  # <-- Should be OK
+    bad: str = s.lookup("key");  # <-- Should be Error (int | None not assignable to str)
 }

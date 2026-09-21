@@ -27,7 +27,7 @@ def:pub app -> JsxElement {
         todos = await get_todos();
     }
 
-    async def addTodo(title: str) -> None {
+    async def addTodo(title: str) {
         todo = await create_todo(title);
         todos = todos + [todo];
     }

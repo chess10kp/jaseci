@@ -28,7 +28,7 @@ walker Stop {
     }
 }
 
-def disengage_py() -> dict[str, any] {
+def disengage_py -> dict[str, any] {
     n1 = N(val=1);
     n2 = N(val=2);
     n3 = N(val=3);
@@ -44,7 +44,7 @@ def disengage_py() -> dict[str, any] {
 }
 
 
-def disengage_na() -> dict[str, any] {
+def disengage_na -> dict[str, any] {
     n1 = N(val=1);
     n2 = N(val=2);
     n3 = N(val=3);
@@ -60,7 +60,7 @@ def disengage_na() -> dict[str, any] {
 }
 
 
-def disengage_cl() -> dict[str, any] {
+def disengage_cl -> dict[str, any] {
     n1 = N(val=1);
     n2 = N(val=2);
     n3 = N(val=3);

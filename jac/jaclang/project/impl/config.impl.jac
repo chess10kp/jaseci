@@ -446,28 +446,19 @@ impl JacConfig.is_valid -> bool {
     return self.toml_path is not None and self.toml_path.exists();
 }
 
-impl JacConfig.save -> None {
-    if self.toml_path is None {
-        raise ValueError("No toml_path set, cannot save configuration");
-    }
-
+impl JacConfig.to_doc(base_doc: dict[str, any] | None = None) -> dict[str, any] {
+    # The single writer of the dependency document shape: dependency
+    # scalars, the git table, and plugin hoisting (dependencies.<type> /
+    # dev-dependencies.<type>) with empty-table cleanup. JacConfig.save and
+    # package_manager._manifest_config both render through this, so the two
+    # cannot drift.
     import copy;
-    text = "";
-    old_doc: dict[str, any] = {};
-    if self.toml_path.exists() {
-        import tomllib;
-        import from jaclang.project.source { read_file_with_encoding }
-        import from jaclang.project.tomlio { MalformedJacTomlError }
-        text = read_file_with_encoding(str(self.toml_path));
-        try {
-            old_doc = tomllib.loads(text);
-        } except tomllib.TOMLDecodeError as exc {
-            raise MalformedJacTomlError(str(self.toml_path), exc);
-        }
+    doc = copy.deepcopy(base_doc if base_doc is not None else self._raw_data);
+    if not isinstance(doc, dict) {
+        doc = {};
     }
-    doc = copy.deepcopy(old_doc);
-
     old_deps = doc.get("dependencies", {});
+    old_deps = old_deps if isinstance(old_deps, dict) else {};
     sub_tables = {
         k: v
         for (k, v) in old_deps.items()
@@ -476,7 +467,7 @@ impl JacConfig.save -> None {
     doc["dependencies"] = dict(self.dependencies);
 
     for (k, v) in sub_tables.items() {
-        doc["dependencies"][k] = v;
+        doc["dependencies"][k] = copy.deepcopy(v);
     }
 
     if self.git_dependencies {
@@ -492,9 +483,7 @@ impl JacConfig.save -> None {
     }
 
     for (dep_type, deps) in self.plugin_dependencies.items() {
-        if dep_type not in doc["dependencies"] {
-            doc["dependencies"][dep_type] = {};
-        }
+        deps = deps if isinstance(deps, dict) else {};
 
         dev_deps = deps.get("dev", {}) if isinstance(deps.get("dev"), dict) else {};
         regular_deps = {
@@ -519,6 +508,28 @@ impl JacConfig.save -> None {
             del doc["dev-dependencies"];
         }
     }
+    return doc;
+}
+
+impl JacConfig.save -> None {
+    if self.toml_path is None {
+        raise ValueError("No toml_path set, cannot save configuration");
+    }
+
+    text = "";
+    old_doc: dict[str, any] = {};
+    if self.toml_path.exists() {
+        import tomllib;
+        import from jaclang.project.source { read_file_with_encoding }
+        import from jaclang.project.tomlio { MalformedJacTomlError }
+        text = read_file_with_encoding(str(self.toml_path));
+        try {
+            old_doc = tomllib.loads(text);
+        } except tomllib.TOMLDecodeError as exc {
+            raise MalformedJacTomlError(str(self.toml_path), exc);
+        }
+    }
+    doc = self.to_doc(old_doc);
 
     if text {
         updated = _toml_minimal_update(

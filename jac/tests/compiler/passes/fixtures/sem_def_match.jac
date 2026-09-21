@@ -1,12 +1,12 @@
 enum E { A = 0, B = 1, }
 
-sem E= "An enum representing some values.";
-sem E. A= "The first value of the enum E.";
-sem E. B= "The second value of the enum E.";
+sem E = "An enum representing some values.";
+sem E.A = "The first value of the enum E.";
+sem E.B = "The second value of the enum E.";
 
 obj Person {
-    has name: str;
-    has yob: int;
+    has name: str,
+        yob: int;
 
     def calc_age(year: int) -> int {
         return year - self.yob;

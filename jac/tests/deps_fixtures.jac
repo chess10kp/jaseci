@@ -138,3 +138,27 @@ def restore_store(tmp: str, old: str | None) {
     }
     shutil.rmtree(tmp, ignore_errors=True);
 }
+
+
+def jac_sync(
+    config: JacConfig,
+    frozen: bool = False,
+    include_dev: bool = False,
+    save: bool = True
+) -> None {
+    # Install/sync through the transactional plan/commit pipeline: the same
+    # engine `jac install` drives. Raises JacDepError on failure.
+    import from jaclang.project.dependency_model { PackageOperation }
+    import from jaclang.project.package_manager { commit_plan, plan_operation }
+    plan = plan_operation(
+        config,
+        PackageOperation(
+            action="install",
+            ecosystem="jac",
+            include_dev=include_dev,
+            frozen=frozen,
+            save=save
+        )
+    );
+    commit_plan(config, plan);
+}

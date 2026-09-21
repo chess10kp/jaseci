@@ -12,6 +12,6 @@ def run {
         x = Buffer();
         x.n = 1;
     }
-    h = flow consume(r);
-    wait h;
+    h = flow consume(r) ;
+    wait h ;
 }

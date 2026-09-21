@@ -7,8 +7,8 @@ involving comprehension results go undetected.
 Expected: `[x * 2 for x in [1,2,3]]` should infer as list[int].
 """
 
+glob nums: list[int] = [1, 2, 3];
 with entry {
-    nums: list[int] = [1, 2, 3];
     doubled = [x * 2 for x in nums];
 
     # Should infer as list[int], so assigning to str should error

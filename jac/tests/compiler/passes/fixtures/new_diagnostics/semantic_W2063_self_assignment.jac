@@ -2,7 +2,7 @@
 
 with entry {
     x = 5;
-    x = x;       # <-- Warning W2063: self-assignment
+    x = x;  # <-- Warning W2063: self-assignment
     y = 10;
-    y = y + 1;   # <-- Ok: not a self-assignment
+    y = y + 1;  # <-- Ok: not a self-assignment
 }

@@ -24,6 +24,14 @@ def deps_map_path(config: Any) -> Path:
 
 
 def _recover_generation(config: Any) -> None:
+    """Replay an interrupted plan/commit journal.
+
+    Mirrors the generation swap performed by ``_publish_packages`` in
+    package_manager.jac (and ``_publish_tree`` in jac_store.jac keeps the
+    same swap shape for the store). The duplication is required: this
+    module must stay importable during the compiler's bootstrap window,
+    so it cannot import jac modules. Update the three together.
+    """
     deps_root = Path(str(config.get_build_dir())) / "dependencies"
     journal = deps_root / "transaction.json"
     if not journal.is_file():

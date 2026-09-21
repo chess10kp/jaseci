@@ -8,7 +8,7 @@ obj NotCM {
     def get -> None;
 }
 
-impl NotCM.get -> None { }
+impl NotCM.get -> None {}
 
 def use_it {
     x = NotCM();

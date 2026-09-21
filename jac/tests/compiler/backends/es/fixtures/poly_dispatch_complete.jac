@@ -14,7 +14,7 @@ obj Box {
     # A method whose name collides with a primitive method (`count`). On an
     # any-typed receiver this routes through `_jac.poly.call`, which must
     # forward to this user method rather than treating the instance as a list.
-    def count() -> int {
+    def count -> int {
         return len(self.data);
     }
 }
@@ -23,7 +23,7 @@ def opaque(x: any) -> any {
     return x;
 }
 
-def test_poly_complete() -> dict[any, any] {
+def test_poly_complete -> dict[any, any] {
     # --- dict methods (receiver statically `any`) ---
     d = opaque({"a": 1, "b": 2});
     keys = d.keys();
@@ -75,7 +75,7 @@ def test_poly_complete() -> dict[any, any] {
     };
 }
 
-def test_poly_attribute_error() -> bool {
+def test_poly_attribute_error -> bool {
     # An eligible (primitive) method name on an incompatible runtime type must
     # raise a catchable AttributeError, not silently return a wrong value.
     raised = False;

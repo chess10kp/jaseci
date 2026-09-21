@@ -5,66 +5,67 @@ This file tests the auto-lint rule W3039 that converts:
 """
 
 obj SomeClass {
-    has value: int = 0;
-    has name: str = "";
+    has value: int = 0,
+        name: str = "";
 }
 
-glob instance = SomeClass();
+glob instance = SomeClass(),
+     basic = instance?.value,
+     basic_sq = instance?.name,
+     is_missing = instance?.value is None,
+     guarded = instance?.value and True,
+     ternary = instance?.value if True else 0;
 
 # Basic assignment context
-glob basic = getattr(instance, "value", None);
 
 # Single-quoted attribute
-glob basic_sq = getattr(instance, 'name', None);
 
 # Inside a comparison
-glob is_missing = getattr(instance, "value", None) is None;
 
 # Inside a boolean expression
-glob guarded = getattr(instance, "value", None) and True;
 
 # Inside a ternary
-glob ternary = getattr(instance, "value", None) if True else 0;
-
 # As an argument to another function call
-def echo(x: object) -> object { return x; }
-glob echoed = echo(getattr(instance, "name", None));
+def echo(x: object) -> object {
+    return x;
+}
+glob echoed = echo(instance?.name);
 
 # As return value
 def fetch_name(o: SomeClass) -> (str | None) {
-    return getattr(o, "name", None);
+    return o?.name;
 }
 
 # As a standalone expression statement
 with entry {
-    getattr(instance, "value", None);
+    instance?.value;
 }
 
 # Inside an if-statement condition
 with entry {
-    if getattr(instance, "value", None) {
+    if instance?.value {
         print("has value");
     }
 }
 
 # Should NOT be converted: non-None default
-glob not_none_default = getattr(instance, "value", 0);
+glob not_none_default = getattr(instance, "value", 0),
+     two_arg = getattr(instance, "value"),
+     attr_name = "value",
+     dynamic = getattr(instance, attr_name, None),
+     invalid_id = getattr(instance, "not-an-ident", None),
+     keyword_attr = getattr(instance, "class", None);
 
 # Should NOT be converted: 2-arg form (raises AttributeError on miss)
-glob two_arg = getattr(instance, "value");
 
 # Should NOT be converted: non-string attribute name
-glob attr_name = "value";
-glob dynamic = getattr(instance, attr_name, None);
 
 # Should NOT be converted: attribute name is not a valid identifier
-glob invalid_id = getattr(instance, "not-an-ident", None);
 
 # Should NOT be converted: attribute name is a Python keyword
-glob keyword_attr = getattr(instance, "class", None);
-
 # Should NOT be converted: lookalike function with same-shaped call
 def getattr_lookalike(target: object, name_: str, fallback: object) -> object {
     return fallback;
 }
+
 glob lookalike = getattr_lookalike(instance, "value", None);

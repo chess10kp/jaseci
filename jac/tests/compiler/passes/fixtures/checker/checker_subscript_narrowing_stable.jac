@@ -50,7 +50,7 @@ def loop_vars(g: Grid) -> int {
 obj Board {
     has squares: list[list[Cell | None]] = [];
 
-    def sum_colors() -> int {
+    def sum_colors -> int {
         total: int = 0;
         for r in range(3) {
             for c in range(3) {

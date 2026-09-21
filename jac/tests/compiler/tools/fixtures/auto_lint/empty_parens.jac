@@ -1,7 +1,7 @@
 """Test file for empty parentheses removal from function declarations."""
 
 # Function with no params and no return type - parens should be removed
-def no_params() {
+def no_params {
     print("hello");
 }
 
@@ -11,14 +11,12 @@ def with_params(x: int) {
 }
 
 # Function with no params but with return type - parens should be removed
-def no_params_with_return()  -> int {
+def no_params_with_return -> int {
     return 42;
 }
 
 # Function with params and return type - parens should stay
-def with_params_and_return(
-    x: int
-) -> int {
+def with_params_and_return(x: int) -> int {
     return x * 2;
 }
 
@@ -38,7 +36,7 @@ obj Counter {
     has count: int = 0;
 
     # Method with no params - parens should be removed
-    def reset() {
+    def reset {
         self.count = 0;
     }
 
@@ -48,7 +46,7 @@ obj Counter {
     }
 
     # Method with no params but return type - parens should be removed
-    def get_count()  -> int {
+    def get_count -> int {
         return self.count;
     }
 }
@@ -61,7 +59,7 @@ obj Calculator {
 }
 
 # Impl with no params and return type - parens should be removed
-impl Calculator.compute() -> int {
+impl Calculator.compute -> int {
     return 42;
 }
 
@@ -71,6 +69,6 @@ impl Calculator.process(x: int) -> int {
 }
 
 # Impl with no params and no return type - parens should be removed
-impl Calculator.run() {
+impl Calculator.run{
     print("running");
 }

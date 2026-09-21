@@ -5,10 +5,8 @@ library stem; a leading `.` (here, level 0 with a sub-dir) pins the lookup to th
 binary's directory via the loader token ($ORIGIN / @loader_path).
 """
 
-import from libs.raylib {
-    def CloseWindow -> None;
-}
+import from libs.raylib { def CloseWindow -> None;  }
 
-def close_it -> None {
+def close_it {
     CloseWindow();
 }

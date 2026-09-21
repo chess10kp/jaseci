@@ -11,12 +11,12 @@ obj Container {
     has data: Final[list[int]] = [1, 2, 3];
 }
 
-def test_final_attr_access(c: Container) -> None {
+def test_final_attr_access(c: Container) {
     n = c.data.count(1);  # <-- Ok (was E1030 before fix)
     l = len(c.data);  # <-- Ok
 }
 
-def test_final_mapping(d: Final[dict[str, int]]) -> None {
+def test_final_mapping(d: Final[dict[str, int]]) {
     items = d.items();  # <-- Ok (was E1030 before fix)
     keys = d.keys();  # <-- Ok
 }

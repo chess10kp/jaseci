@@ -6,16 +6,13 @@ expression may be an identifier (`<@as_>`), a dotted access, or a
 brace-wrapped expression (`<@{expr}>`).
 """
 
-
 """A box whose host element is chosen by the caller."""
 def:pub Box(as_: str, children: any = None) -> JsxElement {
-    return
-        <@as_ class="box">{children}</@as_>;
+    return <@as_ class="box">{children}</@as_>;
 }
 
 def:pub Icon(glyph: type) -> JsxElement {
-    return
-        <@{glyph} class="icon"/>;
+    return <@{glyph} class="icon"/>;
 }
 
 def:pub Panel(tag: str) -> JsxElement {

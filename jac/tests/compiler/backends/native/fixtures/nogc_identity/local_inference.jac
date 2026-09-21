@@ -32,7 +32,7 @@ def summarize(c: &Cfg, flag: bool) -> int {
     return len(lit) + len(cat) + len(tern) + len(n) + len(t);
 }
 
-def rename_first(xs: &mut list[Item]) -> None {
+def rename_first(xs: &mut list[Item]) {
     it = xs[0];
     it.name = it.name + "!";
 }
@@ -56,7 +56,7 @@ def accumulate(n: int) -> own str {
     return s;
 }
 
-def run_all -> None {
+def run_all {
     c: own Cfg = Cfg();
     xs: own list[own Item] = [Item(id=1, name="a"), Item(id=2, name="b")];
     print(summarize(&c, True));

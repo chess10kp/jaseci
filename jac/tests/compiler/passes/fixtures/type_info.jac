@@ -1,7 +1,7 @@
 obj Animal {
-    has : priv species: str;
+    has:priv species: str;
 
-    def : priv introduce()  -> str {
+    def:priv introduce -> str {
         return "Hello, I am " + self.species + ". ";
     }
 }
@@ -9,20 +9,20 @@ obj Animal {
 obj Dog(Animal) {
     has breed: str;
 
-    def init(breed: str) -> None {
+    def init(breed: str) {
         super.init("Dog");
     }
 
-    def : pub bark()  -> str {
+    def:pub bark -> str {
         return "Woof! Woof!";
     }
 
     obj Body {
-        has : pub s: str = "22";
+        has:pub s: str = "22";
     }
 }
 
-glob : priv body: int = 2,
+glob:priv body: int = 2,
      m = "hi";
 
 with entry {

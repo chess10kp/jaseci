@@ -13,7 +13,6 @@ impl my_print(message: str) -> str {
 # Declaration
 obj MyPrinter {
     def my_print(messag: str) -> str;  # method declaration
-
 }
 
 impl MyPrinter.my_print(messag: str) -> str

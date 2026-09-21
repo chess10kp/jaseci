@@ -1,7 +1,13 @@
-obj Buffer { has n: int = 0; }
-obj View { has target: &Buffer; }
+obj Buffer {
+    has n: int = 0;
+}
+obj View {
+    has target: &Buffer;
+}
 
-def open_view(b: &Buffer) -> View { return View(target=b); }
+def open_view(b: &Buffer) -> View {
+    return View(target=b);
+}
 
 with entry {
     b: own Buffer = Buffer(n=5);

@@ -2,7 +2,7 @@
 
 obj Foo {
     @classmethod
-    def foo(cls: "Foo") { }
+    def foo(cls: "Foo") {}
 }
 
 with entry {

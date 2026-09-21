@@ -1,6 +1,10 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
-def take(x: Buffer) -> Buffer { return x; }
+def take(x: Buffer) -> Buffer {
+    return x;
+}
 
 with entry {
     a: own Buffer = Buffer();

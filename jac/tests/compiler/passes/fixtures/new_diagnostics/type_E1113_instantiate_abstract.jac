@@ -7,6 +7,7 @@ obj Shape {
 
 obj Circle(Shape) {
     has radius: float;
+
     def area(self: Circle) -> float {
         return 3.14159 * self.radius * self.radius;
     }
@@ -14,5 +15,5 @@ obj Circle(Shape) {
 
 with entry {
     c = Circle(radius=5.0);  # <-- Ok: concrete class
-    s = Shape();             # <-- Error E1113: cannot instantiate abstract
+    s = Shape();  # <-- Error E1113: cannot instantiate abstract
 }

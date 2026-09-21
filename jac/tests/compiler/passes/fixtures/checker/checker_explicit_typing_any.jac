@@ -9,13 +9,13 @@ def takes_any(x: any) -> any {
 }
 
 # Annotated assignment (1 warning)
-def uses_any -> None {
+def uses_any {
     y: any = 5;
     print(y);
 }
 
 # Nested Any inside a generic (1 warning)
-def nested_any(items: list[any]) -> None {
+def nested_any(items: list[any]) {
     print(items);
 }
 

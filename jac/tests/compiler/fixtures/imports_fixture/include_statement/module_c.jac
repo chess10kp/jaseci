@@ -1,5 +1,5 @@
-glob PUBLIC_VAR = "I am public";
-glob _PRIVATE_VAR = "I am private";
+glob PUBLIC_VAR = "I am public",
+     _PRIVATE_VAR = "I am private";
 
 def public_func -> str {
     return "Public function";

@@ -1,9 +1,8 @@
 obj Foo {
     has x: int = 0;
 
-    class def make() -> Self;
-
-    def clone() -> Self {
+    class def make -> Self;
+    def clone -> Self {
         return Self(x=self.x);
     }
 }

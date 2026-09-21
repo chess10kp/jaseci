@@ -1,10 +1,10 @@
 """Test fixture for has statement combining inside abilities (functions)."""
 
 # has statements inside a function should be combined
-def app() -> any {
-    has count: int = 0;
-    has name: str = "test";
-    has enabled: bool = True;
+def app -> any {
+    has count: int = 0,
+        name: str = "test",
+        enabled: bool = True;
 
     # Do something
     count = count + 1;
@@ -14,10 +14,10 @@ def app() -> any {
 
 # has statements in client-side function (typically in .jac files)
 
-def:pub counter() -> JsxElement {
-    has value: int = 0;
-    has label: str = "Counter";
-    has visible: bool = True;
+def:pub counter -> JsxElement {
+    has value: int = 0,
+        label: str = "Counter",
+        visible: bool = True;
 
     return <div>{label}: {value}</div>;
 }
@@ -27,10 +27,10 @@ def:pub counter() -> JsxElement {
 obj Widget {
     has id: str;
 
-    def render() -> str {
-        has prefix: str = "<";
-        has suffix: str = ">";
-        has content: str = "";
+    def render -> str {
+        has prefix: str = "<",
+            suffix: str = ">",
+            content: str = "";
 
         return prefix + content + suffix;
     }

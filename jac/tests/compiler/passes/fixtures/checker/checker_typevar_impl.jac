@@ -7,9 +7,10 @@ Mirrors: runtime.jac line 76 (glob T = TypeVar('T')) and
 runtime.impl.jac line 1506 (impl JacBasics.assign_all(target: list[T]) -> list[T])
 """
 
-
 glob T = TypeVar("T");
 
 obj Basics {
-    def assign_all(target: list[T], attr_val: tuple[tuple[str], tuple[any]]) -> list[T];
+    def assign_all(
+        target: list[T], attr_val: tuple[tuple[str], tuple[any]]
+    ) -> list[T];
 }

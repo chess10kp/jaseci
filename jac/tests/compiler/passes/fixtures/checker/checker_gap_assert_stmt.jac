@@ -32,24 +32,27 @@ with entry {
     v = Validator(threshold=10);
 
     # Case 1: Wrong argument type in condition
-    assert check_positive("not_a_number");          # Error: str -> int param
+    assert check_positive("not_a_number");  # Error: str -> int param
 
     # Case 2: Wrong argument type in error message expression
-    assert True, format_msg("not_an_int");           # Error: str -> int param
+    assert True , format_msg("not_an_int");  # Error: str -> int param
 
     # Case 3: Calling nonexistent method in condition
-    assert v.nonexistent();                          # Error: no such method
+    assert v.nonexistent();  # Error: no such method
 
     # Case 4: Both condition and message have errors
-    assert check_positive("bad"), format_msg("also_bad");  # Error x2
+    assert check_positive("bad") , format_msg("also_bad");  # Error x2
+}
 
-    # Case 5: Type error in binary expression within condition
-    x: str = "hello";
-    assert x > 5;                                    # Error: str > int
+glob
+     # Case 5: Type error in binary expression within condition
+     x: str = "hello";
+with entry {
+    assert x > 5;  # Error: str > int
 
     # --- Cases that SHOULD be valid ---
-    assert check_positive(42);                       # Ok
-    assert True, "simple message";                   # Ok
-    assert v.validate(20), format_msg(404);          # Ok
-    assert len([1, 2, 3]) > 0;                       # Ok
+    assert check_positive(42);  # Ok
+    assert True , "simple message";  # Ok
+    assert v.validate(20) , format_msg(404);  # Ok
+    assert len([1, 2, 3]) > 0;  # Ok
 }

@@ -9,12 +9,7 @@ Expected: 0 errors. All enum iteration patterns below are valid.
 
 enum Color { RED = 1, GREEN = 2, BLUE = 3 }
 
-enum Direction {
-    NORTH = "N",
-    SOUTH = "S",
-    EAST = "E",
-    WEST = "W"
-}
+enum Direction { NORTH = "N", SOUTH = "S", EAST = "E", WEST = "W" }
 
 enum Priority { LOW, MEDIUM, HIGH }
 
@@ -33,10 +28,13 @@ with entry {
     for p in Priority {
         print(p);
     }
+}
 
-    # Case 4: List comprehension over enum
-    color_names: list[str] = [c.name for c in Color];
+glob
+     # Case 4: List comprehension over enum
+     color_names: list[str] = [c.name for c in Color];
 
+with entry {
     # Case 5: Enum in conditional iteration
     for d in Direction {
         if d == Direction.NORTH {
@@ -46,7 +44,8 @@ with entry {
 
     # Case 6: len() on enum (EnumMeta provides __len__)
     count = len(Color);
-
-    # Case 7: Membership test (in operator on enum class)
-    exists = Color.RED in Color;
 }
+
+glob
+     # Case 7: Membership test (in operator on enum class)
+     exists = Color.RED in Color;

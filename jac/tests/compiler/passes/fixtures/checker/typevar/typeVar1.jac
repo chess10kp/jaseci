@@ -10,9 +10,11 @@ with entry {
     T2 = TypeVar("T3");  # Error
 
     T4: any = TypeVar("T4");  # Ok
+}
 
-    my_dict = {};
+glob my_dict = {};
 
+with entry {
     # TypeVars cannot be assigned to an index expression
     my_dict["var"] = TypeVar("T5");  # Error
 

@@ -5,7 +5,6 @@ by the shim) so the harness can click to navigate and assert the route swaps.
 As a `.jac` the whole module is client codespace.
 """
 
-
 import from "@jac/runtime" { Link }
 
 def:pub page -> JsxPage {

@@ -7,9 +7,9 @@ types and parameter types are never checked.
 Expected: `lambda a: int: a + 1` should infer as callable returning int.
 """
 
-with entry {
-    fn = lambda (a: int) { a + 1; };
+glob fn = lambda (a: int) { a + 1; };
 
+with entry {
     # Should infer as callable, so assigning to str should error
     bad: str = fn;  # <-- Should be Error (callable not assignable to str)
 

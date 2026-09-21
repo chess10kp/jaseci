@@ -35,7 +35,7 @@ def _digest(data: bytes) -> int {
 }
 
 
-def bz2_py() -> dict[any, any] {
+def bz2_py -> dict[any, any] {
     data = b"the quick brown fox jumps over the lazy dog. " * 40;
     comp = compress(data);
     comp6 = compress(data, 6);
@@ -86,7 +86,7 @@ def bz2_py() -> dict[any, any] {
 }
 
 
-def bz2_cl() -> dict[any, any] {
+def bz2_cl -> dict[any, any] {
     return {};
 }
 
@@ -102,7 +102,7 @@ def _digest_na(data: bytes) -> int {
     return acc;
 }
 
-def bz2_na() -> dict[str, any] {
+def bz2_na -> dict[str, any] {
     data = b"the quick brown fox jumps over the lazy dog. " * 40;
     comp = compress(data);
     comp6 = compress(data, 6);

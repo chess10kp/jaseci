@@ -22,5 +22,3 @@ test "globals visible in tests" {
 test "deliberate failure" {
     assert add(2, 2) == 5;
 }
-
-with entry {}

@@ -1,4 +1,4 @@
-def test_return_direct() {
+def test_return_direct {
     print("Before return");
     return;
     print("After return");

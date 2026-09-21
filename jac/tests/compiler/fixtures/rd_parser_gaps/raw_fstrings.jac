@@ -1,7 +1,7 @@
 """Test raw f-string parsing."""
 
+glob name = "world";
 with entry {
-    name = "world";
     msg = rf"Hello \n {name}";
     print(msg);
 }

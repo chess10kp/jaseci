@@ -16,7 +16,7 @@ def float_to_u8(x: float) -> u8 {
     return x;  # <-- Error
 }
 
-def assign_f_to_i() -> int {
+def assign_f_to_i -> int {
     y: float = 3.14;
     x: int = y;  # <-- Error
     return x;

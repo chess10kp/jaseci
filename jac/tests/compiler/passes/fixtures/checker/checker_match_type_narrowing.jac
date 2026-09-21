@@ -22,9 +22,7 @@ obj BoolVal {
 
 # 1. Basic match case narrowing with class pattern
 #    Inside case StringVal(), the matched value is narrowed to StringVal.
-def test_match_class_pattern(
-    val: StringVal | IntVal
-) -> str {
+def test_match_class_pattern(val: StringVal | IntVal) -> str {
     match val {
         case StringVal():
             s: StringVal = val;  # <-- Ok after narrowing (StringVal)
@@ -39,15 +37,12 @@ def test_match_class_pattern(
 
 # 2. Match case with union pattern (|)
 #    case A() | B() narrows to A | B.
-def test_match_or_pattern(
-    val: StringVal | IntVal | FloatVal
-) -> str {
+def test_match_or_pattern(val: StringVal | IntVal | FloatVal) -> str {
     match val {
         case StringVal() | IntVal():
             # val is narrowed to StringVal | IntVal
-            return str(val.value);  # <-- Ok, both have 'value'
-
-
+            return str(val.value);
+  # <-- Ok, both have 'value'
         case FloatVal():
             f: FloatVal = val;  # <-- Ok after narrowing (FloatVal)
             return str(f.value);
@@ -56,9 +51,7 @@ def test_match_or_pattern(
 }
 
 # 3. Match case with three-way union pattern
-def test_match_triple_or(
-    val: StringVal | IntVal | FloatVal | BoolVal
-) -> str {
+def test_match_triple_or(val: StringVal | IntVal | FloatVal | BoolVal) -> str {
     match val {
         case StringVal() | IntVal() | FloatVal():
             # val is narrowed to StringVal | IntVal | FloatVal
@@ -72,25 +65,19 @@ def test_match_triple_or(
 }
 
 # 4. Match with explicit type access inside case
-def test_match_access_member(
-    val: StringVal | IntVal
-) -> str {
+def test_match_access_member(val: StringVal | IntVal) -> str {
     match val {
         case StringVal():
-            return val.value;  # <-- Ok, StringVal has 'value: str'
-
-
+            return val.value;
+  # <-- Ok, StringVal has 'value: str'
         case IntVal():
-            return str(val.value);  # <-- Ok, IntVal has 'value: int'
-
-
+            return str(val.value);
+  # <-- Ok, IntVal has 'value: int'
     }
 }
 
 # E1. Error: Wrong type assignment inside narrowed case
-def test_error_wrong_type_in_case(
-    val: StringVal | IntVal
-) -> str {
+def test_error_wrong_type_in_case(val: StringVal | IntVal) -> str {
     match val {
         case StringVal():
             i: IntVal = val;  # <-- Error: StringVal cannot assign to IntVal
@@ -103,9 +90,7 @@ def test_error_wrong_type_in_case(
 }
 
 # E2. Error: Union pattern still can't assign to single type
-def test_error_or_pattern_single(
-    val: StringVal | IntVal | FloatVal
-) -> str {
+def test_error_or_pattern_single(val: StringVal | IntVal | FloatVal) -> str {
     match val {
         case StringVal() | IntVal():
             s: StringVal = val;  # <-- Error: StringVal | IntVal cannot assign to StringVal

@@ -16,14 +16,15 @@ tuple-trigger `here` landed in #6470, which unblocked this.
 node Base {
     has val: int;
 }
+
 node Sub(Base) {}
 node Other {
     has val: int;
 }
 
 walker W {
-    has base: int = 0;
-    has either: int = 0;
+    has base: int = 0,
+        either: int = 0;
 
     can on_base with Base entry {
         self.base = self.base + here.val;
@@ -34,7 +35,7 @@ walker W {
     }
 }
 
-def subtype_dispatch_py() -> dict[str, any] {
+def subtype_dispatch_py -> dict[str, any] {
     w = W();
     w spawn Sub(val=5);
     w spawn Other(val=7);
@@ -42,7 +43,7 @@ def subtype_dispatch_py() -> dict[str, any] {
 }
 
 
-def subtype_dispatch_na() -> dict[str, any] {
+def subtype_dispatch_na -> dict[str, any] {
     w = W();
     w spawn Sub(val=5);
     w spawn Other(val=7);
@@ -50,7 +51,7 @@ def subtype_dispatch_na() -> dict[str, any] {
 }
 
 
-def subtype_dispatch_cl() -> dict[str, any] {
+def subtype_dispatch_cl -> dict[str, any] {
     w = W();
     w spawn Sub(val=5);
     w spawn Other(val=7);

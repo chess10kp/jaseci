@@ -12,7 +12,6 @@ def test_walrus_narrowing -> str {
     # but inside if block, truthiness check should narrow to str
     if (greeting := get_optional()) {
         return greeting;  # Should be str, not str | None
-
     }
     return "default";
 }

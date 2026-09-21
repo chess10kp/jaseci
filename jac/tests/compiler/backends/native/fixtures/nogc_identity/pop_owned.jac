@@ -4,7 +4,9 @@ it once; the emptied list drops nothing (#8984 A2)."""
 obj Job {
     has id: int = 0;
 
-    def drop { print("drop " + str(self.id)); }
+    def drop {
+        print("drop " + str(self.id));
+    }
 }
 
 def run -> int {
@@ -20,4 +22,7 @@ def run -> int {
     return n;
 }
 
-with entry { print(run()); print("done"); }
+with entry {
+    print(run());
+    print("done");
+}

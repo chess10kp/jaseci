@@ -3,7 +3,7 @@ was not narrowed properly post-branch.
 
 """
 
-def get_cache() -> set[str] {
+def get_cache -> set[str] {
     cache = None;
     if cache is None {
         cache = set();

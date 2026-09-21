@@ -8,4 +8,4 @@ obj Greeter {
     def greet -> str;
 }
 
-impl Greeter.greet by greet_impl;
+impl Greeter.greetgreet_impl

@@ -1,7 +1,7 @@
 node A {}
 node B {}
 
-def foo(a: A) -> None { }
+def foo(a: A) {}
 
 with entry {
     foo(A());  # <-- Ok

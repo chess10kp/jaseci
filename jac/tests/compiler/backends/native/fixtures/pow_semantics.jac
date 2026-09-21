@@ -11,10 +11,12 @@ def:pub ipow_pos -> int {
     a: int = 2;
     return a ** 3;
 }
+
 def:pub ipow_sq -> int {
     a: int = 7;
     return a ** 2;
 }
+
 def:pub ipow_one -> int {
     a: int = 99;
     return a ** 0;
@@ -141,5 +143,3 @@ def:pub ipow_zero_base_dyn -> int {
     }
     return result;
 }
-
-with entry { }

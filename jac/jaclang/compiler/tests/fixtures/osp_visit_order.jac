@@ -38,7 +38,7 @@ walker GuardedTracer {
     }
 }
 
-def _chain() -> list[any] {
+def _chain -> list[any] {
     n1 = Pos(val=1);
     n2 = Pos(val=2);
     n3 = Pos(val=3);
@@ -51,7 +51,7 @@ def _chain() -> list[any] {
     return w.seen;
 }
 
-def _diamond() -> list[any] {
+def _diamond -> list[any] {
     # a -> b, a -> c, b -> d, c -> d : shared sink `d` is visited via both paths.
     a = Pos(val=1);
     b = Pos(val=2);
@@ -66,7 +66,7 @@ def _diamond() -> list[any] {
     return w.seen;
 }
 
-def _fanout() -> list[any] {
+def _fanout -> list[any] {
     root_n = Pos(val=1);
     c1 = Pos(val=2);
     c2 = Pos(val=3);
@@ -79,7 +79,7 @@ def _fanout() -> list[any] {
     return w.seen;
 }
 
-def _cycle() -> list[any] {
+def _cycle -> list[any] {
     # 1 -> 2 -> 3 -> 1 : the guard stops the walk re-entering `1`.
     n1 = Pos(val=1);
     n2 = Pos(val=2);
@@ -92,7 +92,7 @@ def _cycle() -> list[any] {
     return w.seen;
 }
 
-def visit_order_py() -> dict[str, any] {
+def visit_order_py -> dict[str, any] {
     return {
         "chain": _chain(),
         "diamond": _diamond(),
@@ -102,7 +102,7 @@ def visit_order_py() -> dict[str, any] {
 }
 
 
-def _chain_na() -> list[any] {
+def _chain_na -> list[any] {
     n1 = Pos(val=1);
     n2 = Pos(val=2);
     n3 = Pos(val=3);
@@ -115,7 +115,7 @@ def _chain_na() -> list[any] {
     return w.seen;
 }
 
-def _diamond_na() -> list[any] {
+def _diamond_na -> list[any] {
     a = Pos(val=1);
     b = Pos(val=2);
     c = Pos(val=3);
@@ -129,7 +129,7 @@ def _diamond_na() -> list[any] {
     return w.seen;
 }
 
-def _fanout_na() -> list[any] {
+def _fanout_na -> list[any] {
     root_n = Pos(val=1);
     c1 = Pos(val=2);
     c2 = Pos(val=3);
@@ -142,7 +142,7 @@ def _fanout_na() -> list[any] {
     return w.seen;
 }
 
-def _cycle_na() -> list[any] {
+def _cycle_na -> list[any] {
     n1 = Pos(val=1);
     n2 = Pos(val=2);
     n3 = Pos(val=3);
@@ -154,7 +154,7 @@ def _cycle_na() -> list[any] {
     return w.seen;
 }
 
-def visit_order_na() -> dict[str, any] {
+def visit_order_na -> dict[str, any] {
     return {
         "chain": _chain_na(),
         "diamond": _diamond_na(),
@@ -164,7 +164,7 @@ def visit_order_na() -> dict[str, any] {
 }
 
 
-def _chain_cl() -> list[any] {
+def _chain_cl -> list[any] {
     n1 = Pos(val=1);
     n2 = Pos(val=2);
     n3 = Pos(val=3);
@@ -177,7 +177,7 @@ def _chain_cl() -> list[any] {
     return w.seen;
 }
 
-def _diamond_cl() -> list[any] {
+def _diamond_cl -> list[any] {
     a = Pos(val=1);
     b = Pos(val=2);
     c = Pos(val=3);
@@ -191,7 +191,7 @@ def _diamond_cl() -> list[any] {
     return w.seen;
 }
 
-def _fanout_cl() -> list[any] {
+def _fanout_cl -> list[any] {
     root_n = Pos(val=1);
     c1 = Pos(val=2);
     c2 = Pos(val=3);
@@ -204,7 +204,7 @@ def _fanout_cl() -> list[any] {
     return w.seen;
 }
 
-def _cycle_cl() -> list[any] {
+def _cycle_cl -> list[any] {
     n1 = Pos(val=1);
     n2 = Pos(val=2);
     n3 = Pos(val=3);
@@ -216,7 +216,7 @@ def _cycle_cl() -> list[any] {
     return w.seen;
 }
 
-def visit_order_cl() -> dict[str, any] {
+def visit_order_cl -> dict[str, any] {
     return {
         "chain": _chain_cl(),
         "diamond": _diamond_cl(),

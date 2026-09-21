@@ -8,7 +8,6 @@ and a `skip;` guard for slot early-exit. Components are plain
 the slots.
 """
 
-
 obj Item {
     has label: str,
         done: bool = False;
@@ -16,14 +15,12 @@ obj Item {
 
 """A bare divider component."""
 def:pub Divider -> JsxElement {
-    return
-        <hr class="divider"/>;
+    return <hr class="divider"/>;
 }
 
 """A small presentational component."""
 def:pub Badge(text: str) -> JsxElement {
-    return
-        <span class="badge">{text}</span>;
+    return <span class="badge">{text}</span>;
 }
 
 def:pub ItemRow(item: Item) -> JsxElement {

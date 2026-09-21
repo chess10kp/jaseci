@@ -34,18 +34,26 @@ with entry {
     for i in [10, 20, 30, 40] {
         assert f'age={i}' not in d;
     }
-    apple_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+}
+
+glob apple_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+with entry {
     del apple_list[0];
     print('apple list after delete 0 :', apple_list);
     del [apple_list[6], apple_list[7]];
     print('apple list after delete 7, 8 :', apple_list);
-    obj Inner {
-        has c: list[any];
-        has d: int;
-    }
-    obj Outer {
-        has b: Inner;
-    }
+}
+
+obj Inner {
+    has c: list[any],
+        d: int;
+}
+
+obj Outer {
+    has b: Inner;
+}
+
+with entry {
     outer_a = Outer(b=Inner(c=[1, 2, 3], d=4));
     print('outer_a.b before delete :', outer_a.b);
     del outer_a.b.c[1];

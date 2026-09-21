@@ -24,8 +24,8 @@ impl Anchor.make_stub -> Anchor {
     # against the enclosing class (Anchor) rather than failing as if Self
     # were an opaque unbounded TypeVar.
     unloaded = object.__new__(self.__class__);
-    unloaded.id = self.id;          # write: must succeed
-    unloaded.name = self.name;      # write: must succeed
+    unloaded.id = self.id;  # write: must succeed
+    unloaded.name = self.name;  # write: must succeed
     return unloaded;
 }
 
@@ -33,6 +33,6 @@ impl Anchor.get_id_via_stub -> int {
     # Read access through Self should also resolve, with the right type.
     unloaded = object.__new__(self.__class__);
     unloaded.id = self.id;
-    x: int = unloaded.id;           # read: must type as int (not Unknown)
+    x: int = unloaded.id;  # read: must type as int (not Unknown)
     return x;
 }

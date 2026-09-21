@@ -5,7 +5,7 @@ on a class. So object.__new__(SomeClass) should be valid.
 """
 
 class Anchor {
-    def __init__(self: Anchor, id: int) -> None {
+    def init(self: Anchor, id: int) {
         self.id = id;
     }
 

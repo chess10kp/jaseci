@@ -55,14 +55,23 @@ jac install jac:./path/to/pkg        # add a path dependency
 
 `jac install jac:...` parses the spec, records it in
 `[dependencies.jac]`, resolves the full closure, materializes packages,
-and rewrites `jac.lock` -- committing manifest, deps map, lock, and
-`.jac/packages` together. A failed install leaves `jac.toml` untouched.
+and rewrites `jac.lock`. The jac and Python sides of an install go
+through one transactional commit: the manifest, `jac.lock`, `deps.json`,
+and `.jac/build/packages` (a symlink to the committed generation) are
+published together, so a failed commit changes nothing on disk. npm
+dependencies are the exception: a bare `jac install` pre-syncs them into
+`node_modules` *before* the commit, so an npm failure there marks the
+command as failed without rolling back the jac/Python commit. npm stays
+bundle-time by design -- the client bundler re-syncs `node_modules` at
+build/serve regardless.
 
 Useful flags:
 
 - `--frozen` -- replay `jac.lock` exactly; fail if a row is missing or
-  disagrees with the manifest (source, ref, or pinned commit). For CI
-  and reproducible builds.
+  disagrees with the manifest (source, ref, or pinned commit). Pure-Jac
+  packages replay from the store and Python dependencies are pinned at
+  their locked versions without re-resolution. For CI and reproducible
+  builds.
 - `--dev` -- install dev-only pure-Jac dependencies (they are skipped by
   plain installs).
 - `--dry-run` -- print what would be installed without materializing.
@@ -94,8 +103,10 @@ by a tree hash of the package files. Identical content -- even from
 different origins -- is stored once;
 a hit is verified against the recorded hash before it is served, and a
 corrupted or tampered entry is repaired by refetch. From the store,
-packages are materialized into the project's `.jac/packages/<name>`
-and their roots are added to the import path, so `import utils;` just
+packages are materialized into a content generation under
+`.jac/build/dependencies/generations/`, `.jac/build/packages` symlinks
+to the active generation, and the generation roots are added to the
+import path, so `import utils;` just
 works. Path dependencies import in place (no copy).
 
 Tags are checked against the remote before a store hit is trusted: a
@@ -138,10 +149,16 @@ left-pad = "1.2.3"
 
 For each pure-Jac dependency: the source (`git` or `path`), the locked
 `ref`/`sha`, the content `tree` hash, the package `version`, and every
-requirer (`requested_by`). Path dependencies record their absolute path
-and tree hash; a frozen replay verifies the live content still hashes to
+requirer (`requested_by`). Path dependencies record their path and tree
+hash; a frozen replay verifies the live content still hashes to
 the recorded tree. The `python`, `python_graph`, and `npm` sections pin
 the non-Jac ecosystems harvested from the venv and `node_modules`.
+
+Current locks are `version = 2`: the same document also carries a
+content graph (`nodes`/`edges`) plus a `manifest_fingerprint`, which the
+transactional pipeline uses to validate `--frozen` replays against the
+manifest. The `[jac]` rows above remain the human-readable view of the
+graph.
 
 ## Updating
 

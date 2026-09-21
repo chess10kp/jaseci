@@ -10,7 +10,7 @@ node Task {
     has title: str = "";
 }
 
-def maybe_task() -> Task | None {
+def maybe_task -> Task | None {
     return None;
 }
 

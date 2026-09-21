@@ -44,7 +44,7 @@ obj Registry {
 }
 
 with entry {
-    with open("file.txt") as f, open("file2.txt") as f2 { }
+    with open("file.txt") as f, open("file2.txt") as f2 {}
 }
 
 enum Color { RED = 1, GREEN, BLUE = 3 }

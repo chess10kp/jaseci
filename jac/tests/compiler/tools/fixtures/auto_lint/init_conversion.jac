@@ -1,10 +1,10 @@
 """Test fixture for __init__ and __post_init__ conversion."""
 
 class Person {
-    has name: str;
-    has age: int;
+    has name: str,
+        age: int;
 
-    def __init__(self: Person, name: str, age: int) -> None {
+    def init(self: Person, name: str, age: int) {
         self.name = name;
         self.age = age;
     }
@@ -15,10 +15,10 @@ class Person {
 }
 
 class Employee(Person) {
-    has employee_id: str;
-    has department: str;
+    has employee_id: str,
+        department: str;
 
-    def __init__(self: Employee, name: str, age: int, employee_id: str) -> None {
+    def init(self: Employee, name: str, age: int, employee_id: str) {
         super.__init__(name, age);
         Person().__init__(name, age);
         self.employee_id = employee_id;
@@ -26,17 +26,17 @@ class Employee(Person) {
         print(__init__);
     }
 
-    def __post_init__(self: Employee) -> None {
+    def postinit(self: Employee) {
         self.department = "Unassigned";
     }
 }
 
 obj DataClass {
-    has x: int;
-    has y: int;
-    has computed: int;
+    has x: int,
+        y: int,
+        computed: int;
 
-    def __post_init__()  -> None {
+    def postinit {
         self.computed = self.x + self.y;
     }
 }

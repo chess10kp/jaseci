@@ -1,4 +1,4 @@
-def component() -> JsxElement {
+def component -> JsxElement {
     root.render();
     return
         <div class="box">

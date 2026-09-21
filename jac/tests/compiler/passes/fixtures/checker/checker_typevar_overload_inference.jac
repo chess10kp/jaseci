@@ -19,10 +19,13 @@ with entry {
     if v1 {
         print(v1.x);  # narrowed to MyObj, should access .x
     }
+}
 
-    # dict.get with explicit default: d.get("key", 0)
-    # overload 2: get(key: _KT, default: _VT) -> _VT (class-level TypeVar)
-    d: dict[str, int] = {};
+glob
+     # dict.get with explicit default: d.get("key", 0)
+     # overload 2: get(key: _KT, default: _VT) -> _VT (class-level TypeVar)
+     d: dict[str, int] = {};
+with entry {
     v3 = d.get("key", 0);
     y3: int = v3;
 }

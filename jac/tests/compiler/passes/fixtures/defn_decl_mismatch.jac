@@ -5,16 +5,16 @@ obj SomeObj {
 }
 
 # Miss match parameter count.
-impl SomeObj.foo(param1: str) -> str {
+impl SomeObj.foo(param1: str, param2: int) -> str {
     return "foo";
 }
 
 # Mis matching parameter name.
-impl SomeObj.bar(param1: str, praam2: int) -> str {
+impl SomeObj.bar(param1: str, param2: int) -> str {
     return "bar";
 }
 
 # Explicit self when decl has no params.
-impl SomeObj.baz(self: SomeObj) -> str {
+impl SomeObj.baz -> str {
     return "baz";
 }

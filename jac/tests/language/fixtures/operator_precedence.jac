@@ -4,9 +4,9 @@ Runs each expression in Jac, then the same expressions via ::py:: inline Python,
 and asserts the outputs match.
 """
 
-with entry {
-    jac_results: list[str] = [];
+glob jac_results: list[str] = [];
 
+with entry {
     # Bitwise AND vs comparison: should be (3 & 1) == 1, not 3 & (1 == 1)
     jac_results.append(str(3 & 1 == 1));
 
@@ -30,10 +30,12 @@ with entry {
 
     # Shift vs arithmetic preserved: should be 1 << (2 + 1)
     jac_results.append(str(1 << 2 + 1));
+}
 
-    # Get Python results via inline Python
-    py_results: list[any] = [];
-    ::py::
+glob
+     # Get Python results via inline Python
+     py_results: list[any] = [];
+::py::
 py_results = []
 py_results.append(str(3 & 1 == 1))
 py_results.append(str(3 | 0 or 4))
@@ -46,6 +48,8 @@ py_results.append(str(1 << 2 + 1))
     ::py::
 
 
+
+with entry {
     # Compare and report
     for i in range(len(jac_results)) {
         assert jac_results[i] == py_results[i] , (

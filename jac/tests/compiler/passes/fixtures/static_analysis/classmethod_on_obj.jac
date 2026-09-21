@@ -6,8 +6,7 @@ obj Foo {
         return "hello";
     }
 
-    @staticmethod
-    def baz() -> str {
+    static def baz -> str {
         return "world";
     }
 }

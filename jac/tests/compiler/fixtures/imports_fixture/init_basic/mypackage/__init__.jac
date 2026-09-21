@@ -1,5 +1,5 @@
-glob PACKAGE_NAME = "MyPackage";
-glob PACKAGE_VERSION = "2.0.0";
+glob PACKAGE_NAME = "MyPackage",
+     PACKAGE_VERSION = "2.0.0";
 
 def greet(name: str) -> str {
     return f"Hello, {name} from {PACKAGE_NAME}!";

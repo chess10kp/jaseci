@@ -10,5 +10,5 @@ glob config = 1;
 
 with entry {
     config = 2;
-    fresh = 10;
 }
+glob fresh = 10;

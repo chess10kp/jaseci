@@ -6,7 +6,6 @@ def simple_nested -> str;
 impl simple_nested -> str {
     def inner -> int {
         return 42;  # Should check against int, not str
-
     }
     return f"Result: {inner()}";
 }
@@ -21,10 +20,8 @@ impl deep_nesting -> str {
         def level2 -> float {
             def level3 -> bool {
                 return True;  # Should check against bool
-
             }
             return 3.14 if level3() else 0.0;  # Should check against float
-
         }
         return int(level2());
     }
@@ -39,9 +36,7 @@ def outer_with_impl -> str {
 
     impl helper -> int {
         return 42;  # Should check against int (no nested function)
-
     }
 
     return f"Impl in function: {helper()}";  # Should check against str
-
 }

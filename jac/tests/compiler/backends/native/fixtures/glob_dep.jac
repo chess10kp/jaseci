@@ -2,6 +2,6 @@
 
 glob G: int = 5;
 
-def getg() -> int {
+def getg -> int {
     return G;
 }

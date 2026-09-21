@@ -30,9 +30,9 @@ obj Complete {
     def postinit -> None;
 }
 
-impl Complete.postinit {
-    self.b = self.a * 2;        # Ok: int assigned to int field
-    self.c = "hello";           # Ok: str assigned to str field
+impl Complete.postinit{
+    self.b = self.a * 2;  # Ok: int assigned to int field
+    self.c = "hello";  # Ok: str assigned to str field
 }
 
 # --- Missing: postinit doesn't assign to all by-postinit fields ---
@@ -44,8 +44,8 @@ obj Incomplete {
     def postinit -> None;
 }
 
-impl Incomplete.postinit {
-    self.y = self.x + 10;      # Ok: int assigned to int field
+impl Incomplete.postinit{
+    self.y = self.x + 10;  # Ok: int assigned to int field
     # Missing: self.z is never assigned — Error!
 }
 
@@ -57,18 +57,18 @@ obj WrongType {
     def postinit -> None;
 }
 
-impl WrongType.postinit {
-    self.value = "wrong";       # Error: str assigned to int field
-    self.label = 42;            # Error: int assigned to str field
+impl WrongType.postinit{
+    self.value = "wrong";  # Error: str assigned to int field
+    self.label = 42;  # Error: int assigned to str field
 }
 
 with entry {
     c = Complete(a=10);
-    print(c.b, c.c);           # Ok: properly initialized
+    print(c.b, c.c);  # Ok: properly initialized
 
     i = Incomplete(x=5);
-    print(i.y, i.z);           # Runtime crash: z never assigned
+    print(i.y, i.z);  # Runtime crash: z never assigned
 
     w = WrongType();
-    print(w.value, w.label);   # Wrong types at runtime
+    print(w.value, w.label);  # Wrong types at runtime
 }

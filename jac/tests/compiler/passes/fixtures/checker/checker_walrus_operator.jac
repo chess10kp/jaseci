@@ -1,10 +1,12 @@
 """Test walrus operator type checking."""
 
-glob result1 = (z := 20) + 10;  # OK: z is int, result is int
-glob result2: int = result1;  # OK
-glob result3: str = result1;  # Error: cannot assign int to str
-glob result4: str = z;
+glob result1 = (z := 20) + 10,
+     result2: int = result1,
+     result3: str = result1,
+     result4: str = z;  # OK: z is int, result is int
 
+# OK
+# Error: cannot assign int to str
 node MyNode {}
 node AnotherNode {}
 

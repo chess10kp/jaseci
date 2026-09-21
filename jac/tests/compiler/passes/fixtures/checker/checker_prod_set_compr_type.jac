@@ -7,11 +7,11 @@ Expected errors: 2
   2. bad2: set[str] = s       — set[int] not assignable to set[str]
 """
 
-with entry {
-    nums: list[int] = [1, 2, 3, 4, 5];
+glob nums: list[int] = [1, 2, 3, 4, 5];
 
+with entry {
     s = {x * 2 for x in nums};
-    ok1: set[int] = s;                    # Ok
-    bad1: str = s;                        # Error: set[int] -> str
-    bad2: set[str] = s;                   # Error: set[int] -> set[str]
+    ok1: set[int] = s;  # Ok
+    bad1: str = s;  # Error: set[int] -> str
+    bad2: set[str] = s;  # Error: set[int] -> set[str]
 }

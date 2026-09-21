@@ -6,7 +6,6 @@ object when the annotated return type includes JsxElement. `JsxPage` and
 `JsxLayout` (what `pages/` modules return) lower the same way.
 """
 
-
 def:pub ErrorBanner(error: any) -> JsxElement | None {
     if not error {
         return None;

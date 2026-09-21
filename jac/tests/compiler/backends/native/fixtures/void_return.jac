@@ -18,7 +18,7 @@ obj Box {
     def touch_call -> None;
 }
 
-def bump -> None {
+def bump {
     COUNTER += 1;
 }
 

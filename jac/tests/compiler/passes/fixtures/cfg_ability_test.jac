@@ -12,9 +12,10 @@ obj math_mod {
     }
 }
 
+glob x = 5,
+     y = 0;
+
 with entry {
-    x = 5;
-    y = 0;
     math = math_mod();
     z = math.divide(x, y);
     print(z);

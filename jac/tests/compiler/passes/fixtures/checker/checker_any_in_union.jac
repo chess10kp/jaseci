@@ -28,13 +28,13 @@ obj Beta(Base) {
     has tag: str = "b";
 }
 
-def attr_on_union_with_any(pick: bool, alt: any) -> None {
+def attr_on_union_with_any(pick: bool, alt: any) {
     # `Alpha | Any` -- `.tag` exists on Alpha; Any absorbs, no "missing" error.
     item = Alpha() if pick else alt;
     print(item.tag);
 }
 
-def method_on_union_with_any(pick: bool, alt: any) -> None {
+def method_on_union_with_any(pick: bool, alt: any) {
     # Mirrors the issue's `stream.flush()`: a call on `Alpha | Any` in a
     # value-neutral position must not report the method missing from Any.
     item = Alpha() if pick else alt;
@@ -43,15 +43,15 @@ def method_on_union_with_any(pick: bool, alt: any) -> None {
     }
 }
 
-def attr_on_multi_any(which: int, alt: any) -> None {
+def attr_on_multi_any(which: int, alt: any) {
     # `Alpha | Beta | Any` -- `.tag` exists on both concrete members.
     item = Alpha() if which == 0 else (Beta() if which == 1 else alt);
     print(item.tag);
 }
 
-def take_base_or_none(x: Base | None) -> None {}
+def take_base_or_none(x: Base | None) {}
 
-def assign_concrete_union(u: bool, a: Alpha, b: Beta) -> None {
+def assign_concrete_union(u: bool, a: Alpha, b: Beta) {
     # `Alpha | Beta` (no `Any`) -- both are subtypes of Base, so the assignment
     # is sound. This is the assignability that stays valid under the strict
     # `Any` policy.

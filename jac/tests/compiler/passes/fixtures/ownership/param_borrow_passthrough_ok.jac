@@ -1,4 +1,6 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
 def first(p: &Buffer) -> Buffer {
     return p;
@@ -10,4 +12,4 @@ with entry {
     take_final(a);
 }
 
-def take_final(x: Buffer) -> None {}
+def take_final(x: Buffer) {}

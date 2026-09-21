@@ -3,7 +3,7 @@ to an RPC stub, not a client import of the server module."""
 
 import from .sv_import_cl_block_server { say_hi }
 
-def:pub Greet() -> JsxElement {
+def:pub Greet -> JsxElement {
     has msg: str = "";
 
     can with entry {

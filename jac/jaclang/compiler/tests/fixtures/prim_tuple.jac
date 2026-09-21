@@ -4,7 +4,7 @@ Cross-backend equivalence fixture.
 """
 
 # --- Tuple operators and methods ---
-def tuple_py() -> dict[any, any] {
+def tuple_py -> dict[any, any] {
     # From containers: tuple concat, in, not in
     t: tuple[any, ...] = (10, 20);
     tuple_concat: list[any] = list(t + (30, ));
@@ -48,7 +48,7 @@ def tuple_py() -> dict[any, any] {
     };
 }
 
-def tuple_cl() -> dict[any, any] {
+def tuple_cl -> dict[any, any] {
     t: tuple[any, ...] = (10, 20);
     tuple_concat: list[any] = list(t + (30, ));
     tuple_in: bool = 10 in t;
@@ -91,7 +91,7 @@ def tuple_cl() -> dict[any, any] {
 }
 
 
-def tuple_na() -> dict[str, any] {
+def tuple_na -> dict[str, any] {
     t: tuple[int, int] = (10, 20);
     tuple_in: int = 10 in t;
     tuple_nin: int = 99 not in t;

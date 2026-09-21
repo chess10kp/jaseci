@@ -5,7 +5,6 @@ Mirrors the real-world failure from littleX TweetCard.jac line 25:
 JS globals. All of this must type-check cleanly in client context.
 """
 
-
 def now_diff(created_at: str) -> int {
     diff_ms = Date.now() - new(Date, created_at).getTime();
     return int(diff_ms / 1000);

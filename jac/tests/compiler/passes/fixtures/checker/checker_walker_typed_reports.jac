@@ -11,7 +11,7 @@ walker GoodWalker {
     has reports: list[Task] = [];
 
     can with entry {
-        report Task(title="hi");   # OK: Task is the declared element type
+        report Task(title="hi");  # OK: Task is the declared element type
     }
 }
 
@@ -19,10 +19,10 @@ walker MismatchedReport {
     has reports: list[Task] = [];
 
     can with entry {
-        report 42;                 # ERROR: int is not assignable to Task
+        report 42;  # ERROR: int is not assignable to Task
     }
 }
 
 walker BadShape {
-    has reports: int = 0;          # ERROR: reports must be a list type
+    has reports: int = 0;  # ERROR: reports must be a list type
 }

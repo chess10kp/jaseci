@@ -6,10 +6,14 @@ narrowing A1)."""
 obj Job {
     has id: int = 0;
 
-    def drop { print("drop job " + str(self.id)); }
+    def drop {
+        print("drop job " + str(self.id));
+    }
 }
 
-def sink(p: own Job) -> int { return p.id; }
+def sink(p: own Job) -> int {
+    return p.id;
+}
 
 def make -> own Job {
     j: own Job = Job(id=7);
@@ -23,4 +27,7 @@ def run -> int {
     return n + k.id;
 }
 
-with entry { print(run()); print("done"); }
+with entry {
+    print(run());
+    print("done");
+}

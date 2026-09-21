@@ -6,10 +6,14 @@ obj Node {
     has v: int = 0,
         next: own Node | None = None;
 
-    def drop { print("drop node " + str(self.v)); }
+    def drop {
+        print("drop node " + str(self.v));
+    }
 }
 
-obj Holder { has slot: own Node | None = None; }
+obj Holder {
+    has slot: own Node | None = None;
+}
 
 def set_via_param(h: &mut Holder) {
     b: own Node = Node(v=3);
@@ -20,11 +24,18 @@ def run -> int {
     a: own Node = Node(v=1);
     b: own Node = Node(v=2);
     a.next = b;
-    if a.next is not None { print("a.next.v=" + str(a.next.v)); }
+    if a.next is not None {
+        print("a.next.v=" + str(a.next.v));
+    }
     h: own Holder = Holder();
     set_via_param(&mut h);
-    if h.slot is not None { print("h.slot.v=" + str(h.slot.v)); }
+    if h.slot is not None {
+        print("h.slot.v=" + str(h.slot.v));
+    }
     return 0;
 }
 
-with entry { run(); print("done"); }
+with entry {
+    run();
+    print("done");
+}

@@ -24,51 +24,51 @@ with entry {
 
     # Case 1: list -= list (list has no __isub__)
     lst1: list[int] = [1, 2, 3];
-    lst1 -= [1, 2];       # Error: list has no __isub__
+    lst1 -= [1, 2];  # Error: list has no __isub__
 
     # Case 2: list /= list (list has no __itruediv__)
     lst2: list[int] = [1, 2, 3];
-    lst2 /= [1];          # Error: list has no __itruediv__
+    lst2 /= [1];  # Error: list has no __itruediv__
 
     # Case 3: dict -= dict (dict has no __isub__)
     d1: dict[str, int] = {"a": 1, "b": 2};
-    d1 -= {"a": 0};       # Error: dict has no __isub__
+    d1 -= {"a": 0};  # Error: dict has no __isub__
 
     # Case 4: str /= str (str has no __itruediv__)
     s1: str = "hello";
-    s1 /= "l";            # Error: str has no __itruediv__
+    s1 /= "l";  # Error: str has no __itruediv__
 
     # Case 5: str //= str (str has no __ifloordiv__)
     s2: str = "hello";
-    s2 //= "l";           # Error: str has no __ifloordiv__
+    s2 //= "l";  # Error: str has no __ifloordiv__
 
     # Case 6: set /= set (set has no __itruediv__)
     st1: set[int] = {1, 2, 3};
-    st1 /= {1};           # Error: set has no __itruediv__
+    st1 /= {1};  # Error: set has no __itruediv__
 
     # --- Cases that SHOULD be valid (operator exists) ---
 
     # Valid: int += int (__iadd__ exists)
     y: int = 10;
-    y += 5;               # Ok
+    y += 5;  # Ok
 
     # Valid: str += str (__iadd__ exists)
     s3: str = "hi";
-    s3 += " world";       # Ok
+    s3 += " world";  # Ok
 
     # Valid: list += list (__iadd__/extend exists)
     lst3: list[int] = [1];
-    lst3 += [2, 3];       # Ok
+    lst3 += [2, 3];  # Ok
 
     # Valid: float *= int (__imul__ exists)
     f: float = 3.14;
-    f *= 2;               # Ok
+    f *= 2;  # Ok
 
     # Valid: set |= set (__ior__ exists)
     st2: set[int] = {1, 2};
-    st2 |= {3, 4};        # Ok
+    st2 |= {3, 4};  # Ok
 
     # Valid: dict |= dict (__ior__ exists, Python 3.9+)
     d2: dict[str, int] = {"a": 1};
-    d2 |= {"b": 2};       # Ok
+    d2 |= {"b": 2};  # Ok
 }

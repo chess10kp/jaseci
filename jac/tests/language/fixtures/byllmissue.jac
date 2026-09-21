@@ -2,7 +2,7 @@ class Foo {
     '''
     a doc string
     '''
-    def bar() -> int {
+    def bar -> int {
         return 1;
     }
 }

@@ -1,9 +1,9 @@
 """Test: patterns that should NOT trigger warnings."""
 obj Foo {
-    has name: str;
-    has count: int = 0;
+    has name: str,
+        count: int = 0;
 
-    def bar(_unused: int) -> None {
+    def bar(_unused: int) {
         print(self.name);
     }
 }

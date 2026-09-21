@@ -11,7 +11,7 @@ obj Cat(Animal) {
 }
 
 def describe(pet: Dog | Cat) -> str {
-    if isinstance(pet, Dog) { } else {
+    if isinstance(pet, Dog) {} else {
         return "cat";
     }
     return pet.breed;
@@ -20,6 +20,6 @@ def describe(pet: Dog | Cat) -> str {
 def describe_mirror(pet: Dog | Cat) -> str {
     if isinstance(pet, Cat) {
         return "cat";
-    } else { }
+    } else {}
     return pet.breed;
 }

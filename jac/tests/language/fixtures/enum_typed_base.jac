@@ -5,30 +5,17 @@ to `class X(StrEnum)`, and `enum X: T { ... }` for custom T uses
 Python's mixin pattern `class X(T, Enum)`.
 """
 
-enum Color: int {
-    RED = 0,
-    GREEN = 1,
-    BLUE = 2
-}
+enum Color: int { RED = 0, GREEN = 1, BLUE = 2 }
 
-enum Tag: str {
-    OPEN = "open",
-    CLOSE = "close"
-}
+enum Tag: str { OPEN = "open", CLOSE = "close" }
 
 class Box {
     has size: int = 0;
 }
 
-enum Crate: Box {
-    SMALL = Box(),
-    LARGE = Box()
-}
+enum Crate: Box { SMALL = Box(), LARGE = Box() }
 
-enum Plain {
-    FIRST = 1,
-    SECOND = 2
-}
+enum Plain { FIRST = 1, SECOND = 2 }
 
 with entry {
     print("int_member:", Color.RED == 0, isinstance(Color.RED, int), int(Color.RED));

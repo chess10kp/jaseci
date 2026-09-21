@@ -1,14 +1,13 @@
 import from typing { Final }
 import from checker_final_source { SHARED_RATE }
 
-glob SHARED_RATE = 3.0;  # <-- Error
-
-glob LIMIT: Final[int] = 5;
+glob SHARED_RATE = 3.0,
+     LIMIT: Final[int] = 5;  # <-- Error
 
 obj Point {
-    has x: Final[int];
-    has label: Final[str] = "p";
-    has tag: Final[str] postinit;
+    has x: Final[int],
+        label: Final[str] = "p",
+        tag: Final[str] postinit;
 
     def init(x: int) {
         self.x = x;
@@ -33,7 +32,7 @@ obj Heir(Point) {
 class Meter {
     has ticks: Final[int];
 
-    def __init__(me: Meter, n: int) {
+    def init(me: Meter, n: int) {
         me.ticks = n;
     }
 }

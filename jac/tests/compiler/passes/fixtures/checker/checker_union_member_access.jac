@@ -14,12 +14,10 @@ obj Bird(Animal) {
 
 def test_union_common_member(x: Mammal | Bird) -> str {
     return x.name;  # Ok
-
 }
 
 def test_union_uncommon_member(x: Mammal | Bird) -> int {
     return x.legs;  # <-- Error: Bird doesn't have .legs
-
 }
 
 obj Container {
@@ -28,13 +26,11 @@ obj Container {
 
 def test_union_chained_member(c: Container) -> str {
     return c.animal.name;  # Ok
-
 }
 
 def test_union_with_none(x: Mammal | Bird | None) -> str {
     if x is not None {
         return x.name;  # Ok
-
     }
     return "";
 }

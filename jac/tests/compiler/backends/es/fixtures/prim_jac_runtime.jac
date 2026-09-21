@@ -10,7 +10,7 @@ and exercises the _jac.* runtime calls.
 # (to_bytes/from_bytes skipped — bytes are not JSON-serializable)
 # =============================================================================
 
-def jac_rt_int_py() -> dict[any, any] {
+def jac_rt_int_py -> dict[any, any] {
     # mod — Python semantics: result sign matches divisor
     a: int = -7;
     b: int = 3;
@@ -52,7 +52,7 @@ def jac_rt_int_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_int_cl() -> dict[any, any] {
+def jac_rt_int_cl -> dict[any, any] {
     a: int = -7;
     b: int = 3;
     mod_np: int = a % b;
@@ -96,7 +96,7 @@ def jac_rt_int_cl() -> dict[any, any] {
 # (hex/fromhex skipped — JS toString(16) differs from Python float.hex())
 # =============================================================================
 
-def jac_rt_float_py() -> dict[any, any] {
+def jac_rt_float_py -> dict[any, any] {
     # mod — Python semantics for floats
     fa: float = -7.5;
     fb: float = 2.0;
@@ -116,7 +116,7 @@ def jac_rt_float_py() -> dict[any, any] {
     return {"fmod1": fmod1, "ratio_half": [r0, r1], "ratio_quarter": [r2_0, r2_1]};
 }
 
-def jac_rt_float_cl() -> dict[any, any] {
+def jac_rt_float_cl -> dict[any, any] {
     fa: float = -7.5;
     fb: float = 2.0;
     fmod1: float = fa % fb;
@@ -140,7 +140,7 @@ def jac_rt_float_cl() -> dict[any, any] {
 # (format_map skipped — dict argument handling differs)
 # =============================================================================
 
-def jac_rt_str_py() -> dict[any, any] {
+def jac_rt_str_py -> dict[any, any] {
     s: str = "hello world";
 
     # Case conversion
@@ -246,7 +246,7 @@ def jac_rt_str_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_str_cl() -> dict[any, any] {
+def jac_rt_str_cl -> dict[any, any] {
     s: str = "hello world";
 
     cap: str = s.capitalize();
@@ -346,7 +346,7 @@ def jac_rt_str_cl() -> dict[any, any] {
 # list namespace: sort, count, remove, index, repeat, comparisons, imul
 # =============================================================================
 
-def jac_rt_list_py() -> dict[any, any] {
+def jac_rt_list_py -> dict[any, any] {
     # sort with key
     nums: list[any] = [3, 1, 4, 1, 5, 9, 2, 6];
     nums.sort(key=lambda (x) { -x; });
@@ -410,7 +410,7 @@ def jac_rt_list_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_list_cl() -> dict[any, any] {
+def jac_rt_list_cl -> dict[any, any] {
     nums: list[any] = [3, 1, 4, 1, 5, 9, 2, 6];
     nums.sort(key=lambda (x) { -x; });
 
@@ -471,7 +471,7 @@ def jac_rt_list_cl() -> dict[any, any] {
 # dict namespace: pop, popitem, setdefault, clear, fromkeys, eq
 # =============================================================================
 
-def jac_rt_dict_py() -> dict[any, any] {
+def jac_rt_dict_py -> dict[any, any] {
     # pop
     d: dict[any, any] = {"a": 1, "b": 2, "c": 3};
     popped: int = d.pop("b");
@@ -514,7 +514,7 @@ def jac_rt_dict_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_dict_cl() -> dict[any, any] {
+def jac_rt_dict_cl -> dict[any, any] {
     d: dict[any, any] = {"a": 1, "b": 2, "c": 3};
     popped: int = d.pop("b");
     pop_default: int = d.pop("z", -1);
@@ -559,7 +559,7 @@ def jac_rt_dict_cl() -> dict[any, any] {
 # (results converted to sorted lists for JSON serialization)
 # =============================================================================
 
-def jac_rt_set_py() -> dict[any, any] {
+def jac_rt_set_py -> dict[any, any] {
     # remove
     s1: set = {1, 2, 3, 4};
     s1.remove(3);
@@ -609,7 +609,7 @@ def jac_rt_set_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_set_cl() -> dict[any, any] {
+def jac_rt_set_cl -> dict[any, any] {
     s1: set = {1, 2, 3, 4};
     s1.remove(3);
     after_remove: list[any] = sorted(list(s1));
@@ -657,7 +657,7 @@ def jac_rt_set_cl() -> dict[any, any] {
 # tuple namespace: count, index, repeat, comparisons
 # =============================================================================
 
-def jac_rt_tuple_py() -> dict[any, any] {
+def jac_rt_tuple_py -> dict[any, any] {
     t: tuple[any, ...] = (1, 2, 3, 2, 1);
 
     # count / index
@@ -695,7 +695,7 @@ def jac_rt_tuple_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_tuple_cl() -> dict[any, any] {
+def jac_rt_tuple_cl -> dict[any, any] {
     t: tuple[any, ...] = (1, 2, 3, 2, 1);
 
     cnt: int = t.count(2);
@@ -737,7 +737,7 @@ def jac_rt_tuple_cl() -> dict[any, any] {
 # (vars/dir/open/issubclass/next/complex skipped — not cross-backend testable)
 # =============================================================================
 
-def jac_rt_builtin_py() -> dict[any, any] {
+def jac_rt_builtin_py -> dict[any, any] {
     # round
     r1: int = round(3.7);
     r2: float = round(3.14159, 2);
@@ -804,7 +804,7 @@ def jac_rt_builtin_py() -> dict[any, any] {
     };
 }
 
-def jac_rt_builtin_cl() -> dict[any, any] {
+def jac_rt_builtin_cl -> dict[any, any] {
     r1: int = round(3.7);
     r2: float = round(3.14159, 2);
 

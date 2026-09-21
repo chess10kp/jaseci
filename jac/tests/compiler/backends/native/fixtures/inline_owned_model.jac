@@ -13,6 +13,7 @@ obj Record {
 obj Buffer {
     has values: list[own Record] = [];
 }
+
 obj State {
     has first: own Buffer = Buffer(),
         second: own Buffer = Buffer(),

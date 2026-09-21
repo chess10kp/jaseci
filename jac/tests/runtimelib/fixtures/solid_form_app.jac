@@ -28,7 +28,6 @@ The jsdom harness in `test_solid_jsdom.jac` verifies:
   it calls onSubmit (sets globalThis.__jacFormSubmitted), and no throw occurs
 """
 
-
 import from "@jac/runtime" { JacForm, JacSchema }
 
 def:pub app -> JsxElement {

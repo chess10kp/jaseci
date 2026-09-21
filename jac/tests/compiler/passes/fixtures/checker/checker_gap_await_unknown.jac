@@ -29,21 +29,21 @@ async def get_async_int -> int {
 
 async def main_async {
     # Case 1: Basic await type mismatch
-    ok1: int = await fetch_number();    # Ok: int -> int
-    bad1: str = await fetch_number();   # Error: int -> str
+    ok1: int = await fetch_number();  # Ok: int -> int
+    bad1: str = await fetch_number();  # Error: int -> str
 
     # Case 2: Dict return type mismatch
-    ok2: dict[str, int] = await fetch_data();   # Ok
-    bad2: int = await fetch_data();              # Error: dict -> int
+    ok2: dict[str, int] = await fetch_data();  # Ok
+    bad2: int = await fetch_data();  # Error: dict -> int
 
     # Case 3: Using awaited value OK then mismatch
-    name: str = await fetch_name();              # Ok
-    bad3: int = await fetch_name();              # Error: str -> int
+    name: str = await fetch_name();  # Ok
+    bad3: int = await fetch_name();  # Error: str -> int
 
     # Case 4: Await result assigned to wrong type
-    bad4: str = await get_async_int();           # Error: int -> str
+    bad4: str = await get_async_int();  # Error: int -> str
 
     # Case 5: Another type mismatch
-    val: int = await get_async_int();            # Ok
-    bad5: bool = await get_async_int();          # Error: int -> bool
+    val: int = await get_async_int();  # Ok
+    bad5: bool = await get_async_int();  # Error: int -> bool
 }

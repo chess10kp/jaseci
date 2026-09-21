@@ -1,12 +1,12 @@
 """Fixture for W3038: useState is NOT the only import — partial removal, comma edge cases."""
 
-import from "react" { JsxElement, useState, useEffect }
+import from "react" { JsxElement, useEffect }
 
-def:pub NameInput() -> JsxElement {
-    [name, setName] = useState("");
+def:pub NameInput -> JsxElement {
+    has name: str = "";
 
     def handleChange(e: any) {
-        setName(str(e.target.value));
+        name = str(e.target.value);
     }
 
     return (

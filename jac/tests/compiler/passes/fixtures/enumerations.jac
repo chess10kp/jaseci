@@ -1,6 +1,6 @@
 import from enum { unique }
 
-@ unique
+@unique
 enum Color;
 
 impl Color{

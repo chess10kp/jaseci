@@ -17,6 +17,7 @@ obj Outer {
 def observe(x: &Outer) {
     x.bump();
 }
+
 with entry {
     x: own Outer = Outer();
     observe(&x);

@@ -16,7 +16,14 @@ def:pub str_slices -> int {
     f = 1 if s[::2] == "hlo" else 0;
     g = 1 if s[4:1] == "" else 0;
     h = 1 if s[-100:2] == "he" else 0;
-    return a * 10000000 + b * 1000000 + c * 100000 + d * 10000 + e * 1000 + f * 100 + g * 10 + h;
+    return a * 10000000
+        + b * 1000000
+        + c * 100000
+        + d * 10000
+        + e * 1000
+        + f * 100
+        + g * 10
+        + h;
 }
 
 def sum_list(xs: list[int]) -> int {

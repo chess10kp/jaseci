@@ -19,7 +19,7 @@ def getattr_or_fallback(o: object) -> str {
 }
 
 def getattr_or_empty_dict(o: object) -> dict[any, any] {
-    return getattr(o, "paths", None) or {};
+    return o?.paths or {};
 }
 
 def getattr_chain_or(o: object) -> str {
@@ -46,7 +46,7 @@ def dict_get_one_arg_or_empty(d: dict[any, any]) -> str {
     return d.get("k") or "";
 }
 
-def test_nullish_logical_precedence_cases() -> dict[any, any] {
+def test_nullish_logical_precedence_cases -> dict[any, any] {
     return {
         "getattr_two_arg_hit": getattr_two_arg_or_empty({"k": "hi"}),
         "getattr_two_arg_miss": getattr_two_arg_or_empty({}),

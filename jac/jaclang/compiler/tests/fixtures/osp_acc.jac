@@ -23,7 +23,7 @@ walker Acc {
 }
 
 # --- py reference (sv runtime) ---
-def acc_py() -> dict[str, any] {
+def acc_py -> dict[str, any] {
     w = Acc();
     w spawn Item(val=10);
     w spawn Item(val=32);
@@ -32,7 +32,7 @@ def acc_py() -> dict[str, any] {
 
 # --- na (native LLVM) ---
 
-def acc_na() -> dict[str, any] {
+def acc_na -> dict[str, any] {
     w = Acc();
     w spawn Item(val=10);
     w spawn Item(val=32);
@@ -42,7 +42,7 @@ def acc_na() -> dict[str, any] {
 
 # --- cl (ECMAScript, in-process via the kernel) ---
 
-def acc_cl() -> dict[str, any] {
+def acc_cl -> dict[str, any] {
     w = Acc();
     w spawn Item(val=10);
     w spawn Item(val=32);

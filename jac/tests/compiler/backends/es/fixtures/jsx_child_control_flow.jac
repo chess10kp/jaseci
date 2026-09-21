@@ -12,7 +12,6 @@ fires when the body begins with a statement keyword or has multiple
 statements.
 """
 
-
 obj Item {
     has label: str,
         done: bool = False;

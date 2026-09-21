@@ -20,12 +20,13 @@ with entry {
     pet: Animal = Dog(name="Rex", breed="Lab");
     match pet {
         case Dog():
-            b: str = pet.breed;  # narrowed to Dog
-
+            b: str = pet.breed;
+  # narrowed to Dog
         case Cat():
-            i: bool = pet.indoor;  # narrowed to Cat
-
+            i: bool = pet.indoor;
+  # narrowed to Cat
         case _:
-            n: str = pet.name;  # stays Animal
+            n: str = pet.name;
+  # stays Animal
     }
 }

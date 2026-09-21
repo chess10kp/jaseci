@@ -13,14 +13,14 @@ built-in `ref` prop, which is how a `useRef` handle is wired to a DOM
 node.
 """
 
-
 def:pub FocusableButton(label: str) -> JsxElement {
     has buttonRef: Ref[HTMLButtonElement] = Ref();
 
-    def focus -> None {
-        if buttonRef.current { buttonRef.current.focus(); }
+    def focus {
+        if buttonRef.current {
+            buttonRef.current.focus();
+        }
     }
 
-    return
-        <button ref={buttonRef} onClick={focus}>{label}</button>;
+    return <button ref={buttonRef} onClick={focus}>{label}</button>;
 }

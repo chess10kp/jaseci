@@ -1,6 +1,6 @@
 class Foo {
-    def first_is_self(self: Foo) -> None { }
-    def with_default_args(self: Foo, a: int, b: int = 42) -> None { }
+    def first_is_self(self: Foo) {}
+    def with_default_args(self: Foo, a: int, b: int = 42) {}
 }
 
 with entry {

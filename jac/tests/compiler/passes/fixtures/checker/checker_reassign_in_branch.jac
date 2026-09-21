@@ -1,6 +1,8 @@
 """Test reassignment inside narrowed branch updates post-join type."""
 
-obj Ctx { has val: int; }
+obj Ctx {
+    has val: int;
+}
 
 def make_ctx -> Ctx {
     return Ctx(val=42);

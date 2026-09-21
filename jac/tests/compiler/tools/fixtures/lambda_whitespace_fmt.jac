@@ -1,4 +1,4 @@
-def main -> None {
+def main {
     useEffect(
         lambda -> any {
             if not autoRefresh {

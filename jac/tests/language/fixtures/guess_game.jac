@@ -39,6 +39,7 @@ impl GuessGame.process_guess(guess: int) {
         disengage;
     }
 }
+
 # Run the game
 with entry {
     root spawn GuessGame();

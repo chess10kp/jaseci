@@ -6,11 +6,10 @@ an immediately-invoked nested lambda. Regression guard: these must all become
 `setX(...)`, not bare `x = ...`.
 """
 
-
-def:pub closures_app() -> JsxElement {
-    has seen: bool = False;
-    has armed: bool = False;
-    has fired: bool = False;
+def:pub closures_app -> JsxElement {
+    has seen: bool = False,
+        armed: bool = False,
+        fired: bool = False;
 
     return
         <div>

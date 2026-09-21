@@ -5,12 +5,12 @@ helper functions instead of misclassifying the walker as a reader.
 """
 
 node Item {
-    has title: str;
-    has tags: list[any] = [];
+    has title: str,
+        tags: list[any] = [];
 }
 
 # The graph write lives here, in a plain helper -- not in the walker body.
-def _add_tag(it: Item, label: str) -> None {
+def _add_tag(it: Item, label: str) {
     it.tags = it.tags + [label];
 }
 

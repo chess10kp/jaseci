@@ -1,6 +1,6 @@
 """Plain .jac helper consumed via a bare `import bare_import_helper;`."""
 
-def fn() -> int {
+def fn -> int {
     return 41;
 }
 

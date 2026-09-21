@@ -11,6 +11,7 @@ handed to `osp_visit` whole, enqueuing its elements — matching py semantics.
 node Hub {
     has name: str = "hub";
 }
+
 node Spot {
     has tag: int;
 }
@@ -43,7 +44,7 @@ walker InlineTour {
 }
 
 # --- py reference (sv runtime) ---
-def visit_list_py() -> dict[str, any] {
+def visit_list_py -> dict[str, any] {
     w = FieldTour(targets=[Spot(tag=1), Spot(tag=2)]);
     Hub() spawn w;
     v = InlineTour(x=Spot(tag=4), y=Spot(tag=8));
@@ -53,7 +54,7 @@ def visit_list_py() -> dict[str, any] {
 
 # --- na (native LLVM) ---
 
-def visit_list_na() -> dict[str, any] {
+def visit_list_na -> dict[str, any] {
     w = FieldTour(targets=[Spot(tag=1), Spot(tag=2)]);
     Hub() spawn w;
     v = InlineTour(x=Spot(tag=4), y=Spot(tag=8));
@@ -64,7 +65,7 @@ def visit_list_na() -> dict[str, any] {
 
 # --- cl (ECMAScript, in-process via the kernel) ---
 
-def visit_list_cl() -> dict[str, any] {
+def visit_list_cl -> dict[str, any] {
     w = FieldTour(targets=[Spot(tag=1), Spot(tag=2)]);
     Hub() spawn w;
     v = InlineTour(x=Spot(tag=4), y=Spot(tag=8));

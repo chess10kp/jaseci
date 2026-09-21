@@ -6,7 +6,6 @@ navigations while the `<Outlet/>` content swaps -- exercising `<Router root=...>
 plus the `__JacOutletContext` bridge that delivers `props.children` to `Outlet`.
 """
 
-
 import from "@jac/runtime" { Outlet }
 
 def:pub layout -> JsxLayout {

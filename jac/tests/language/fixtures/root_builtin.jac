@@ -4,13 +4,14 @@ node Item {
     has name: str;
 }
 
+glob
+     # bare root reference
+     r = root;
 with entry {
-    # bare root reference
-    r = root;
     print(type(r).__name__);
 
     # root in graph operations
     root ++> Item(name="a");
     root ++> Item(name="b");
-    print(len([root -->]));
+    print(len([root-->]));
 }

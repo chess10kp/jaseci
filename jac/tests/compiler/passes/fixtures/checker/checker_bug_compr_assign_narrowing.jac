@@ -36,7 +36,7 @@ def filtered(x: (Inner | None)) -> None {
     print(xs);
 }
 
-def self_referential(items: list[int]) -> None {
+def self_referential(items: list[int]) {
     items = [
         t
         for t in items

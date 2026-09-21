@@ -15,10 +15,10 @@ always worked, so this pins the keyword form against the positional baseline.
 
 import json;
 
-def dumps_pos_len() -> int {
+def dumps_pos_len -> int {
     return len(json.dumps("hi"));
 }
 
-def dumps_kw_len() -> int {
+def dumps_kw_len -> int {
     return len(json.dumps(value="hi"));
 }

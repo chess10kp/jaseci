@@ -10,7 +10,7 @@ import from abc { ABC }
 class Item {}
 
 class Container[K, V](ABC) {
-    def init(self: Container[K, V], key: K) -> None {
+    def init(self: Container[K, V], key: K) {
         self.value: V = key;
     }
 }

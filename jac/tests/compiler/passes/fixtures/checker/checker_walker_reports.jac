@@ -1,8 +1,8 @@
 """Walker .reports attribute should be visible on all walker types."""
 
 node Task {
-    has title: str;
-    has done: bool = False;
+    has title: str,
+        done: bool = False;
 }
 
 walker ListTasks {

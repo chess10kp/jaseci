@@ -1,12 +1,12 @@
 obj TYPE {
-    def init() {
+    def init {
         DICT: dict[any, any] = {};
         DICT[self] = 1;
     }
 }
 
 obj TASK(TYPE) {
-    def init() {
+    def init {
         TYPE.init(self);
     }
 }

@@ -8,19 +8,12 @@ case the standard E0076 check catches.
 
 obj Container {
     has _val: int = 0;
-
-    @property
-    def val -> int {
-        return self._val;
-    }
-
-    @val.setter
-    def val(new_val: int) {
-        self._val = new_val;
-    }
-
-    @val.setter
-    def val(new_val: int) {
-        self._val = new_val * 2;
+    has val: int {
+        getter {
+            return self._val;
+        }
+        setter(new_val: int) {
+            self._val = new_val * 2;
+        }
     }
 }

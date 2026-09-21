@@ -1,8 +1,10 @@
 glob receiver_calls: int = 0,
      receiver_drops: int = 0;
+
 obj Value {
     has amount: int;
 }
+
 obj Pair {}
 obj Expr {
     def drop {
@@ -31,6 +33,7 @@ obj ListExpr(Expr) {
 obj Compr {
     has target: Expr;
 }
+
 def total(c: Compr) -> int {
     answer = 0;
     if isinstance(c.target, (TupleExpr, ListExpr)) {
@@ -80,6 +83,7 @@ def named(flag: bool) -> int {
 def calls -> int {
     return receiver_calls;
 }
+
 def drops -> int {
     return receiver_drops;
 }

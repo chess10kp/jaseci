@@ -31,8 +31,5 @@ def brand_all(parts: list[any]) -> list[any] {
 
 def brands_from_list(x: any) -> list[any] {
     coercions = [Brand, Tag];
-    return [
-        c(x)
-        for c in coercions
-    ];
+    return [c(x) for c in coercions];
 }

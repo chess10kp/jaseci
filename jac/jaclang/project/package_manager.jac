@@ -23,16 +23,26 @@ import from jaclang.project.dependency_model {
 import from jaclang.project.jac_provider {
     JacDepProvider,
     manifest_jac_specs,
-    parse_jac_spec,
-    pth_path
+    parse_jac_spec
 }
 import from jaclang.project.jac_store { JacDepError, materialize, snapshot_path }
-import from jaclang.project.lockfile { jac_lock_rows, read_lock }
+import from jaclang.project.lockfile {
+    _lock_doc,
+    harvest_npm_lock,
+    harvest_python_lock,
+    jac_lock_rows,
+    read_lock,
+    write_atomic
+}
+import from jaclang.project.pyvenv { venv_python }
 import from jaclang.project.providers {
     EcosystemProvider,
     InstallContext,
-    get_provider_registry
+    capability_dependencies,
+    get_provider_registry,
+    get_python_provider
 }
+import from jaclang.project.versioning { norm_pkg_name }
 
 
 def _manifest_entry(spec: DependencySpec) -> dict[str, any] {
@@ -58,40 +68,40 @@ def _manifest_entry(spec: DependencySpec) -> dict[str, any] {
 }
 
 
-def _manifest_document(
+def _manifest_config(
     config: JacConfig, main_specs: list[DependencySpec], dev_specs: list[DependencySpec]
-) -> dict[str, any] {
-    doc = copy.deepcopy(config._raw_data);
-    if not isinstance(doc, dict) {
-        doc = {};
-    }
-    dependencies = doc.get("dependencies", {});
-    dependencies = dependencies if isinstance(dependencies, dict) else {};
-    dependencies["jac"] = {spec.alias: _manifest_entry(spec) for spec in main_specs};
-    doc["dependencies"] = dependencies;
-    dev_doc = doc.get("dev-dependencies", {});
-    dev_doc = dev_doc if isinstance(dev_doc, dict) else {};
+) -> JacConfig {
+    # Derive the post-operation jac section, then let the config's own
+    # document builder render it: JacConfig.to_doc is the single writer of
+    # the dependency hoisting/empty-table cleanup, so this file and
+    # JacConfig.save cannot drift.
+    jac_section: dict[str, any] = {
+        spec.alias: _manifest_entry(spec) for spec in main_specs
+    };
     if dev_specs {
-        dev_doc["jac"] = {spec.alias: _manifest_entry(spec) for spec in dev_specs};
-    } elif "jac" in dev_doc {
-        del dev_doc["jac"];
+        jac_section["dev"] = {spec.alias: _manifest_entry(spec) for spec in dev_specs};
     }
-
-    if dev_doc {
-        doc["dev-dependencies"] = dev_doc;
+    candidate = copy.deepcopy(config);
+    candidate.plugin_dependencies = dict(candidate.plugin_dependencies);
+    if jac_section {
+        candidate.plugin_dependencies["jac"] = jac_section;
     } else {
-        if "dev-dependencies" in doc {
-            doc.pop("dev-dependencies", None);
-        }
+        candidate.plugin_dependencies.pop("jac", None);
     }
-    return doc;
-}
-
-
-def _config_for_manifest(config: JacConfig, doc: dict[str, any]) -> JacConfig {
-    text = serialize_toml(doc);
-    candidate = JacConfig.from_toml_str(text, config.toml_path);
-    candidate.project_root = config.project_root;
+    # to_doc only rewrites hoisted [dependencies.<type>] tables for types
+    # still present in plugin_dependencies; drop now-orphaned sub-tables
+    # from the raw document so a removed jac section cannot survive the
+    # render.
+    raw_deps = candidate._raw_data.get("dependencies", {});
+    if isinstance(raw_deps, dict) {
+        candidate._raw_data["dependencies"] = {
+            k: v
+            for (k, v) in raw_deps.items()
+            if k == "git"
+                or not isinstance(v, dict)
+                or k in candidate.plugin_dependencies
+        };
+    }
     return candidate;
 }
 
@@ -167,11 +177,16 @@ def _build_plan(
     manifest_text: str
 ) -> ResolutionPlan {
     project_root = config.project_root or Path.cwd();
+    # Resolve against the interpreter the pins will be installed with: a
+    # pip --dry-run probed on the host python can disagree with the project
+    # venv's closure when the two differ in version or platform tags.
+    probe_python = Path(venv_python(Path(config.get_venv_dir())));
     context = ResolutionContext(
         include_dev=operation.include_dev,
         frozen=operation.frozen,
         update_targets=set(operation.targets),
-        manifest_fingerprint=hashlib.sha256(manifest_text.encode("utf-8")).hexdigest()
+        manifest_fingerprint=hashlib.sha256(manifest_text.encode("utf-8")).hexdigest(),
+        interpreter=str(probe_python) if probe_python.exists() else ""
     );
     prior = read_lock(project_root);
     pins = jac_lock_rows(prior);
@@ -217,13 +232,21 @@ def _build_plan(
             if name not in refresh
         };
     }
-    if operation.frozen and prior.get("legacy_partial", False) {
-        raise JacDepError(
-            "jac.lock contains legacy harvested Python/npm state; "
-            "run 'jac install' to write a v2 graph before using --frozen"
-        );
-    }
     if operation.frozen {
+        # `legacy_version`/`legacy_partial` are set by read_lock only when the
+        # file's version is < 2, i.e. a genuine pre-v2 lock; a fingerprintless
+        # v2 lock (legacy pipeline output) falls through to the mismatch check.
+        if prior.get("legacy_version") or prior.get("legacy_partial", False) {
+            raise JacDepError(
+                "jac.lock is a pre-v2 lockfile; run 'jac install' to write "
+                "the v2 graph before using --frozen"
+            );
+        }
+        if not prior {
+            raise JacDepError(
+                "no jac.lock found; run 'jac install' before using --frozen"
+            );
+        }
         recorded_fingerprint = str(prior.get("manifest_fingerprint", ""));
         if recorded_fingerprint != context.manifest_fingerprint {
             raise JacDepError(
@@ -344,6 +367,47 @@ def _build_plan(
             );
         }
     }
+    extras_deps = get_python_provider().resolve_extras(config, operation.extras);
+    for extra_dep in extras_deps {
+        unresolved_backend.append(
+            {
+                "consumer_id": "root",
+                "ecosystem": "python",
+                "name": extra_dep.name,
+                "constraint": extra_dep.version,
+                "location": str(project_root),
+                "dev": False,
+                "unresolved": True
+            }
+        );
+    }
+    manifest_python_names: set[str] = {
+        norm_pkg_name(name) for name in config.dependencies
+    };
+    if context.include_dev {
+        for dev_name in config.dev_dependencies {
+            manifest_python_names.add(norm_pkg_name(dev_name));
+        }
+    }
+    for extra_dep in extras_deps {
+        manifest_python_names.add(norm_pkg_name(extra_dep.name));
+    }
+    for cap_dep in capability_dependencies(config, scale=operation.scale) {
+        if norm_pkg_name(cap_dep.name) in manifest_python_names {
+            continue;
+        }
+        unresolved_backend.append(
+            {
+                "consumer_id": "root",
+                "ecosystem": "python",
+                "name": cap_dep.name,
+                "constraint": cap_dep.version,
+                "location": str(project_root),
+                "dev": False,
+                "unresolved": True
+            }
+        );
+    }
     for (alias, pkg) in resolved.items() {
         node_id = canonical_dependency_id("jac", alias);
         project = pkg.manifest.get("project", {});
@@ -398,11 +462,18 @@ def _build_plan(
             );
         }
         import_roots[import_root] = node_id;
-        source_location = (
-            os.path.relpath(pkg.key, str(project_root))
-                if pkg.source == "path"
-                else pkg.key
-        );
+        if pkg.source == "path" {
+            rel_location = os.path.relpath(pkg.key, str(project_root));
+            # Keep relative form only when the path dep lives under the
+            # project: transitive path deps of fetched git packages resolve
+            # into the content store, and a "../.." lock row could never be
+            # re-validated on a frozen replay.
+            source_location = (
+                rel_location if not rel_location.startswith("..") else pkg.key
+            );
+        } else {
+            source_location = pkg.key;
+        }
         graph_node = DependencyNode(
             id=node_id,
             ecosystem="jac",
@@ -606,28 +677,35 @@ def _build_plan(
         "nodes": {node_id: _node_dict(node) for (node_id, node) in nodes.items()},
         "edges": [_edge_dict(edge) for edge in edges]
     };
-    if unresolved_backend {
-        lock_data["unresolved_backend"] = unresolved_backend;
+    # Carry the harvested pin sections ([python], [python_graph], [npm])
+    # forward from the prior lock: commit_plan rewrites jac.lock from this
+    # document and must not drop state the plan pipeline does not manage.
+    for legacy_section in ("python", "python_graph", "npm") {
+        prior_section = prior.get(legacy_section);
+        if isinstance(prior_section, dict) and prior_section {
+            lock_data[legacy_section] = prior_section;
+        }
     }
     return ResolutionPlan(
         nodes=nodes,
         edges=edges,
         manifest_text=manifest_text,
         lock_data=lock_data,
-        staged_cas_objects=[str(v.get("source", "")) for v in staged.values()],
-        staged_materializations={
-            ** staged,
-            "_save_manifest": operation.save,
-            "_dry_run": operation.dry_run
-        },
-        provider_resolutions=provider_resolutions
+        staged_materializations=staged,
+        provider_resolutions=provider_resolutions,
+        save_manifest=operation.save,
+        dry_run=operation.dry_run
     );
 }
 
 
 def plan_operation(config: JacConfig, operation: PackageOperation) -> ResolutionPlan {
     if operation.ecosystem != "jac" {
-        raise JacDepError("Milestone 1 package operations support ecosystem='jac'");
+        raise JacDepError(
+            f"Unsupported package operation ecosystem '{operation.ecosystem}'; "
+            "only pure-jac packages are supported here (python and npm deps "
+            "go through 'jac install')"
+        );
     }
     (main_specs, dev_specs) = manifest_jac_specs(config);
     by_alias: dict[str, DependencySpec] = {
@@ -664,31 +742,15 @@ def plan_operation(config: JacConfig, operation: PackageOperation) -> Resolution
             );
         }
     }
-    doc = _manifest_document(config, main_specs, dev_specs);
-    manifest_text = serialize_toml(doc);
-    candidate = _config_for_manifest(config, doc);
+    candidate = _manifest_config(config, main_specs, dev_specs);
+    manifest_text = serialize_toml(candidate.to_doc());
     return _build_plan(config, operation, candidate, manifest_text);
 }
 
-def _write_atomic(path: Path, text: str) {
-    path.parent.mkdir(parents=True, exist_ok=True);
-    (fd, tmp_name) = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent));
-    tmp = Path(tmp_name);
-    try {
-        with os.fdopen(fd, "w", encoding="utf-8") as stream {
-            stream.write(text);
-            stream.flush();
-            os.fsync(stream.fileno());
-        }
-        os.replace(str(tmp), str(path));
-    } except Exception {
-        tmp.unlink(missing_ok=True);
-        raise;
-    }
-}
-
-
 def _publish_packages(active: Path, generation_packages: Path) {
+    # Atomically swap `active` to point at the new generation. Mirrored by
+    # _recover_generation in dep_roots.py, which replays the same swap from
+    # the transaction journal after a crash; keep the two in sync.
     pointer = active.with_name(active.name + ".next");
     pointer.unlink(missing_ok=True);
     os.symlink(str(generation_packages), str(pointer));
@@ -708,9 +770,9 @@ def _publish_packages(active: Path, generation_packages: Path) {
 }
 
 
-def commit_plan(config: JacConfig, plan: ResolutionPlan) -> bool {
-    if plan.staged_materializations.get("_dry_run", False) {
-        return True;
+def commit_plan(config: JacConfig, plan: ResolutionPlan) -> None {
+    if plan.dry_run {
+        return;
     }
     project_root = config.project_root or Path.cwd();
     build = config.get_build_dir();
@@ -726,12 +788,6 @@ def commit_plan(config: JacConfig, plan: ResolutionPlan) -> bool {
     try {
         rows: list[dict[str, any]] = [];
         for (node_id, item) in plan.staged_materializations.items() {
-            if node_id.startswith("_") {
-                continue;
-            }
-            if node_id not in plan.staged_materializations {
-                continue;
-            }
             graph_node = plan.nodes[node_id];
             destination = stage_packages / graph_node.alias;
             materialize(Path(str(item["source"])), destination);
@@ -754,8 +810,8 @@ def commit_plan(config: JacConfig, plan: ResolutionPlan) -> bool {
         # closure, but without this step the project venv never sees the
         # transitive deps and imports fail at runtime. Runs before the
         # generation is published so a failed sync aborts the whole
-        # transaction; frozen replays carry no install plan (they promise the
-        # store, not the network).
+        # transaction; frozen replays carry pinned rows only (no version
+        # decisions, no network resolution).
         registry = get_provider_registry();
         for (ecosystem, resolution) in plan.provider_resolutions.items() {
             if not resolution.install_plan {
@@ -765,6 +821,10 @@ def commit_plan(config: JacConfig, plan: ResolutionPlan) -> bool {
             if backend_provider is None {
                 continue;
             }
+            # A fresh context on purpose: the plan is already resolved, so
+            # this only replays exact pins. It must not inherit the CLI's
+            # install flags (a dry-run never reaches commit) and stays
+            # quiet regardless of --verbose.
             if not backend_provider.execute_install_plan(
                 config, resolution, InstallContext()
             ) {
@@ -774,10 +834,31 @@ def commit_plan(config: JacConfig, plan: ResolutionPlan) -> bool {
                 );
             }
         }
-        _write_atomic(stage / "deps.json", json.dumps(deps_data, indent=2) + "\n");
-        if plan.staged_materializations.get("_save_manifest", True) {
-            _write_atomic(stage / "jac.lock", serialize_toml(plan.lock_data));
-            _write_atomic(stage / "jac.toml", plan.manifest_text);
+        if plan.save_manifest {
+            # Fold the harvested pin sections ([python], [python_graph],
+            # [npm]) into the staged lock here instead of rewriting
+            # jac.lock after the commit: the backend sync above just
+            # changed the venv, so pins read at plan time are already
+            # stale, and folding keeps commit_plan the operation's single
+            # jac.lock writer.
+            harvest = harvest_python_lock(config, config.get_venv_dir());
+            if harvest is not None {
+                plan.lock_data["python"] = harvest[0];
+                plan.lock_data["python_graph"] = harvest[1];
+            }
+            npm_pins = harvest_npm_lock(config);
+            if npm_pins is not None {
+                plan.lock_data["npm"] = npm_pins;
+            }
+        }
+        write_atomic(stage / "deps.json", json.dumps(deps_data, indent=2) + "\n");
+        if plan.save_manifest {
+            # One lockfile writer: the same document builder write_lock uses,
+            # so the [jac] compat rows derived from the graph come along.
+            write_atomic(
+                stage / "jac.lock", serialize_toml(_lock_doc(plan.lock_data)) + "\n"
+            );
+            write_atomic(stage / "jac.toml", plan.manifest_text);
         }
         os.replace(str(stage_packages), str(generation_packages));
         journal.write_text(
@@ -795,20 +876,11 @@ def commit_plan(config: JacConfig, plan: ResolutionPlan) -> bool {
         );
         _publish_packages(build / "packages", generation_packages);
         os.replace(str(stage / "deps.json"), str(build / "deps.json"));
-        if plan.staged_materializations.get("_save_manifest", True) {
+        if plan.save_manifest {
             os.replace(str(stage / "jac.lock"), str(project_root / "jac.lock"));
-        }
-        if plan.staged_materializations.get("_save_manifest", True) {
             os.replace(str(stage / "jac.toml"), str(project_root / "jac.toml"));
         }
         journal.unlink(missing_ok=True);
-        pth = pth_path(config);
-        if pth is not None {
-            pth.unlink(missing_ok=True);
-        }
-        return True;
-    } except Exception {
-        raise;
     } finally {
         if not journal.is_file() {
             shutil.rmtree(stage, ignore_errors=True);

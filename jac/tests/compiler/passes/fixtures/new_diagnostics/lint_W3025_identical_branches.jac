@@ -1,10 +1,10 @@
 """Fixture for W3025: Identical branches in if/else."""
 
-with entry {
-    x = 5;
+glob x = 5;
 
+with entry {
     if x > 0 {
-        print("hello");     # <-- Warning W3025: identical branches
+        print("hello");  # <-- Warning W3025: identical branches
     } else {
         print("hello");
     }

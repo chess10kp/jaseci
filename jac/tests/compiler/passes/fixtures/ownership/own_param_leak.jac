@@ -1,6 +1,8 @@
-obj Buffer { has n: int = 0; }
+obj Buffer {
+    has n: int = 0;
+}
 
-def sink(p: own Buffer) -> None {
+def sink(p: own Buffer) {
     print("dropped");
 }
 

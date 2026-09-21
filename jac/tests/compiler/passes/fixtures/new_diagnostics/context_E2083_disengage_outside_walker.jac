@@ -1,7 +1,7 @@
 """Fixture for E2083: disengage used outside of walker ability."""
 
 obj NotAWalker {
-    def method(self: NotAWalker) -> None {
+    def method(self: NotAWalker) {
         disengage;  # <-- Error E2083
     }
 }

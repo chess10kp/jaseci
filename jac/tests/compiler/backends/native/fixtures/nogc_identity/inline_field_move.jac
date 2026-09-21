@@ -5,10 +5,14 @@ and the source binding is consumed (#8984, found while narrowing A1)."""
 obj Node {
     has v: int = 0;
 
-    def drop { print("drop node " + str(self.v)); }
+    def drop {
+        print("drop node " + str(self.v));
+    }
 }
 
-obj Holder { has slot: own Node = Node(); }
+obj Holder {
+    has slot: own Node = Node();
+}
 
 def run -> int {
     h: own Holder = Holder();
@@ -18,4 +22,7 @@ def run -> int {
     return 0;
 }
 
-with entry { run(); print("done"); }
+with entry {
+    run();
+    print("done");
+}

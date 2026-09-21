@@ -6,12 +6,12 @@ the fix the constructor's exact-name lookup missed, the chain never ran, and
 
 import from postinit_inherited_xmod_lib { Leaf, Mid }
 
-def make_leaf() -> int {
+def make_leaf -> int {
     l = Leaf();
     return l.m;
 }
 
-def make_mid() -> int {
+def make_mid -> int {
     m = Mid();
     return m.m;
 }

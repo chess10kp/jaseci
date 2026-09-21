@@ -22,6 +22,7 @@ obj Circle(Shape) {
     def init(radius: float);
     override def area -> float;
 }
+
 # Radius of the demo circle
 glob RAD = 5,
      c = Circle(radius=RAD);

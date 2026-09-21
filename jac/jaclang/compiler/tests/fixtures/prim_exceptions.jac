@@ -4,7 +4,7 @@ Cross-backend equivalence fixture.
 All exceptions are raised explicitly (JS 1/0 yields Infinity, not an error).
 """
 
-def exceptions_py() -> dict[any, any] {
+def exceptions_py -> dict[any, any] {
     results: dict[any, any] = {};
 
     try {
@@ -142,7 +142,7 @@ def exceptions_py() -> dict[any, any] {
     return results;
 }
 
-def exceptions_cl() -> dict[any, any] {
+def exceptions_cl -> dict[any, any] {
     results: dict[any, any] = {};
 
     try {
@@ -248,7 +248,7 @@ def exceptions_cl() -> dict[any, any] {
     return results;
 }
 
-def test_basic_catch_py() -> int {
+def test_basic_catch_py -> int {
     result: int = 0;
     try {
         raise ValueError("test");
@@ -258,7 +258,7 @@ def test_basic_catch_py() -> int {
     return result;
 }
 
-def test_catch_parent_py() -> int {
+def test_catch_parent_py -> int {
     result: int = 0;
     try {
         raise ZeroDivisionError("div");
@@ -268,7 +268,7 @@ def test_catch_parent_py() -> int {
     return result;
 }
 
-def test_catch_grandparent_py() -> int {
+def test_catch_grandparent_py -> int {
     result: int = 0;
     try {
         raise ZeroDivisionError("div");
@@ -278,7 +278,7 @@ def test_catch_grandparent_py() -> int {
     return result;
 }
 
-def test_catch_wrong_type_py() -> int {
+def test_catch_wrong_type_py -> int {
     result: int = 0;
     try {
         try {
@@ -292,7 +292,7 @@ def test_catch_wrong_type_py() -> int {
     return result;
 }
 
-def test_multiple_handlers_py() -> int {
+def test_multiple_handlers_py -> int {
     result: int = 0;
     try {
         raise KeyError("k");
@@ -306,7 +306,7 @@ def test_multiple_handlers_py() -> int {
     return result;
 }
 
-def test_nested_hierarchy_py() -> int {
+def test_nested_hierarchy_py -> int {
     result: int = 0;
     try {
         raise IndexError("idx");
@@ -316,7 +316,7 @@ def test_nested_hierarchy_py() -> int {
     return result;
 }
 
-def test_finally_runs_py() -> int {
+def test_finally_runs_py -> int {
     result: int = 0;
     try {
         raise ValueError("v");
@@ -328,7 +328,7 @@ def test_finally_runs_py() -> int {
     return result;
 }
 
-def test_no_exception_py() -> int {
+def test_no_exception_py -> int {
     result: int = 0;
     try {
         result = 1;
@@ -340,7 +340,7 @@ def test_no_exception_py() -> int {
     return result;
 }
 
-def test_exc_as_binding_py() -> int {
+def test_exc_as_binding_py -> int {
     result: int = 0;
     try {
         raise ValueError("test msg");
@@ -351,7 +351,7 @@ def test_exc_as_binding_py() -> int {
 }
 
 
-def test_basic_catch_na() -> int {
+def test_basic_catch_na -> int {
     result: int = 0;
     try {
         raise ValueError("test");
@@ -361,7 +361,7 @@ def test_basic_catch_na() -> int {
     return result;
 }
 
-def test_catch_parent_na() -> int {
+def test_catch_parent_na -> int {
     result: int = 0;
     try {
         raise ZeroDivisionError("div");
@@ -371,7 +371,7 @@ def test_catch_parent_na() -> int {
     return result;
 }
 
-def test_catch_grandparent_na() -> int {
+def test_catch_grandparent_na -> int {
     result: int = 0;
     try {
         raise ZeroDivisionError("div");
@@ -381,7 +381,7 @@ def test_catch_grandparent_na() -> int {
     return result;
 }
 
-def test_catch_wrong_type_na() -> int {
+def test_catch_wrong_type_na -> int {
     result: int = 0;
     try {
         try {
@@ -395,7 +395,7 @@ def test_catch_wrong_type_na() -> int {
     return result;
 }
 
-def test_multiple_handlers_na() -> int {
+def test_multiple_handlers_na -> int {
     result: int = 0;
     try {
         raise KeyError("k");
@@ -409,7 +409,7 @@ def test_multiple_handlers_na() -> int {
     return result;
 }
 
-def test_nested_hierarchy_na() -> int {
+def test_nested_hierarchy_na -> int {
     result: int = 0;
     try {
         raise IndexError("idx");
@@ -419,7 +419,7 @@ def test_nested_hierarchy_na() -> int {
     return result;
 }
 
-def test_finally_runs_na() -> int {
+def test_finally_runs_na -> int {
     result: int = 0;
     try {
         raise ValueError("v");
@@ -431,7 +431,7 @@ def test_finally_runs_na() -> int {
     return result;
 }
 
-def test_no_exception_na() -> int {
+def test_no_exception_na -> int {
     result: int = 0;
     try {
         result = 1;
@@ -443,7 +443,7 @@ def test_no_exception_na() -> int {
     return result;
 }
 
-def test_exc_as_binding_na() -> int {
+def test_exc_as_binding_na -> int {
     result: int = 0;
     try {
         raise ValueError("test msg");

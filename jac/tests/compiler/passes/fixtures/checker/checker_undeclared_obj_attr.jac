@@ -10,7 +10,7 @@ obj Foo {
     has x: int = 5;
 
     def init(val: str) {
-        self.y: str = val;        # <-- W2080: should be 'has y: str'
+        self.y: str = val;  # <-- W2080: should be 'has y: str'
     }
 }
 
@@ -19,21 +19,21 @@ obj Bar {
     has name: str = "bar";
 
     def postinit {
-        self.count: int = 0;      # <-- W2080: should be 'has count: int'
-        self.label: str = "x";    # <-- W2080: should be 'has label: str'
+        self.count: int = 0;  # <-- W2080: should be 'has count: int'
+        self.label: str = "x";  # <-- W2080: should be 'has label: str'
     }
 }
 
 # Case 3: Attribute should resolve despite warning (no cascading E1030)
-def use_attrs() {
+def use_attrs {
     f = Foo(val="hello");
-    print(f.x);                   # <-- OK: declared has field
-    print(f.y);                   # <-- OK: resolved from init (with W2080)
+    print(f.x);  # <-- OK: declared has field
+    print(f.y);  # <-- OK: resolved from init (with W2080)
 
     b = Bar();
-    print(b.name);                # <-- OK: declared has field
-    print(b.count);               # <-- OK: resolved from postinit (with W2080)
-    print(b.label);               # <-- OK: resolved from postinit (with W2080)
+    print(b.name);  # <-- OK: declared has field
+    print(b.count);  # <-- OK: resolved from postinit (with W2080)
+    print(b.label);  # <-- OK: resolved from postinit (with W2080)
 }
 
 # Case 4: node with annotated self-assignment — should warn W2080
@@ -41,25 +41,25 @@ node MyNode {
     has data: int = 0;
 
     def postinit {
-        self.cached: str = "";    # <-- W2080: should be 'has cached: str'
+        self.cached: str = "";  # <-- W2080: should be 'has cached: str'
     }
 }
 
 # Case 5: class (Python-style) with self-assignment — no warning (allowed)
 class PyStyle {
     def init(v: int) {
-        self.v: int = v;          # <-- OK for class: no W2080
+        self.v: int = v;  # <-- OK for class: no W2080
     }
 }
 
 # Case 6: Unannotated self-assignment on obj — NOT resolved, should produce E1030
 obj Baz {
-    def init() {
-        self.secret = 42;         # <-- No annotation, not resolved
+    def init {
+        self.secret = 42;  # <-- No annotation, not resolved
     }
 }
 
-def use_baz() {
+def use_baz {
     z = Baz();
-    print(z.secret);              # <-- E1030: has no attribute 'secret'
+    print(z.secret);  # <-- E1030: has no attribute 'secret'
 }

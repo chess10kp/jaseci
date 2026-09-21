@@ -10,7 +10,7 @@ def apply(f: Callable[[], T]) -> T {
     return f();
 }
 
-def make_int() -> int {
+def make_int -> int {
     return 5;
 }
 
