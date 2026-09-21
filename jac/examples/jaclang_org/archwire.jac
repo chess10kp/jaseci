@@ -47,7 +47,6 @@ graph import core {
         | jacyac.native.screens.FeedScreen
         | jacyac.native.screens.ProfileScreen
         | site.ui.Navbar { useTheme }
-        | site.ui.SiteShell { useTheme }
     brand.tokens ++> jacyac.native.theme { Colors, font_family, fonts, radii, spacing }
     docs.corpus ++> knowledge_service { DocBundle, bundle_from, label_of }
     docs.graph ++> [

@@ -1,5 +1,5 @@
 impl useTheme -> Theme {
-    has dark: bool = current_dark;
+    has dark: bool = __getLocalStorage("jac-theme") != "light";
     def changed(value: bool) {
         dark = value;
     }
@@ -12,11 +12,8 @@ impl useTheme -> Theme {
         ]; };
     }
     def toggle {
-        value = not current_dark;
-        current_dark = value;
-        try {
-            __setLocalStorage("jac-theme", "dark" if value else "light");
-        } except Exception {}
+        value = not dark;
+        __setLocalStorage("jac-theme", "dark" if value else "light");
         for listener in listeners {
             listener(value);
         }
