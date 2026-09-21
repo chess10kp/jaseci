@@ -156,7 +156,8 @@ obj NativeBindingState {
         region_handle_vars: set[str],
         var_list_elem_struct: dict[str, ir.Type | None],
         closure_cell_vars: set[str],
-        closure_cell_handles: dict[str, ir.Value];
+        closure_cell_handles: dict[str, ir.Value],
+        stack_list_vars: dict[str, ir.Function] = {};
 }
 
 obj NativeFunctionState {
@@ -388,7 +389,9 @@ walker NaIRGenPass {
         clib_declared_sigs: dict[str, tuple[ir.Type, list[ir.Type]]] = {},
         borrowed_vars: set[str] = set(),
         nogc_owned_str_vars: set[str] = set(),
+        stack_list_vars: dict[str, ir.Function] = {},
         list_release_fns: dict[str, ir.Function] = {},
+        list_data_release_fns: dict[str, ir.Function] = {},
         dict_release_fns: dict[str, ir.Function] = {},
         set_release_fns: dict[str, ir.Function] = {},
         _struct_bodies_done: set[str] = set(),
@@ -934,7 +937,10 @@ walker NaIRGenPass {
     ) -> ir.Function;
 
     def _emit_container_release_fn(
-        fn_name: str, container_ptr_type: ir.Type, layout: dict[str, any]
+        fn_name: str,
+        container_ptr_type: ir.Type,
+        layout: dict[str, any],
+        free_header: bool = True
     ) -> ir.Function;
 
     def _emit_release_header_free(
@@ -1507,6 +1513,8 @@ walker NaIRGenPass {
 
     def _empty_list_dest_spec(nd: uni.ListVal) -> (str | None);
     def _emit_list_helpers(elem_type_name: str, elem_type: ir.Type) -> None;
+    def _stack_list_target_ok(nd: uni.UniNode) -> (str | None);
+    def _emit_stack_list_header(elem_type_name: str) -> (ir.Value | None);
     def _emit_aos_list_helpers(tname: str) -> ir.Type;
     def _codegen_list_val(nd: uni.ListVal) -> (ir.Value | None);
     def _coerce_container_element(value: ir.Value, element_type: ir.Type) -> ir.Value;

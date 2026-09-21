@@ -676,7 +676,10 @@ impl NaIRGenPass._emit_container_len_fn(
 }
 
 impl NaIRGenPass._emit_container_release_fn(
-    fn_name: str, container_ptr_type: ir.Type, layout: dict[str, any]
+    fn_name: str,
+    container_ptr_type: ir.Type,
+    layout: dict[str, any],
+    free_header: bool = True
 ) -> ir.Function {
     i32 = ir.IntType(32);
     i8_ptr = ir.IntType(8).as_pointer();
@@ -781,7 +784,13 @@ impl NaIRGenPass._emit_container_release_fn(
         b.call(self.rc_safe_free_fn, [b.bitcast(_order_f, i8_ptr, name="order.cast")]);
     }
 
-    self._emit_release_header_free(release_fn, b, done_bb);
+    if free_header {
+        self._emit_release_header_free(release_fn, b, done_bb);
+    } else {
+        b.branch(done_bb);
+        b = ir.IRBuilder(done_bb);
+        b.ret_void();
+    }
     return release_fn;
 }
 

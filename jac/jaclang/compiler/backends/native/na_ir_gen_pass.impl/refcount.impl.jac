@@ -2478,7 +2478,12 @@ impl NaIRGenPass._emit_scope_cleanup(
             if var_name == skip_var {
                 self.builder.store(ir.Constant(alloca.pointee_type, None), alloca);
             } else {
-                self._emit_rc_release_typed(val, op="scope_exit", loc=loc);
+                _stkl_rel = self.stack_list_vars.get(var_name);
+                if _stkl_rel is not None {
+                    self.builder.call(_stkl_rel, [val]);
+                } else {
+                    self._emit_rc_release_typed(val, op="scope_exit", loc=loc);
+                }
                 self.builder.store(ir.Constant(alloca.pointee_type, None), alloca);
             }
         }
@@ -2560,7 +2565,12 @@ impl NaIRGenPass._emit_loop_iter_cleanup(
                 continue;
             }
             val = self.builder.load(alloca, name=f"iter.cleanup.{var_name}");
-            self._emit_rc_release_typed(val, op="iter_end", loc=loc);
+            _stkl_rel = self.stack_list_vars.get(var_name);
+            if _stkl_rel is not None {
+                self.builder.call(_stkl_rel, [val]);
+            } else {
+                self._emit_rc_release_typed(val, op="iter_end", loc=loc);
+            }
             self.builder.store(ir.Constant(alloca.pointee_type, None), alloca);
         }
     }

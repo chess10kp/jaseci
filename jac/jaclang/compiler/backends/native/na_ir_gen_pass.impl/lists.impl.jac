@@ -129,6 +129,13 @@ impl NaIRGenPass._emit_list_helpers(elem_type_name: str, elem_type: ir.Type) -> 
             f"__rc_release_list_{elem_type_name}", list_ptr_type, _list_layout
         );
         self.list_release_fns[elem_type_name] = release_fn;
+        data_release_fn = self._emit_container_release_fn(
+            f"__rc_release_list_data_{elem_type_name}",
+            list_ptr_type,
+            _list_layout,
+            free_header=False
+        );
+        self.list_data_release_fns[elem_type_name] = data_release_fn;
     }
 
     self.list_helpers[elem_type_name] = {
@@ -139,6 +146,97 @@ impl NaIRGenPass._emit_list_helpers(elem_type_name: str, elem_type: ir.Type) -> 
         "len": len_fn,
         "elem_type": elem_type
     };
+}
+
+impl NaIRGenPass._stack_list_target_ok(nd: uni.UniNode) -> (str | None) {
+    p = nd.parent;
+    while isinstance(p, (uni.CfgExpr, uni.IfElseExpr)) {
+        p = p.parent;
+    }
+    if isinstance(p, uni.HasVar) {
+        if p.value is not nd or p.type_tag is None {
+            return None;
+        }
+        sym = p.name.sym;
+        if sym is None or not sym.na_list_stack_ok {
+            return None;
+        }
+        return sym.sym_name;
+    }
+    if not isinstance(p, uni.Assignment) or p.aug_op is not None or p.value is not nd {
+        return None;
+    }
+    targets = p.target if isinstance(p.target, (list, tuple)) else [(p.target)];
+    if len(targets) != 1 or not isinstance(targets[0], uni.Name) {
+        return None;
+    }
+    sym = targets[0].sym;
+    if sym is None or not sym.na_list_stack_ok {
+        return None;
+    }
+    return sym.sym_name;
+}
+
+impl NaIRGenPass._emit_stack_list_header(elem_type_name: str) -> (ir.Value | None) {
+    if self._nogc_headerless() or elem_type_name.startswith("aos.") {
+        return None;
+    }
+    helpers = self.list_helpers.get(elem_type_name);
+    if helpers is None {
+        return None;
+    }
+    if self.rc_alloc_fn is None or self.malloc_fn is None {
+        self._emit_rc_helpers();
+    }
+    list_ty = self.list_types[elem_type_name];
+    i8 = ir.IntType(8);
+    i32 = ir.IntType(32);
+    i64 = ir.IntType(64);
+    i64_ptr = i64.as_pointer();
+    i8_ptr = i8.as_pointer();
+    elem_type = helpers["elem_type"];
+    _hdr_arr = ir.ArrayType(i8, HDR_TOTAL);
+    _slab_ty = ir.LiteralStructType([_hdr_arr, list_ty]);
+    _slab = self._entry_alloca(_slab_ty, f"stkl.{elem_type_name}");
+    _raw = self.builder.gep(
+        _slab, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="stkl.raw"
+    );
+    _raw_i8 = self.builder.bitcast(_raw, i8_ptr, name="stkl.i8");
+    _rc_slot = self.builder.gep(_raw_i8, [ir.Constant(i64, HDR_RC_OFF)], name="stkl.rc");
+    self.builder.store(
+        ir.Constant(i64, RC_SENTINEL), self.builder.bitcast(_rc_slot, i64_ptr, name="stkl.rc.p")
+    );
+    for _off in (HDR_DTOR_OFF, HDR_ALLOC_ID_OFF) {
+        _slot = self.builder.gep(
+            _raw_i8, [ir.Constant(i64, _off)], name=f"stkl.off{_off}"
+        );
+        self.builder.store(
+            ir.Constant(i64, 0), self.builder.bitcast(_slot, i64_ptr, name=f"stkl.off{_off}.p")
+        );
+    }
+    if self.rc_set_type_fn is not None {
+        self._emit_set_type_tag(self.builder, _raw_i8, f"list_{elem_type_name}");
+    }
+    hdr = self.builder.gep(
+        _slab, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name=f"stkl.{elem_type_name}"
+    );
+    _hdr = self.builder.bitcast(hdr, list_ty.as_pointer(), name="stkl.hdr");
+    _len_p = self.builder.gep(_hdr, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="stkl.len.p");
+    self.builder.store(ir.Constant(i64, 0), _len_p);
+    _cap_p = self.builder.gep(_hdr, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name="stkl.cap.p");
+    self.builder.store(ir.Constant(i64, 8), _cap_p);
+    _elem_null = ir.Constant(elem_type.as_pointer(), None);
+    _elem_gep = self.builder.gep(_elem_null, [ir.Constant(i32, 1)], name="stkl.elem.sizeof");
+    _elem_sz = self.builder.ptrtoint(_elem_gep, i64, name="stkl.elem.size");
+    _data_bytes = self.builder.mul(ir.Constant(i64, 8), _elem_sz, name="stkl.data.bytes");
+    _data_raw = self.builder.call(self.malloc_fn, [_data_bytes], name="stkl.data.raw");
+    _data_p = self.builder.gep(_hdr, [ir.Constant(i32, 0), ir.Constant(i32, 2)], name="stkl.data.p");
+    self.builder.store(
+        self.builder.bitcast(_data_raw, elem_type.as_pointer(), name="stkl.data"),
+        _data_p
+    );
+    self.rc_stack_promotions += 1;
+    return _hdr;
 }
 
 impl NaIRGenPass._cast_to_list_elem(
@@ -350,6 +448,16 @@ impl NaIRGenPass._codegen_list_val(nd: uni.ListVal) -> (ir.Value | None) {
                 if nd.loc
                 else 0}";
 
+            _slk_var = self._stack_list_target_ok(nd);
+            if _slk_var is not None {
+                _slk_new = self._emit_stack_list_header(elem_type_name);
+                if _slk_new is not None {
+                    self.stack_list_vars[_slk_var] = self.list_data_release_fns[
+                        elem_type_name
+                    ];
+                    return _slk_new;
+                }
+            }
             _empty_new = self._rc_call_with_ctx(
                 helpers["new"], [], op="new", loc=_empty_loc, name="list.empty"
             );
@@ -447,11 +555,20 @@ impl NaIRGenPass._codegen_list_val(nd: uni.ListVal) -> (ir.Value | None) {
     _list_new_loc = f"{os.path.basename(self.module.loc.mod_path)}:{nd.loc.first_line
         if nd.loc
         else 0}";
-    list_val = self._rc_call_with_ctx(
-        helpers["new"], [], op="new", loc=_list_new_loc, name="list.new"
+    _slk_var = self._stack_list_target_ok(nd);
+    _slk = (
+        self._emit_stack_list_header(elem_type_name) if _slk_var is not None else None
     );
-    if not self._container_is_view(nd) {
-        self._nogc_stamp_elem_drops(list_val, self._nogc_type_arg_mangles(nd));
+    if _slk is not None {
+        list_val = _slk;
+        self.stack_list_vars[_slk_var] = self.list_data_release_fns[elem_type_name];
+    } else {
+        list_val = self._rc_call_with_ctx(
+            helpers["new"], [], op="new", loc=_list_new_loc, name="list.new"
+        );
+        if not self._container_is_view(nd) {
+            self._nogc_stamp_elem_drops(list_val, self._nogc_type_arg_mangles(nd));
+        }
     }
 
     _linit_loc = f"{os.path.basename(self.module.loc.mod_path)}:{nd.loc.first_line

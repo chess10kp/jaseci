@@ -276,6 +276,7 @@ node Symbol {
         na_escapes: bool = False,
         na_region_handle: bool = False,
         na_stack_ok: bool = False,
+        na_list_stack_ok: bool = False,
         _in_stub_scope: (bool | None) = None,
         _binding_kind: (BindingKind | None) = None,
         provider: SymbolProvider | None = None;

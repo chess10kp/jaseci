@@ -8,12 +8,14 @@ import from jaclang.compiler.frontend.unitree {
     BoolExpr,
     CompareExpr,
     ConnectOp,
+    DeleteStmt,
     DictCompr,
     DictVal,
     Expr,
     FString,
     FuncCall,
     FuncSignature,
+    HasVar,
     ImplDef,
     IfElseExpr,
     IfStmt,
@@ -130,6 +132,7 @@ walker RcFactsPass {
     can run_walk with Module entry;
     def _stamp_param_rebound(ir_in: Module) -> None;
     def _stamp_escapes(ir_in: Module) -> None;
+    def _stamp_list_stack_ok(ir_in: Module) -> None;
     def _call_use_stack_safe(nm: NameAtom, sym: Symbol) -> bool;
     def _borrow_arg_callee_ok(bx: UnaryExpr) -> bool;
     def _scalar_attr_read(nm: NameAtom) -> bool;

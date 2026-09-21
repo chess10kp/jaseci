@@ -2,6 +2,7 @@ impl RcFactsPass._run_impl(ir_in: Module) -> Module {
     self._stamp_param_rebound(ir_in);
     self._stamp_move_lowerable(ir_in);
     self._stamp_escapes(ir_in);
+    self._stamp_list_stack_ok(ir_in);
     self._stamp_region_handles(ir_in);
     self._stamp_last_use(ir_in);
     self._stamp_scope_cleanup(ir_in);
@@ -101,6 +102,115 @@ impl RcFactsPass._stamp_escapes(ir_in: Module) -> None {
         }
         sym.na_escapes = escapes;
         sym.na_stack_ok = stack_ok and not escapes;
+    }
+}
+
+impl RcFactsPass._stamp_list_stack_ok(ir_in: Module) -> None {
+    _methods_ok = {
+        "append",
+        "clear",
+        "count",
+        "extend",
+        "index",
+        "insert",
+        "pop",
+        "remove",
+        "reverse",
+        "sort"
+    };
+    for nm in ir_in.get_all_sub_nodes(Name) {
+        sym = nm.sym;
+        if sym is None
+            or sym.storage != SymbolStorage.LOCAL
+            or sym.is_view
+            or self._is_param_sym(sym) {
+            continue;
+        }
+        if not sym.defn {
+            continue;
+        }
+        _def_scope = self._enclosing_fn_scope(sym.defn[0]);
+        ok = True;
+        for d in sym.defn {
+            p = d.parent;
+            if isinstance(p, HasVar) {
+                continue;
+            }
+            if not isinstance(p, Assignment) or p.aug_op is not None {
+                ok = False;
+                break;
+            }
+            targets = p.target if isinstance(p.target, (list, tuple)) else [(p.target)];
+            if len(targets) != 1 or targets[0] is not d {
+                ok = False;
+                break;
+            }
+            if p.type_tag is not None and is_borrow_kind(p.type_tag.ownership) {
+                ok = False;
+                break;
+            }
+            if p.value is not None and not isinstance(p.value, ListVal) {
+                ok = False;
+                break;
+            }
+        }
+        if not ok {
+            continue;
+        }
+        for u in sym.uses {
+            if self._enclosing_fn_scope(u) is not _def_scope {
+                ok = False;
+                break;
+            }
+            if isinstance(u.parent, ReturnStmt) {
+                ok = False;
+                break;
+            }
+            if u.find_parent_of_type(DeleteStmt) is not None {
+                continue;
+            }
+            p = u.parent;
+            if isinstance(p, AtomTrailer) and p.target is u {
+                gp = p.parent;
+                if isinstance(gp, FuncCall) and gp.target is p {
+                    _mn = p.right.value if isinstance(p.right, Name) else None;
+                    if _mn is None or _mn not in _methods_ok {
+                        ok = False;
+                        break;
+                    }
+                }
+                continue;
+            }
+            if isinstance(p, Assignment) {
+                targets = p.target if isinstance(p.target, (list, tuple)) else [(p.target)];
+                if p.aug_op is None
+                    and isinstance(p.value, ListVal)
+                    and any(t is u for t in targets) {
+                    continue;
+                }
+                ok = False;
+                break;
+            }
+            if isinstance(p, FuncCall) {
+                _tn = p.target.value
+                    if isinstance(p.target, Name)
+                    else None;
+                if _tn == "len" {
+                    continue;
+                }
+                ok = False;
+                break;
+            }
+            if isinstance(
+                p,
+                (BinaryExpr, CompareExpr, UnaryExpr, IfStmt, WhileStmt, InForStmt)
+            ) {
+                continue;
+            }
+            ok = False;
+            break;
+        }
+        sym.na_list_stack_ok = ok;
     }
 }
 

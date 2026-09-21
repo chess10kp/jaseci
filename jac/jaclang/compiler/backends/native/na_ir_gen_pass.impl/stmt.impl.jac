@@ -71,6 +71,13 @@ impl NaIRGenPass._emit_last_use_releases(stmt: uni.UniNode) -> None {
         if alloca is None {
             continue;
         }
+        _stkl_rel = self.stack_list_vars.get(name);
+        if _stkl_rel is not None {
+            _lu_val = self.builder.load(alloca, name=f"lu.{name}");
+            self.builder.call(_stkl_rel, [_lu_val]);
+            self.builder.store(ir.Constant(alloca.pointee_type, None), alloca);
+            continue;
+        }
         allocation_type = alloca.type;
         if not isinstance(allocation_type, ir.PointerType) {
             continue;
@@ -2468,13 +2475,18 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                             self._gc_mode() == "none" and var_name in self.borrowed_vars
                         ) {
                         old_val = self.builder.load(alloca, name=f"{var_name}.old");
-                        self._emit_rc_release_typed(
-                            old_val,
-                            op="overwrite",
-                            loc=f"{os.path.basename(self.module.loc.mod_path)}:{nd.loc.first_line
-                                if nd.loc
-                                else 0}"
-                        );
+                        _stkl_rel = self.stack_list_vars.get(var_name);
+                        if _stkl_rel is not None {
+                            self.builder.call(_stkl_rel, [old_val]);
+                        } else {
+                            self._emit_rc_release_typed(
+                                old_val,
+                                op="overwrite",
+                                loc=f"{os.path.basename(self.module.loc.mod_path)}:{nd.loc.first_line
+                                    if nd.loc
+                                    else 0}"
+                            );
+                        }
                     }
                 }
             } elif (

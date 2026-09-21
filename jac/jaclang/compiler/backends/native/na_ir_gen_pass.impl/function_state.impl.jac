@@ -7,7 +7,8 @@ impl NaIRGenPass._enter_bindings(inherit: bool = False) -> NativeBindingState {
         region_handle_vars=self.region_handle_vars,
         var_list_elem_struct=self.var_list_elem_struct,
         closure_cell_vars=self.closure_cell_vars,
-        closure_cell_handles=self.closure_cell_handles
+        closure_cell_handles=self.closure_cell_handles,
+        stack_list_vars=self.stack_list_vars
     );
     self.local_vars = self.local_vars.copy() if inherit else {};
     self.param_vars = self.param_vars.copy() if inherit else set();
@@ -17,6 +18,7 @@ impl NaIRGenPass._enter_bindings(inherit: bool = False) -> NativeBindingState {
     self.var_list_elem_struct = self.var_list_elem_struct.copy() if inherit else {};
     self.closure_cell_vars = self.closure_cell_vars.copy() if inherit else set();
     self.closure_cell_handles = self.closure_cell_handles.copy() if inherit else {};
+    self.stack_list_vars = self.stack_list_vars.copy() if inherit else {};
     return state;
 }
 
@@ -39,6 +41,7 @@ impl NaIRGenPass._leave_bindings(
     self.var_list_elem_struct = state.var_list_elem_struct;
     self.closure_cell_vars = state.closure_cell_vars;
     self.closure_cell_handles = state.closure_cell_handles;
+    self.stack_list_vars = state.stack_list_vars;
 }
 
 impl NaIRGenPass._shadow_bindings(names: list[str]) -> None {
@@ -51,6 +54,7 @@ impl NaIRGenPass._shadow_bindings(names: list[str]) -> None {
         self.var_list_elem_struct.pop(name, None);
         self.closure_cell_vars.discard(name);
         self.closure_cell_handles.pop(name, None);
+        self.stack_list_vars.pop(name, None);
     }
 }
 
