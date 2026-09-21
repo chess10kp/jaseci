@@ -78,6 +78,7 @@ impl NaIRGenPass.postinit -> None {
         "JacComplex"
     );
     self.complex_struct_type.set_body(ir.DoubleType(), ir.DoubleType());
+    self.type_map["complex"] = self.complex_struct_type.as_pointer();
 
     self._range_struct_type = self.llvm_module.context.get_identified_type("JacRange");
     self.range_struct_type.set_body(ir.IntType(64), ir.IntType(64), ir.IntType(64));
@@ -1194,7 +1195,16 @@ impl NaIRGenPass._register_imported_globals(
                 }
                 var_type = self._resolve_jac_type(assign.type_tag.tag);
             }
-            global_var = ir.GlobalVariable(self.llvm_module, var_type, name=var_name);
+            import from jaclang.compiler.frontend.codeinfo {
+                native_library_function_symbol
+            }
+            global_var = ir.GlobalVariable(
+                self.llvm_module,
+                var_type,
+                name=native_library_function_symbol(source_path, var_name)
+                    if source_path
+                    else var_name
+            );
             global_var.linkage = "external";
             self.global_vars[var_name] = global_var;
             self.global_var_types[var_name] = var_type;

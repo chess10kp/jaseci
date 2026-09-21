@@ -1520,16 +1520,23 @@ walker NaIRGenPass {
     ) -> ir.Value;
 
     def _emit_pow_zero_guard(base: ir.Value) -> None;
+    def _emit_make_complex(v: ir.Value) -> (ir.Value | None);
+    def _emit_complex_value(re: ir.Value, im: ir.Value) -> ir.Value;
+    def _load_complex_parts(ptr: ir.Value) -> tuple[(ir.Value, ir.Value)];
+    def _emit_complex_div_parts(
+        ar: ir.Value, ai: ir.Value, br: ir.Value, bi: ir.Value
+    ) -> tuple[(ir.Value, ir.Value)];
+
+    def _codegen_complex_div(left: ir.Value, right: ir.Value) -> (ir.Value | None);
+    def _codegen_complex_pow(base: ir.Value, exp: ir.Value) -> (ir.Value | None);
     def _codegen_pow(
         base: ir.Value,
         exp: ir.Value,
         exp_node: (uni.Expr | None) = None,
         unsigned: bool = False,
         checked: bool = False
-    ) -> ir.Value;
+    ) -> (ir.Value | None);
 
-    def _emit_math_call(name: str, nd: uni.FuncCall) -> (ir.Value | None);
-    def _emit_math_const(name: str) -> (ir.Value | None);
     def _emit_heap_object_alloc(
         nd: uni.UniNode, type_name: str, size: ir.Value, headerless: bool
     ) -> ir.Value;

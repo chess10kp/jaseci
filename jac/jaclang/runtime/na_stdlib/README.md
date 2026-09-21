@@ -363,6 +363,54 @@ native layout records the emitted name separately from its source-level key.
   collides with the native builtin `open`; GNU sparse members raise; hard/soft
   links are created via libc `link`/`symlink` when trivial. Native-host only.
   Pinned sv<->na congruent by `test_tarfile_equivalence.jac`.
+- **`math.jac`** (#6404, Mechanism B) + **`_math_native.jac`** (FFI floor over
+  the host `m`/libm) -- a pure-Jac surface of ~50 CPython-congruent endpoints
+  replacing the old Mechanism-A compiler intercepts: constants
+  (`pi`/`e`/`tau`/`inf`/`nan`), the trig/hyperbolic/exp/log family,
+  rounding-to-int (`floor`/`ceil`/`trunc`), integer functions
+  (`factorial`/`isqrt`/`gcd`/`lcm`/`comb`/`perm`), binary functions
+  (`atan2`/`copysign`/`fmod`/`pow`/`remainder`/`fma`), predicates
+  (`isnan`/`isinf`/`isfinite`/`isclose`), float-bit
+  decomposition/recomposition (`frexp`/`modf`/`ldexp`/`nextafter`/`ulp`), and
+  the iterable reducers (`prod`/`fsum`/`hypot`/`dist`/`sumprod`). Raises match
+  CPython 3.14 **type-and-message** exactly (e.g. `sqrt(-1)` ->
+  `ValueError: expected a nonnegative input, got -1.0`; `log(4, 1)` ->
+  `ZeroDivisionError: division by zero`; `fsum([inf, -inf])` ->
+  `ValueError: -inf + inf in fsum`), pinned in `prim_math.jac`. `gcd`,
+  `lcm`, and `hypot` are variadic on the Python pathway; on native they take
+  up to ten arguments through defaulted extras (the same bounded-arity
+  pattern as `os.path.join`, whose identity defaults keep the zero-argument
+  call congruent); `isclose`'s tolerances and `prod`'s
+  `start` are keyword-only. `frexp`, `modf`, `ldexp`, `nextafter`, and
+  `ulp` are pure-Jac float-bit manipulation with no libm dependency, so
+  they are wasm-portable; the remaining libm wrappers resolve through host
+  libm on native and through the vendored musl bitcode on wasm -- musl
+  1.2.5 `exp2` and `fma` are vendored in `wasm_rt/vendor/math` (`fma`
+  inlines the generic `a_clz_64` from musl's `atomic.h` in place of the
+  arch include), and `erfc` ships inside the vendored `erf.c`. SCOPE/divergences:
+  integer results are i64-bounded -- `factorial`, `isqrt`, `comb`, `perm`,
+  `gcd`, and `lcm` raise `OverflowError` where CPython returns a bignum,
+  and `prod`/`sumprod` raise at the i64 boundary instead of silently
+  degrading to float;
+  parameters are statically typed rather than dispatched through
+  `__index__`/`__float__`/`__trunc__`; and iterable arguments accept
+  `list[T]` only (no arbitrary iterables). Both plain `import math` and
+  `import from math { ... }` bind it.
+- **`cmath.jac`** (Mechanism B, over the same `_math_native` libm floor) --
+  a pure-Jac port of CPython's `cmathmodule.c` complex algorithms: the full
+  inverse-trig/hyperbolic family (`acos`/`acosh`/`asin`/`asinh`/`atan`/
+  `atanh`), `cos`/`cosh`/`sin`/`sinh`/`tan`/`tanh`, `exp`, `sqrt`, `log`
+  (incl. the two-arg base form), `log10`, `phase`, `polar`, `rect`,
+  `isfinite`/`isinf`/`isnan`/`isclose`, and constants `pi`/`e`/`tau`/`inf`/
+  `nan`/`infj`/`nanj`. CPython's special-value tables for every finite/
+  infinite/zero/NaN real-imaginary combination are carried over verbatim, so
+  branch cuts, signed zeros, and `inf`/`nan` propagation match; error paths
+  raise the same type-and-message (`ValueError: math domain error`,
+  `OverflowError: math range error`), pinned in `prim_cmath.jac`. SCOPE:
+  parameters are `complex`-typed -- unlike CPython, a plain `float`/`int`
+  argument is not implicitly coerced (pass `complex(x, 0.0)`); results are
+  native `JacComplex` values. The libm wrappers link against host libm on
+  native and against the vendored musl bitcode on wasm.
 
 The syscall-backed `os` / `os.path` entry points (`makedirs`, `realpath`,
 `mkdir`, `exists`, `getmtime`, `normcase`, ...) are Mechanism-A/H compiler
@@ -410,8 +458,9 @@ Mechanism B exists to avoid writing twice. Reaching for one through the flat
 
 - **B (here)**: pure-Jac on primitives; portable to every native target
   (ELF/Mach-O/PE/WASM). Preferred. Example: `os/path.jac`.
-- **A**: compiler intrinsics over libm/libc/syscalls (`math`, `time`, `os`,
-  `random`, `struct`); native-host only.
+- **A**: compiler intrinsics over libm/libc/syscalls (`time`, `os`,
+  `random`, `struct`); native-host only. (`math` moved to Mechanism B, above,
+  over the `_math_native` libm FFI floor.)
 - **F**: thin FFI wrappers over a system C library; native-host only. Examples:
   `_ssl_native.jac` -- the floor the verifying TLS client `ssl` is built on,
   over OpenSSL `libssl`/`libcrypto` (issue #6978 Phase 1); `_socket_native.jac`

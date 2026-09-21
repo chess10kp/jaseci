@@ -2089,9 +2089,35 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                             or self._is_sized_node(nd.value)
                     );
                 }
-                coerced = self._coerce_type(value, current.type);
+                _is_cplx_lhs = current.type == self.complex_struct_type.as_pointer();
+                _cplx_aug: (ir.Value | None) = None;
+                if _scalar_aug is None and _is_cplx_lhs {
+                    _aug_tok = {
+                        "+=": Tok.PLUS,
+                        "-=": Tok.MINUS,
+                        "*=": Tok.STAR_MUL,
+                        "/=": Tok.DIV,
+                        "**=": Tok.STAR_POW
+                    }.get(aug_op_val);
+                    if _aug_tok is not None {
+                        if _aug_tok == Tok.STAR_POW {
+                            _cplx_aug = self._codegen_complex_pow(current, value);
+                        } else {
+                            _cplx_aug = self._emit_binary_op(
+                                _aug_tok, current, value
+                            );
+                        }
+                    }
+                }
+                coerced = (
+                    value
+                    if _is_cplx_lhs
+                    else self._coerce_type(value, current.type)
+                );
                 if _scalar_aug is not None {
                     value = _scalar_aug;
+                } elif _cplx_aug is not None {
+                    value = _cplx_aug;
                 } elif aug_op_val == "+=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self.builder.add(

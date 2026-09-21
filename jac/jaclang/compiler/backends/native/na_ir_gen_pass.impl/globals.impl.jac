@@ -146,9 +146,15 @@ impl NaIRGenPass._codegen_global_vars(nd: uni.GlobalVars) -> None {
                 }
             }
 
+            import from jaclang.compiler.frontend.codeinfo {
+                native_library_function_symbol
+            }
+            _gv_path = self.module.loc.mod_path if self.module?.loc else "";
             try {
                 global_var = ir.GlobalVariable(
-                    self.llvm_module, var_type, name=var_name
+                    self.llvm_module,
+                    var_type,
+                    name=native_library_function_symbol(_gv_path, var_name)
                 );
             } except Exception as _dup_err {
                 _cur_path = self.module.loc.mod_path

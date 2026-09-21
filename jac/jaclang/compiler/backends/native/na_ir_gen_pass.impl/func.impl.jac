@@ -422,7 +422,10 @@ impl NaIRGenPass._codegen_ability(nd: uni.Ability) -> None {
     }
 
     if name in self.clib_extern_names {
-        return;
+        _cb = ModuleFacts.unwrap_body(nd);
+        if _cb is None or len(_cb) == 0 {
+            return;
+        }
     }
 
     _pre_viols = self._capability_demotions.get(id(nd));

@@ -2971,24 +2971,21 @@ impl NaIRGenPass._emit_binary_op(
     }
 
     ctype_ptr = self.complex_struct_type.as_pointer();
-    if left.type == ctype_ptr and right.type == ctype_ptr {
-        f64 = ir.DoubleType();
-        i64 = ir.IntType(64);
-        i32 = ir.IntType(32);
-        z0 = ir.Constant(i32, 0);
-        z1 = ir.Constant(i32, 1);
-        ar = self.builder.load(
-            self.builder.gep(left, [z0, z0], name="c.ar.p"), name="c.ar"
-        );
-        ai = self.builder.load(
-            self.builder.gep(left, [z0, z1], name="c.ai.p"), name="c.ai"
-        );
-        br = self.builder.load(
-            self.builder.gep(right, [z0, z0], name="c.br.p"), name="c.br"
-        );
-        bi = self.builder.load(
-            self.builder.gep(right, [z0, z1], name="c.bi.p"), name="c.bi"
-        );
+    if left.type == ctype_ptr or right.type == ctype_ptr {
+        if left.type != ctype_ptr {
+            left = self._emit_make_complex(left);
+        }
+        if right.type != ctype_ptr {
+            right = self._emit_make_complex(right);
+        }
+        if left is None or right is None {
+            return None;
+        }
+        if op == Tok.DIV {
+            return self._codegen_complex_div(left, right);
+        }
+        (ar, ai) = self._load_complex_parts(left);
+        (br, bi) = self._load_complex_parts(right);
         rr: (ir.Value | None) = None;
         ri: (ir.Value | None) = None;
         if op == Tok.PLUS {
@@ -3008,40 +3005,11 @@ impl NaIRGenPass._emit_binary_op(
                 self.builder.fmul(ai, br, name="c.m4"),
                 name="c.mul.i"
             );
-        } elif op == Tok.DIV {
-            denom = self.builder.fadd(
-                self.builder.fmul(br, br, name="c.d1"),
-                self.builder.fmul(bi, bi, name="c.d2"),
-                name="c.denom"
-            );
-            rr = self.builder.fdiv(
-                self.builder.fadd(
-                    self.builder.fmul(ar, br, name="c.d3"),
-                    self.builder.fmul(ai, bi, name="c.d4"),
-                    name="c.div.rn"
-                ),
-                denom,
-                name="c.div.r"
-            );
-            ri = self.builder.fdiv(
-                self.builder.fsub(
-                    self.builder.fmul(ai, br, name="c.d5"),
-                    self.builder.fmul(ar, bi, name="c.d6"),
-                    name="c.div.in"
-                ),
-                denom,
-                name="c.div.i"
-            );
         }
         if rr is not None and ri is not None {
-            raw = self.builder.call(
-                self.rc_alloc_fn, [ir.Constant(i64, 16)], name="c.res.raw"
-            );
-            ptr = self.builder.bitcast(raw, ctype_ptr, name="c.res.ptr");
-            self.builder.store(rr, self.builder.gep(ptr, [z0, z0], name="c.res.rp"));
-            self.builder.store(ri, self.builder.gep(ptr, [z0, z1], name="c.res.ip"));
-            return ptr;
+            return self._emit_complex_value(rr, ri);
         }
+        return None;
     }
 
     if self?.jacval_type
@@ -4123,21 +4091,8 @@ impl NaIRGenPass._emit_comparison(
         ctype_ptr = self.complex_struct_type.as_pointer();
         if left.type == ctype_ptr and right.type == ctype_ptr {
             i1_t = ir.IntType(1);
-            i32 = ir.IntType(32);
-            z0 = ir.Constant(i32, 0);
-            z1 = ir.Constant(i32, 1);
-            ar = self.builder.load(
-                self.builder.gep(left, [z0, z0], name="ceq.ar.p"), name="ceq.ar"
-            );
-            ai = self.builder.load(
-                self.builder.gep(left, [z0, z1], name="ceq.ai.p"), name="ceq.ai"
-            );
-            br = self.builder.load(
-                self.builder.gep(right, [z0, z0], name="ceq.br.p"), name="ceq.br"
-            );
-            bi = self.builder.load(
-                self.builder.gep(right, [z0, z1], name="ceq.bi.p"), name="ceq.bi"
-            );
+            (ar, ai) = self._load_complex_parts(left);
+            (br, bi) = self._load_complex_parts(right);
             req = self.builder.fcmp_ordered("==", ar, br, name="ceq.r");
             ieq = self.builder.fcmp_ordered("==", ai, bi, name="ceq.i");
             complex_equal = self.builder.and_(req, ieq, name="ceq.both");

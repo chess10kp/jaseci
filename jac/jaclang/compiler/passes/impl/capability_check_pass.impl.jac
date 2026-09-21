@@ -334,15 +334,24 @@ impl native_capability_violations(
                     continue;
                 }
                 if _stdlib_help is None {
+                    import from jaclang.compiler.frontend.codeinfo {
+                        bundled_native_module_names
+                    }
                     _supported_list = ", ".join(
                         f"`import {m}`" for m in sorted(NATIVE_SUPPORTED_STDLIB)
+                    );
+                    _bundled_list = ", ".join(
+                        f"`import {m}`" for m in bundled_native_module_names()
                     );
                     _stdlib_help = (
                         f"Native compilation supports these stdlib imports: "
                         f"{_supported_list}; C-library imports "
                         f"(`import from \"lib\" {{...}}`); and other Jac "
                         f"modules on the native pathway (`import mod` or "
-                        f"`import from mod {{...}}`). Move "
+                        f"`import from mod {{...}}`). Bundled na_stdlib "
+                        f"modules {_bundled_list} are also available on "
+                        f"native even though they are not CPython "
+                        f"modules. Move "
                         f"Python-dependent code to a @sv/Python context."
                     );
                 }

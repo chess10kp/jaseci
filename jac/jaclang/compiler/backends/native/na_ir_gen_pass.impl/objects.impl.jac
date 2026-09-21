@@ -2687,17 +2687,6 @@ impl NaIRGenPass._codegen_method_call_inner(nd: uni.FuncCall) -> (ir.Value | Non
     }
 
     if (
-        module_name == "math"
-        and self._native_stdlib_modules
-        and "math" in self._native_stdlib_modules
-    ) {
-        _mres = self._emit_math_call(method_name, nd);
-        if _mres is not None {
-            return _mres;
-        }
-    }
-
-    if (
         module_name == "time"
         and self._native_stdlib_modules
         and "time" in self._native_stdlib_modules
@@ -3947,6 +3936,22 @@ impl NaIRGenPass._codegen_field_aug_assign(
     );
     if scalar is not None {
         return scalar;
+    }
+
+    if (
+        isinstance(current.type, ir.PointerType)
+        and current.type == self.complex_struct_type.as_pointer()
+    ) {
+        _cplx_tok = {
+            "+=": Tok.PLUS,
+            "-=": Tok.MINUS,
+            "*=": Tok.STAR_MUL,
+            "/=": Tok.DIV
+        }.get(aug_op);
+        if _cplx_tok is not None {
+            return self._emit_binary_op(_cplx_tok, current, rhs);
+        }
+        return None;
     }
 
     coerced = self._coerce_type(rhs, current.type);

@@ -250,7 +250,6 @@ glob NATIVE_STDLIB_EXTENSIONS: dict[str, str] = {"os": "_os_native"};
 
 glob NATIVE_SUPPORTED_STDLIB: set[str] = {
          "sys",
-         "math",
          "time",
          "os",
          "random",
@@ -354,6 +353,19 @@ def native_stdlib_root -> (str | None) {
         os.path.dirname(jaclang.__file__), "runtime", "na_stdlib"
     );
     return stdlib_dir if os.path.isdir(stdlib_dir) else None;
+}
+
+def bundled_native_module_names -> list[str] {
+    import os;
+    stdlib_root = native_stdlib_root();
+    if stdlib_root is None {
+        return [];
+    }
+    return sorted(
+        f[:-4]
+        for f in os.listdir(stdlib_root)
+        if f.endswith(".jac") and not f.startswith("_") and f != "__init__.jac"
+    );
 }
 
 def is_native_by_location(file_path: str) -> bool {
