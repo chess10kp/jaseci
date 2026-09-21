@@ -157,7 +157,8 @@ def _link_native_artifact(
             bind_shared_callbacks
         }
         (llvm_ir_str, _bound_callbacks) = bind_shared_callbacks(
-            llvm_ir_str, ctx.ir_module.gen.interop_manifest.native_imports or []
+            llvm_ir_str,
+            ctx.ir_module.gen.interop_manifest.callable_native_imports or []
         );
     }
     if shared {
@@ -795,14 +796,14 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
             json.dumps(
                 {
                     "interop": True,
-                    "unresolved": [b.name for b in _mf.native_imports],
+                    "unresolved": [b.name for b in _mf.callable_native_imports],
                     "callbacks": [
                         {
                             "name": b.name,
                             "ret_type": b.ret_type,
                             "param_types": list(b.param_types),
                             "source_module": b.source_module or ""
-                        } for b in _mf.native_imports
+                        } for b in _mf.callable_native_imports
                     ]
                 },
                 sort_keys=True
