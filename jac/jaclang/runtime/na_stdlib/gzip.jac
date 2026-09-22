@@ -1,8 +1,21 @@
-import from _zlib_native { z_compress2, z_compress_bound, z_uncompress2, z_crc32 }
+import from _zlib_native {
+    z_compress2,
+    z_compress_bound,
+    z_crc32,
+    z_strm_bytes,
+    z_payload_addr,
+    z_inflate_init,
+    z_inflate_set_out,
+    z_inflate,
+    z_inflate_total_out,
+    z_inflate_total_in,
+    z_inflate_end,
+    z_copy
+}
 
-glob Z_OK: int = 0,
-     Z_DATA_ERROR: int = -3,
-     Z_BUF_ERROR: int = -5,
+glob _Z_OK: int = 0,
+     _Z_BUF_ERROR: int = -5,
+     _GZ_STREAM_END: int = 1,
      _MASK32: int = 4294967295;
 
 
@@ -13,7 +26,7 @@ def:pub compress(data: bytes, compresslevel: int = 9, mtime: int = 0) -> bytes {
     dest = b"\x00" * bound;
     dest_len = bound.to_bytes(8, "little");
     rc: int = z_compress2(dest, dest_len, data, source_len, compresslevel);
-    if rc != Z_OK {
+    if rc != _Z_OK {
         raise ValueError("gzip.compress: zlib compression failed");
     }
     written: int = int.from_bytes(dest_len, "little");
@@ -100,9 +113,6 @@ def:pub decompress(data: bytes) -> bytes {
         }
 
         remaining: int = n - hpos;
-        rewrapped = b"\x78\x9c" + data[hpos:n];
-        src_total: int = len(rewrapped);
-
         ceiling: int = remaining * 1032 + 1024;
         cap: int = int.from_bytes(data[n - 4:n], "little");
         if cap < 64 {
@@ -111,33 +121,48 @@ def:pub decompress(data: bytes) -> bytes {
         if cap > ceiling {
             cap = ceiling;
         }
-        written: int = 0;
-        consumed: int = 0;
+
+        strm: bytes = z_strm_bytes();
+        rc: int = z_inflate_init(strm, data, hpos, remaining, -15);
+        if rc != _Z_OK {
+            raise ValueError("gzip.decompress: invalid compressed data");
+        }
+        out = b"\x00" * cap;
+        total: int = 0;
         while True {
-            dest = b"\x00" * cap;
-            dest_len = cap.to_bytes(8, "little");
-            src_len = src_total.to_bytes(8, "little");
-            rc: int = z_uncompress2(dest, dest_len, rewrapped, src_len);
-            if rc == Z_OK or rc == Z_DATA_ERROR {
-                written = int.from_bytes(dest_len, "little");
-                consumed = int.from_bytes(src_len, "little");
+            if total == cap {
+                if cap >= ceiling {
+                    z_inflate_end(strm);
+                    raise ValueError("gzip.decompress: invalid compressed data");
+                }
+                newcap: int = cap * 2;
+                if newcap > ceiling {
+                    newcap = ceiling;
+                }
+                newout = b"\x00" * newcap;
+                z_copy(newout, z_payload_addr(out), total);
+                out = newout;
+                cap = newcap;
+            }
+            z_inflate_set_out(strm, out, total, cap - total);
+            status: int = z_inflate(strm);
+            total = z_inflate_total_out(strm);
+            if status == _GZ_STREAM_END {
                 break;
             }
-            if rc == Z_BUF_ERROR and cap < ceiling {
-                cap = cap * 2;
-                if cap > ceiling {
-                    cap = ceiling;
+            if status != _Z_OK {
+                if status == _Z_BUF_ERROR and total == cap {
+                    continue;
                 }
-                continue;
+                z_inflate_end(strm);
+                raise ValueError("gzip.decompress: invalid compressed data");
             }
-            raise ValueError("gzip.decompress: invalid compressed data");
         }
+        consumed: int = z_inflate_total_in(strm);
+        z_inflate_end(strm);
+        written: int = total;
 
-        if consumed < 8 {
-            raise ValueError("gzip.decompress: invalid compressed data");
-        }
-        body_len: int = consumed - 6;
-        tpos: int = hpos + body_len;
+        tpos: int = hpos + consumed;
         if tpos + 8 > n {
             raise ValueError(
                 "gzip.decompress: compressed data ended before the end-of-stream marker"
@@ -146,15 +171,18 @@ def:pub decompress(data: bytes) -> bytes {
 
         crc_expected: int = int.from_bytes(data[tpos:tpos + 4], "little");
         isize: int = int.from_bytes(data[tpos + 4:tpos + 8], "little");
-        out = dest[0:written];
-        if z_crc32(0, out, written) != crc_expected {
+        member = out;
+        if written != cap {
+            member = out[0:written];
+        }
+        if z_crc32(0, member, written) != crc_expected {
             raise ValueError("gzip.decompress: CRC check failed");
         }
         if (written & _MASK32) != isize {
             raise ValueError("gzip.decompress: incorrect length of data produced");
         }
 
-        result = result + out;
+        result = result + member;
         pos = tpos + 8;
     }
     return result;

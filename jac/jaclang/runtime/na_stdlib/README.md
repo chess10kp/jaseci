@@ -71,12 +71,9 @@ native layout records the emitted name separately from its source-level key.
   defaults agree byte-for-byte). `decompress` walks the members of the stream
   exactly as CPython does: per member it parses the header (honoring the
   FEXTRA / FNAME / FCOMMENT skips; the 2 FHCRC bytes are skipped unverified,
-  which is also CPython's behavior), re-frames the remaining input as a zlib
-  stream so the member's own trailer bytes stand in for the adler32, inflates
-  through `uncompress2` -- whose consumed-source count locates the member
-  boundary; the near-certain final adler mismatch (`Z_DATA_ERROR`) and the
-  2^-32 coincidence where the trailer bytes equal the output's adler32
-  (`Z_OK`) are both accepted -- then enforces gzip's own CRC-32 and ISIZE
+  which is also CPython's behavior), then raw-inflates the DEFLATE body in a
+  single streaming pass (`windowBits = -15`); the stream's `total_in` locates
+  the member boundary, after which gzip's own CRC-32 and ISIZE are enforced
   (compared mod 2^32, per RFC 1952, so members over 4 GiB verify the same way
   CPython does) before concatenating the member outputs. The output buffer
   starts at the final-ISIZE hint and grows geometrically on `Z_BUF_ERROR` up
@@ -448,6 +445,18 @@ Two conventions make foreign byte I/O work:
   symbol name**, so a libz symbol that collides with a public surface name (e.g.
   `crc32`) would shadow it. Bind the non-colliding variant instead; the floor
   uses `crc32_z` / `adler32_z`.
+
+`decompress` does not use the one-shot `uncompress`: a zlib stream carries no
+output-size field, so a buffer-too-small retry would re-inflate the whole
+input. Instead the surface drives `inflate` over a caller-owned
+`malloc`/`realloc` arena -- `next_out`/`avail_out` are poked into a
+`b"\x00" * 112` z_stream image through the `__mem_store_i32/i64` intrinsics
+(the LP64 `z_stream` field offsets live in the floor), and the produced bytes
+are copied once into the exact-size `bytes` result. Payload addresses are
+recovered as `int` with `memchr(buf, buf[0], 1)`, which always matches at
+offset 0. Growth doubles the arena up to `source_len * 1032 + 64 MiB`
+(DEFLATE's expansion bound); empty or truncated input surfaces as
+`Z_BUF_ERROR` and raises `ValueError`, matching CPython's `error -5`.
 
 `bz2` (#6978 Phase 2) follows the same two-file split: `_bz2_native.jac`
 wraps the one-shot `BZ2_bzBuffToBuffCompress` / `BZ2_bzBuffToBuffDecompress`
