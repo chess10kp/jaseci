@@ -3,7 +3,6 @@ import from jaclang.compiler.frontend.python.ast_nodes {
     ast_field,
     ast_kind,
     ast_node,
-    mod,
     Module,
     Interactive,
     Expression,
