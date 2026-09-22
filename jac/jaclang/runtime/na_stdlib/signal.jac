@@ -1,0 +1,146 @@
+import from _signal_native {
+    sig_install_fn,
+    sig_install_addr,
+    sig_kill_self,
+    sig_send,
+    sig_alarm,
+    sig_pause,
+    sig_describe,
+    sig_mask,
+    sig_errno,
+    sig_errno_text
+}
+
+glob:pub SIGHUP: int = 1,
+     SIGINT: int = 2,
+     SIGQUIT: int = 3,
+     SIGILL: int = 4,
+     SIGTRAP: int = 5,
+     SIGABRT: int = 6,
+     SIGIOT: int = 6,
+     SIGBUS: int = 7,
+     SIGEMT: int = 7,
+     SIGFPE: int = 8,
+     SIGKILL: int = 9,
+     SIGUSR1: int = 10,
+     SIGSEGV: int = 11,
+     SIGUSR2: int = 12,
+     SIGPIPE: int = 13,
+     SIGALRM: int = 14,
+     SIGTERM: int = 15,
+     SIGSTKFLT: int = 16,
+     SIGCHLD: int = 17,
+     SIGCLD: int = 17,
+     SIGCONT: int = 18,
+     SIGSTOP: int = 19,
+     SIGTSTP: int = 20,
+     SIGTTIN: int = 21,
+     SIGTTOU: int = 22,
+     SIGURG: int = 23,
+     SIGXCPU: int = 24,
+     SIGXFSZ: int = 25,
+     SIGVTALRM: int = 26,
+     SIGPROF: int = 27,
+     SIGWINCH: int = 28,
+     SIGIO: int = 29,
+     SIGPOLL: int = 29,
+     SIGPWR: int = 30,
+     SIGSYS: int = 31,
+     SIGUNUSED: int = 31,
+     SIGRTMIN: int = 34,
+     SIGRTMAX: int = 64,
+     NSIG: int = 65,
+     SIG_BLOCK: int = 0,
+     SIG_UNBLOCK: int = 1,
+     SIG_SETMASK: int = 2,
+     ITIMER_REAL: int = 0,
+     ITIMER_VIRTUAL: int = 1,
+     ITIMER_PROF: int = 2;
+
+glob _shadow: dict[int, Callable[[int, any], None]] = {};
+
+def _check_signum(signum: int) {
+    if signum < 1 or signum >= NSIG {
+        raise ValueError("signal number out of range");
+    }
+}
+
+def _sig_dfl_impl(signum: int, frame: any) {
+    sig_install_addr(signum, 0);
+    sig_kill_self(signum);
+}
+
+def _sig_ign_impl(signum: int, frame: any) {}
+
+glob:pub SIG_DFL: Callable[[int, any], None] = _sig_dfl_impl,
+     SIG_IGN: Callable[[int, any], None] = _sig_ign_impl;
+
+def:pub default_int_handler(signum: int, frame: any) {
+    raise KeyboardInterrupt();
+}
+
+def:pub signal(signum: int, handler: Callable[[int, any], None]) -> any {
+    _check_signum(signum);
+    prev = getsignal(signum);
+    old = sig_install_fn(signum, handler);
+    if old == -1 {
+        raise OSError("[Errno " + str(sig_errno()) + "] " + sig_errno_text());
+    }
+    _shadow[signum] = handler;
+    return prev;
+}
+
+def:pub getsignal(signum: int) -> any {
+    _check_signum(signum);
+    if signum in _shadow {
+        return _shadow[signum];
+    }
+    return SIG_DFL;
+}
+
+def:pub raise_signal(signum: int) {
+    if signum < 0 {
+        raise ValueError("signal number out of range");
+    }
+    rc = sig_kill_self(signum);
+    if rc != 0 {
+        raise OSError("[Errno " + str(sig_errno()) + "] " + sig_errno_text());
+    }
+}
+
+def:pub alarm(seconds: int) -> int {
+    if seconds < 0 {
+        raise ValueError("alarm() arg must be positive");
+    }
+    return sig_alarm(seconds);
+}
+
+def:pub pause {
+    sig_pause();
+}
+
+def:pub strsignal(signum: int) -> str {
+    _check_signum(signum);
+    return sig_describe(signum);
+}
+
+def:pub valid_signals -> list[int] {
+    out: list[int] = [];
+    for s in range(1, NSIG) {
+        if s != SIGKILL and s != SIGSTOP {
+            out.append(s);
+        }
+    }
+    return out;
+}
+
+def:pub pthread_sigmask(how: int, mask: list[int]) -> list[int] {
+    if how < SIG_BLOCK or how > SIG_SETMASK {
+        raise ValueError("value specified for how (" + str(how) + ") invalid");
+    }
+    out = sig_mask(how, mask, NSIG);
+    if len(out) == 1 and out[0] <= 0 {
+        raise OSError("[Errno " + str(-out[0]) + "] " + sig_errno_text());
+    }
+    return out;
+}
