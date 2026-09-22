@@ -36,16 +36,14 @@ def make_random(n: int) -> bytes {
 }
 
 
-def bench_crc32(buf: bytes, iters: int) {
-    acc: int = 0;
-    acc = zlib.crc32(buf);
+def _bench(label: str, iters: int, body: Callable[[], None]) {
     best: int = 0;
     r: int = 0;
     while r < 3 {
         t0: int = time.perf_counter_ns();
         i: int = 0;
         while i < iters {
-            acc = zlib.crc32(buf, acc);
+            body();
             i += 1;
         }
         dt: int = time.perf_counter_ns() - t0;
@@ -54,144 +52,7 @@ def bench_crc32(buf: bytes, iters: int) {
         }
         r += 1;
     }
-    print("crc32_300k ns=" + str(best // iters) + " digest=" + str(acc));
-}
-
-
-def bench_adler32(buf: bytes, iters: int) {
-    acc: int = 1;
-    acc = zlib.adler32(buf);
-    best: int = 0;
-    r: int = 0;
-    while r < 3 {
-        t0: int = time.perf_counter_ns();
-        i: int = 0;
-        while i < iters {
-            acc = zlib.adler32(buf, acc);
-            i += 1;
-        }
-        dt: int = time.perf_counter_ns() - t0;
-        if best == 0 or dt < best {
-            best = dt;
-        }
-        r += 1;
-    }
-    print("adler32_300k ns=" + str(best // iters) + " digest=" + str(acc));
-}
-
-
-def bench_zlib_compress(buf: bytes, iters: int) {
-    out: bytes = zlib.compress(buf);
-    best: int = 0;
-    r: int = 0;
-    while r < 3 {
-        t0: int = time.perf_counter_ns();
-        i: int = 0;
-        while i < iters {
-            out = zlib.compress(buf);
-            i += 1;
-        }
-        dt: int = time.perf_counter_ns() - t0;
-        if best == 0 or dt < best {
-            best = dt;
-        }
-        r += 1;
-    }
-    print(
-        "zlib_compress_300k ns=" + str(best // iters) + " digest=" + str(digest(out))
-    );
-}
-
-
-def bench_zlib_decompress(comp: bytes, iters: int) {
-    out: bytes = zlib.decompress(comp);
-    best: int = 0;
-    r: int = 0;
-    while r < 3 {
-        t0: int = time.perf_counter_ns();
-        i: int = 0;
-        while i < iters {
-            out = zlib.decompress(comp);
-            i += 1;
-        }
-        dt: int = time.perf_counter_ns() - t0;
-        if best == 0 or dt < best {
-            best = dt;
-        }
-        r += 1;
-    }
-    print(
-        "zlib_decompress_300k ns=" + str(best // iters) + " digest=" + str(digest(out))
-    );
-}
-
-
-def bench_zlib_compress_rand(buf: bytes, iters: int) {
-    out: bytes = zlib.compress(buf);
-    best: int = 0;
-    r: int = 0;
-    while r < 3 {
-        t0: int = time.perf_counter_ns();
-        i: int = 0;
-        while i < iters {
-            out = zlib.compress(buf);
-            i += 1;
-        }
-        dt: int = time.perf_counter_ns() - t0;
-        if best == 0 or dt < best {
-            best = dt;
-        }
-        r += 1;
-    }
-    print(
-        "zlib_compress_rand64k ns=" + str(best // iters) + " digest=" + str(digest(out))
-    );
-}
-
-
-def bench_gzip_compress(buf: bytes, iters: int) {
-    out: bytes = gzip.compress(buf);
-    best: int = 0;
-    r: int = 0;
-    while r < 3 {
-        t0: int = time.perf_counter_ns();
-        i: int = 0;
-        while i < iters {
-            out = gzip.compress(buf);
-            i += 1;
-        }
-        dt: int = time.perf_counter_ns() - t0;
-        if best == 0 or dt < best {
-            best = dt;
-        }
-        r += 1;
-    }
-    print(
-        "gzip_compress_300k ns=" + str(best // iters) + " digest=" + str(digest(out))
-    );
-}
-
-
-def bench_gzip_decompress(comp: bytes, iters: int) {
-    out: bytes = gzip.decompress(comp);
-    best: int = 0;
-    r: int = 0;
-    while r < 3 {
-        t0: int = time.perf_counter_ns();
-        i: int = 0;
-        while i < iters {
-            out = gzip.decompress(comp);
-            i += 1;
-        }
-        dt: int = time.perf_counter_ns() - t0;
-        if best == 0 or dt < best {
-            best = dt;
-        }
-        r += 1;
-    }
-    print(
-        "gzip_decompress_300k ns=" + str(best // iters) + " digest=" + str(digest(out))
-    );
+    print(label + " ns=" + str(best // iters));
 }
 
 
@@ -201,11 +62,31 @@ with entry {
     zcomp: bytes = zlib.compress(text);
     gcomp: bytes = gzip.compress(text);
 
-    bench_crc32(text, 30);
-    bench_adler32(text, 30);
-    bench_zlib_compress(text, 20);
-    bench_zlib_decompress(zcomp, 20);
-    bench_zlib_compress_rand(rnd, 20);
-    bench_gzip_compress(text, 20);
-    bench_gzip_decompress(gcomp, 20);
+    crc: int = zlib.crc32(text);
+    _bench("crc32_300k", 30, lambda { crc = zlib.crc32(text, crc); });
+    print("  digest=" + str(crc));
+
+    adl: int = zlib.adler32(text);
+    _bench("adler32_300k", 30, lambda { adl = zlib.adler32(text, adl); });
+    print("  digest=" + str(adl));
+
+    zout: bytes = b"";
+    _bench("zlib_compress_300k", 20, lambda { zout = zlib.compress(text); });
+    print("  digest=" + str(digest(zout)));
+
+    zback: bytes = b"";
+    _bench("zlib_decompress_300k", 20, lambda { zback = zlib.decompress(zcomp); });
+    print("  digest=" + str(digest(zback)));
+
+    rout: bytes = b"";
+    _bench("zlib_compress_rand64k", 20, lambda { rout = zlib.compress(rnd); });
+    print("  digest=" + str(digest(rout)));
+
+    gout: bytes = b"";
+    _bench("gzip_compress_300k", 20, lambda { gout = gzip.compress(text); });
+    print("  digest=" + str(digest(gout)));
+
+    gback: bytes = b"";
+    _bench("gzip_decompress_300k", 20, lambda { gback = gzip.decompress(gcomp); });
+    print("  digest=" + str(digest(gback)));
 }

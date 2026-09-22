@@ -448,18 +448,24 @@ Two conventions make foreign byte I/O work:
 
 `decompress` does not use the one-shot `uncompress`: a zlib stream carries no
 output-size field, so a buffer-too-small retry would re-inflate the whole
-input. Instead both `zlib.jac` and `gzip.jac` drive a single shared driver,
-`z_inflate_all`, which streams `inflate` over a `malloc`/`realloc` arena it
-owns end to end -- `next_out`/`avail_out` are poked into a
-`b"\x00" * 112` z_stream image through the `__mem_store_i32/i64` intrinsics
-(the LP64 `z_stream` field offsets live in the floor), and the produced bytes
-are copied once into the exact-size `bytes` result, returned with the final
-libz status in a `ZInflateResult`. Payload addresses are recovered as `int`
-with `memchr(buf, buf[0], 1)`, which always matches at offset 0. Growth
-doubles the arena up to a caller-supplied ceiling (`source_len * 1032 + 64
-MiB` for zlib, the per-member `1032x + 1024` bound for gzip); empty or
-truncated input surfaces as `Z_BUF_ERROR` and raises `ValueError`, matching
-CPython's `error -5`.
+input. Instead `zlib.jac`, `gzip.jac`, and `zipfile.jac` call one shared
+driver, `z_inflate_all(src, src_off, src_len, window_bits, cap, ceiling)`,
+which owns the `z_stream` lifecycle end to end: it pokes `next_in`/`avail_in`
+and `next_out`/`avail_out` into a `b"\x00" * 112` z_stream image through the
+`__mem_store_i32/i64` intrinsics (the LP64 `z_stream` field offsets live in
+the floor), streams `inflate` over a `malloc`/`realloc` arena, refeeds
+`avail_in` between calls when a source larger than one `uInt` is clamped, and
+copies the produced bytes once into the exact-size `bytes` result, returning
+the final libz status (plus an `init_ok` flag distinguishing `inflateInit2_`
+failure) in a `ZInflateResult`. Surfaces only map `status` to their own error
+type. Payload addresses are recovered as `int` with `memchr(buf, buf[0], 1)`,
+which always matches at offset 0 (empty input yields 0). Growth doubles the
+arena up to a caller-supplied ceiling; every site derives that ceiling from
+the floor's `z_inflate_bound(src_len, slack)` -- DEFLATE's ~1032x expansion
+bound plus slack (64 MiB for zlib, the default 1 KiB for the gzip per-member
+bound and the zipfile declared-size pre-check); empty or truncated input
+surfaces as `Z_BUF_ERROR` and raises `ValueError`, matching CPython's
+`error -5`.
 
 `bz2` (#6978 Phase 2) follows the same two-file split: `_bz2_native.jac`
 wraps the one-shot `BZ2_bzBuffToBuffCompress` / `BZ2_bzBuffToBuffDecompress`
@@ -520,7 +526,7 @@ and consumed exactly the declared `compress_size` -- trailing bytes inside the
 compressed field are rejected. Integrity comes from the central-directory
 CRC-32 check (verified separately against the decoded bytes), so no
 verification re-decode is needed. The declared size is also pre-checked
-against DEFLATE's ~1032x expansion bound.
+against `z_inflate_bound` (DEFLATE's ~1032x expansion bound).
 
 Scope: archives are loaded into memory, and `read` returns a complete member.
 ZIP64, encryption, other compression methods, writing, streaming member

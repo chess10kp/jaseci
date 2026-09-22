@@ -25,10 +25,13 @@ glob _ZS_NEXT_IN: int = 0,
      _ZS_AVAIL_OUT: int = 32,
      _ZS_TOTAL_OUT: int = 40;
 
-glob _Z_OK: int = 0,
-     _Z_STREAM_END: int = 1,
-     _Z_MEM_ERROR: int = -4,
-     _Z_BUF_ERROR: int = -5;
+glob _Z_STREAM_SIZE: int = 112,
+     _UINT32_MAX: int = 4294967295;
+
+glob:pub Z_OK: int = 0,
+     Z_STREAM_END: int = 1,
+     Z_MEM_ERROR: int = -4,
+     Z_BUF_ERROR: int = -5;
 
 
 def _signed32(status: int) -> int {
@@ -61,121 +64,139 @@ def:pub z_adler32(adler: int, buf: bytes, n: int) -> int {
 }
 
 
-def:pub z_strm_bytes -> bytes {
-    return b"\x00" * 112;
+def:pub z_inflate_bound(src_len: int, slack: int = 1024) -> int {
+    return src_len * 1032 + slack;
 }
 
 
-def:pub z_payload_addr(buf: bytes) -> int {
+def _payload_addr(buf: bytes) -> int {
+    if len(buf) == 0 {
+        return 0;
+    }
     return memchr(buf, i32(buf[0]), u64(1));
 }
 
 
-def:pub z_inflate_init(
+def _store_u32(addr: int, value: int) {
+    if value > _UINT32_MAX {
+        value = _UINT32_MAX;
+    }
+    __mem_store_i32(addr, i32.wrap(value));
+}
+
+
+def _inflate_init(
     strm: bytes, src: bytes, src_off: int, src_len: int, window_bits: int
 ) -> int {
-    sa: int = z_payload_addr(strm);
+    sa: int = _payload_addr(strm);
     in_ptr: int = 0;
     if src_len > 0 {
-        in_ptr = z_payload_addr(src) + src_off;
+        in_ptr = _payload_addr(src) + src_off;
     }
     __mem_store_i64(sa + _ZS_NEXT_IN, in_ptr);
-    __mem_store_i32(sa + _ZS_AVAIL_IN, i32(src_len));
-    return _signed32(inflateInit2_(strm, i32(window_bits), zlibVersion(), i32(112)));
+    _store_u32(sa + _ZS_AVAIL_IN, src_len);
+    return _signed32(
+        inflateInit2_(strm, i32(window_bits), zlibVersion(), i32(_Z_STREAM_SIZE))
+    );
 }
 
 
-def:pub z_inflate_set_out(strm: bytes, out_addr: int, room: int) {
-    sa: int = z_payload_addr(strm);
+def _inflate_set_out(strm: bytes, out_addr: int, room: int) {
+    sa: int = _payload_addr(strm);
     __mem_store_i64(sa + _ZS_NEXT_OUT, out_addr);
-    __mem_store_i32(sa + _ZS_AVAIL_OUT, i32(room));
+    _store_u32(sa + _ZS_AVAIL_OUT, room);
 }
 
 
-def:pub z_alloc(n: int) -> int {
-    return malloc(u64(n));
+def _inflate_refeed_in(strm: bytes, remaining: int) {
+    _store_u32(_payload_addr(strm) + _ZS_AVAIL_IN, remaining);
 }
 
 
-def:pub z_realloc(p: int, n: int) -> int {
-    return realloc(p, u64(n));
-}
-
-
-def:pub z_free(p: int) {
-    free(p);
-}
-
-
-def:pub z_inflate(strm: bytes) -> int {
+def _inflate(strm: bytes) -> int {
     return _signed32(inflate(strm, i32(0)));
 }
 
 
-def:pub z_inflate_total_out(strm: bytes) -> int {
-    return __mem_load_i64(z_payload_addr(strm) + _ZS_TOTAL_OUT);
+def _inflate_total_in(strm: bytes) -> int {
+    return __mem_load_i64(_payload_addr(strm) + _ZS_TOTAL_IN);
 }
 
 
-def:pub z_inflate_end(strm: bytes) -> int {
-    return _signed32(inflateEnd(strm));
+def _inflate_total_out(strm: bytes) -> int {
+    return __mem_load_i64(_payload_addr(strm) + _ZS_TOTAL_OUT);
 }
 
 
-def:pub z_copy(dst: bytes, src_addr: int, n: int) {
-    memcpy(dst, src_addr, u64(n));
+def _inflate_end(strm: bytes) {
+    inflateEnd(strm);
 }
 
 
 obj:pub ZInflateResult {
     has status: int,
         consumed: int,
-        data: bytes;
+        data: bytes,
+        init_ok: bool = True;
 }
 
 
-def:pub z_inflate_all(strm: bytes, cap: int, ceiling: int) -> ZInflateResult {
-    buf: int = z_alloc(cap);
+def:pub z_inflate_all(
+    src: bytes, src_off: int, src_len: int, window_bits: int, cap: int, ceiling: int
+) -> ZInflateResult {
+    strm: bytes = b"\x00" * _Z_STREAM_SIZE;
+    rc: int = _inflate_init(strm, src, src_off, src_len, window_bits);
+    if rc != Z_OK {
+        return ZInflateResult(status=rc, consumed=0, data=b"", init_ok=False);
+    }
+    if cap < 1 {
+        cap = 1;
+    }
+    buf: int = malloc(u64(cap));
+    status: int = Z_OK;
     if buf == 0 {
-        return ZInflateResult(status=_Z_MEM_ERROR, consumed=0, data=b"");
+        status = Z_MEM_ERROR;
     }
     total: int = 0;
-    status: int = _Z_OK;
-    while True {
+    while status == Z_OK {
         if total == cap {
             if cap >= ceiling {
-                status = _Z_BUF_ERROR;
+                status = Z_BUF_ERROR;
                 break;
             }
             newcap: int = cap * 2;
             if newcap > ceiling {
                 newcap = ceiling;
             }
-            nbuf: int = z_realloc(buf, newcap);
+            nbuf: int = realloc(buf, u64(newcap));
             if nbuf == 0 {
-                status = _Z_MEM_ERROR;
+                status = Z_MEM_ERROR;
                 break;
             }
             buf = nbuf;
             cap = newcap;
         }
-        z_inflate_set_out(strm, buf + total, cap - total);
-        status = z_inflate(strm);
-        total = z_inflate_total_out(strm);
-        if status != _Z_OK {
-            if status == _Z_BUF_ERROR and total == cap {
-                continue;
+        _inflate_set_out(strm, buf + total, cap - total);
+        status = _inflate(strm);
+        total = _inflate_total_out(strm);
+        if status == Z_BUF_ERROR {
+            fed: int = _inflate_total_in(strm);
+            if fed < src_len {
+                _inflate_refeed_in(strm, src_len - fed);
+                status = Z_OK;
+            } elif total == cap {
+                status = Z_OK;
             }
-            break;
         }
     }
     data = b"";
-    if status == _Z_STREAM_END {
+    if status == Z_STREAM_END {
         out = b"\x00" * total;
-        z_copy(out, buf, total);
+        memcpy(out, buf, u64(total));
         data = out;
     }
-    consumed: int = __mem_load_i64(z_payload_addr(strm) + _ZS_TOTAL_IN);
-    z_free(buf);
+    consumed: int = _inflate_total_in(strm);
+    free(buf);
+    _inflate_end(strm);
     return ZInflateResult(status=status, consumed=consumed, data=data);
 }

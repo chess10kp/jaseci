@@ -6,6 +6,9 @@ import from c { def fseek(stream: int, off: i64, whence: i32) -> i32;  }
 import from c { def ftell(stream: int) -> i64;  }
 import from _errno_native { last_errno, raise_os_error }
 
+glob _SEEK_SET: int = 0,
+     _SEEK_END: int = 2;
+
 def:pub read_file_bytes(path: str) -> bytes {
     if "\x00" in path {
         raise ValueError("embedded null byte");
@@ -16,10 +19,13 @@ def:pub read_file_bytes(path: str) -> bytes {
     }
     try {
         hint = -1;
-        if fseek(stream, i64(0), i32(2)) == i32(0) {
-            hint = int(ftell(stream));
-            if fseek(stream, i64(0), i32(0)) != i32(0) {
-                hint = -1;
+        if fseek(stream, i64(0), i32(_SEEK_END)) == i32(0) {
+            end = int(ftell(stream));
+            if fseek(stream, i64(0), i32(_SEEK_SET)) != i32(0) {
+                raise_os_error("seek", path, last_errno());
+            }
+            if end > 0 {
+                hint = end;
             }
         }
         result = bytearray();

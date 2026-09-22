@@ -1,18 +1,15 @@
 import from _zlib_native {
     ZInflateResult,
+    Z_OK,
+    Z_STREAM_END,
+    Z_MEM_ERROR,
     z_compress2,
     z_compress_bound,
     z_crc32,
     z_adler32,
-    z_strm_bytes,
-    z_inflate_init,
     z_inflate_all,
-    z_inflate_end
+    z_inflate_bound
 }
-
-glob _ZL_OK: int = 0,
-     _ZL_STREAM_END: int = 1,
-     _ZL_MEM_ERROR: int = -4;
 
 
 def:pub crc32(data: bytes, value: int = 0) -> int {
@@ -32,7 +29,7 @@ def:pub compress(data: bytes, level: int = -1) -> bytes {
     dest = b"\x00" * bound;
     dest_len = bound.to_bytes(8, "little");
     rc: int = z_compress2(dest, dest_len, data, source_len, level);
-    if rc != _ZL_OK {
+    if rc != Z_OK {
         raise ValueError("zlib.compress: libz error code " + str(rc));
     }
     return dest[0:int.from_bytes(dest_len, "little")];
@@ -48,28 +45,24 @@ def:pub decompress(data: bytes | bytearray) -> bytes {
     }
     source_len: int = len(source);
 
-    strm: bytes = z_strm_bytes();
-    rc: int = z_inflate_init(strm, source, 0, source_len, 15);
-    if rc != _ZL_OK {
-        if rc == _ZL_MEM_ERROR {
-            raise MemoryError("zlib.decompress: allocation failed");
-        }
-        raise ValueError(
-            "zlib.decompress: inflate init failed (libz error code " + str(rc) + ")"
-        );
-    }
     cap: int = source_len * 4;
     if cap < 8192 {
         cap = 8192;
     }
-    ceiling: int = (source_len * 1032) + 67108864;
-    res: ZInflateResult = z_inflate_all(strm, cap, ceiling);
-    z_inflate_end(strm);
-    if res.status == _ZL_STREAM_END {
+    ceiling: int = z_inflate_bound(source_len, 67108864);
+    res: ZInflateResult = z_inflate_all(source, 0, source_len, 15, cap, ceiling);
+    if res.status == Z_STREAM_END {
         return res.data;
     }
-    if res.status == _ZL_MEM_ERROR {
+    if res.status == Z_MEM_ERROR {
         raise MemoryError("zlib.decompress: allocation failed");
+    }
+    if not res.init_ok {
+        raise ValueError(
+            "zlib.decompress: inflate init failed (libz error code "
+                + str(res.status)
+                + ")"
+        );
     }
     raise ValueError(
         "zlib.decompress: invalid or truncated stream (libz error code "

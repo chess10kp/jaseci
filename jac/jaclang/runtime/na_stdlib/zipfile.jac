@@ -1,18 +1,14 @@
 import from _zlib_native {
     ZInflateResult,
+    Z_STREAM_END,
+    Z_MEM_ERROR,
     z_crc32,
-    z_strm_bytes,
-    z_inflate_init,
     z_inflate_all,
-    z_inflate_end
+    z_inflate_bound
 }
 
 glob:pub ZIP_STORED: int = 0,
      ZIP_DEFLATED: int = 8;
-
-glob _ZF_OK: int = 0,
-     _ZF_STREAM_END: int = 1,
-     _ZF_MEM_ERROR: int = -4;
 
 obj:pub BadZipFile(Exception) {}
 
@@ -241,20 +237,14 @@ def _name(raw: bytes, flags: int) -> str {
 }
 
 def _inflate(data: bytes, size: int) -> bytes {
-    if size < 0 or size > len(data) * 1032 + 1024 {
+    if size < 0 or size > z_inflate_bound(len(data)) {
         raise BadZipFile("Invalid DEFLATE output size");
     }
-    strm: bytes = z_strm_bytes();
-    rc: int = z_inflate_init(strm, data, 0, len(data), -15);
-    if rc != _ZF_OK {
-        raise BadZipFile("Invalid or truncated DEFLATE stream");
-    }
-    res: ZInflateResult = z_inflate_all(strm, size + 1, size + 1);
-    z_inflate_end(strm);
-    if res.status == _ZF_MEM_ERROR {
+    res: ZInflateResult = z_inflate_all(data, 0, len(data), -15, size + 1, size + 1);
+    if res.status == Z_MEM_ERROR {
         raise MemoryError("zipfile: allocation failed");
     }
-    if res.status != _ZF_STREAM_END
+    if res.status != Z_STREAM_END
         or res.consumed != len(data)
         or len(res.data) != size {
         raise BadZipFile("Invalid or truncated DEFLATE stream");

@@ -1,18 +1,16 @@
 import from _zlib_native {
     ZInflateResult,
+    Z_OK,
+    Z_STREAM_END,
+    Z_MEM_ERROR,
     z_compress2,
     z_compress_bound,
     z_crc32,
-    z_strm_bytes,
-    z_inflate_init,
     z_inflate_all,
-    z_inflate_end
+    z_inflate_bound
 }
 
-glob _GZ_OK: int = 0,
-     _GZ_STREAM_END: int = 1,
-     _GZ_MEM_ERROR: int = -4,
-     _MASK32: int = 4294967295;
+glob _MASK32: int = 4294967295;
 
 
 def:pub compress(data: bytes, compresslevel: int = 9, mtime: int = 0) -> bytes {
@@ -22,7 +20,7 @@ def:pub compress(data: bytes, compresslevel: int = 9, mtime: int = 0) -> bytes {
     dest = b"\x00" * bound;
     dest_len = bound.to_bytes(8, "little");
     rc: int = z_compress2(dest, dest_len, data, source_len, compresslevel);
-    if rc != _GZ_OK {
+    if rc != Z_OK {
         raise ValueError("gzip.compress: zlib compression failed");
     }
     written: int = int.from_bytes(dest_len, "little");
@@ -109,7 +107,7 @@ def:pub decompress(data: bytes) -> bytes {
         }
 
         remaining: int = n - hpos;
-        ceiling: int = remaining * 1032 + 1024;
+        ceiling: int = z_inflate_bound(remaining);
         cap: int = int.from_bytes(data[n - 4:n], "little");
         if cap < 64 {
             cap = 64;
@@ -118,20 +116,11 @@ def:pub decompress(data: bytes) -> bytes {
             cap = ceiling;
         }
 
-        strm: bytes = z_strm_bytes();
-        rc: int = z_inflate_init(strm, data, hpos, remaining, -15);
-        if rc != _GZ_OK {
-            if rc == _GZ_MEM_ERROR {
-                raise MemoryError("gzip.decompress: allocation failed");
-            }
-            raise ValueError("gzip.decompress: invalid compressed data");
-        }
-        res: ZInflateResult = z_inflate_all(strm, cap, ceiling);
-        z_inflate_end(strm);
-        if res.status == _GZ_MEM_ERROR {
+        res: ZInflateResult = z_inflate_all(data, hpos, remaining, -15, cap, ceiling);
+        if res.status == Z_MEM_ERROR {
             raise MemoryError("gzip.decompress: allocation failed");
         }
-        if res.status != _GZ_STREAM_END {
+        if res.status != Z_STREAM_END {
             raise ValueError("gzip.decompress: invalid compressed data");
         }
         member = res.data;
