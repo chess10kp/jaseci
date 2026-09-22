@@ -31,6 +31,11 @@ glob _ZS_NEXT_IN: int = 0,
      _ZS_AVAIL_OUT: int = 32,
      _ZS_TOTAL_OUT: int = 40;
 
+glob _Z_OK: int = 0,
+     _Z_STREAM_END: int = 1,
+     _Z_MEM_ERROR: int = -4,
+     _Z_BUF_ERROR: int = -5;
+
 
 def _signed32(status: int) -> int {
     if status >= 2147483648 {
@@ -100,14 +105,7 @@ def:pub z_inflate_init(
 }
 
 
-def:pub z_inflate_set_out(strm: bytes, out: bytes, filled: int, room: int) {
-    sa: int = z_payload_addr(strm);
-    __mem_store_i64(sa + _ZS_NEXT_OUT, z_payload_addr(out) + filled);
-    __mem_store_i32(sa + _ZS_AVAIL_OUT, i32(room));
-}
-
-
-def:pub z_inflate_set_out_raw(strm: bytes, out_addr: int, room: int) {
+def:pub z_inflate_set_out(strm: bytes, out_addr: int, room: int) {
     sa: int = z_payload_addr(strm);
     __mem_store_i64(sa + _ZS_NEXT_OUT, out_addr);
     __mem_store_i32(sa + _ZS_AVAIL_OUT, i32(room));
@@ -151,4 +149,56 @@ def:pub z_inflate_end(strm: bytes) -> int {
 
 def:pub z_copy(dst: bytes, src_addr: int, n: int) {
     memcpy(dst, src_addr, u64(n));
+}
+
+
+obj:pub ZInflateResult {
+    has status: int,
+        data: bytes;
+}
+
+
+def:pub z_inflate_all(strm: bytes, cap: int, ceiling: int) -> ZInflateResult {
+    buf: int = z_alloc(cap);
+    if buf == 0 {
+        return ZInflateResult(status=_Z_MEM_ERROR, data=b"");
+    }
+    total: int = 0;
+    status: int = _Z_OK;
+    while True {
+        if total == cap {
+            if cap >= ceiling {
+                status = _Z_BUF_ERROR;
+                break;
+            }
+            newcap: int = cap * 2;
+            if newcap > ceiling {
+                newcap = ceiling;
+            }
+            nbuf: int = z_realloc(buf, newcap);
+            if nbuf == 0 {
+                status = _Z_MEM_ERROR;
+                break;
+            }
+            buf = nbuf;
+            cap = newcap;
+        }
+        z_inflate_set_out(strm, buf + total, cap - total);
+        status = z_inflate(strm);
+        total = z_inflate_total_out(strm);
+        if status != _Z_OK {
+            if status == _Z_BUF_ERROR and total == cap {
+                continue;
+            }
+            break;
+        }
+    }
+    data = b"";
+    if status == _Z_STREAM_END {
+        out = b"\x00" * total;
+        z_copy(out, buf, total);
+        data = out;
+    }
+    z_free(buf);
+    return ZInflateResult(status=status, data=data);
 }

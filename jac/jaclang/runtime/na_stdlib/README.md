@@ -448,15 +448,18 @@ Two conventions make foreign byte I/O work:
 
 `decompress` does not use the one-shot `uncompress`: a zlib stream carries no
 output-size field, so a buffer-too-small retry would re-inflate the whole
-input. Instead the surface drives `inflate` over a caller-owned
-`malloc`/`realloc` arena -- `next_out`/`avail_out` are poked into a
+input. Instead both `zlib.jac` and `gzip.jac` drive a single shared driver,
+`z_inflate_all`, which streams `inflate` over a `malloc`/`realloc` arena it
+owns end to end -- `next_out`/`avail_out` are poked into a
 `b"\x00" * 112` z_stream image through the `__mem_store_i32/i64` intrinsics
 (the LP64 `z_stream` field offsets live in the floor), and the produced bytes
-are copied once into the exact-size `bytes` result. Payload addresses are
-recovered as `int` with `memchr(buf, buf[0], 1)`, which always matches at
-offset 0. Growth doubles the arena up to `source_len * 1032 + 64 MiB`
-(DEFLATE's expansion bound); empty or truncated input surfaces as
-`Z_BUF_ERROR` and raises `ValueError`, matching CPython's `error -5`.
+are copied once into the exact-size `bytes` result, returned with the final
+libz status in a `ZInflateResult`. Payload addresses are recovered as `int`
+with `memchr(buf, buf[0], 1)`, which always matches at offset 0. Growth
+doubles the arena up to a caller-supplied ceiling (`source_len * 1032 + 64
+MiB` for zlib, the per-member `1032x + 1024` bound for gzip); empty or
+truncated input surfaces as `Z_BUF_ERROR` and raises `ValueError`, matching
+CPython's `error -5`.
 
 `bz2` (#6978 Phase 2) follows the same two-file split: `_bz2_native.jac`
 wraps the one-shot `BZ2_bzBuffToBuffCompress` / `BZ2_bzBuffToBuffDecompress`
