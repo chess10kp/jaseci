@@ -1,8 +1,9 @@
-import from _csprng_native { to_hex }
+import from _hex { to_hex }
 import from _hashlib_native {
     evp_md_for,
     digest_size_for,
     block_size_for,
+    ctx_require,
     hmac_ctx_new,
     hmac_ctx_update,
     hmac_ctx_digest,
@@ -18,16 +19,12 @@ obj:pub HMAC {
         name: str;
 
     def update(data: bytes) {
-        if self._ctx == 0 {
-            raise ValueError("hmac object is finalized");
-        }
+        ctx_require(self._ctx, "hmac");
         hmac_ctx_update(self._ctx, data);
     }
 
     def digest -> bytes {
-        if self._ctx == 0 {
-            raise ValueError("hmac object is finalized");
-        }
+        ctx_require(self._ctx, "hmac");
         return hmac_ctx_digest(self._ctx);
     }
 
@@ -36,9 +33,7 @@ obj:pub HMAC {
     }
 
     def copy -> HMAC {
-        if self._ctx == 0 {
-            raise ValueError("hmac object is finalized");
-        }
+        ctx_require(self._ctx, "hmac");
         return HMAC(
             _ctx=hmac_ctx_clone(self._ctx),
             digest_size=self.digest_size,
@@ -85,13 +80,16 @@ def:pub digest(key: bytes, msg: bytes, digest: str) -> bytes {
 
 
 def:pub compare_digest(a: bytes, b: bytes) -> bool {
-    if len(a) != len(b) {
-        return False;
+    same: bool = len(a) == len(b);
+    left: bytes = b;
+    diff: int = 1;
+    if same {
+        left = a;
+        diff = 0;
     }
-    diff: int = 0;
     i: int = 0;
-    while i < len(a) {
-        diff = diff | (a[i] ^ b[i]);
+    while i < len(b) {
+        diff = diff | (left[i] ^ b[i]);
         i += 1;
     }
     return diff == 0;

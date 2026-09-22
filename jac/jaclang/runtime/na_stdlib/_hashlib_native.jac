@@ -120,6 +120,13 @@ def:pub block_size_for(name: str) -> int {
 }
 
 
+def:pub ctx_require(ctx: int, what: str) {
+    if ctx == 0 {
+        raise ValueError(what + " object is finalized");
+    }
+}
+
+
 def:pub evp_ctx_new(md: int) -> int {
     ctx: int = EVP_MD_CTX_new();
     if ctx == 0 {

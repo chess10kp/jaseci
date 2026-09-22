@@ -1,8 +1,9 @@
-import from _csprng_native { to_hex }
+import from _hex { to_hex }
 import from _hashlib_native {
     evp_md_for,
     digest_size_for,
     block_size_for,
+    ctx_require,
     evp_ctx_new,
     evp_ctx_update,
     evp_ctx_digest,
@@ -18,16 +19,12 @@ obj:pub Hash {
         name: str;
 
     def update(data: bytes) {
-        if self._ctx == 0 {
-            raise ValueError("hash object is finalized");
-        }
+        ctx_require(self._ctx, "hash");
         evp_ctx_update(self._ctx, data);
     }
 
     def digest -> bytes {
-        if self._ctx == 0 {
-            raise ValueError("hash object is finalized");
-        }
+        ctx_require(self._ctx, "hash");
         return evp_ctx_digest(self._ctx);
     }
 
@@ -36,9 +33,7 @@ obj:pub Hash {
     }
 
     def copy -> Hash {
-        if self._ctx == 0 {
-            raise ValueError("hash object is finalized");
-        }
+        ctx_require(self._ctx, "hash");
         return Hash(
             _ctx=evp_ctx_clone(self._ctx),
             digest_size=self.digest_size,

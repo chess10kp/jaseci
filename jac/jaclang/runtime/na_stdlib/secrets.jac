@@ -1,4 +1,5 @@
-import from _csprng_native { csprng_bytes, to_hex }
+import from _csprng_native { csprng_bytes }
+import from _hex { to_hex }
 import from base64 { urlsafe_b64encode }
 import from hmac { compare_digest as _hmac_compare_digest }
 

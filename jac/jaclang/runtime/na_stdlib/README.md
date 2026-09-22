@@ -388,7 +388,7 @@ native layout records the emitted name separately from its source-level key.
   floor) -- `token_bytes`/`token_hex`/`token_urlsafe` (`nbytes=None` ->
   `DEFAULT_ENTROPY` = 32; negative -> `ValueError`), `randbelow`
   (rejection-sampled over whole-byte draws), and `compare_digest` re-exported
-  from `hmac`. `to_hex` lives once in the floor and is shared with
+  from `hmac`. `to_hex` lives once in `_hex` and is shared with
   `hashlib`/`hmac`/`uuid`. SCOPE: `compare_digest` takes `bytes` only (str
   callers `.encode()`), and `SystemRandom`/`choice`/`randbits` are not
   provided. `uuid.jac` rides the same floor (`uuid4()` only).

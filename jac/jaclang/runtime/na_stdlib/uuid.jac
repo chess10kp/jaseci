@@ -1,4 +1,5 @@
-import from _csprng_native { csprng_bytes, to_hex }
+import from _csprng_native { csprng_bytes }
+import from _hex { to_hex }
 
 
 obj:pub UUID {
