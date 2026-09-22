@@ -13,8 +13,12 @@ import from crypto { def EVP_sha224 -> int;  }
 import from crypto { def EVP_sha256 -> int;  }
 import from crypto { def EVP_sha384 -> int;  }
 import from crypto { def EVP_sha512 -> int;  }
+import from crypto { def EVP_sha3_224 -> int;  }
 import from crypto { def EVP_sha3_256 -> int;  }
+import from crypto { def EVP_sha3_384 -> int;  }
 import from crypto { def EVP_sha3_512 -> int;  }
+import from crypto { def EVP_blake2b512 -> int;  }
+import from crypto { def EVP_blake2s256 -> int;  }
 
 import from crypto { def HMAC_CTX_new -> int;  }
 import from crypto { def HMAC_CTX_free(ctx: int) -> None;  }
@@ -39,10 +43,18 @@ def:pub evp_md_for(name: str) -> int {
         return EVP_sha384();
     } elif name == "sha512" {
         return EVP_sha512();
+    } elif name == "sha3_224" {
+        return EVP_sha3_224();
     } elif name == "sha3_256" {
         return EVP_sha3_256();
+    } elif name == "sha3_384" {
+        return EVP_sha3_384();
     } elif name == "sha3_512" {
         return EVP_sha3_512();
+    } elif name == "blake2b" {
+        return EVP_blake2b512();
+    } elif name == "blake2s" {
+        return EVP_blake2s256();
     }
     return 0;
 }
@@ -61,10 +73,18 @@ def:pub digest_size_for(name: str) -> int {
         return 48;
     } elif name == "sha512" {
         return 64;
+    } elif name == "sha3_224" {
+        return 28;
     } elif name == "sha3_256" {
         return 32;
+    } elif name == "sha3_384" {
+        return 48;
     } elif name == "sha3_512" {
         return 64;
+    } elif name == "blake2b" {
+        return 64;
+    } elif name == "blake2s" {
+        return 32;
     }
     return 0;
 }
@@ -83,10 +103,18 @@ def:pub block_size_for(name: str) -> int {
         return 128;
     } elif name == "sha512" {
         return 128;
+    } elif name == "sha3_224" {
+        return 144;
     } elif name == "sha3_256" {
         return 136;
+    } elif name == "sha3_384" {
+        return 104;
     } elif name == "sha3_512" {
         return 72;
+    } elif name == "blake2b" {
+        return 128;
+    } elif name == "blake2s" {
+        return 64;
     }
     return 0;
 }
@@ -125,9 +153,9 @@ def:pub evp_ctx_clone(ctx: int) -> int {
 }
 
 
-def:pub evp_ctx_digest(ctx: int, digest_size: int) -> bytes {
+def:pub evp_ctx_digest(ctx: int) -> bytes {
     tmp: int = evp_ctx_clone(ctx);
-    out = b"\x00" * digest_size;
+    out = b"\x00" * 64;
 
     outlen = b"\x00" * 4;
     if EVP_DigestFinal_ex(tmp, out, outlen) != 1 {
@@ -135,7 +163,7 @@ def:pub evp_ctx_digest(ctx: int, digest_size: int) -> bytes {
         raise ValueError("EVP_DigestFinal_ex failed");
     }
     EVP_MD_CTX_free(tmp);
-    return out;
+    return out[0:int.from_bytes(outlen, "little")];
 }
 
 
@@ -177,9 +205,9 @@ def:pub hmac_ctx_clone(ctx: int) -> int {
 }
 
 
-def:pub hmac_ctx_digest(ctx: int, digest_size: int) -> bytes {
+def:pub hmac_ctx_digest(ctx: int) -> bytes {
     tmp: int = hmac_ctx_clone(ctx);
-    out = b"\x00" * digest_size;
+    out = b"\x00" * 64;
 
     outlen = b"\x00" * 4;
     if HMAC_Final(tmp, out, outlen) != 1 {
@@ -187,7 +215,7 @@ def:pub hmac_ctx_digest(ctx: int, digest_size: int) -> bytes {
         raise ValueError("HMAC_Final failed");
     }
     HMAC_CTX_free(tmp);
-    return out;
+    return out[0:int.from_bytes(outlen, "little")];
 }
 
 

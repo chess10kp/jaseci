@@ -18,11 +18,17 @@ obj:pub HMAC {
         name: str;
 
     def update(data: bytes) {
+        if self._ctx == 0 {
+            raise ValueError("hmac object is finalized");
+        }
         hmac_ctx_update(self._ctx, data);
     }
 
     def digest -> bytes {
-        return hmac_ctx_digest(self._ctx, self.digest_size);
+        if self._ctx == 0 {
+            raise ValueError("hmac object is finalized");
+        }
+        return hmac_ctx_digest(self._ctx);
     }
 
     def hexdigest -> str {
@@ -30,6 +36,9 @@ obj:pub HMAC {
     }
 
     def copy -> HMAC {
+        if self._ctx == 0 {
+            raise ValueError("hmac object is finalized");
+        }
         return HMAC(
             _ctx=hmac_ctx_clone(self._ctx),
             digest_size=self.digest_size,
@@ -47,10 +56,17 @@ obj:pub HMAC {
 }
 
 
-def:pub new(key: bytes, msg: bytes = b"", digestmod: str = "sha256") -> HMAC {
+def:pub new(key: bytes, msg: (bytes | None) = None, digestmod: str = "") -> HMAC {
+    if digestmod == "" {
+        raise TypeError("Missing required argument 'digestmod'.");
+    }
     md: int = evp_md_for(digestmod);
     if md == 0 {
         raise ValueError("unsupported hash type " + digestmod);
+    }
+    data: bytes = b"";
+    if isinstance(msg, bytes) {
+        data = msg;
     }
     hm = HMAC(
         _ctx=hmac_ctx_new(md, key),
@@ -58,11 +74,25 @@ def:pub new(key: bytes, msg: bytes = b"", digestmod: str = "sha256") -> HMAC {
         block_size=block_size_for(digestmod),
         name="hmac-" + digestmod
     );
-    hm.update(msg);
+    hm.update(data);
     return hm;
 }
 
 
 def:pub digest(key: bytes, msg: bytes, digest: str) -> bytes {
     return new(key, msg, digest).digest();
+}
+
+
+def:pub compare_digest(a: bytes, b: bytes) -> bool {
+    if len(a) != len(b) {
+        return False;
+    }
+    diff: int = 0;
+    i: int = 0;
+    while i < len(a) {
+        diff = diff | (a[i] ^ b[i]);
+        i += 1;
+    }
+    return diff == 0;
 }

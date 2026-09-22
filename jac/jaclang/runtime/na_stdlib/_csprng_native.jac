@@ -2,7 +2,10 @@ import from crypto { def RAND_bytes(buf: bytes, num: i32) -> i32;  }
 
 
 def:pub csprng_bytes(n: int) -> bytes {
-    if n <= 0 {
+    if n < 0 {
+        raise ValueError("negative argument not allowed");
+    }
+    if n == 0 {
         return b"";
     }
     out = b"\x00" * n;

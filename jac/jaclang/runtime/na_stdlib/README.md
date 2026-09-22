@@ -364,6 +364,39 @@ native layout records the emitted name separately from its source-level key.
   links are created via libc `link`/`symlink` when trivial. Native-host only.
   Pinned sv<->na congruent by `test_tarfile_equivalence.jac`.
 
+- **`hashlib.jac`** + **`hmac.jac`** (Mechanism F) + **`_hashlib_native.jac`**
+  (FFI floor over the bundled `libcrypto`) -- CPython's hash-object model over
+  OpenSSL EVP: `Hash` keeps a live `EVP_MD_CTX` (update feeds
+  `EVP_DigestUpdate` directly, `digest()` clones the ctx and finalizes the
+  clone, `copy()` clones it, a `drop` hook frees it -- the same
+  clone-finalize-free pattern CPython's `_hashopenssl` uses), so repeated
+  `digest()` is O(ctx) rather than re-hashing every retained chunk. Surface:
+  the named constructors (`md5`/`sha1`/`sha224`/`sha256`/`sha384`/`sha512`/
+  `sha3_224`/`sha3_256`/`sha3_384`/`sha3_512`/`blake2b`/`blake2s`), `new(name,
+  data)`, `update`/`digest`/`hexdigest`/`copy`, and the `digest_size`/
+  `block_size`/`name` attributes. `hmac.jac` mirrors it over `HMAC_CTX`
+  (`new(key, msg=None, digestmod)` -- `digestmod` is required and its absence
+  raises `TypeError` like CPython; `digest(key, msg, digest)`;
+  `compare_digest(a, b)`). Pinned sv<->na congruent by
+  `test_prim_equivalence.jac`. SCOPE: `shake_128`/`shake_256` (XOF digests need
+  `EVP_DigestFinalXOF` and a caller-supplied length) and `pbkdf2_hmac` are not
+  provided; the `usedforsecurity` kwarg and callable `digestmod` are not
+  accepted; `update` takes `bytes` only (no buffer protocol); `algorithms_*`
+  sets are not exposed; `digest_size`/`block_size`/`name` are plain `has`
+  fields (assignable, where CPython's are read-only).
+- **`secrets.jac`** (Mechanism F) + **`_csprng_native.jac`** (`RAND_bytes`
+  floor) -- `token_bytes`/`token_hex`/`token_urlsafe` (`nbytes=None` ->
+  `DEFAULT_ENTROPY` = 32; negative -> `ValueError`), `randbelow`
+  (rejection-sampled over whole-byte draws), and `compare_digest` re-exported
+  from `hmac`. `to_hex` lives once in the floor and is shared with
+  `hashlib`/`hmac`/`uuid`. SCOPE: `compare_digest` takes `bytes` only (str
+  callers `.encode()`), and `SystemRandom`/`choice`/`randbits` are not
+  provided. `uuid.jac` rides the same floor (`uuid4()` only).
+- **`uuid.jac`** (Mechanism F, same floor) -- `uuid4()` -> `UUID(hex,
+  version=4)` with `__str__` rendering the 8-4-4-4-12 form; version/variant
+  bits set per RFC 4122. SCOPE: no `uuid1`/`uuid3`/`uuid5`, no `int`/`bytes`
+  constructors or namespace constants.
+
 The syscall-backed `os` / `os.path` entry points (`makedirs`, `realpath`,
 `mkdir`, `exists`, `getmtime`, `normcase`, ...) are Mechanism-A/H compiler
 intercepts, reached via the flat `import os`, not bundled here (see

@@ -18,11 +18,17 @@ obj:pub Hash {
         name: str;
 
     def update(data: bytes) {
+        if self._ctx == 0 {
+            raise ValueError("hash object is finalized");
+        }
         evp_ctx_update(self._ctx, data);
     }
 
     def digest -> bytes {
-        return evp_ctx_digest(self._ctx, self.digest_size);
+        if self._ctx == 0 {
+            raise ValueError("hash object is finalized");
+        }
+        return evp_ctx_digest(self._ctx);
     }
 
     def hexdigest -> str {
@@ -30,6 +36,9 @@ obj:pub Hash {
     }
 
     def copy -> Hash {
+        if self._ctx == 0 {
+            raise ValueError("hash object is finalized");
+        }
         return Hash(
             _ctx=evp_ctx_clone(self._ctx),
             digest_size=self.digest_size,
@@ -47,7 +56,7 @@ obj:pub Hash {
 }
 
 
-def:priv new(name: str, data: bytes = b"") -> Hash {
+def:pub new(name: str, data: bytes = b"") -> Hash {
     md: int = evp_md_for(name);
     if md == 0 {
         raise ValueError("unsupported hash type " + name);
@@ -93,11 +102,31 @@ def:pub sha512(data: bytes = b"") -> Hash {
 }
 
 
+def:pub sha3_224(data: bytes = b"") -> Hash {
+    return new("sha3_224", data);
+}
+
+
 def:pub sha3_256(data: bytes = b"") -> Hash {
     return new("sha3_256", data);
 }
 
 
+def:pub sha3_384(data: bytes = b"") -> Hash {
+    return new("sha3_384", data);
+}
+
+
 def:pub sha3_512(data: bytes = b"") -> Hash {
     return new("sha3_512", data);
+}
+
+
+def:pub blake2b(data: bytes = b"") -> Hash {
+    return new("blake2b", data);
+}
+
+
+def:pub blake2s(data: bytes = b"") -> Hash {
+    return new("blake2s", data);
 }

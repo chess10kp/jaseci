@@ -32,13 +32,26 @@ def secrets_py -> dict[any, any] {
         }
         ti += 1;
     }
+    tb_neg = "?";
+    try {
+        secrets.token_bytes(-1);
+    } except ValueError as e {
+        tb_neg = str(e);
+    }
     return {
         "tb16_len": len(secrets.token_bytes(16)),
         "tb0_len": len(secrets.token_bytes(0)),
+        "tb_none_len": len(secrets.token_bytes(None)),
+        "tb_neg": tb_neg,
         "th16_len": len(secrets.token_hex(16)),
         "th0_len": len(secrets.token_hex(0)),
+        "th_none_len": len(secrets.token_hex(None)),
         "tu16_len": len(secrets.token_urlsafe(16)),
+        "tu_none_len": len(secrets.token_urlsafe(None)),
         "tu64_urlsafe": tok_ok,
+        "default_entropy": secrets.DEFAULT_ENTROPY,
+        "cd_eq": 1 if secrets.compare_digest(b"aa", b"aa") else 0,
+        "cd_neq": 1 if secrets.compare_digest(b"aa", b"bb") else 0,
         "rb1": secrets.randbelow(1),
         "rb1000_ok": 1 if (rb1000 >= 0 and rb1000 < 1000) else 0,
         "two_differ": 1 if secrets.token_bytes(16) != secrets.token_bytes(16) else 0,
@@ -69,13 +82,26 @@ def secrets_na -> dict[str, any] {
         }
         ti += 1;
     }
+    tb_neg = "?";
+    try {
+        secrets.token_bytes(-1);
+    } except ValueError as e {
+        tb_neg = str(e);
+    }
     return {
         "tb16_len": len(secrets.token_bytes(16)),
         "tb0_len": len(secrets.token_bytes(0)),
+        "tb_none_len": len(secrets.token_bytes(None)),
+        "tb_neg": tb_neg,
         "th16_len": len(secrets.token_hex(16)),
         "th0_len": len(secrets.token_hex(0)),
+        "th_none_len": len(secrets.token_hex(None)),
         "tu16_len": len(secrets.token_urlsafe(16)),
+        "tu_none_len": len(secrets.token_urlsafe(None)),
         "tu64_urlsafe": tok_ok,
+        "default_entropy": secrets.DEFAULT_ENTROPY,
+        "cd_eq": 1 if secrets.compare_digest(b"aa", b"aa") else 0,
+        "cd_neq": 1 if secrets.compare_digest(b"aa", b"bb") else 0,
         "rb1": secrets.randbelow(1),
         "rb1000_ok": 1 if (rb1000 >= 0 and rb1000 < 1000) else 0,
         "two_differ": 1 if secrets.token_bytes(16) != secrets.token_bytes(16) else 0,

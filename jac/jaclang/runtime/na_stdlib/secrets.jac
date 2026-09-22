@@ -1,19 +1,31 @@
 import from _csprng_native { csprng_bytes, to_hex }
 import from base64 { urlsafe_b64encode }
+import from hmac { compare_digest as _hmac_compare_digest }
+
+glob:pub DEFAULT_ENTROPY: int = 32;
 
 
-def:pub token_bytes(nbytes: int = 32) -> bytes {
-    return csprng_bytes(nbytes);
+def:pub compare_digest(a: bytes, b: bytes) -> bool {
+    return _hmac_compare_digest(a, b);
 }
 
 
-def:pub token_hex(nbytes: int = 32) -> str {
-    return to_hex(csprng_bytes(nbytes));
+def:pub token_bytes(nbytes: (int | None) = None) -> bytes {
+    n: int = DEFAULT_ENTROPY;
+    if isinstance(nbytes, int) {
+        n = nbytes;
+    }
+    return csprng_bytes(n);
 }
 
 
-def:pub token_urlsafe(nbytes: int = 32) -> str {
-    return urlsafe_b64encode(csprng_bytes(nbytes)).decode().rstrip("=");
+def:pub token_hex(nbytes: (int | None) = None) -> str {
+    return to_hex(token_bytes(nbytes));
+}
+
+
+def:pub token_urlsafe(nbytes: (int | None) = None) -> str {
+    return urlsafe_b64encode(token_bytes(nbytes)).decode().rstrip("=");
 }
 
 
