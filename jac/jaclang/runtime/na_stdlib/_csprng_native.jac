@@ -14,15 +14,15 @@ def:pub csprng_bytes(n: int) -> bytes {
 
 
 def:pub to_hex(data: bytes) -> str {
-    digits: str = "0123456789abcdef";
-    out: str = "";
+    digits: bytes = b"0123456789abcdef";
+    out: list[int] = [];
     n: int = len(data);
     i: int = 0;
     while i < n {
         v: int = data[i];
-        out += digits[(v // 16) % 16];
-        out += digits[v % 16];
+        out.append(digits[v >> 4]);
+        out.append(digits[v & 15]);
         i += 1;
     }
-    return out;
+    return bytes(out).decode();
 }

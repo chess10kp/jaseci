@@ -2,25 +2,27 @@ import from _hashlib_native {
     evp_md_for,
     digest_size_for,
     block_size_for,
-    hmac_digest,
+    hmac_ctx_new,
+    hmac_ctx_update,
+    hmac_ctx_digest,
+    hmac_ctx_clone,
+    hmac_ctx_free,
     to_hex
 }
 
 
 obj:pub HMAC {
-    has _md: int,
-        _key: bytes,
-        _chunks: list[bytes],
+    has _ctx: int,
         digest_size: int,
         block_size: int,
         name: str;
 
     def update(data: bytes) {
-        self._chunks.append(data);
+        hmac_ctx_update(self._ctx, data);
     }
 
     def digest -> bytes {
-        return hmac_digest(self._md, self._key, self._chunks, self.digest_size);
+        return hmac_ctx_digest(self._ctx, self.digest_size);
     }
 
     def hexdigest -> str {
@@ -28,18 +30,19 @@ obj:pub HMAC {
     }
 
     def copy -> HMAC {
-        cp: list[bytes] = [];
-        for c in self._chunks {
-            cp.append(c);
-        }
         return HMAC(
-            _md=self._md,
-            _key=self._key,
-            _chunks=cp,
+            _ctx=hmac_ctx_clone(self._ctx),
             digest_size=self.digest_size,
             block_size=self.block_size,
             name=self.name
         );
+    }
+
+    def drop {
+        if self._ctx != 0 {
+            hmac_ctx_free(self._ctx);
+            self._ctx = 0;
+        }
     }
 }
 
@@ -50,9 +53,7 @@ def:pub new(key: bytes, msg: bytes = b"", digestmod: str = "sha256") -> HMAC {
         raise ValueError("unsupported hash type " + digestmod);
     }
     hm = HMAC(
-        _md=md,
-        _key=key,
-        _chunks=[],
+        _ctx=hmac_ctx_new(md, key),
         digest_size=digest_size_for(digestmod),
         block_size=block_size_for(digestmod),
         name="hmac-" + digestmod

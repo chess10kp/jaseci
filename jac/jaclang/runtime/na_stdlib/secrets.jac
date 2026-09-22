@@ -1,4 +1,5 @@
 import from _csprng_native { csprng_bytes, to_hex }
+import from base64 { urlsafe_b64encode }
 
 
 def:pub token_bytes(nbytes: int = 32) -> bytes {
@@ -13,33 +14,12 @@ def:pub token_hex(nbytes: int = 32) -> str {
 
 def:pub token_urlsafe(nbytes: int = 32) -> str {
     data = csprng_bytes(nbytes);
-    alphabet: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    out: str = "";
-    n: int = len(data);
-    i: int = 0;
-    while i + 3 <= n {
-        b0: int = data[i];
-        b1: int = data[i + 1];
-        b2: int = data[i + 2];
-        out += alphabet[b0 >> 2];
-        out += alphabet[((b0 & 3) << 4) | (b1 >> 4)];
-        out += alphabet[((b1 & 15) << 2) | (b2 >> 6)];
-        out += alphabet[b2 & 63];
-        i += 3;
+    enc: bytes = urlsafe_b64encode(data);
+    k: int = len(enc);
+    while k > 0 and enc[k - 1] == 61 {
+        k -= 1;
     }
-    rem: int = n - i;
-    if rem == 1 {
-        b0: int = data[i];
-        out += alphabet[b0 >> 2];
-        out += alphabet[(b0 & 3) << 4];
-    } elif rem == 2 {
-        b0: int = data[i];
-        b1: int = data[i + 1];
-        out += alphabet[b0 >> 2];
-        out += alphabet[((b0 & 3) << 4) | (b1 >> 4)];
-        out += alphabet[(b1 & 15) << 2];
-    }
-    return out;
+    return enc[0:k].decode();
 }
 
 

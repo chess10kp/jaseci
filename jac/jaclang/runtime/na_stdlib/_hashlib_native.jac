@@ -1,5 +1,6 @@
 import from crypto { def EVP_MD_CTX_new -> int;  }
 import from crypto { def EVP_MD_CTX_free(ctx: int) -> None;  }
+import from crypto { def EVP_MD_CTX_copy_ex(dst: int, src: int) -> i32;  }
 import from crypto { def EVP_DigestInit_ex(ctx: int, md: int, engine: int) -> i32;  }
 import from crypto { def EVP_DigestUpdate(ctx: int, data: bytes, n: u64) -> i32;  }
 import from crypto {
@@ -17,6 +18,7 @@ import from crypto { def EVP_sha3_512 -> int;  }
 
 import from crypto { def HMAC_CTX_new -> int;  }
 import from crypto { def HMAC_CTX_free(ctx: int) -> None;  }
+import from crypto { def HMAC_CTX_copy(dst: int, src: int) -> i32;  }
 import from crypto {
     def HMAC_Init_ex(ctx: int, key: bytes, keylen: i32, md: int, engine: int) -> i32;
 }
@@ -90,7 +92,7 @@ def:pub block_size_for(name: str) -> int {
 }
 
 
-def:pub evp_digest(md: int, chunks: list[bytes], digest_size: int) -> bytes {
+def:pub evp_ctx_new(md: int) -> int {
     ctx: int = EVP_MD_CTX_new();
     if ctx == 0 {
         raise ValueError("EVP_MD_CTX_new failed (out of memory)");
@@ -99,27 +101,57 @@ def:pub evp_digest(md: int, chunks: list[bytes], digest_size: int) -> bytes {
         EVP_MD_CTX_free(ctx);
         raise ValueError("EVP_DigestInit_ex failed");
     }
-    for c in chunks {
-        if EVP_DigestUpdate(ctx, c, u64(len(c))) != 1 {
-            EVP_MD_CTX_free(ctx);
-            raise ValueError("EVP_DigestUpdate failed");
-        }
+    return ctx;
+}
+
+
+def:pub evp_ctx_update(ctx: int, data: bytes) {
+    if EVP_DigestUpdate(ctx, data, u64(len(data))) != 1 {
+        raise ValueError("EVP_DigestUpdate failed");
+    }
+}
+
+
+def:pub evp_ctx_digest(ctx: int, digest_size: int) -> bytes {
+    tmp: int = EVP_MD_CTX_new();
+    if tmp == 0 {
+        raise ValueError("EVP_MD_CTX_new failed (out of memory)");
+    }
+    if EVP_MD_CTX_copy_ex(tmp, ctx) != 1 {
+        EVP_MD_CTX_free(tmp);
+        raise ValueError("EVP_MD_CTX_copy_ex failed");
     }
     out = b"\x00" * digest_size;
 
     outlen = b"\x00" * 4;
-    if EVP_DigestFinal_ex(ctx, out, outlen) != 1 {
-        EVP_MD_CTX_free(ctx);
+    if EVP_DigestFinal_ex(tmp, out, outlen) != 1 {
+        EVP_MD_CTX_free(tmp);
         raise ValueError("EVP_DigestFinal_ex failed");
     }
-    EVP_MD_CTX_free(ctx);
+    EVP_MD_CTX_free(tmp);
     return out;
 }
 
 
-def:pub hmac_digest(
-    md: int, key: bytes, chunks: list[bytes], digest_size: int
-) -> bytes {
+def:pub evp_ctx_clone(ctx: int) -> int {
+    tmp: int = EVP_MD_CTX_new();
+    if tmp == 0 {
+        raise ValueError("EVP_MD_CTX_new failed (out of memory)");
+    }
+    if EVP_MD_CTX_copy_ex(tmp, ctx) != 1 {
+        EVP_MD_CTX_free(tmp);
+        raise ValueError("EVP_MD_CTX_copy_ex failed");
+    }
+    return tmp;
+}
+
+
+def:pub evp_ctx_free(ctx: int) {
+    EVP_MD_CTX_free(ctx);
+}
+
+
+def:pub hmac_ctx_new(md: int, key: bytes) -> int {
     ctx: int = HMAC_CTX_new();
     if ctx == 0 {
         raise ValueError("HMAC_CTX_new failed (out of memory)");
@@ -128,34 +160,66 @@ def:pub hmac_digest(
         HMAC_CTX_free(ctx);
         raise ValueError("HMAC_Init_ex failed");
     }
-    for c in chunks {
-        if HMAC_Update(ctx, c, u64(len(c))) != 1 {
-            HMAC_CTX_free(ctx);
-            raise ValueError("HMAC_Update failed");
-        }
+    return ctx;
+}
+
+
+def:pub hmac_ctx_update(ctx: int, data: bytes) {
+    if HMAC_Update(ctx, data, u64(len(data))) != 1 {
+        raise ValueError("HMAC_Update failed");
+    }
+}
+
+
+def:pub hmac_ctx_digest(ctx: int, digest_size: int) -> bytes {
+    tmp: int = HMAC_CTX_new();
+    if tmp == 0 {
+        raise ValueError("HMAC_CTX_new failed (out of memory)");
+    }
+    if HMAC_CTX_copy(tmp, ctx) != 1 {
+        HMAC_CTX_free(tmp);
+        raise ValueError("HMAC_CTX_copy failed");
     }
     out = b"\x00" * digest_size;
 
     outlen = b"\x00" * 4;
-    if HMAC_Final(ctx, out, outlen) != 1 {
-        HMAC_CTX_free(ctx);
+    if HMAC_Final(tmp, out, outlen) != 1 {
+        HMAC_CTX_free(tmp);
         raise ValueError("HMAC_Final failed");
     }
-    HMAC_CTX_free(ctx);
+    HMAC_CTX_free(tmp);
     return out;
 }
 
 
+def:pub hmac_ctx_clone(ctx: int) -> int {
+    tmp: int = HMAC_CTX_new();
+    if tmp == 0 {
+        raise ValueError("HMAC_CTX_new failed (out of memory)");
+    }
+    if HMAC_CTX_copy(tmp, ctx) != 1 {
+        HMAC_CTX_free(tmp);
+        raise ValueError("HMAC_CTX_copy failed");
+    }
+    return tmp;
+}
+
+
+def:pub hmac_ctx_free(ctx: int) {
+    HMAC_CTX_free(ctx);
+}
+
+
 def:pub to_hex(data: bytes) -> str {
-    digits: str = "0123456789abcdef";
-    out: str = "";
+    digits: bytes = b"0123456789abcdef";
+    out: list[int] = [];
     n: int = len(data);
     i: int = 0;
     while i < n {
         v: int = data[i];
-        out += digits[(v // 16) % 16];
-        out += digits[v % 16];
+        out.append(digits[v >> 4]);
+        out.append(digits[v & 15]);
         i += 1;
     }
-    return out;
+    return bytes(out).decode();
 }
