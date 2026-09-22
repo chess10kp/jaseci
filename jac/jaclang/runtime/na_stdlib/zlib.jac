@@ -10,8 +10,7 @@ import from _zlib_native {
     z_inflate_end
 }
 
-glob Z_OK: int = 0,
-     Z_BUF_ERROR: int = -5,
+glob _ZL_OK: int = 0,
      _ZL_STREAM_END: int = 1,
      _ZL_MEM_ERROR: int = -4;
 
@@ -33,7 +32,7 @@ def:pub compress(data: bytes, level: int = -1) -> bytes {
     dest = b"\x00" * bound;
     dest_len = bound.to_bytes(8, "little");
     rc: int = z_compress2(dest, dest_len, data, source_len, level);
-    if rc != Z_OK {
+    if rc != _ZL_OK {
         raise ValueError("zlib.compress: libz error code " + str(rc));
     }
     return dest[0:int.from_bytes(dest_len, "little")];
@@ -51,7 +50,10 @@ def:pub decompress(data: bytes | bytearray) -> bytes {
 
     strm: bytes = z_strm_bytes();
     rc: int = z_inflate_init(strm, source, 0, source_len, 15);
-    if rc != Z_OK {
+    if rc != _ZL_OK {
+        if rc == _ZL_MEM_ERROR {
+            raise MemoryError("zlib.decompress: allocation failed");
+        }
         raise ValueError(
             "zlib.decompress: inflate init failed (libz error code " + str(rc) + ")"
         );

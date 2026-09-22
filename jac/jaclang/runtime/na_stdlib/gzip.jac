@@ -11,6 +11,7 @@ import from _zlib_native {
 
 glob _GZ_OK: int = 0,
      _GZ_STREAM_END: int = 1,
+     _GZ_MEM_ERROR: int = -4,
      _MASK32: int = 4294967295;
 
 
@@ -120,10 +121,16 @@ def:pub decompress(data: bytes) -> bytes {
         strm: bytes = z_strm_bytes();
         rc: int = z_inflate_init(strm, data, hpos, remaining, -15);
         if rc != _GZ_OK {
+            if rc == _GZ_MEM_ERROR {
+                raise MemoryError("gzip.decompress: allocation failed");
+            }
             raise ValueError("gzip.decompress: invalid compressed data");
         }
         res: ZInflateResult = z_inflate_all(strm, cap, ceiling);
         z_inflate_end(strm);
+        if res.status == _GZ_MEM_ERROR {
+            raise MemoryError("gzip.decompress: allocation failed");
+        }
         if res.status != _GZ_STREAM_END {
             raise ValueError("gzip.decompress: invalid compressed data");
         }
