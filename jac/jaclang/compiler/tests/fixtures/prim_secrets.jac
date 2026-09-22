@@ -17,12 +17,28 @@ import secrets;
 
 def secrets_py -> dict[any, any] {
     rb1000 = secrets.randbelow(1000);
+    tok = secrets.token_urlsafe(64);
+    tok_ok = 1;
+    ti: int = 0;
+    while ti < len(tok) {
+        oc: int = ord(tok[ti]);
+        in_alpha: bool = (oc >= 65 and oc <= 90)
+            or (oc >= 97 and oc <= 122)
+            or (oc >= 48 and oc <= 57)
+            or oc == 45
+            or oc == 95;
+        if not in_alpha {
+            tok_ok = 0;
+        }
+        ti += 1;
+    }
     return {
         "tb16_len": len(secrets.token_bytes(16)),
         "tb0_len": len(secrets.token_bytes(0)),
         "th16_len": len(secrets.token_hex(16)),
         "th0_len": len(secrets.token_hex(0)),
         "tu16_len": len(secrets.token_urlsafe(16)),
+        "tu64_urlsafe": tok_ok,
         "rb1": secrets.randbelow(1),
         "rb1000_ok": 1 if (rb1000 >= 0 and rb1000 < 1000) else 0,
         "two_differ": 1 if secrets.token_bytes(16) != secrets.token_bytes(16) else 0,
@@ -38,12 +54,28 @@ def secrets_cl -> dict[any, any] {
 
 def secrets_na -> dict[str, any] {
     rb1000 = secrets.randbelow(1000);
+    tok = secrets.token_urlsafe(64);
+    tok_ok = 1;
+    ti: int = 0;
+    while ti < len(tok) {
+        oc: int = ord(tok[ti]);
+        in_alpha: bool = (oc >= 65 and oc <= 90)
+            or (oc >= 97 and oc <= 122)
+            or (oc >= 48 and oc <= 57)
+            or oc == 45
+            or oc == 95;
+        if not in_alpha {
+            tok_ok = 0;
+        }
+        ti += 1;
+    }
     return {
         "tb16_len": len(secrets.token_bytes(16)),
         "tb0_len": len(secrets.token_bytes(0)),
         "th16_len": len(secrets.token_hex(16)),
         "th0_len": len(secrets.token_hex(0)),
         "tu16_len": len(secrets.token_urlsafe(16)),
+        "tu64_urlsafe": tok_ok,
         "rb1": secrets.randbelow(1),
         "rb1000_ok": 1 if (rb1000 >= 0 and rb1000 < 1000) else 0,
         "two_differ": 1 if secrets.token_bytes(16) != secrets.token_bytes(16) else 0,

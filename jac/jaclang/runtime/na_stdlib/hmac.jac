@@ -1,3 +1,4 @@
+import from _csprng_native { to_hex }
 import from _hashlib_native {
     evp_md_for,
     digest_size_for,
@@ -6,8 +7,7 @@ import from _hashlib_native {
     hmac_ctx_update,
     hmac_ctx_digest,
     hmac_ctx_clone,
-    hmac_ctx_free,
-    to_hex
+    hmac_ctx_free
 }
 
 

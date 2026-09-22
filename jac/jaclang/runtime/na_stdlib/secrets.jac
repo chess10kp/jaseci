@@ -13,13 +13,7 @@ def:pub token_hex(nbytes: int = 32) -> str {
 
 
 def:pub token_urlsafe(nbytes: int = 32) -> str {
-    data = csprng_bytes(nbytes);
-    enc: bytes = urlsafe_b64encode(data);
-    k: int = len(enc);
-    while k > 0 and enc[k - 1] == 61 {
-        k -= 1;
-    }
-    return enc[0:k].decode();
+    return urlsafe_b64encode(csprng_bytes(nbytes)).decode().rstrip("=");
 }
 
 

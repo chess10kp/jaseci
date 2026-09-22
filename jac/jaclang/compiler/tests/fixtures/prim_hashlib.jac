@@ -18,7 +18,8 @@ it and keep the two backends fed identical input.
 
 The harness then asserts byte-for-byte: every algorithm's `hexdigest` matches
 CPython, incremental `update` matches a one-shot hash, `digest()` is
-non-consuming, the `digest_size`/`block_size`/`name` attributes agree, and HMAC
+non-consuming, `copy()` snapshots an independent state (hashlib and hmac
+alike), the `digest_size`/`block_size`/`name` attributes agree, and HMAC
 matches CPython's `hmac`. ES/JS opts out.
 
 This is the first F-module over the large bundled `libcrypto.a` (staged into the
@@ -43,6 +44,16 @@ def hashlib_py -> dict[any, any] {
     nc.update(b"def");
     nc_second = nc.hexdigest();
 
+    cp_src = hashlib.sha256(b"abc");
+    cp = cp_src.copy();
+    cp_src.update(b"1");
+    cp.update(b"2");
+
+    hm_src = hmac.new(key, msg, "sha256");
+    hm_cp = hm_src.copy();
+    hm_src.update(b"1");
+    hm_cp.update(b"2");
+
     return {
         "md5": hashlib.md5(msg).hexdigest(),
         "sha1": hashlib.sha1(msg).hexdigest(),
@@ -55,6 +66,10 @@ def hashlib_py -> dict[any, any] {
         "sha256_incremental": inc.hexdigest(),
         "sha256_nc_first": nc_first,
         "sha256_nc_second": nc_second,
+        "sha256_copy_orig": cp_src.hexdigest(),
+        "sha256_copy_clone": cp.hexdigest(),
+        "hmac_copy_orig": hm_src.hexdigest(),
+        "hmac_copy_clone": hm_cp.hexdigest(),
         "sha256_size": hashlib.sha256(b"").digest_size,
         "sha256_block": hashlib.sha256(b"").block_size,
         "sha256_name": hashlib.sha256(b"").name,
@@ -87,6 +102,16 @@ def hashlib_na -> dict[str, any] {
     nc.update(b"def");
     nc_second = nc.hexdigest();
 
+    cp_src = hashlib.sha256(b"abc");
+    cp = cp_src.copy();
+    cp_src.update(b"1");
+    cp.update(b"2");
+
+    hm_src = hmac.new(key, msg, "sha256");
+    hm_cp = hm_src.copy();
+    hm_src.update(b"1");
+    hm_cp.update(b"2");
+
     return {
         "md5": hashlib.md5(msg).hexdigest(),
         "sha1": hashlib.sha1(msg).hexdigest(),
@@ -99,6 +124,10 @@ def hashlib_na -> dict[str, any] {
         "sha256_incremental": inc.hexdigest(),
         "sha256_nc_first": nc_first,
         "sha256_nc_second": nc_second,
+        "sha256_copy_orig": cp_src.hexdigest(),
+        "sha256_copy_clone": cp.hexdigest(),
+        "hmac_copy_orig": hm_src.hexdigest(),
+        "hmac_copy_clone": hm_cp.hexdigest(),
         "sha256_size": hashlib.sha256(b"").digest_size,
         "sha256_block": hashlib.sha256(b"").block_size,
         "sha256_name": hashlib.sha256(b"").name,
