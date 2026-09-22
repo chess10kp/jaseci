@@ -1,12 +1,6 @@
 import from z {
     def compress2(dst: bytes, dlen: bytes, src: bytes, slen: u64, lvl: i32) -> i32;
 }
-import from z {
-    def uncompress(dst: bytes, dlen: bytes, src: bytes, slen: u64) -> i32;
-}
-import from z {
-    def uncompress2(dst: bytes, dlen: bytes, src: bytes, slen: bytes) -> i32;
-}
 import from z { def compressBound(slen: u64) -> u64;  }
 import from z { def crc32_z(crc: u64, buf: bytes, n: u64) -> u64;  }
 import from z { def adler32_z(adler: u64, buf: bytes, n: u64) -> u64;  }
@@ -54,20 +48,6 @@ def:pub z_compress2(
     dest: bytes, dest_len: bytes, source: bytes, source_len: int, level: int
 ) -> int {
     return _signed32(compress2(dest, dest_len, source, u64(source_len), i32(level)));
-}
-
-
-def:pub z_uncompress(
-    dest: bytes, dest_len: bytes, source: bytes, source_len: int
-) -> int {
-    return _signed32(uncompress(dest, dest_len, source, u64(source_len)));
-}
-
-
-def:pub z_uncompress2(
-    dest: bytes, dest_len: bytes, source: bytes, source_len: bytes
-) -> int {
-    return _signed32(uncompress2(dest, dest_len, source, source_len));
 }
 
 
@@ -137,11 +117,6 @@ def:pub z_inflate_total_out(strm: bytes) -> int {
 }
 
 
-def:pub z_inflate_total_in(strm: bytes) -> int {
-    return __mem_load_i64(z_payload_addr(strm) + _ZS_TOTAL_IN);
-}
-
-
 def:pub z_inflate_end(strm: bytes) -> int {
     return _signed32(inflateEnd(strm));
 }
@@ -154,6 +129,7 @@ def:pub z_copy(dst: bytes, src_addr: int, n: int) {
 
 obj:pub ZInflateResult {
     has status: int,
+        consumed: int,
         data: bytes;
 }
 
@@ -161,7 +137,7 @@ obj:pub ZInflateResult {
 def:pub z_inflate_all(strm: bytes, cap: int, ceiling: int) -> ZInflateResult {
     buf: int = z_alloc(cap);
     if buf == 0 {
-        return ZInflateResult(status=_Z_MEM_ERROR, data=b"");
+        return ZInflateResult(status=_Z_MEM_ERROR, consumed=0, data=b"");
     }
     total: int = 0;
     status: int = _Z_OK;
@@ -199,6 +175,7 @@ def:pub z_inflate_all(strm: bytes, cap: int, ceiling: int) -> ZInflateResult {
         z_copy(out, buf, total);
         data = out;
     }
+    consumed: int = __mem_load_i64(z_payload_addr(strm) + _ZS_TOTAL_IN);
     z_free(buf);
-    return ZInflateResult(status=status, data=data);
+    return ZInflateResult(status=status, consumed=consumed, data=data);
 }

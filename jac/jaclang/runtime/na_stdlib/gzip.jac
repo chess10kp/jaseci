@@ -6,7 +6,6 @@ import from _zlib_native {
     z_strm_bytes,
     z_inflate_init,
     z_inflate_all,
-    z_inflate_total_in,
     z_inflate_end
 }
 
@@ -124,7 +123,6 @@ def:pub decompress(data: bytes) -> bytes {
             raise ValueError("gzip.decompress: invalid compressed data");
         }
         res: ZInflateResult = z_inflate_all(strm, cap, ceiling);
-        consumed: int = z_inflate_total_in(strm);
         z_inflate_end(strm);
         if res.status != _GZ_STREAM_END {
             raise ValueError("gzip.decompress: invalid compressed data");
@@ -132,7 +130,7 @@ def:pub decompress(data: bytes) -> bytes {
         member = res.data;
         written: int = len(member);
 
-        tpos: int = hpos + consumed;
+        tpos: int = hpos + res.consumed;
         if tpos + 8 > n {
             raise ValueError(
                 "gzip.decompress: compressed data ended before the end-of-stream marker"
