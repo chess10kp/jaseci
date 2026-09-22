@@ -159,28 +159,71 @@ itself was smoke-tested and prints the before/after counter table.
 The release-note entry is
 [`9362.feature.md`](../../release_notes/unreleased/jaclang/9362.feature.md).
 
-## What remains separate: the V2 follow-up
+## Follow-up investigated and falsified: stack-allocated list headers (#9376)
 
-A larger experiment constructed the list header on the stack for function-local
-lists and kept only the data buffer on the heap. It measured approximately:
+Issue #9376 proposed the next step on the theory that each append dirties two
+heap objects — the list header (length store) and the data buffer — and that
+moving the header into the stack frame for escape-proven local lists would
+remove half the store-buffer pressure. A prototype reported roughly 2.7
+cycles/iteration and a 55% improvement.
 
-- 2.7 cycles/iteration instead of 6.0;
-- a 55% improvement; and
-- store-buffer stalls falling from about 3.0 cycles/iteration to approximately
-  zero.
+The prototype was then measured with a controlled interleaved A/B against the
+shipped V1 on one pinned core, alternating runs (variance under 0.5%), using
+[`workloads/list_append.jac`](../../workloads/list_append.jac),
+[`workloads/list_churn.jac`](../../workloads/list_churn.jac), and the C mirror
+[`workloads/list_churn_ref.c`](../../workloads/list_churn_ref.c):
 
-That result directly attacks the store-buffer signature, but it is not safe to
-land as a local code-generation tweak. It requires escape analysis to prove
-that the header does not outlive the function or escape through an alias, plus
-a data-only release path that preserves ownership and destruction semantics.
-Until those invariants exist, the stack-header version remains a follow-up
-design rather than part of the shipped fix.
+| Workload | V1 cyc/it | V2 cyc/it | V1 inst/it | V2 inst/it | SB stalls/it |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Pure append (`x.append(i)` only) | 11.60 | 11.60 | 9.98 | 9.98 | 5.3 both |
+| Read-mixed (`s += x[i]` per iteration) | 11.33 | 14.39 | 14.98 | 13.98 | 4.1 / 4.3 |
+
+Findings:
+
+- **Pure append: no difference.** After `clang -O2` the hot loop performs the
+  same loads and stores either way; V1's heap header is already a single
+  L1-resident cache line, so relocating header fields into the frame changes
+  addresses, not memory traffic. The earlier 2.7 figure most plausibly
+  compared against the pre-`#9362` baseline shape, not shipped V1.
+- **Read-mixed: a measurable regression.** The frame-header variant ran about
+  27% more cycles per iteration despite one fewer instruction, consistent with
+  a stack/heap 4K-aliasing artifact between frame slots and the malloc'd data
+  buffer.
+- The prototype also surfaced a deterministic, layout-sensitive segfault in
+  the data-only release routing — a real soundness surface for no measured
+  gain.
+
+The premise was therefore disproven: header placement is not the remaining
+bottleneck, and the issue was closed as investigated.
+
+### Where the remaining headroom actually is
+
+The same harness, run against the C mirror on the read-mixed churn workload
+(100M iterations, pinned core), shows the gap is still large:
+
+| Binary | cyc/it | inst/it | br/it | SB stalls/it |
+| --- | ---: | ---: | ---: | ---: |
+| Jac (V1) | 11.32 | 14.98 | 4.03 | 4.08 |
+| C mirror | 6.67 | 8.00 | 2.00 | ~0 |
+
+The C mirror keeps `len`/`cap`/`data` in registers across iterations. Jac
+cannot, because growth is emitted as a mutation through
+`__list_grow_<element>` — an opaque call that LLVM treats as a full memory
+clobber, so the loop-carried header state round-trips through the store
+buffer every iteration (3 loads + 2 stores per append). The remaining
+opportunity is restructuring append/grow so growth results are returned
+values merged by phis at the Jac IR level — registerizing loop-carried list
+state — not header placement. On this workload that is worth about 4.65
+cycles/iteration, roughly 41%.
 
 ## Short explanation
 
 Jac native lists were slower because list growth was fully inlined into the
 append loop. The resulting IR caused reloads, overflow-check work, and register
 spills, producing store-buffer and front-end stalls. Moving growth to a
-`noinline` helper cut the measured cost by 17%. The remaining 55% opportunity
-is the stack-constructed-header design, which needs escape analysis and a safe
-data-only release path before it can land.
+`noinline` helper cut the measured cost by 17%. The stack-allocated-header
+follow-up (#9376) was prototyped, measured with a controlled A/B, and
+falsified: header placement changes addresses, not memory traffic. The real
+remaining opportunity is making loop-carried list state register-visible at
+the Jac IR level so LLVM can keep `len`/`cap`/`data` in registers, as the C
+equivalent does.
