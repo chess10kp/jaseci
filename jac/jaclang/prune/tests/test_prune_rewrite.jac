@@ -236,7 +236,7 @@ def _manifest_for(key: str) -> Manifest {
 }
 
 
-test "end-to-end: plan + apply auto-fixes, patched file re-parses clean" {
+test "end-to-end: plan + apply suggested edits, patched text re-parses clean" {
     path = os.path.join(_FIX_DIR, "fixprog.jac");
     (prog, key) = _compile(path);
     man = _manifest_for(key);
@@ -252,7 +252,7 @@ test "end-to-end: plan + apply auto-fixes, patched file re-parses clean" {
     autofix = [
         c
         for c in cands
-        if c.disposition == Disposition.AUTO_FIX
+        if c.disposition == Disposition.SUGGEST_EDIT
     ];
     assert len(autofix) >= 3 , [c.finding.name for c in autofix];
 

@@ -18,7 +18,7 @@ def polarity_label(p: Polarity) -> str {
 
 
 glob DISPOSITION_LABELS: dict[Disposition, str] = {
-         Disposition.AUTO_FIX: "auto-fix",
+         Disposition.SUGGEST_EDIT: "suggested-edit",
          Disposition.PR_ONLY: "pr-only",
          Disposition.REPORT_ONLY: "report-only",
 
@@ -30,7 +30,11 @@ def disposition_label(d: Disposition) -> str {
 }
 
 
-glob _HYGIENE_DETECTORS = {"visibility-tightening", "module-cohesion"};
+glob _HYGIENE_DETECTORS = {
+         "visibility-tightening",
+         "module-cohesion",
+         "ast-bloat"
+     };
 
 
 def finding_category(detector: str) -> str {
@@ -231,6 +235,20 @@ def verify_questions(f: Finding) -> list[dict] {
             )
         ];
     }
+    if det == "ast-bloat" {
+        return [
+            _q(
+                "Are the AST-equivalent bodies intentional boilerplate or a shared abstraction opportunity?",
+                "read every cited body and compare declarations, inheritance, side effects, and backend constraints",
+                "the repeated shape has one clear owner or a justified reason to remain duplicated"
+            ),
+            _q(
+                "Does the large body contain a true selector-to-operation dispatch table?",
+                "inspect the conditional AST and preserve default, error, and boundary behavior",
+                "the candidate can be simplified without changing lowering or runtime semantics"
+            )
+        ];
+    }
     if det.startswith("agent-") {
         return [
             _q(
@@ -334,8 +352,8 @@ def _base_disposition(
         return (RiskTier.MODERATE, Disposition.PR_ONLY);
     }
     if detector == "unused-imports" {
-        trace.append("unused-import -> safe/auto-fix");
-        return (RiskTier.SAFE, Disposition.AUTO_FIX);
+        trace.append("unused-import -> safe/suggested-edit");
+        return (RiskTier.SAFE, Disposition.SUGGEST_EDIT);
     }
     if detector == "write-only-fields" {
         trace.append("write-only private field -> moderate/pr-only");
@@ -369,8 +387,12 @@ def _base_disposition(
         trace.append("duplicate-docstrings (advisory) -> moderate/report-only");
         return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
     }
-    if detector == "module-cohesion" {
-        trace.append("module-cohesion seam-review (advisory) -> moderate/report-only");
+    if detector == "ast-bloat" {
+        trace.append("AST bloat structural advisory -> moderate/report-only");
+        return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
+    }
+    if detector == "if-chain-dispatch" {
+        trace.append("if-chain dispatch advisory -> moderate/report-only");
         return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
     }
     if detector == "private-dead-defs" {
@@ -385,8 +407,8 @@ def _base_disposition(
             );
             return (RiskTier.MODERATE, Disposition.PR_ONLY);
         }
-        trace.append("private dead top-level variable -> safe/auto-fix");
-        return (RiskTier.SAFE, Disposition.AUTO_FIX);
+        trace.append("private dead top-level variable -> safe/suggested-edit");
+        return (RiskTier.SAFE, Disposition.SUGGEST_EDIT);
     }
     trace.append("unknown detector -> report-only");
     return (RiskTier.MODERATE, Disposition.REPORT_ONLY);
@@ -394,7 +416,7 @@ def _base_disposition(
 
 
 def _rank(d: Disposition) -> int {
-    if d == Disposition.AUTO_FIX {
+    if d == Disposition.SUGGEST_EDIT {
         return 3;
     }
     if d == Disposition.PR_ONLY {

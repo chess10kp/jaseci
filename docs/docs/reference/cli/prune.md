@@ -1,12 +1,12 @@
 # `jac prune` - compiler-backed cleanup
 
-`jac prune` finds and removes dead and redundant code using the Jac compiler's
+`jac prune` finds and reports dead and redundant code using the Jac compiler's
 own semantic model - real def-use chains, access modifiers, the module
 dependency graph, and byte-precise spans - rather than text heuristics or an
-LLM guessing. It is in the lineage of OpenRewrite / Tricorder: **deterministic
-detectors kill provably-dead code, and every automatic fix passes a validation
-gate before it lands.** Precision is the product; a finding you can't trust is
-worse than no finding.
+LLM guessing. It is **advice-only by construction**: detectors flag
+provably-dead code and the planner renders suggested edits as diffs, but the
+tool never writes to your tree. Precision is the product; a finding you can't
+trust is worse than no finding.
 
 ## Quick start
 
@@ -14,8 +14,7 @@ worse than no finding.
 jac prune report                 # find dead/redundant code (default action)
 jac prune report jac/jaclang     # scope to a path
 jac prune report -o json         # machine output (also: -o sarif)
-jac prune fix --preview          # show minimal diffs for the safe fixes
-jac prune fix --apply            # apply, validate, revert-on-failure
+jac prune plan                   # render suggested edits as diffs (writes nothing)
 jac prune analyze                # agent redundancy report (advisory)
 jac prune facts                  # extract + summarize the fact store
 ```
@@ -37,16 +36,18 @@ jac prune facts                  # extract + summarize the fact store
    evidence.
 5. **Veto + suppression** downgrade or drop findings (see below).
 6. **Risk classifier** assigns each finding a risk tier and a **disposition**:
-   `auto-fix`, `pr-only`, or `report-only` - with a stored, LLM-free rule trace.
-7. **Planner + span-edit engine** turn auto-fix candidates into minimal diffs.
-8. **Validation gate** is the sole authority for whether a patch lands.
+   `suggested-edit`, `pr-only`, or `report-only` - with a stored, LLM-free rule
+   trace.
+7. **Planner + span-edit engine** turn `suggested-edit` candidates into minimal
+   diffs, rendered for review by `jac prune plan`. Nothing is ever written -
+   applying a suggestion is a human (or harness) decision.
 
 ## Detectors (Tier 1)
 
 | Detector | Fires on | Default disposition |
 |---|---|---|
-| `unused-imports` | an import item whose resolved symbol has 0 uses in its module (excluding package `__init__.jac` barrels) | auto-fix |
-| `private-dead-defs` | a `:priv`/`:protect` symbol with 0 references outside its own definition | auto-fix (top-level vars) / pr-only (archetypes, abilities, nested) |
+| `unused-imports` | an import item whose resolved symbol has 0 uses in its module (excluding package `__init__.jac` barrels) | suggested-edit |
+| `private-dead-defs` | a `:priv`/`:protect` symbol with 0 references outside its own definition | suggested-edit (top-level vars) / pr-only (archetypes, abilities, nested) |
 | `write-only-fields` | a private field written ≥1 time and never read | pr-only |
 | `literal-dead-branch` | an `if` with a literal-boolean condition | pr-only |
 
@@ -62,13 +63,13 @@ and is out of scope for automatic deletion.
 
 Unlike the Tier-1 dead-code detectors, `dead-enum-variants` also considers
 public variants (an unused variant of a public enum may still be external API),
-so it is **opt-in** (`--recipe dead-enum-variants`) and never auto-fix - always
-pr-only for human review.
+so it is **opt-in** (`--recipe dead-enum-variants`) and never suggested-edit -
+always pr-only for human review.
 
 ## Reuse advisories (Tier 3)
 
-These detectors surface duplication rather than dead code. They never edit and
-carry no auto-fix planner - every finding is **report-only**, meant for a human
+These detectors surface duplication rather than dead code. They carry no
+planner - every finding is **report-only**, meant for a human
 or a harness agent to act on. They are **opt-in**: pass `--recipe <name>` to run
 them (they are not in the default recipe set, since a large tree can hold many
 intentional lookup tables or boilerplate docs).
@@ -81,14 +82,31 @@ intentional lookup tables or boilerplate docs).
 Each finding groups its member sites: `related` carries the member symbol ids
 (`sym:<id>`) and `plan_meta` records the site/module counts and the shared hash.
 
+## AST-bloat advisories (Tier 4, opt-in)
+
+`--recipe ast-bloat` uses compiled AST body facts to identify files that
+resemble known simplification targets: multiple callable bodies with the same
+normalized structural hash, or unusually large callable bodies that may hide a
+dispatch table or repeated routing logic. It reports candidates only; it never
+rewrites code.
+
+| Detector | Fires on | Disposition |
+|---|---|---|
+| `ast-bloat` (duplicate family) | ≥3 distinct callables in one module sharing a normalized AST body shape | report-only |
+| `ast-bloat` (large body) | a callable with at least 32 statements or 120 lines in the compiled AST | report-only |
+
+Findings include the structural hash, cited symbols, member count, estimated
+refactoring signal, not proof that implementations can be merged; declarations,
+inheritance, side effects, and backend lowering still require review.
+
 ## Module-cohesion advisories (Tier 4, opt-in)
 
 `--recipe module-cohesion` surfaces *architectural* seams rather than dead code
 or duplication. It builds the symbol-to-symbol reference graph already in the
 fact store (`symbol_ref_edges`, resolved endpoints only) and reports two
 LCOM-style shapes. Like the reuse advisories it is **opt-in** and every finding
-is **report-only** - seam-review wording ("consider splitting / merging"), never
-an edit, and (being report-only) always sorted below the auto-fix and pr-only
+is **report-only** - seam-review wording ("consider splitting / merging"), and
+(being report-only) always sorted below the suggested-edit and pr-only
 findings so it never crowds the top of a report.
 
 | Detector | Fires on | Disposition |
@@ -101,6 +119,27 @@ representative symbol per cluster (`sym:<id>`); a **merge** finding's `related`
 cites the two modules (`mod:<path>`). Both citation forms are verifiable through
 the tool surface (`verify_citations`). The detector needs no schema change or
 re-extraction - it is a pure query over facts already stored.
+
+## If-chain dispatch advisories (Tier 4, opt-in)
+
+`--recipe if-chain-dispatch` flags same-selector routing chains that a lookup
+table or membership set expresses directly. Extraction records the chain's AST
+shape at compile time; detection is a query over those facts. **Opt-in** and
+always **report-only**.
+
+| Detector | Fires on | Disposition |
+|---|---|---|
+| `if-chain-dispatch` (seq-if) | ≥4 sibling `if` statements comparing one selector with `==`, each body a single `return` | report-only |
+| `if-chain-dispatch` (elif-chain) | an if/elif chain of the same shape | report-only |
+| `if-chain-dispatch` (or-chain) | an `or` expression with ≥4 leaf `==`/`in` comparisons on one selector | report-only |
+| `if-chain-dispatch` (and-chain) | an `and` expression with ≥4 leaf `!=`/`not in` comparisons on one selector | report-only |
+
+Vetoes are structural, not textual: any `<`/`>`/`is`-family operand marks the
+chain ordered (range checks and guards where evaluation order is semantics),
+comparisons on more than one selector mark it mixed, and seq-if/elif findings
+require every arm body to be a lone `return`. Chains under 4 arms are not
+recorded as findings. `plan_meta` carries the shape, selector, arm counts, and
+how many comparands are constants.
 
 ## Safety: veto, suppression, risk
 
@@ -147,7 +186,7 @@ jac prune show <fingerprint>         # full v2 packet for one finding
 jac prune show <group_id>            # ... or one reuse/window/fuzzy group
 ```
 
-`list` ranks by disposition (auto-fix first), then a confidence proxy, then
+`list` ranks by disposition (suggested-edit first), then a confidence proxy, then
 location, and caps output at `--limit` (default 200) while reporting how many
 rows the rank suppressed. Each row is `fingerprint  disposition  confidence
 location  message`; the stable `fingerprint` is the handle you pass to `show`.
@@ -158,20 +197,18 @@ location  message`; the stable `fingerprint` is the handle you pass to `show`.
 `reuse:win:`, `reuse:fzy:`); the older `reuse --group <id>` remains an alias.
 Pass paths after the id to scope the re-derivation (`jac prune show <id> jac/`).
 
-## The validation gate (`fix --apply`)
+## Advice-only by construction (`jac prune plan`)
 
-Applying is never blind. For a batch of auto-fix edits:
+`jac prune plan` renders each `suggested-edit` finding as a unified diff and
+stops there - it never touches your tree. The span-edit engine still guards
+every suggestion with a pre-text content hash, so a diff that no longer matches
+the file is skipped rather than emitted stale. Applying a suggestion (and
+re-running parse/typecheck/tests afterward) is the reviewer's or harness's job.
 
-1. snapshot a **pre-patch diagnostics baseline** over the source scope,
-2. write the whole batch,
-3. **parse** - every touched file must re-parse with zero errors,
-4. **typecheck** - a full-scope build must introduce **zero new diagnostics vs
-   the baseline** (the repo need not be warning-clean; only regressions fail),
-5. on failure, **revert the entire batch** and **bisect** to name the culprit
-   file(s).
-
-Affected test files are selected via the reverse dependency graph and reported;
-running them (and the full suite by risk policy) is the campaign/CI step.
+Suggested-edit findings are deliberately narrow: only shapes the planner can
+turn into a provably minimal diff (dead private top-level defs, unused import
+items) get the `suggested-edit` disposition. Everything else stays `pr-only` or
+`report-only` advice.
 
 ## Agent redundancy analysis (`jac prune analyze`)
 
@@ -181,11 +218,11 @@ and clusters of findings that are really one refactor. It reasons over the fact
 store's call graph (a read-only tool surface), **not** raw source. Its findings
 are contained by construction:
 
-- they carry `source: agent` and can **never** reach `auto-fix`,
+- they carry `source: agent` and can **never** reach `suggested-edit`,
 - every claim cites fact IDs, verified against the store before the finding is
   kept - a single unresolvable citation drops it,
-- agent findings never reach `auto-fix` or the fix planner; use `jac prune fix`
-  only for detector findings classified as `auto-fix`.
+- agent findings never reach `suggested-edit` or the planner; `jac prune plan`
+  only renders detector findings classified as `suggested-edit`.
 
 `--model heuristic` (default) is a deterministic structural judge for running
 without an LLM; the loop is model-agnostic (an LLM judge slots into the same
@@ -241,8 +278,8 @@ silently). Report-only, like the rest of `reuse`.
 
 ## Feedback ledger
 
-Every finding's fate - `reported`, `previewed`, `applied`, `reverted`,
-`validation-failed`, `suppressed` - is appended to
+Every finding's fate - `suggested`, `verdict-accept`, `verdict-reject`,
+`verdict-contested`, `suppressed` - is appended to
 `<project_root>/.jac/prune-feedback.jsonl`, keyed on the finding fingerprint.
 Nothing consumes it yet; it is the corpus for later threshold-tuning and recipe
 mining.
@@ -251,17 +288,14 @@ mining.
 
 | Flag | Meaning |
 |---|---|
-| `action` (positional) | `report` (default), `facts`, `fix`, `analyze`, `reuse`, `list`, `show` |
+| `action` (positional) | `report` (default), `facts`, `plan`, `analyze`, `reuse`, `list`, `show`, `verdict` |
 | `paths…` | paths to analyze (default: project root) |
 | `--exclude <glob>` | glob patterns to exclude (repeatable) |
 | `--recipe <name>` | restrict to named detectors (repeatable) |
 | `--risk_ceiling {safe,moderate,risky}` | max risk tier to act on |
 | `-o, --output {table,json,sarif}` | output format |
-| `--preview` | with `fix`: print diffs without writing |
-| `--apply` | with `fix`: write, validate, revert on failure |
 | `--model {heuristic,none}` | with `analyze`: the redundancy judge |
 | `--group <id>` | with `reuse`: emit the full evidence packet for one group |
-| `--probe` | with `reuse`: dry-run the consolidation (parse + typecheck, revert) |
 | `--history` | with `reuse`: add git tandem-edit + divergence evidence |
 | `--windows` | with `reuse`: also mine repeated statement-window blocks |
 | `--fuzzy` | with `reuse`: also surface fuzzy (token-overlap) near-clones |

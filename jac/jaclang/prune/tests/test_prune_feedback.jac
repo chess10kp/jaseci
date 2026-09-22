@@ -36,7 +36,7 @@ test "ledger appends fates and reads them back, counting outcomes" {
                     name="x",
                     module_path="/m.jac",
                     risk="safe",
-                    disposition="auto-fix",
+                    disposition="suggested-edit",
                     source="detector",
                     outcome="applied"
                 ),
@@ -47,7 +47,7 @@ test "ledger appends fates and reads them back, counting outcomes" {
                     name="y",
                     module_path="/m.jac",
                     risk="safe",
-                    disposition="auto-fix",
+                    disposition="suggested-edit",
                     source="detector",
                     outcome="applied"
                 )
@@ -98,7 +98,7 @@ test "entry_from_candidate captures fingerprint, source and fate" {
     assert e.fingerprint == f.fingerprint();
     assert e.outcome == "applied";
     assert e.source == "detector";
-    assert e.disposition == "auto-fix";
+    assert e.disposition == "suggested-edit";
     d = e.as_dict();
     assert d["detector"] == "unused-imports";
     assert d["name"] == "foo";
@@ -123,7 +123,7 @@ test "entry_from_candidate and verdict_entry agree on risk/disposition labels" {
     packet = c.as_dict();
     from_verdict = verdict_entry(packet, "accept", ["sym:sid"]);
     assert from_cand.risk in {"safe", "moderate", "risky", "forbidden"};
-    assert from_cand.disposition in {"auto-fix", "pr-only", "report-only"};
+    assert from_cand.disposition in {"suggested-edit", "pr-only", "report-only"};
     assert from_cand.risk == from_verdict.risk , (from_cand.risk, from_verdict.risk);
     assert from_cand.disposition == from_verdict.disposition , (
         from_cand.disposition,

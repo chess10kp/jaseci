@@ -138,7 +138,7 @@ def _size_band(stmt_count: int) -> int {
 
 
 def _arity(ab: any) -> int {
-    sig = ab.signature;
+    sig = ab?.signature;
     if isinstance(sig, uni.FuncSignature) {
         return len(sig.get_parameters());
     }
@@ -231,8 +231,14 @@ def _stmt_seq(body: list, local_ids: set) -> str {
 
 def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
     out: list[BodyFact] = [];
-    for ab in mod.get_all_sub_nodes(uni.Ability) {
-        sym = ab.sym;
+    callables = list(mod.get_all_sub_nodes(uni.Ability));
+    callables.extend(mod.get_all_sub_nodes(uni.ImplDef));
+    for ab in callables {
+        if isinstance(ab, uni.ImplDef)
+        and cast(uni.ImplDef, ab).decl_link is not None {
+            continue;
+        }
+        sym = ab?.sym;
         if sym is None {
             continue;
         }
@@ -252,7 +258,7 @@ def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
         struct = hashlib.sha256("".join(st).encode("utf-8")).hexdigest()[:16];
         (bfile, bstart, bend, blines) = _body_span(ab);
         (sstart, send) = _stmt_span(body);
-        owner = ab.method_owner;
+        owner = ab?.method_owner;
         owner_id = "";
         owner_name = "";
         if owner is not None and owner.sym is not None {
@@ -275,7 +281,7 @@ def extract_bodies(mod: any, sym_id_fn: any) -> list[BodyFact] {
                 exact_hash=exact,
                 structural_hash=struct,
                 arity=_arity(ab),
-                is_async=bool(ab.is_async),
+                is_async=bool(getattr(ab, "is_async", False)),
                 is_gen=_is_gen(body),
                 stmt_count=stmt_count,
                 line_count=blines,

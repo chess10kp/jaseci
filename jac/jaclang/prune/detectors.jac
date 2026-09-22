@@ -23,7 +23,10 @@ glob _INLINE_MAX_STMTS = 3,
      _PRIVATE_ACCESS = {"private", "protected"},
      _SPLIT_MIN_CLUSTER = 2,
      _SPLIT_MIN_CLUSTERS = 2,
-     _MERGE_MIN_CROSS = 3;
+     _MERGE_MIN_CROSS = 3,
+     _AST_BLOAT_MIN_FAMILY = 3,
+     _AST_BLOAT_MIN_STATEMENTS = 32,
+     _AST_BLOAT_MIN_LINES = 120;
 
 
 def _is_dunder(name: str) -> bool {
@@ -340,19 +343,29 @@ def detect_private_dead_defs(store: FactStore, veto: VetoIndex) -> list[Finding]
         if store.external_use_count(str(d["id"])) != 0 {
             continue;
         }
+        ev: list = [
+            Evidence(
+                kind="zero-external-refs",
+                polarity=Polarity.SUPPORTS,
+                detail="0 references outside own definition"
+            )
+        ];
+        if store.test_use_count(str(d["id"])) > 0 {
+            ev.append(
+                Evidence(
+                    kind="test-only-use",
+                    polarity=Polarity.VETOES,
+                    detail="referenced from test modules only"
+                )
+            );
+        }
         out.append(
             _symbol_finding(
                 "private-dead-defs",
                 d,
                 f"private {kind} '{name}' has no references outside its own definition",
                 veto,
-                [
-                    Evidence(
-                        kind="zero-external-refs",
-                        polarity=Polarity.SUPPORTS,
-                        detail="0 references outside own definition"
-                    )
-                ]
+                ev
             )
         );
     }
@@ -374,19 +387,38 @@ def detect_dead_enum_variants(store: FactStore, veto: VetoIndex) -> list[Finding
         if store.external_use_count(str(d["id"])) != 0 {
             continue;
         }
+        ev: list = [
+            Evidence(
+                kind="zero-refs",
+                polarity=Polarity.SUPPORTS,
+                detail="0 references to the enum variant"
+            )
+        ];
+        if store.test_use_count(str(d["id"])) > 0 {
+            ev.append(
+                Evidence(
+                    kind="test-only-use",
+                    polarity=Polarity.VETOES,
+                    detail="variant is constructed/read in test modules only - still exercised API"
+                )
+            );
+        }
+        if store.iterate_use_count(str(d["parent_id"])) > 0 {
+            ev.append(
+                Evidence(
+                    kind="whole-enum-iteration",
+                    polarity=Polarity.VETOES,
+                    detail="enum type is iterated/compared as a whole - every variant's value is reachable"
+                )
+            );
+        }
         out.append(
             _symbol_finding(
                 "dead-enum-variants",
                 d,
                 f"enum variant '{name}' is never constructed, read, or matched - dead speculative generality",
                 veto,
-                [
-                    Evidence(
-                        kind="zero-refs",
-                        polarity=Polarity.SUPPORTS,
-                        detail="0 references to the enum variant"
-                    )
-                ]
+                ev
             )
         );
     }
@@ -701,6 +733,215 @@ def detect_duplicate_docstrings(store: FactStore, veto: VetoIndex) -> list[Findi
 }
 
 
+def detect_ast_bloat(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    families: dict[str, list[dict]] = {};
+    family_order: list[str] = [];
+    large: list[dict] = [];
+
+    for raw in store.candidate_bodies() {
+        row: any = raw;
+        name = str(row["name"]);
+        if name in ("init", "postinit") {
+            continue;
+        }
+        stmt_count = int(row["stmt_count"]);
+        line_count = int(row["line_count"]);
+        if (
+            stmt_count >= _AST_BLOAT_MIN_STATEMENTS
+            or line_count >= _AST_BLOAT_MIN_LINES
+        ) {
+            large.append(row);
+        }
+        structural_hash = str(row["structural_hash"]);
+        if not structural_hash {
+            continue;
+        }
+        key = str(row["module_path"]) + "|" + structural_hash;
+        if key not in families {
+            families[key] = [];
+            family_order.append(key);
+        }
+        families[key].append(row);
+    }
+
+    for key in family_order {
+        rows = families[key];
+        ids: list[str] = [];
+        seen: set = set();
+        for row in rows {
+            sid = str(row["symbol_id"]);
+            if sid not in seen {
+                seen.add(sid);
+                ids.append(sid);
+            }
+        }
+        if len(ids) < _AST_BLOAT_MIN_FAMILY {
+            continue;
+        }
+        first: any = rows[0];
+        module_path = str(first["module_path"]);
+        structural_hash = str(first["structural_hash"]);
+        related = ["sym:" + sid for sid in sorted(ids)];
+        line_total = sum(int(row["line_count"]) for row in rows);
+        first_symbol = store.symbol_row(ids[0]);
+        first_line = int(first_symbol["decl_line"]) if first_symbol is not None else 1;
+        f = Finding(
+            detector="ast-bloat",
+            symbol_id="",
+            name=f"family:{module_path}:{structural_hash}",
+            module_path=module_path,
+            kind="module",
+            message=f"module has {len(
+                ids
+            )} AST-equivalent callable bodies with structural hash {structural_hash} - inspect for a shared helper or inherited implementation",
+            pos_start=int(first["body_pos_start"]),
+            pos_end=int(first["body_pos_end"]),
+            line=first_line,
+            citations=related,
+            related=related,
+            plan_meta={
+                "shape": "duplicate-ast-family",
+                "structural_hash": structural_hash,
+                "member_count": len(ids),
+                "copies_saved": len(ids) - 1,
+                "estimated_lines": line_total - int(line_total / len(ids)),
+                "members": ids
+            }
+        );
+        f.add(
+            Evidence(
+                kind="ast-equivalent-bodies",
+                polarity=Polarity.SUPPORTS,
+                detail=f"{len(
+                    ids
+                )} distinct callable symbols share one normalized AST body shape"
+            )
+        );
+        out.append(f);
+    }
+
+    large.sort(
+        key=(
+            lambda row :
+                (
+                    str(row["module_path"]),
+                    int(row["body_pos_start"]),
+                    str(row["symbol_id"])
+                )
+        )
+    );
+    for row in large {
+        sid = str(row["symbol_id"]);
+        stmt_count = int(row["stmt_count"]);
+        line_count = int(row["line_count"]);
+        symbol = store.symbol_row(sid);
+        decl_line = int(symbol["decl_line"]) if symbol is not None else 1;
+        f = Finding(
+            detector="ast-bloat",
+            symbol_id=sid,
+            name="large-body:" + sid,
+            module_path=str(row["module_path"]),
+            kind="body",
+            message=f"callable '{row['name']}' has a large AST body ({stmt_count} statements, {line_count} lines) - inspect for dispatch-table or helper consolidation",
+            pos_start=int(row["body_pos_start"]),
+            pos_end=int(row["body_pos_end"]),
+            line=decl_line,
+            citations=["sym:" + sid],
+            related=["sym:" + sid],
+            plan_meta={
+                "shape": "large-ast-body",
+                "stmt_count": stmt_count,
+                "line_count": line_count,
+                "structural_hash": str(row["structural_hash"]),
+                "body_file": str(row["body_file"])
+            }
+        );
+        f.add(
+            Evidence(
+                kind="large-ast-body",
+                polarity=Polarity.SUPPORTS,
+                detail=f"compiled AST body exceeds the {_AST_BLOAT_MIN_STATEMENTS}-statement or {_AST_BLOAT_MIN_LINES}-line bloat threshold"
+            )
+        );
+        out.append(f);
+    }
+    return out;
+}
+
+
+glob _CHAIN_MIN_ARMS = 4;
+
+
+def detect_if_chain_dispatch(store: FactStore, veto: VetoIndex) -> list[Finding] {
+    out: list[Finding] = [];
+    shape_msg = {
+        "seq-if": "sequential if/return arms",
+        "elif-chain": "elif branches",
+        "or-chain": "'or'-joined comparisons",
+        "and-chain": "'and'-joined negated comparisons"
+    };
+    for raw in store.if_chains() {
+        ch: any = raw;
+        n_arms = int(ch["n_arms"]);
+        if n_arms < _CHAIN_MIN_ARMS {
+            continue;
+        }
+        if bool(ch["ordered_ops"]) or bool(ch["mixed_selector"]) {
+            continue;
+        }
+        shape = str(ch["shape"]);
+        if shape in {"seq-if", "elif-chain"} and not bool(ch["uniform_returns"]) {
+            continue;
+        }
+        sel = str(ch["selector"]);
+        owner_name = str(ch["owner_name"]);
+        owner_id = str(ch["owner_id"]);
+        form = shape_msg.get(shape, "branches");
+        const_note = (
+            ""
+                if int(ch["const_arms"]) == n_arms
+                else f" ({n_arms - int(ch['const_arms'])} non-constant comparand(s))"
+        );
+        f = Finding(
+            detector="if-chain-dispatch",
+            symbol_id=owner_id,
+            name=f"{shape}:{owner_name or sel}",
+            module_path=str(ch["module_path"]),
+            kind="branch",
+            message=f"{n_arms} {form} dispatch on '{sel}'{const_note} - a lookup set/dict expresses this directly",
+            pos_start=int(ch["pos_start"]),
+            pos_end=int(ch["pos_end"]),
+            line=int(ch["line"]),
+            citations=(["sym:" + owner_id] if owner_id else []),
+            related=(["sym:" + owner_id] if owner_id else []),
+            plan_meta={
+                "shape": shape,
+                "selector": sel,
+                "n_arms": n_arms,
+                "n_total": int(ch["n_total"]),
+                "const_arms": int(ch["const_arms"]),
+                "owner_name": owner_name
+            }
+        );
+        f.add(
+            Evidence(
+                kind="dispatch-chain",
+                polarity=Polarity.SUPPORTS,
+                detail=f"{n_arms} {form} compare '{sel}' against keys; equivalent membership/table lookup exists"
+            )
+        );
+        if owner_name {
+            for ev in veto.check_symbol(owner_name, str(ch["module_path"])) {
+                f.add(ev);
+            }
+        }
+        out.append(f);
+    }
+    return out;
+}
+
+
 def _connected_components(nodes: set, adj: dict) -> list[list[str]] {
     seen: set = set();
     comps: list[list[str]] = [];
@@ -875,7 +1116,9 @@ glob DETECTOR_REGISTRY: dict = {
          "visibility-tightening": detect_visibility_tightening,
          "duplicated-constant-blobs": detect_duplicated_constant_blobs,
          "duplicate-docstrings": detect_duplicate_docstrings,
-         "module-cohesion": detect_module_cohesion
+         "ast-bloat": detect_ast_bloat,
+         "module-cohesion": detect_module_cohesion,
+         "if-chain-dispatch": detect_if_chain_dispatch
      };
 
 

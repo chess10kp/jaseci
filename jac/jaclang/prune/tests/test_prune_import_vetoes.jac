@@ -4,11 +4,11 @@ first prune-campaign against upstream jaclang/cli.
   Bug A — import-for-side-effect (`_side_effect_import`): a bare `import a.b.c;`
           or a from-import of a submodule is imported for registration, not as a
           used name. Removing it passes typecheck but breaks runtime, so it must
-          be vetoed out of auto-fix. Single dead stdlib bare imports stay
-          auto-fixable.
+          be vetoed out of suggested-edit. Single dead stdlib bare imports stay
+          suggest-editable.
   Bug B — decl-signature type annotations (`_used_as_type`): a name used only as
           a type (`x: T`, `-> T`, `list[T]`, `T | None`) is missed by the ref
-          extractor; scanning for it in a type position vetoes the false auto-fix.
+          extractor; scanning for it in a type position vetoes the false suggested-edit.
 
 Pure over the helpers (no compilation).
 """
@@ -51,7 +51,7 @@ test "side-effect: a bare dotted package import is a registration side effect" {
 }
 
 
-test "side-effect: a bare single stdlib import stays auto-fixable when dead" {
+test "side-effect: a bare single stdlib import stays suggest-editable when dead" {
     # `import sys;`  -> is_from False, no dot, not an in-scope module
     assert not _side_effect_import("sys", "", False, set());
 }

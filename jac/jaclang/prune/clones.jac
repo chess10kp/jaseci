@@ -164,11 +164,6 @@ def _reach(members: list[CloneMember]) -> int {
 }
 
 
-# A member's vector holds only the tokens that vary within a structural group:
-# literal VALUES and local-variable NAMES (the struct hash keeps callees/shape and
-# erases both). A repr-shaped token (quote-led, numeric, or True/False/None) is a
-# literal; anything else is a local name. Only literal divergence needs a
-# parameter -- name divergence is pure alpha-rename, semantically null.
 def _vec_token_kind(t: str) -> str {
     if not t {
         return "name";
@@ -229,12 +224,6 @@ def _adjusted_payoff(g: CloneGroup) -> float {
 }
 
 
-# Refactorability = how cleanly a group's members collapse into one definition.
-# Exact bodies hoist verbatim (1.0); structural members differing only in local
-# names are alpha-equivalent (hoist after rename); members differing in a few
-# literal slots parametrize; many divergent literals or low token overlap means a
-# merge just relocates complexity (extract-template, low score). The score
-# downweights payoff so structural-not-semantic clones stop ranking as harvest.
 def _refactor_analysis(members: list[CloneMember], kind: str) -> dict {
     vectors = [m.vector for m in members];
     lcs_ratio = _mean_pairwise_lcs(vectors);
@@ -439,9 +428,7 @@ def _member_citations(m: CloneMember) -> list[str] {
 }
 
 
-def group_summary(
-    g: CloneGroup, probe: dict | None = None, history: dict | None = None
-) -> dict {
+def group_summary(g: CloneGroup, history: dict | None = None) -> dict {
     out = {
         "group_id": g.group_id,
         "kind": g.kind,
@@ -463,9 +450,6 @@ def group_summary(
         "lcs_ratio": g.lcs_ratio,
         "param_count": g.param_count
     };
-    if probe is not None {
-        out["probe"] = probe.get("status", "");
-    }
     if history is not None and history.get("available") {
         out["tandem_commits"] = history.get("tandem_commits", 0);
         out["tandem_ratio"] = history.get("tandem_ratio", 0.0);
@@ -474,12 +458,7 @@ def group_summary(
 }
 
 
-def group_packet(
-    store: FactStore,
-    g: CloneGroup,
-    probe: dict | None = None,
-    history: dict | None = None
-) -> dict {
+def group_packet(store: FactStore, g: CloneGroup, history: dict | None = None) -> dict {
     members: list[dict] = [];
     citations: list[str] = [];
     for m in g.members {
@@ -513,9 +492,6 @@ def group_packet(
     }
     canonical = g.members[0].vector if g.members else [];
     evidence = {"tier": g.kind, "structural_hash": g.structural_hash};
-    if probe is not None {
-        evidence["probe"] = probe;
-    }
     if history is not None {
         evidence["history"] = history;
     }

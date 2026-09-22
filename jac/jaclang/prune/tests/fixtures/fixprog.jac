@@ -2,7 +2,7 @@
 
 Symbol names are kept OUT of this docstring on purpose: docstrings are string
 literals, so naming a symbol here trips the string-mention veto and downgrades
-its finding to report-only (killing the auto-fix path this fixture exercises).
+its finding to report-only (killing the suggested-edit path this fixture exercises).
 It carries one unused multi-item import member, one wholly-unused import, and
 one dead private global; two imports and their users stay live.
 """
@@ -20,6 +20,6 @@ def area(r: float) -> float {
 }
 
 
-def pid() -> int {
+def pid -> int {
     return os.getpid();
 }

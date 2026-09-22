@@ -121,7 +121,11 @@ def compile_source_paths(
 def compile_scope(
     campaign: Campaign, manifest: Manifest, on_error: any = None
 ) -> tuple[any, int, int, int] {
-    paths = [e.path for e in manifest.by_role(FileRole.SOURCE)];
+    paths = [
+        e.path
+        for e in manifest.entries
+        if e.role == FileRole.SOURCE or e.role == FileRole.TEST
+    ];
     return compile_source_paths(paths, on_error=on_error);
 }
 

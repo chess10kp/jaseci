@@ -60,21 +60,21 @@ def _names_for(cands: dict, detector: str) -> set {
 # ---------------------------------------------------------------------------
 # Import extraction (dogfood Bug B): annotation-position uses must keep the
 # import live. A regression that stops recording type-position references would
-# flip these imports to auto-fix and silently delete a still-needed import.
+# flip these imports to suggested-edit and silently delete a still-needed import.
 # ---------------------------------------------------------------------------
-test "real-source: a truly dead stdlib import is auto-fixable" {
+test "real-source: a truly dead stdlib import is suggest-editable" {
     cands = _analyze(["sigtypeprog.jac", "typesupply.jac"], ["unused-imports"]);
     key = ("unused-imports", "sqrt");
     assert key in cands , list(cands.keys());
-    assert cands[key].disposition == Disposition.AUTO_FIX;
+    assert cands[key].disposition == Disposition.SUGGEST_EDIT;
 }
 
 
-test "real-source: an imported-but-never-referenced symbol is auto-fixable" {
+test "real-source: an imported-but-never-referenced symbol is suggest-editable" {
     cands = _analyze(["sigtypeprog.jac", "typesupply.jac"], ["unused-imports"]);
     key = ("unused-imports", "Unused");
     assert key in cands , list(cands.keys());
-    assert cands[key].disposition == Disposition.AUTO_FIX;
+    assert cands[key].disposition == Disposition.SUGGEST_EDIT;
 }
 
 
@@ -119,11 +119,11 @@ test "real-source: a public symbol used only within its own module is flagged" {
 }
 
 
-test "real-source: visibility findings never reach an auto-fix disposition" {
+test "real-source: visibility findings never reach an suggested-edit disposition" {
     cands = _analyze(["vislib.jac", "viscon.jac"], ["visibility-tightening"]);
     for (k, c) in cands.items() {
         if k[0] == "visibility-tightening" {
-            assert c.disposition != Disposition.AUTO_FIX , k;
+            assert c.disposition != Disposition.SUGGEST_EDIT , k;
         }
     }
 }

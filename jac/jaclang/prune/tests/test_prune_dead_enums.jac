@@ -79,7 +79,7 @@ test "dead-enum-variants flags only the unreferenced variant" {
 }
 
 
-test "dead enum variant is pr-only, never auto-fix" {
+test "dead enum variant is pr-only, never suggested-edit" {
     cands = _analyze("enumprog.jac");
     cand = cands["ORPHAN"];
     assert cand.finding.detector == "dead-enum-variants";

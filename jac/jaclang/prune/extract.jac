@@ -1,5 +1,6 @@
 import hashlib;
 import ast;
+import os;
 import from typing { cast }
 import jaclang.jac0core.unitree as uni;
 
@@ -7,9 +8,10 @@ import from jaclang.prune.manifest { Manifest, FileRole, role_label }
 import from jaclang.prune.bodies { BodyFact, extract_bodies }
 import from jaclang.prune.literals { LiteralFact, extract_literals }
 import from jaclang.prune.docstrings { DocstringFact, extract_docstrings }
+import from jaclang.prune.chains { ChainFact, extract_chains }
 
 
-glob EXTRACTOR_VERSION = "3";
+glob EXTRACTOR_VERSION = "5";
 
 
 obj ModuleFact {
@@ -45,6 +47,7 @@ obj ReferenceFact {
         pos_end: int,
         line: int,
         kind: str,
+        src_role: str = "source",
         id: str = "";
 
     def postinit {
@@ -108,12 +111,13 @@ obj FactSet {
         branches: list[BranchFact] = [],
         bodies: list[BodyFact] = [],
         literals: list[LiteralFact] = [],
-        docstrings: list[DocstringFact] = [];
+        docstrings: list[DocstringFact] = [],
+        chains: list[ChainFact] = [];
 
     def by_module -> dict[str, tuple] {
         out: dict[str, tuple] = {};
         for m in self.modules {
-            out[m.path] = ([], [], [], [], [], [], [], []);
+            out[m.path] = ([], [], [], [], [], [], [], [], []);
         }
         def bucket(path: str) -> (tuple | None) {
             return out.get(path);
@@ -164,6 +168,12 @@ obj FactSet {
             b = bucket(dc.module_path);
             if b is not None {
                 b[7].append(dc);
+            }
+        }
+        for ch in self.chains {
+            b = bucket(ch.module_path);
+            if b is not None {
+                b[8].append(ch);
             }
         }
         return out;
@@ -305,7 +315,8 @@ def _walk_scope(
     facts: FactSet,
     seen_refs: set,
     seen_syms: set,
-    in_scope_paths: set
+    in_scope_paths: set,
+    role_of: dict
 ) {
     for (name, raw_sym) in scope.names_in_scope.items() {
         sym = cast(uni.Symbol, raw_sym);
@@ -314,30 +325,28 @@ def _walk_scope(
             continue;
         }
         sid = stable_symbol_id(sym);
-
-        if sid in seen_syms {
-            continue;
-        }
-        seen_syms.add(sid);
-        loc = decl.loc;
-        sym_mod = str(loc.mod_path);
         kind = str(sym.sym_type);
-        facts.symbols.append(
-            SymbolFact(
-                id=sid,
-                module_path=sym_mod,
-                name=str(name),
-                kind=kind,
-                access=str(sym.access),
-                imported=bool(sym.imported),
-                parent_id=parent_id,
-                decl_pos_start=int(loc.pos_start),
-                decl_pos_end=int(loc.pos_end),
-                decl_line=int(loc.first_line),
-                scope_chain=">".join(_scope_chain(sym))
-            )
-        );
-        _emit_uses(sym, sid, kind, facts, seen_refs, in_scope_paths);
+        if sid not in seen_syms {
+            seen_syms.add(sid);
+            loc = decl.loc;
+            sym_mod = str(loc.mod_path);
+            facts.symbols.append(
+                SymbolFact(
+                    id=sid,
+                    module_path=sym_mod,
+                    name=str(name),
+                    kind=kind,
+                    access=str(sym.access),
+                    imported=bool(sym.imported),
+                    parent_id=parent_id,
+                    decl_pos_start=int(loc.pos_start),
+                    decl_pos_end=int(loc.pos_end),
+                    decl_line=int(loc.first_line),
+                    scope_chain=">".join(_scope_chain(sym))
+                )
+            );
+        }
+        _emit_uses(sym, sid, kind, facts, seen_refs, role_of);
     }
     for kid in scope.kid_scope {
         _walk_scope(
@@ -347,7 +356,8 @@ def _walk_scope(
             facts,
             seen_refs,
             seen_syms,
-            in_scope_paths
+            in_scope_paths,
+            role_of
         );
     }
 }
@@ -364,19 +374,178 @@ def _scope_id(scope: uni.UniScopeNode) -> str {
 }
 
 
-def _emit_uses(
-    sym: uni.Symbol,
-    sid: str,
-    kind: str,
+def _resolve_enum_scope(bsym: uni.Symbol, mod_by_path: dict, hops: int = 0) -> any {
+    if hops > 6 {
+        return None;
+    }
+    decl = bsym.decl;
+    if decl is None {
+        return None;
+    }
+    enum_nd = decl.find_parent_of_type(uni.Enum);
+    if enum_nd is not None {
+        return enum_nd;
+    }
+    mi = decl.find_parent_of_type(uni.ModuleItem);
+    if mi is not None {
+        ap = str(getattr(mi, "abs_path", "") or "");
+        tmod = mod_by_path.get(os.path.normpath(ap)) if ap else None;
+        if tmod is not None {
+            tgt = tmod.names_in_scope.get(getattr_name(mi.name));
+            if tgt is not None {
+                return _resolve_enum_scope(
+                    cast(uni.Symbol, tgt), mod_by_path, hops + 1
+                );
+            }
+        }
+    }
+    return None;
+}
+
+
+def _emit_enum_member_uses(
+    mod: any,
+    mod_path: str,
+    mod_by_path: dict,
+    role_of: dict,
     facts: FactSet,
-    seen_refs: set,
-    in_scope_paths: set
+    seen_refs: set
+) {
+    for tr in mod.get_all_sub_nodes(uni.AtomTrailer) {
+        if not tr.is_attr {
+            continue;
+        }
+        right = tr.right;
+        if not isinstance(right, uni.AstSymbolNode) {
+            continue;
+        }
+        msym: (uni.Symbol | None) = None;
+        rsym = right.sym;
+        if rsym is not None and str(rsym.sym_type) == "enum_member" {
+            msym = cast(uni.Symbol, rsym);
+        } else {
+            base = tr.target;
+            if not isinstance(base, uni.AstSymbolNode) {
+                continue;
+            }
+            bsym: (uni.Symbol | None) = base.sym;
+            if bsym is None {
+                scope = _enclosing_scope(tr);
+                if scope is not None {
+                    bsym = cast(
+                        uni.Symbol, scope.names_in_scope.get(str(base.sym_name))
+                    );
+                }
+            }
+            if bsym is None {
+                continue;
+            }
+            enum_nd = _resolve_enum_scope(cast(uni.Symbol, bsym), mod_by_path);
+            if enum_nd is None {
+                continue;
+            }
+            member = enum_nd.names_in_scope.get(str(right.sym_name));
+            if member is not None {
+                msym = cast(uni.Symbol, member);
+            }
+        }
+        if msym is None or msym.decl is None {
+            continue;
+        }
+        if str(msym.decl.loc.mod_path) not in role_of {
+            continue;
+        }
+        sid = stable_symbol_id(msym);
+        loc = right.loc;
+        dedup = (sid, mod_path, loc.pos_start, loc.pos_end);
+        if dedup in seen_refs {
+            continue;
+        }
+        seen_refs.add(dedup);
+        encl = _enclosing_symbol(tr);
+        using_id = stable_symbol_id(cast(uni.Symbol, encl)) if encl is not None else "";
+        facts.refs.append(
+            ReferenceFact(
+                used_id=sid,
+                using_id=using_id,
+                module_path=mod_path,
+                pos_start=int(loc.pos_start),
+                pos_end=int(loc.pos_end),
+                line=int(loc.first_line),
+                kind="read",
+                src_role=str(role_of.get(mod_path, "source"))
+            )
+        );
+    }
+    for nm in mod.get_all_sub_nodes(uni.Name) {
+        sym = nm.sym;
+        if sym is None or str(sym.sym_type) != "enum" {
+            continue;
+        }
+        parent = nm.parent;
+        if isinstance(parent, uni.AtomTrailer) and parent.target is nm {
+            continue;
+        }
+        is_type_pos = False;
+        anc = parent;
+        hops = 0;
+        while anc is not None and hops < 8 {
+            if isinstance(
+                anc, (uni.SubTag, uni.FuncSignature, uni.ModuleItem, uni.Import)
+            ) {
+                is_type_pos = True;
+                break;
+            }
+            anc = anc.parent;
+            hops += 1;
+        }
+        if is_type_pos {
+            continue;
+        }
+        esym = cast(uni.Symbol, sym);
+        if esym.decl is None {
+            continue;
+        }
+        decl_nd = getattr(esym.decl, "name", esym.decl);
+        if nm is esym.decl or nm is decl_nd {
+            continue;
+        }
+        if str(esym.decl.loc.mod_path) not in role_of {
+            continue;
+        }
+        esid = stable_symbol_id(esym);
+        loc = nm.loc;
+        dedup = (esid, mod_path, loc.pos_start, loc.pos_end, "iterate");
+        if dedup in seen_refs {
+            continue;
+        }
+        seen_refs.add(dedup);
+        encl = _enclosing_symbol(nm);
+        using_id = stable_symbol_id(cast(uni.Symbol, encl)) if encl is not None else "";
+        facts.refs.append(
+            ReferenceFact(
+                used_id=esid,
+                using_id=using_id,
+                module_path=mod_path,
+                pos_start=int(loc.pos_start),
+                pos_end=int(loc.pos_end),
+                line=int(loc.first_line),
+                kind="iterate",
+                src_role=str(role_of.get(mod_path, "source"))
+            )
+        );
+    }
+}
+
+
+def _emit_uses(
+    sym: uni.Symbol, sid: str, kind: str, facts: FactSet, seen_refs: set, role_of: dict
 ) {
     is_field = kind == _FIELD_KIND;
     for use_nd in sym.uses {
         loc = use_nd.loc;
         use_mod = str(loc.mod_path);
-        if use_mod not in in_scope_paths {
+        if use_mod not in role_of {
             continue;
         }
         dedup = (sid, use_mod, loc.pos_start, loc.pos_end);
@@ -395,7 +564,8 @@ def _emit_uses(
                 pos_start=int(loc.pos_start),
                 pos_end=int(loc.pos_end),
                 line=int(loc.first_line),
-                kind=rkind
+                kind=rkind,
+                src_role=str(role_of.get(use_mod, "source"))
             )
         );
         if is_field {
@@ -565,8 +735,8 @@ def _module_fact_hash(mod: ModuleFact, bundle: (tuple | None)) -> str {
         f"status={mod.status}",
         f"errors={mod.error_count}"
     ];
-    (syms, refs, imports, fields, branches, bodies, literals, docstrings) = (
-        bundle if bundle is not None else ([], [], [], [], [], [], [], [])
+    (syms, refs, imports, fields, branches, bodies, literals, docstrings, chains) = (
+        bundle if bundle is not None else ([], [], [], [], [], [], [], [], [])
     );
     for s in sorted(syms, key=(lambda x : x.id)) {
         parts.append(
@@ -622,6 +792,25 @@ def _module_fact_hash(mod: ModuleFact, bundle: (tuple | None)) -> str {
     for dc in sorted(docstrings, key=(lambda x : (x.pos_start, x.text_hash))) {
         parts.append("C|" + "|".join([dc.text_hash, dc.kind, dc.symbol_id]));
     }
+    for ch in sorted(
+        chains, key=(lambda x : (x.pos_start, x.shape, x.selector, x.n_arms))
+    ) {
+        parts.append(
+            "H|" + "|".join(
+                [
+                    ch.shape,
+                    ch.selector,
+                    str(ch.n_arms),
+                    str(ch.n_total),
+                    str(ch.const_arms),
+                    str(ch.uniform_returns),
+                    str(ch.ordered_ops),
+                    str(ch.mixed_selector),
+                    str(ch.pos_start)
+                ]
+            )
+        );
+    }
     for dep in sorted(mod.deps) {
         parts.append("D|" + dep);
     }
@@ -643,24 +832,69 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
     }
     in_scope_paths: set[str] = set(role_by_path.keys());
 
+    all_role_by_path: dict[str, str] = {};
+    for entry in manifest.entries {
+        all_role_by_path[entry.path] = role_label(entry.role);
+    }
+
+    hubs: list = prog._search_hubs();
+    mod_by_path: dict[str, any] = {};
+    for hub in hubs {
+        for (raw_path, raw_mod) in hub.items() {
+            mod_by_path[os.path.normpath(str(raw_path))] = raw_mod;
+        }
+    }
+
     source_paths: set[str] = {e.path for e in manifest.by_role(FileRole.SOURCE)};
     seen_refs: set = set();
     seen_syms: set = set();
+    seen_mod_bodies: set = set();
 
-    for (raw_path, raw_mod) in prog.mod.hub.items() {
-        path = str(raw_path);
-        mod = cast(uni.Module, raw_mod);
-        if path not in source_paths {
-            continue;
+    for hub in hubs {
+        for (raw_path, raw_mod) in hub.items() {
+            path = str(raw_path);
+            mod = cast(uni.Module, raw_mod);
+            if path not in source_paths {
+                continue;
+            }
+            _walk_scope(
+                mod,
+                path,
+                _scope_id(mod),
+                facts,
+                seen_refs,
+                seen_syms,
+                in_scope_paths,
+                all_role_by_path
+            );
+            if path in seen_mod_bodies {
+                continue;
+            }
+            seen_mod_bodies.add(path);
+            _extract_imports(mod, facts, in_scope_paths);
+            _extract_branches(mod, facts, in_scope_paths);
+            facts.bodies.extend(extract_bodies(mod, stable_symbol_id));
+            facts.literals.extend(extract_literals(mod, stable_symbol_id));
+            facts.docstrings.extend(extract_docstrings(mod, stable_symbol_id));
+            facts.chains.extend(extract_chains(mod, stable_symbol_id));
         }
-        _walk_scope(
-            mod, path, _scope_id(mod), facts, seen_refs, seen_syms, in_scope_paths
-        );
-        _extract_imports(mod, facts, in_scope_paths);
-        _extract_branches(mod, facts, in_scope_paths);
-        facts.bodies.extend(extract_bodies(mod, stable_symbol_id));
-        facts.literals.extend(extract_literals(mod, stable_symbol_id));
-        facts.docstrings.extend(extract_docstrings(mod, stable_symbol_id));
+    }
+
+    for hub in hubs {
+        for (raw_path, raw_mod) in hub.items() {
+            path = str(raw_path);
+            if path not in all_role_by_path {
+                continue;
+            }
+            _emit_enum_member_uses(
+                cast(uni.Module, raw_mod),
+                path,
+                mod_by_path,
+                all_role_by_path,
+                facts,
+                seen_refs
+            );
+        }
     }
 
     deps_by_source: dict[str, list[str]] = {};
@@ -692,7 +926,7 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
     def _bucket(p: str) -> tuple {
         b = grouped.get(p);
         if b is None {
-            b = ([], [], [], [], [], [], [], []);
+            b = ([], [], [], [], [], [], [], [], []);
             grouped[p] = b;
         }
         return b;
@@ -721,6 +955,9 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
     for dc in facts.docstrings {
         _bucket(dc.module_path)[7].append(dc);
     }
+    for ch in facts.chains {
+        _bucket(ch.module_path)[8].append(ch);
+    }
 
     for (path, role) in role_by_path.items() {
         ecount = errs_by_path.get(path, 0);
@@ -734,6 +971,19 @@ def extract_facts(prog: any, manifest: Manifest) -> FactSet {
             error_count=ecount
         );
         mod_fact.fact_hash = _module_fact_hash(mod_fact, grouped.get(path));
+        facts.modules.append(mod_fact);
+    }
+    for entry in manifest.by_role(FileRole.TEST) {
+        mod_fact = ModuleFact(
+            path=entry.path,
+            module_name=entry.module_name,
+            content_hash=entry.content_hash,
+            role="test",
+            deps=[],
+            status="complete",
+            error_count=0
+        );
+        mod_fact.fact_hash = _module_fact_hash(mod_fact, grouped.get(entry.path));
         facts.modules.append(mod_fact);
     }
     return facts;

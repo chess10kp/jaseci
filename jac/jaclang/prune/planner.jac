@@ -263,8 +263,8 @@ def _plan_unused_import(f: Finding, data: bytes) -> tuple[list[SpanEdit], str] {
 
 
 def plan_candidate(c: Candidate, data: bytes) -> tuple[list[SpanEdit], str] {
-    if c.disposition != Disposition.AUTO_FIX {
-        return ([], "disposition is not auto-fix");
+    if c.disposition != Disposition.SUGGEST_EDIT {
+        return ([], "disposition is not suggested-edit");
     }
     det = c.finding.detector;
     if det == "unused-imports" {

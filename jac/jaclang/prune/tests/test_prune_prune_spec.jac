@@ -18,7 +18,7 @@ Detectors covered
 
 Classifier invariants
   7. risk ceiling caps disposition
-  8. agent source caps at pr-only (never auto-fix)
+  8. agent source caps at pr-only (never suggested-edit)
   9. veto caps to report-only regardless of base disposition
   10. multiple veto kinds all reported
 
@@ -312,7 +312,7 @@ test "unused-imports: plan_meta carries stmt positions and n_items" {
 # ---------------------------------------------------------------------------
 # 2. private-dead-defs
 # ---------------------------------------------------------------------------
-test "private-dead-defs: dead private mod_var -> safe/auto-fix" {
+test "private-dead-defs: dead private mod_var -> safe/suggested-edit" {
     facts = FactSet(
         modules=[
             ModuleFact(path=_MOD, module_name="mod", content_hash="a", role="source")
@@ -326,7 +326,7 @@ test "private-dead-defs: dead private mod_var -> safe/auto-fix" {
     assert fs[0].name == "DEAD";
     c = classify(fs[0], RiskTier.RISKY);
     assert c.risk == RiskTier.SAFE;
-    assert c.disposition == Disposition.AUTO_FIX;
+    assert c.disposition == Disposition.SUGGEST_EDIT;
 }
 
 
@@ -1190,7 +1190,7 @@ test "veto: string mention in same module vetoes a finding to report-only" {
     assert f.has_veto();
     assert "string-mention" in f.veto_kinds();
     c = classify(f, RiskTier.SAFE);
-    # normally auto-fix; veto must cap to report-only
+    # normally suggested-edit; veto must cap to report-only
     assert c.disposition == Disposition.REPORT_ONLY;
 }
 
@@ -1240,7 +1240,7 @@ test "classifier: safe ceiling demotes moderate findings to report-only" {
 }
 
 
-test "classifier: agent source cannot reach auto-fix (capped at pr-only)" {
+test "classifier: agent source cannot reach suggested-edit (capped at pr-only)" {
     f = Finding(
         detector="unused-imports",
         symbol_id="x",
@@ -1254,7 +1254,7 @@ test "classifier: agent source cannot reach auto-fix (capped at pr-only)" {
         source="agent"
     );
     c = classify(f, RiskTier.SAFE);
-    # normally auto-fix; agent source caps at pr-only
+    # normally suggested-edit; agent source caps at pr-only
     assert c.disposition == Disposition.PR_ONLY;
 }
 
@@ -1460,10 +1460,11 @@ test "campaign: parse_output_format defaults to table on unknown input" {
 }
 
 
-test "campaign: parse_prune_action maps all five actions" {
+test "campaign: parse_prune_action maps all actions" {
     assert parse_prune_action("report") == PruneAction.REPORT;
     assert parse_prune_action("facts") == PruneAction.FACTS;
-    assert parse_prune_action("fix") == PruneAction.FIX;
+    assert parse_prune_action("plan") == PruneAction.PLAN;
+    assert parse_prune_action("fix") == PruneAction.PLAN;
     assert parse_prune_action("analyze") == PruneAction.ANALYZE;
     assert parse_prune_action("reuse") == PruneAction.REUSE;
 }

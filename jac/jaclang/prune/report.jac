@@ -18,7 +18,7 @@ def _rel(path: str, root_dir: str) -> str {
 
 
 def _disp_order(d: Disposition) -> int {
-    if d == Disposition.AUTO_FIX {
+    if d == Disposition.SUGGEST_EDIT {
         return 0;
     }
     if d == Disposition.PR_ONLY {
@@ -40,7 +40,7 @@ def sorted_candidates(cands: list[Candidate]) -> list[Candidate] {
 
 
 def summarize(cands: list[Candidate]) -> dict[str, int] {
-    out: dict[str, int] = {"auto-fix": 0, "pr-only": 0, "report-only": 0};
+    out: dict[str, int] = {"suggested-edit": 0, "pr-only": 0, "report-only": 0};
     for c in cands {
         k = disposition_label(c.disposition);
         out[k] = out.get(k, 0) + 1;
@@ -77,11 +77,6 @@ def table_rows(cands: list[Candidate], root_dir: str) -> list[list[str]] {
 }
 
 
-"""Calibrate a visibility-tightening finding's confidence from the two signals
-the dogfood ledger surfaced: an `_`-prefixed public symbol is internal by
-naming convention, so "demote from :pub" is almost certainly right; a
-non-underscore public symbol under a partial scope may be exported API consumed
-outside the analyzed set, so its "no cross-module refs" verdict is unreliable."""
 def _visibility_confidence(c: Candidate) -> float {
     f = c.finding;
     base = 0.5;
@@ -104,7 +99,7 @@ def confidence_of(c: Candidate) -> float {
     if c.finding.detector == "visibility-tightening" {
         return _visibility_confidence(c);
     }
-    if c.disposition == Disposition.AUTO_FIX {
+    if c.disposition == Disposition.SUGGEST_EDIT {
         return 0.9;
     }
     if c.disposition == Disposition.PR_ONLY {

@@ -12,12 +12,7 @@ import from jaclang.prune.campaign {
     risk_tier_label
 }
 import from jaclang.prune.manifest { Manifest, FileRole, build_manifest, role_label }
-import from jaclang.prune.pipeline {
-    Analysis,
-    build_analysis,
-    facts_db_path,
-    open_synced_store
-}
+import from jaclang.prune.pipeline { build_analysis, facts_db_path, open_synced_store }
 
 
 def _resolve_root(paths: list[str]) -> str {
@@ -88,11 +83,8 @@ impl prune(
     recipes: (list | None) = None,
     risk_ceiling: str = "",
     output: str = "",
-    preview: bool = False,
-    apply: bool = False,
     model: str = "heuristic",
     group: str = "",
-    probe: bool = False,
     history: bool = False,
     windows: bool = False,
     fuzzy: bool = False,
@@ -110,7 +102,7 @@ impl prune(
     if parsed_action is None {
         console.error(
             f"Unknown prune action '{action}'.",
-            hint="Available actions: report, facts, fix, analyze, reuse, list, show"
+            hint="Available actions: report, facts, plan, analyze, reuse, list, show, verdict"
         );
         return 2;
     }
@@ -133,18 +125,13 @@ impl prune(
         return _run_report(campaign);
     } elif parsed_action == PruneAction.FACTS {
         return _run_facts(campaign);
-    } elif parsed_action == PruneAction.FIX {
-        return _run_fix(campaign, preview=preview, apply=apply);
+    } elif parsed_action == PruneAction.PLAN {
+        return _run_plan(campaign);
     } elif parsed_action == PruneAction.ANALYZE {
         return _run_analyze(campaign, model=model);
     } elif parsed_action == PruneAction.REUSE {
         return _run_reuse(
-            campaign,
-            group=group,
-            probe=probe,
-            history=history,
-            windows=windows,
-            fuzzy=fuzzy
+            campaign, group=group, history=history, windows=windows, fuzzy=fuzzy
         );
     } elif parsed_action == PruneAction.LIST {
         return _run_list(campaign, limit=limit);
@@ -174,13 +161,6 @@ def _reuse_context(campaign: Campaign) -> tuple {
 }
 
 
-def _reuse_scope_paths(manifest: Manifest) -> tuple[list[str], list[str]] {
-    source_paths = [e.path for e in manifest.by_role(FileRole.SOURCE)];
-    test_paths = [e.path for e in manifest.by_role(FileRole.TEST)];
-    return (source_paths, test_paths);
-}
-
-
 def _reorder_by_tandem(groups: list, histories: dict) -> list {
     def key(g: any) -> tuple {
         h = histories.get(g.group_id);
@@ -199,7 +179,6 @@ def _reorder_by_tandem(groups: list, histories: dict) -> list {
 def _run_reuse(
     campaign: Campaign,
     group: str = "",
-    probe: bool = False,
     history: bool = False,
     windows: bool = False,
     fuzzy: bool = False
@@ -231,7 +210,6 @@ def _run_reuse(
             group_packet,
             rollup_summary
         }
-        import from jaclang.prune.probe { probe_group, probe_groups }
         import from jaclang.prune.history {
             git_root,
             group_history,
@@ -247,7 +225,6 @@ def _run_reuse(
             fuzzy_summary,
             fuzzy_packet
         }
-        import from jaclang.prune.validate { snapshot_baseline }
 
         groups = find_clone_groups(store);
 
@@ -304,14 +281,6 @@ def _run_reuse(
                 }
                 return 2;
             }
-            probe_dict = None;
-            if probe {
-                (source_paths, test_paths) = _reuse_scope_paths(manifest);
-                baseline = snapshot_baseline(source_paths);
-                probe_dict = probe_group(
-                    target, source_paths, test_paths, prog, baseline
-                ).as_dict();
-            }
             history_dict = None;
             if history {
                 repo = git_root(campaign.project_root);
@@ -319,20 +288,9 @@ def _run_reuse(
                     history_dict = group_history(target, repo).as_dict();
                 }
             }
-            packet = group_packet(
-                store, target, probe=probe_dict, history=history_dict
-            );
+            packet = group_packet(store, target, history=history_dict);
             console.print(json.dumps(packet, indent=2));
             return 0;
-        }
-
-        probes: dict = {};
-        if probe {
-            (source_paths, test_paths) = _reuse_scope_paths(manifest);
-            gp = probe_groups(groups, source_paths, test_paths, prog);
-            for (gid, res) in gp.items() {
-                probes[gid] = res.as_dict();
-            }
         }
 
         histories: dict = {};
@@ -362,11 +320,7 @@ def _run_reuse(
         if as_json {
             payload = {
                 "groups": [
-                    group_summary(
-                        g,
-                        probe=probes.get(g.group_id),
-                        history=histories.get(g.group_id)
-                    ) for g in groups
+                    group_summary(g, history=histories.get(g.group_id)) for g in groups
                 ],
                 "rollups": [rollup_summary(r) for r in rollups]
             };
@@ -400,10 +354,6 @@ def _run_reuse(
                     f"{g.refactorability:.2f}",
                     g.suggested_shape
                 ];
-                if probe {
-                    pr = probes.get(g.group_id);
-                    row.append(pr.get("status", "-") if pr is not None else "-");
-                }
                 if history {
                     h = histories.get(g.group_id);
                     if h is not None and h.get("available") {
@@ -416,9 +366,6 @@ def _run_reuse(
                 rows.append(row);
             }
             header = ["kind", "copies", "~lines", "payoff", "refac", "shape"];
-            if probe {
-                header.append("probe");
-            }
             if history {
                 header.append("tandem");
             }
@@ -567,7 +514,7 @@ def _print_findings(campaign: Campaign, candidates: list, suppressed_count: int)
     );
     summary = summarize(candidates);
     console.info(
-        f"{summary.get('auto-fix', 0)} auto-fix · "
+        f"{summary.get('suggested-edit', 0)} suggested-edit · "
         f"{summary.get('pr-only', 0)} pr-only · "
         f"{summary.get('report-only', 0)} report-only" + (
             f" · {suppressed_count} suppressed" if suppressed_count > 0 else ""
@@ -619,7 +566,7 @@ def _run_analyze(campaign: Campaign, model: str = "heuristic") -> int {
     );
     console.info(
         "Agent findings are advisory (report-only / pr-only) - every claim cites "
-        "verified fact IDs; none can auto-fix."
+        "verified fact IDs; none can produce a suggested edit."
     );
     console.print_elapsed_time(time() - start);
     return 0;
@@ -1024,22 +971,13 @@ def _run_facts(campaign: Campaign) -> int {
 }
 
 
-def _write(path: str, data: bytes) {
-    with open(path, "wb") as fh {
-        fh.write(data);
-    }
-}
-
-
-def _run_fix(campaign: Campaign, preview: bool = False, apply: bool = False) -> int {
+def _run_plan(campaign: Campaign) -> int {
     import from jaclang.prune.planner { build_plan }
     import from jaclang.prune.spanedit { apply_edits }
     import from jaclang.prune.report { render_diff }
 
     start = time();
-    do_apply = apply and not preview;
-    mode = "apply" if do_apply else "preview";
-    console.print_header(f"jac prune - fix ({mode})");
+    console.print_header("jac prune - plan (suggested edits, advice-only)");
     console.info(f"project root: {campaign.project_root}");
 
     manifest = build_manifest(campaign);
@@ -1049,33 +987,32 @@ def _run_fix(campaign: Campaign, preview: bool = False, apply: bool = False) -> 
     }
 
     analysis = build_analysis(campaign, manifest);
-    autofix = [
+    suggested = [
         c
         for c in analysis.candidates
-        if c.disposition == Disposition.AUTO_FIX
+        if c.disposition == Disposition.SUGGEST_EDIT
     ];
     console.info(
-        f"{len(analysis.candidates)} finding(s); {len(autofix)} auto-fix eligible"
+        f"{len(analysis.candidates)} finding(s); "
+        f"{len(suggested)} with a concrete suggested edit"
     );
-    if not autofix {
-        console.success("Nothing to auto-fix. 🎉");
+    if not suggested {
+        console.success("No suggested edits. 🎉");
         return 0;
     }
 
-    plan = build_plan(autofix);
+    plan = build_plan(suggested);
     for reason in plan.skipped {
         console.warning(f"skipped: {reason}");
     }
     if plan.edit_count() == 0 {
-        console.warning("No applicable edits after planning.");
+        console.warning("No suggested edits could be rendered.");
         return 0;
     }
     console.info(
-        f"planned {plan.edit_count()} edit(s) across {plan.file_count()} file(s)"
+        f"suggested {plan.edit_count()} edit(s) across {plan.file_count()} file(s)"
     );
 
-    befores: dict = {};
-    patched: dict = {};
     failed = 0;
     for (path, fe) in plan.files.items() {
         try {
@@ -1089,7 +1026,7 @@ def _run_fix(campaign: Campaign, preview: bool = False, apply: bool = False) -> 
         }
         result = apply_edits(before, fe.edits);
         if not result.ok {
-            console.error(f"edit failed for {os.path.basename(path)}:");
+            console.error(f"could not render suggestion for {os.path.basename(path)}:");
             for err in result.errors {
                 console.print(f"    {err}");
             }
@@ -1099,27 +1036,16 @@ def _run_fix(campaign: Campaign, preview: bool = False, apply: bool = False) -> 
         diff = render_diff(path, before, result.data, campaign.project_root);
         console.print("");
         console.print(diff or "(no textual change)");
-        befores[path] = before;
-        patched[path] = result.data;
     }
 
-    if not do_apply {
-        console.print("");
-        console.info(
-            f"preview only - {plan.edit_count()} edit(s) across "
-            f"{plan.file_count()} file(s). Re-run with --apply to write."
-        );
-        _log_feedback(campaign, autofix, "previewed");
-        console.print_elapsed_time(time() - start);
-        return 1 if failed else 0;
-    }
-
-    (rc, fate) = _apply_validated(
-        campaign, manifest, analysis, befores, patched, failed
+    console.print("");
+    console.info(
+        "advice-only: nothing was written. Review the diffs and apply them "
+        "by hand (or via your own patch tooling)."
     );
-    _log_feedback(campaign, autofix, fate);
+    _log_feedback(campaign, suggested, "suggested");
     console.print_elapsed_time(time() - start);
-    return rc;
+    return 1 if failed else 0;
 }
 
 
@@ -1132,91 +1058,4 @@ def _log_feedback(campaign: Campaign, candidates: list, outcome: str) {
         path=os.path.join(campaign.project_root, ".jac", "prune-feedback.jsonl")
     );
     log.record_all([entry_from_candidate(c, outcome) for c in candidates]);
-}
-
-
-def _apply_validated(
-    campaign: Campaign,
-    manifest: Manifest,
-    analysis: Analysis,
-    befores: dict,
-    patched: dict,
-    failed: int
-) -> tuple[int, str] {
-    import from jaclang.prune.validate {
-        snapshot_baseline,
-        validate_batch,
-        bisect_culprit
-    }
-
-    touched = sorted(patched.keys());
-    if not touched {
-        console.warning("No applicable edits after planning.");
-        return ((1 if failed else 0), "skipped");
-    }
-
-    source_paths = [e.path for e in manifest.by_role(FileRole.SOURCE)];
-    console.print("");
-    console.info("validating (baseline snapshot -> apply -> parse -> typecheck)…");
-    baseline = snapshot_baseline(source_paths);
-
-    for path in touched {
-        _write(path, patched[path]);
-    }
-    res = validate_batch(touched, source_paths, baseline, run_format=False);
-
-    if res.ok {
-        n_tests = _affected_test_count(manifest, analysis, touched);
-        console.success(
-            f"validated + applied to {len(touched)} file(s): " + " -> ".join(
-                [f"{s.stage}✓" for s in res.stages]
-            )
-        );
-        if n_tests > 0 {
-            console.info(
-                f"{n_tests} affected test file(s) selected - run them "
-                "(and your suite by risk policy) before committing."
-            );
-        }
-        return ((1 if failed else 0), "applied");
-    }
-
-    for path in touched {
-        _write(path, befores[path]);
-    }
-    console.error(
-        f"validation failed at stage '{res.failed_stage()}' - batch reverted."
-    );
-    for key in res.new_diags[:8] {
-        console.print(f"    new: {key}");
-    }
-
-    def validates(subset: list) -> bool {
-        for p in subset {
-            _write(p, patched[p]);
-        }
-        r = validate_batch(subset, source_paths, baseline, run_format=False);
-        for p in subset {
-            _write(p, befores[p]);
-        }
-        return r.ok;
-    }
-
-    culprits = bisect_culprit(touched, validates);
-    if culprits {
-        console.error("culprit file(s):");
-        for c in culprits {
-            console.print(f"    {os.path.relpath(c, campaign.project_root)}");
-        }
-    }
-    return (1, "validation-failed");
-}
-
-
-def _affected_test_count(
-    manifest: Manifest, analysis: Analysis, touched: list[str]
-) -> int {
-    import from jaclang.prune.validate { select_affected_tests_from_prog }
-    test_paths = [e.path for e in manifest.by_role(FileRole.TEST)];
-    return len(select_affected_tests_from_prog(analysis.prog, touched, test_paths));
 }

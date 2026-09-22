@@ -86,18 +86,18 @@ test "unused-imports flags unused imports, not a used one" {
     cands = _analyze("detectprog.jac");
     assert "sqrt" in cands , list(cands.keys());
     assert "ast" in cands , list(cands.keys());
-    assert cands["sqrt"].disposition == Disposition.AUTO_FIX;
+    assert cands["sqrt"].disposition == Disposition.SUGGEST_EDIT;
     # Prose in a string literal elsewhere in the module is not a dynamic use.
-    assert cands["ast"].disposition == Disposition.AUTO_FIX;
+    assert cands["ast"].disposition == Disposition.SUGGEST_EDIT;
     # `os` is used (os.getpid) and must not be flagged
     assert "os" not in cands , list(cands.keys());
 }
 
 
-test "private-dead-defs: auto-fix for a dead private global, pr-only for an ability" {
+test "private-dead-defs: suggested-edit for a dead private global, pr-only for an ability" {
     cands = _analyze("detectprog.jac");
     assert "DEAD_CONST" in cands;
-    assert cands["DEAD_CONST"].disposition == Disposition.AUTO_FIX;
+    assert cands["DEAD_CONST"].disposition == Disposition.SUGGEST_EDIT;
     assert cands["DEAD_CONST"].risk == RiskTier.SAFE;
     # a private unused ability carries dynamic-dispatch risk -> pr-only
     assert cands["_dead_helper"].disposition == Disposition.PR_ONLY;
@@ -197,8 +197,8 @@ test "risk ceiling caps moderate findings to report-only" {
     cands = _analyze("detectprog.jac", ceiling=RiskTier.SAFE);
     # under a SAFE ceiling, moderate write-only / branch findings are report-only
     assert cands["wonly"].disposition == Disposition.REPORT_ONLY;
-    # but a safe-tier auto-fix survives
-    assert cands["DEAD_CONST"].disposition == Disposition.AUTO_FIX;
+    # but a safe-tier suggested-edit survives
+    assert cands["DEAD_CONST"].disposition == Disposition.SUGGEST_EDIT;
 }
 
 
@@ -244,7 +244,7 @@ test "project suppression file drops a finding by symbol name" {
 }
 
 
-test "classifier caps agent-sourced findings below auto-fix" {
+test "classifier caps agent-sourced findings below suggested-edit" {
     f = Finding(
         detector="unused-imports",
         symbol_id="x",
@@ -258,7 +258,7 @@ test "classifier caps agent-sourced findings below auto-fix" {
         source="agent"
     );
     c = classify(f, RiskTier.SAFE);
-    # unused-imports is normally auto-fix; agent source can never reach it
+    # unused-imports is normally suggested-edit; agent source can never reach it
     assert c.disposition == Disposition.PR_ONLY;
 }
 
@@ -304,11 +304,13 @@ test "detector_names lists every registered detector" {
         "visibility-tightening",
         "duplicated-constant-blobs",
         "duplicate-docstrings",
-        "module-cohesion"
+        "ast-bloat",
+        "module-cohesion",
+        "if-chain-dispatch"
     ];
     for n in expected {
         assert n in names;
     }
     assert len(names) == len(DETECTOR_REGISTRY);
-    assert len(names) == 10;
+    assert len(names) == 12;
 }

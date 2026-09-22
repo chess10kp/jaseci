@@ -25,6 +25,7 @@ glob _DETECTORS = [
          "visibility-tightening",
          "duplicated-constant-blobs",
          "duplicate-docstrings",
+         "ast-bloat",
          "module-cohesion",
          "agent-redundant-layer"
      ];

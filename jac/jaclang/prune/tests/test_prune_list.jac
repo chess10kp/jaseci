@@ -38,7 +38,7 @@ def _cand(detector: str, sym: str) -> any {
 }
 
 
-test "list: confidence ranks auto-fix above report-only above vetoed" {
+test "list: confidence ranks suggested-edit above report-only above vetoed" {
     autofix = _cand("unused-imports", "a");
     advisory = _cand("single-caller-inline", "b");
     assert confidence_of(autofix) > confidence_of(advisory);
@@ -88,7 +88,7 @@ test "confidence: a veto still floors visibility confidence below advisory" {
 }
 
 
-test "list: ranked order puts the auto-fix candidate first" {
+test "list: ranked order puts the suggested-edit candidate first" {
     cands = [_cand("single-caller-inline", "b"), _cand("unused-imports", "a")];
     ordered = ranked_candidates(cands);
     assert ordered[0].finding.detector == "unused-imports";
@@ -118,6 +118,7 @@ test "list: a limit at or above the count suppresses nothing" {
 test "category: hygiene detectors don't reduce LOC, deletion detectors do" {
     assert finding_category("visibility-tightening") == "hygiene";
     assert finding_category("module-cohesion") == "hygiene";
+    assert finding_category("ast-bloat") == "hygiene";
     for det in [
         "unused-imports",
         "private-dead-defs",
@@ -144,11 +145,12 @@ test "category: summary splits deletion-bearing from hygiene/advisory" {
         _cand("dead-enum-variants", "b"),
         _cand("visibility-tightening", "c"),
         _cand("module-cohesion", "d"),
-        _cand("visibility-tightening", "e")
+        _cand("ast-bloat", "e"),
+        _cand("visibility-tightening", "f")
     ];
     cats = summarize_categories(cands);
     assert cats["deletion"] == 2 , cats;
-    assert cats["hygiene"] == 3 , cats;
+    assert cats["hygiene"] == 4 , cats;
 }
 
 

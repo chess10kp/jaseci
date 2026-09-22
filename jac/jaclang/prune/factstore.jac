@@ -16,9 +16,10 @@ import from jaclang.prune.extract {
 import from jaclang.prune.bodies { BodyFact }
 import from jaclang.prune.literals { LiteralFact }
 import from jaclang.prune.docstrings { DocstringFact }
+import from jaclang.prune.chains { ChainFact }
 
 
-glob FACT_SCHEMA_VERSION = "7",
+glob FACT_SCHEMA_VERSION = "9",
      _DATA_TABLES = [
          "modules",
          "module_deps",
@@ -29,7 +30,8 @@ glob FACT_SCHEMA_VERSION = "7",
          "branches",
          "bodies",
          "literals",
-         "docstrings"
+         "docstrings",
+         "chains"
      ],
      SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (
@@ -71,7 +73,8 @@ CREATE TABLE IF NOT EXISTS refs (
     pos_start   INTEGER,
     pos_end     INTEGER,
     line        INTEGER,
-    kind        TEXT
+    kind        TEXT,
+    src_role    TEXT
 );
 CREATE TABLE IF NOT EXISTS imports (
     module_path    TEXT,
@@ -155,6 +158,22 @@ CREATE TABLE IF NOT EXISTS docstrings (
     pos_end     INTEGER,
     line        INTEGER
 );
+CREATE TABLE IF NOT EXISTS chains (
+    module_path      TEXT,
+    owner_id         TEXT,
+    owner_name       TEXT,
+    shape            TEXT,
+    n_arms           INTEGER,
+    n_total          INTEGER,
+    selector         TEXT,
+    const_arms       INTEGER,
+    uniform_returns  INTEGER,
+    ordered_ops      INTEGER,
+    mixed_selector   INTEGER,
+    pos_start        INTEGER,
+    pos_end          INTEGER,
+    line             INTEGER
+);
 CREATE INDEX IF NOT EXISTS idx_refs_used      ON refs(used_id, kind);
 CREATE INDEX IF NOT EXISTS idx_refs_using     ON refs(using_id, kind);
 CREATE INDEX IF NOT EXISTS idx_refs_mod       ON refs(module_path);
@@ -175,6 +194,7 @@ CREATE INDEX IF NOT EXISTS idx_lit_hash       ON literals(value_hash);
 CREATE INDEX IF NOT EXISTS idx_lit_mod        ON literals(module_path);
 CREATE INDEX IF NOT EXISTS idx_doc_hash       ON docstrings(text_hash);
 CREATE INDEX IF NOT EXISTS idx_doc_mod        ON docstrings(module_path);
+CREATE INDEX IF NOT EXISTS idx_chain_mod      ON chains(module_path);
 """;
 
 
@@ -258,7 +278,8 @@ obj FactStore {
             "branches",
             "bodies",
             "literals",
-            "docstrings"
+            "docstrings",
+            "chains"
         ] {
             self.conn.execute(f"DELETE FROM {tbl} WHERE module_path = ?", (path, ));
         }
@@ -275,7 +296,8 @@ obj FactStore {
         branches: list[BranchFact] = [],
         bodies: list[BodyFact] = [],
         literals: list[LiteralFact] = [],
-        docstrings: list[DocstringFact] = []
+        docstrings: list[DocstringFact] = [],
+        chains: list[ChainFact] = []
     ) {
         self._clear_module(mod.path);
         self.conn.execute(
@@ -317,7 +339,7 @@ obj FactStore {
         );
         self.conn.executemany(
             "INSERT INTO refs(id, used_id, using_id, module_path, pos_start, "
-            "pos_end, line, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            "pos_end, line, kind, src_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (
                     r.id,
@@ -327,7 +349,8 @@ obj FactStore {
                     r.pos_start,
                     r.pos_end,
                     r.line,
-                    r.kind
+                    r.kind,
+                    r.src_role
                 ) for r in refs
             ]
         );
@@ -458,6 +481,30 @@ obj FactStore {
                 ) for dc in docstrings
             ]
         );
+        self.conn.executemany(
+            "INSERT INTO chains(module_path, owner_id, owner_name, shape, "
+            "n_arms, n_total, selector, const_arms, uniform_returns, "
+            "ordered_ops, mixed_selector, pos_start, pos_end, line) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                (
+                    ch.module_path,
+                    ch.owner_id,
+                    ch.owner_name,
+                    ch.shape,
+                    ch.n_arms,
+                    ch.n_total,
+                    ch.selector,
+                    ch.const_arms,
+                    ch.uniform_returns,
+                    ch.ordered_ops,
+                    ch.mixed_selector,
+                    ch.pos_start,
+                    ch.pos_end,
+                    ch.line
+                ) for ch in chains
+            ]
+        );
     }
 
     def sync(facts: FactSet) -> tuple[list[str], list[str]] {
@@ -473,7 +520,7 @@ obj FactStore {
                 }
                 bundle = grouped.get(mod.path);
                 if bundle is None {
-                    self.write_module(mod, [], [], [], [], [], [], [], []);
+                    self.write_module(mod, [], [], [], [], [], [], [], [], []);
                 } else {
                     self.write_module(
                         mod,
@@ -484,7 +531,8 @@ obj FactStore {
                         cast(list[BranchFact], bundle[4]),
                         cast(list[BodyFact], bundle[5]),
                         cast(list[LiteralFact], bundle[6]),
-                        cast(list[DocstringFact], bundle[7])
+                        cast(list[DocstringFact], bundle[7]),
+                        cast(list[ChainFact], bundle[8])
                     );
                 }
                 refreshed.append(mod.path);
@@ -495,8 +543,30 @@ obj FactStore {
             raise;
         }
 
-        self.set_scope([m.path for m in facts.modules]);
+        self.set_scope(
+            [
+                m.path
+                for m in facts.modules
+                if m.role == "source" or m.role == "impl-annex"
+            ]
+        );
         return (refreshed, skipped);
+    }
+
+    def test_use_count(symbol_id: str) -> int {
+        cur = self.conn.execute(
+            "SELECT COUNT(*) FROM refs WHERE used_id = ? AND src_role = 'test'",
+            (symbol_id, )
+        );
+        return int(cur.fetchone()[0]);
+    }
+
+    def iterate_use_count(symbol_id: str) -> int {
+        cur = self.conn.execute(
+            "SELECT COUNT(*) FROM refs WHERE used_id = ? AND kind = 'iterate'",
+            (symbol_id, )
+        );
+        return int(cur.fetchone()[0]);
     }
 
     def use_count(symbol_id: str) -> int {
@@ -699,6 +769,37 @@ obj FactStore {
                     "cond_pos_start": row[6],
                     "cond_pos_end": row[7],
                     "line": row[8]
+                }
+            );
+        }
+        return out;
+    }
+
+    def if_chains -> list[dict] {
+        cur = self.conn.execute(
+            "SELECT module_path, owner_id, owner_name, shape, n_arms, n_total, "
+            "selector, const_arms, uniform_returns, ordered_ops, mixed_selector, "
+            "pos_start, pos_end, line FROM chains "
+            "WHERE 1 = 1" + _scope("module_path") + " ORDER BY module_path, pos_start"
+        );
+        out: list[dict] = [];
+        for row in cur.fetchall() {
+            out.append(
+                {
+                    "module_path": row[0],
+                    "owner_id": row[1],
+                    "owner_name": row[2],
+                    "shape": row[3],
+                    "n_arms": row[4],
+                    "n_total": row[5],
+                    "selector": row[6],
+                    "const_arms": row[7],
+                    "uniform_returns": bool(row[8]),
+                    "ordered_ops": bool(row[9]),
+                    "mixed_selector": bool(row[10]),
+                    "pos_start": row[11],
+                    "pos_end": row[12],
+                    "line": row[13]
                 }
             );
         }

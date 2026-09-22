@@ -1,7 +1,7 @@
 """Phase-3b tests: the fact-store tool surface, the deterministic redundancy
 generators, the agent loop runner, and the two authority-containment invariants
 (citation verification drops hallucinated cites; agent findings can never reach
-auto-fix).
+suggested-edit).
 
 The generators + tool surface are exercised against hand-built in-memory fact
 stores (no model, no compile) - that is the whole point of the surface being
@@ -236,7 +236,7 @@ test "citation verification drops a finding with an unresolvable fact ID" {
 }
 
 
-test "agent findings can never reach auto-fix" {
+test "agent findings can never reach suggested-edit" {
     store = _hand_store(["/m.jac"], [_sym("A", "/m.jac", "a", "ability")], []);
     tools = ToolSurface(store=store);
     analyzer = AgentAnalyzer(tools=tools, model=HeuristicModel());
@@ -246,7 +246,7 @@ test "agent findings can never reach auto-fix" {
     f = analyzer._to_finding(hyp, Verdict(decision="confirm", citations=["A"]));
     assert f is not None;
     assert f.source == "agent";
-    # even at the most permissive ceiling, source=agent caps below auto-fix
+    # even at the most permissive ceiling, source=agent caps below suggested-edit
     c = classify(f, RiskTier.FORBIDDEN);
     assert c.disposition == Disposition.PR_ONLY , c.disposition;
 }
