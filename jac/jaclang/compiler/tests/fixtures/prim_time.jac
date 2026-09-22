@@ -15,10 +15,6 @@ def time_py -> dict[any, any] {
     time.sleep(0.02);
     t1: float = time.monotonic();
     p0: int = time.process_time_ns();
-    i: int = 0;
-    while i < 100000 {
-        i += 1;
-    }
     p1: int = time.process_time_ns();
     neg: str = "?";
     try {
@@ -35,8 +31,10 @@ def time_py -> dict[any, any] {
     inf_e: str = "?";
     try {
         time.sleep(float("inf"));
-    } except OverflowError as e {
-        inf_e = "OverflowError: " + str(e);
+    } except OverflowError {
+        # str(e) is CPython-build-dependent ("platform time_t" vs "C PyTime_t");
+        # the except arm itself proves the type, so pin that only.
+        inf_e = "OverflowError";
     }
     cgt_e: str = "?";
     try {
@@ -85,10 +83,6 @@ def time_na -> dict[str, any] {
     time.sleep(0.02);
     t1: float = time.monotonic();
     p0: int = time.process_time_ns();
-    i: int = 0;
-    while i < 100000 {
-        i += 1;
-    }
     p1: int = time.process_time_ns();
     neg: str = "?";
     try {
@@ -105,8 +99,10 @@ def time_na -> dict[str, any] {
     inf_e: str = "?";
     try {
         time.sleep(float("inf"));
-    } except OverflowError as e {
-        inf_e = "OverflowError: " + str(e);
+    } except OverflowError {
+        # str(e) is CPython-build-dependent ("platform time_t" vs "C PyTime_t");
+        # the except arm itself proves the type, so pin that only.
+        inf_e = "OverflowError";
     }
     cgt_e: str = "?";
     try {

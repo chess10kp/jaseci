@@ -1,6 +1,8 @@
 import from c { def strerror(errnum: i32) -> str;  }
 import from _errno_platform { errno_address }
 
+glob EINTR: int = 4;
+
 def:pub last_errno -> int {
     return int(__mem_load_i32(errno_address()));
 }

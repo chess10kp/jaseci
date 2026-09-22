@@ -392,8 +392,9 @@ native layout records the emitted name separately from its source-level key.
   collide with the floor's C externs in the shared native symbol table --
   use `clock_gettime_ns` / `clock_settime_ns`; `perf_counter` is
   `CLOCK_MONOTONIC`, matching CPython on POSIX; `sleep` takes float
-  seconds. The floor keeps one malloc'd `timespec` scratch per process,
-  so the module is not re-entrant across threads. Native-host only.
+  seconds. Each floor call packs the `timespec` into a 16-byte buffer it
+  allocates for itself, so the module is safe to call from any thread
+  (the native backend spawns real ones). Native-host only.
 
 The syscall-backed `os` / `os.path` entry points (`makedirs`, `realpath`,
 `mkdir`, `exists`, `getmtime`, `normcase`, ...) are Mechanism-A/H compiler

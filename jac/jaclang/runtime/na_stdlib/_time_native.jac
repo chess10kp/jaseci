@@ -1,8 +1,9 @@
-import from c { def malloc(size: u64) -> int;  }
-import from c { def clock_gettime(clk: i32, ts: int) -> i32;  }
-import from c { def clock_settime(clk: i32, ts: int) -> i32;  }
-import from c { def clock_nanosleep(clk: i32, flags: i32, req: int, rem: int) -> i32;  }
-import from _errno_native { last_errno, raise_errno }
+import from c { def clock_gettime(clk: i32, ts: bytes) -> i32;  }
+import from c { def clock_settime(clk: i32, ts: bytes) -> i32;  }
+import from c {
+    def clock_nanosleep(clk: i32, flags: i32, req: bytes, rem: bytes) -> i32;
+}
+import from _errno_native { EINTR, last_errno, raise_errno }
 
 glob _CLOCK_REALTIME_ID: int = 0,
      _CLOCK_MONOTONIC_ID: int = 1,
@@ -10,9 +11,7 @@ glob _CLOCK_REALTIME_ID: int = 0,
      _CLOCK_THREAD_CPUTIME_ID: int = 3,
      _CLOCK_MONOTONIC_RAW_ID: int = 4,
      _TIMER_ABSTIME: int = 1,
-     EINTR: int = 4,
-     _NS_PER_SEC: int = 1000000000,
-     _TS: int = malloc(32);
+     _NS_PER_SEC: int = 1000000000;
 
 def:pub time_clk_realtime -> int {
     return _CLOCK_REALTIME_ID;
@@ -34,49 +33,58 @@ def:pub time_clk_thread_cputime -> int {
     return _CLOCK_THREAD_CPUTIME_ID;
 }
 
+def _ts_load(buf: bytes, off: int) -> int {
+    v: int = 0;
+    i: int = 7;
+    while i >= 0 {
+        v = (v << 8) | buf[off + i];
+        i -= 1;
+    }
+    return v;
+}
+
 def:pub time_clock_ns(clk: int) -> int {
-    if clock_gettime(i32(clk), _TS) != 0 {
+    ts: bytes = b"\x00" * 16;
+    if clock_gettime(i32(clk), ts) != 0 {
         raise_errno(last_errno());
     }
-    return __mem_load_i64(_TS) * _NS_PER_SEC + __mem_load_i64(_TS + 8);
+    return _ts_load(ts, 0) * _NS_PER_SEC + _ts_load(ts, 8);
 }
 
 def:pub time_clock_seconds(clk: int) -> float {
-    if clock_gettime(i32(clk), _TS) != 0 {
+    ts: bytes = b"\x00" * 16;
+    if clock_gettime(i32(clk), ts) != 0 {
         raise_errno(last_errno());
     }
-    return float(__mem_load_i64(_TS)) + float(__mem_load_i64(_TS + 8)) * 1e-9;
+    return float(_ts_load(ts, 0)) + float(_ts_load(ts, 8)) * 1e-9;
 }
 
 def:pub time_clock_set_ns(clk: int, ns: int) {
     sec: int = ns // _NS_PER_SEC;
-    __mem_store_i64(_TS, sec);
-    __mem_store_i64(_TS + 8, ns - sec * _NS_PER_SEC);
-    if clock_settime(i32(clk), _TS) != 0 {
+    nsec: int = ns - sec * _NS_PER_SEC;
+    ts: bytes = sec.to_bytes(8, "little") + nsec.to_bytes(8, "little");
+    if clock_settime(i32(clk), ts) != 0 {
         raise_errno(last_errno());
     }
 }
 
 def:pub time_sleep_ns(ns: int) {
-    if clock_gettime(i32(_CLOCK_MONOTONIC_ID), _TS) != 0 {
+    now: bytes = b"\x00" * 16;
+    if clock_gettime(i32(_CLOCK_MONOTONIC_ID), now) != 0 {
         raise_errno(last_errno());
     }
     add_sec: int = ns // _NS_PER_SEC;
-    nsec: int = __mem_load_i64(_TS + 8) + ns - add_sec * _NS_PER_SEC;
-    sec: int = __mem_load_i64(_TS) + add_sec;
+    nsec: int = _ts_load(now, 8) + ns - add_sec * _NS_PER_SEC;
+    sec: int = _ts_load(now, 0) + add_sec;
     if nsec >= _NS_PER_SEC {
         nsec -= _NS_PER_SEC;
         sec += 1;
     }
-    __mem_store_i64(_TS, sec);
-    __mem_store_i64(_TS + 8, nsec);
-    res: i32 = clock_nanosleep(
-        i32(_CLOCK_MONOTONIC_ID), i32(_TIMER_ABSTIME), _TS, _TS + 16
-    );
+    req: bytes = sec.to_bytes(8, "little") + nsec.to_bytes(8, "little");
+    rem: bytes = b"\x00" * 16;
+    res: i32 = clock_nanosleep(i32(_CLOCK_MONOTONIC_ID), i32(_TIMER_ABSTIME), req, rem);
     while res == EINTR {
-        res = clock_nanosleep(
-            i32(_CLOCK_MONOTONIC_ID), i32(_TIMER_ABSTIME), _TS, _TS + 16
-        );
+        res = clock_nanosleep(i32(_CLOCK_MONOTONIC_ID), i32(_TIMER_ABSTIME), req, rem);
     }
     if res != 0 {
         raise_errno(int(res));
