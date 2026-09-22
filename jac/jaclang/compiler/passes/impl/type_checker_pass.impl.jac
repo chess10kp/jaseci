@@ -817,8 +817,7 @@ impl TypeCheckPass.exit_assignment with Assignment exit {
                                     result = promoted;
                                 } elif base_op in COMPLEX_ARITH_OPS {
                                     complex_result = get_complex_arith_result_type(
-                                        left_type,
-                                        right_type
+                                        left_type, right_type
                                     );
                                     if complex_result is not None {
                                         result = complex_result;
