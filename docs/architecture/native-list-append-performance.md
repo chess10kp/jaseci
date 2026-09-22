@@ -206,14 +206,35 @@ reduction: each escape-proven local list construction skips the header
 `malloc` and the header `free`, which lowers allocator traffic and GC pressure
 for short-lived-list-heavy code. It is not a churn-speed fix.
 
+### Status: implemented, opt-in, not enabled by default
+
+The implementation carries one known hazard discovered during validation: the
+data-only release routing (scope-exit, loop-iteration, overwrite, last-use
+sites consult a name-keyed registry) produced a deterministic, highly
+layout-sensitive segfault in the `dict_hash_ops` churn fixture
+(`order_after_churn`) — flipping any unrelated codegen detail (an extra
+`fprintf` in the release helper) suppressed it. Bisecting showed the crash
+requires exactly the overwrite-site data-only routing; the slab layout itself
+is sound, and with routing disabled the fixture matches the `#9362` baseline
+exactly. The root cause is believed to be release ordering interacting with
+the binding-state mirroring (`_enter_bindings`/`_shadow_bindings`) rather than
+any single site's emission, and the fail-leak sentinel does not protect the
+*data buffer*, whose premature free is a use-after-free vector.
+
+For these reasons stamping is gated behind `JAC_NATIVE_STACK_LIST_HEADERS=1`
+(default: the base heap-header path, byte-equivalent behavior). The unit and
+native tests enable the gate themselves. Enabling it by default requires a
+release-routing redesign — for example, attaching the release decision to the
+symbol's storage slot at definition rather than a mutable name-keyed registry.
+
 ### Short explanation (revised)
 
 Jac native lists were slower because list growth was fully inlined into the
 append loop; moving growth to a `noinline` helper cut the measured cost by 17%.
 The stack-constructed-header follow-up was implemented behind a proper escape
-analysis and measured neutral-to-negative against that shipped fix: the store
-and load counts per append are identical once the header is cache-resident, and
-the prototype's 55% figure did not survive a controlled A/B. The remaining
-opportunity for append-heavy code is small under `-O2` and, if pursued, lies
-elsewhere (for example, registerizing loop-carried list state at the Jac IR
-level) rather than in header placement.
+analysis and measured neutral-to-negative against that shipped fix; its
+release routing also exposed a layout-sensitive memory hazard, so it ships
+opt-in (`JAC_NATIVE_STACK_LIST_HEADERS=1`) pending a release-routing redesign.
+The remaining opportunity for append-heavy code is small under `-O2` and, if
+pursued, lies elsewhere (for example, registerizing loop-carried list state at
+the Jac IR level) rather than in header placement.

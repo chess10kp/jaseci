@@ -198,39 +198,52 @@ impl NaIRGenPass._emit_stack_list_header(elem_type_name: str) -> (ir.Value | Non
     _hdr_arr = ir.ArrayType(i8, HDR_TOTAL);
     _slab_ty = ir.LiteralStructType([_hdr_arr, list_ty]);
     _slab = self._entry_alloca(_slab_ty, f"stkl.{elem_type_name}");
-    _raw = self.builder.gep(
-        _slab, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="stkl.raw"
+    hdr = self.builder.gep(
+        _slab, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name=f"stkl.{elem_type_name}"
     );
-    _raw_i8 = self.builder.bitcast(_raw, i8_ptr, name="stkl.i8");
-    _rc_slot = self.builder.gep(_raw_i8, [ir.Constant(i64, HDR_RC_OFF)], name="stkl.rc");
-    self.builder.store(
-        ir.Constant(i64, RC_SENTINEL), self.builder.bitcast(_rc_slot, i64_ptr, name="stkl.rc.p")
-    );
-    for _off in (HDR_DTOR_OFF, HDR_ALLOC_ID_OFF) {
+    _hdr = self.builder.bitcast(hdr, list_ty.as_pointer(), name="stkl.hdr");
+    _raw_i8 = self.builder.bitcast(hdr, i8_ptr, name="stkl.i8");
+    for (_slot_name, _hdr_off) in (
+        ("stkl.rc.p", HDR_RC_OFF),
+        ("stkl.dtor.p", HDR_DTOR_OFF),
+        ("stkl.aid.p", HDR_ALLOC_ID_OFF),
+
+    ) {
         _slot = self.builder.gep(
-            _raw_i8, [ir.Constant(i64, _off)], name=f"stkl.off{_off}"
+            _raw_i8, [ir.Constant(i64, HDR_TOTAL + _hdr_off)], name=_slot_name
+        );
+        _init = (
+            ir.Constant(i64, RC_SENTINEL)
+                if _hdr_off == HDR_RC_OFF
+                else ir.Constant(i64, 0)
         );
         self.builder.store(
-            ir.Constant(i64, 0), self.builder.bitcast(_slot, i64_ptr, name=f"stkl.off{_off}.p")
+            _init, self.builder.bitcast(_slot, i64_ptr, name=_slot_name)
         );
     }
     if self.rc_set_type_fn is not None {
         self._emit_set_type_tag(self.builder, _raw_i8, f"list_{elem_type_name}");
     }
-    hdr = self.builder.gep(
-        _slab, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name=f"stkl.{elem_type_name}"
+    _len_p = self.builder.gep(
+        _hdr, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="stkl.len.p"
     );
-    _hdr = self.builder.bitcast(hdr, list_ty.as_pointer(), name="stkl.hdr");
-    _len_p = self.builder.gep(_hdr, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="stkl.len.p");
     self.builder.store(ir.Constant(i64, 0), _len_p);
-    _cap_p = self.builder.gep(_hdr, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name="stkl.cap.p");
+    _cap_p = self.builder.gep(
+        _hdr, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name="stkl.cap.p"
+    );
     self.builder.store(ir.Constant(i64, 8), _cap_p);
     _elem_null = ir.Constant(elem_type.as_pointer(), None);
-    _elem_gep = self.builder.gep(_elem_null, [ir.Constant(i32, 1)], name="stkl.elem.sizeof");
+    _elem_gep = self.builder.gep(
+        _elem_null, [ir.Constant(i32, 1)], name="stkl.elem.sizeof"
+    );
     _elem_sz = self.builder.ptrtoint(_elem_gep, i64, name="stkl.elem.size");
-    _data_bytes = self.builder.mul(ir.Constant(i64, 8), _elem_sz, name="stkl.data.bytes");
+    _data_bytes = self.builder.mul(
+        ir.Constant(i64, 8), _elem_sz, name="stkl.data.bytes"
+    );
     _data_raw = self.builder.call(self.malloc_fn, [_data_bytes], name="stkl.data.raw");
-    _data_p = self.builder.gep(_hdr, [ir.Constant(i32, 0), ir.Constant(i32, 2)], name="stkl.data.p");
+    _data_p = self.builder.gep(
+        _hdr, [ir.Constant(i32, 0), ir.Constant(i32, 2)], name="stkl.data.p"
+    );
     self.builder.store(
         self.builder.bitcast(_data_raw, elem_type.as_pointer(), name="stkl.data"),
         _data_p

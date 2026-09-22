@@ -11,6 +11,12 @@ frame header turns post-frame reads into use-after-free.
 import ctypes;
 import from tests.support { compile_native, compile_native_ir, get_func }
 
+import os;
+
+with entry {
+    os.environ["JAC_NATIVE_STACK_LIST_HEADERS"] = "1";
+}
+
 test "frame-local list headers execute correctly and escape channels stay heap" {
     (engine, module) = compile_native("list_stack_headers.jac");
     churn = get_func(engine, "s1_churn_append", ctypes.c_int64);
@@ -61,9 +67,9 @@ test "header promotion shows in IR only for proven locals" {
 def _function_body(ir_text: str, fn_name: str) -> (str | None) {
     for marker in ("@" + fn_name + "()", "@\"" + fn_name + "\"()") {
         for chunk in ir_text.split("define ") {
-            head = chunk[: chunk.find("{")] if "{" in chunk else "";
+            head = chunk[:chunk.find("{")] if "{" in chunk else "";
             if marker in head {
-                return chunk[: chunk.find("\n}") if "\n}" in chunk else len(chunk)];
+                return chunk[:chunk.find("\n}") if "\n}" in chunk else len(chunk)];
             }
         }
     }

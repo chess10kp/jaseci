@@ -106,6 +106,11 @@ impl RcFactsPass._stamp_escapes(ir_in: Module) -> None {
 }
 
 impl RcFactsPass._stamp_list_stack_ok(ir_in: Module) -> None {
+    import os;
+
+    if not os.environ.get("JAC_NATIVE_STACK_LIST_HEADERS") {
+        return;
+    }
     _methods_ok = {
         "append",
         "clear",
@@ -182,7 +187,9 @@ impl RcFactsPass._stamp_list_stack_ok(ir_in: Module) -> None {
                 continue;
             }
             if isinstance(p, Assignment) {
-                targets = p.target if isinstance(p.target, (list, tuple)) else [(p.target)];
+                targets = p.target
+                    if isinstance(p.target, (list, tuple))
+                    else [(p.target)];
                 if p.aug_op is None
                     and isinstance(p.value, ListVal)
                     and any(t is u for t in targets) {
@@ -192,9 +199,7 @@ impl RcFactsPass._stamp_list_stack_ok(ir_in: Module) -> None {
                 break;
             }
             if isinstance(p, FuncCall) {
-                _tn = p.target.value
-                    if isinstance(p.target, Name)
-                    else None;
+                _tn = p.target.value if isinstance(p.target, Name) else None;
                 if _tn == "len" {
                     continue;
                 }
@@ -202,8 +207,7 @@ impl RcFactsPass._stamp_list_stack_ok(ir_in: Module) -> None {
                 break;
             }
             if isinstance(
-                p,
-                (BinaryExpr, CompareExpr, UnaryExpr, IfStmt, WhileStmt, InForStmt)
+                p, (BinaryExpr, CompareExpr, UnaryExpr, IfStmt, WhileStmt, InForStmt)
             ) {
                 continue;
             }

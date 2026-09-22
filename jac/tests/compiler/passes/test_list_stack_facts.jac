@@ -24,6 +24,10 @@ import from jaclang.compiler.driver.pass_driver { run_pass }
 
 glob FIXTURES = os.path.join(TESTS_DIR, "compiler", "passes", "fixtures");
 
+with entry {
+    os.environ["JAC_NATIVE_STACK_LIST_HEADERS"] = "1";
+}
+
 """Map every single-target local list binding to its `na_list_stack_ok` mark."""
 def list_stack_marks(fixture: str) -> dict[str, bool] {
     prog = JacProgram();
