@@ -364,10 +364,10 @@ native layout records the emitted name separately from its source-level key.
   links are created via libc `link`/`symlink` when trivial. Native-host only.
   Pinned sv<->na congruent by `test_tarfile_equivalence.jac`.
 
-- **`time.jac`** (Mechanism F surface) + **`_time_native.jac`** /
-  **`_time_native.darwin.jac`** (libc FFI floor over `clock_gettime` /
-  `clock_settime` / `clock_nanosleep` on Linux, `clock_gettime` /
-  `clock_settime` / `nanosleep` on Darwin) -- the clock half of CPython's
+- **`time.jac`** (Mechanism F surface) + **`_time_common.jac`** (shared
+  `clock_gettime` / `clock_settime` FFI and timespec loads) +
+  **`_time_native.linux.jac`** / **`_time_native.darwin.jac`** (per-OS clock
+  ids and the sleep floor: `clock_nanosleep` on Linux, `nanosleep` on Darwin) -- the clock half of CPython's
   `time` module, replacing the former Mechanism-A intercept: `time`,
   `time_ns`, `monotonic`, `monotonic_ns`, `perf_counter`, `perf_counter_ns`,
   `process_time`, `process_time_ns`, `thread_time`, `thread_time_ns`,

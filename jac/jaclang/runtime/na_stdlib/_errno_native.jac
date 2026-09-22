@@ -15,7 +15,7 @@ def:pub errno_message -> str {
     return strerror(i32(last_errno()));
 }
 
-def _raise_for_errno(code: int, message: str) {
+def _raise_for_errno(code: int, message: imm str) {
     if code == 2 {
         raise FileNotFoundError(message);
     }
@@ -31,7 +31,7 @@ def _raise_for_errno(code: int, message: str) {
     raise OSError(message);
 }
 
-def:pub raise_os_error(operation: str, path: str, code: int) {
+def:pub raise_os_error(operation: imm str, path: imm str, code: int) {
     _raise_for_errno(code, operation + ": " + strerror(i32(code)) + ": " + path);
 }
 

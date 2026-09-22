@@ -1,20 +1,18 @@
 import from _time_native {
-    time_clk_realtime,
-    time_clk_monotonic,
-    time_clk_monotonic_raw,
-    time_clk_process_cputime,
-    time_clk_thread_cputime,
-    time_clock_ns,
-    time_clock_seconds,
-    time_clock_set_ns,
+    _CLOCK_MONOTONIC_ID,
+    _CLOCK_MONOTONIC_RAW_ID,
+    _CLOCK_PROCESS_CPUTIME_ID,
+    _CLOCK_REALTIME_ID,
+    _CLOCK_THREAD_CPUTIME_ID,
     time_sleep_ns
 }
+import from _time_common { time_clock_ns, time_clock_seconds, time_clock_set_ns }
 
-glob CLOCK_REALTIME: int = time_clk_realtime(),
-     CLOCK_MONOTONIC: int = time_clk_monotonic(),
-     CLOCK_MONOTONIC_RAW: int = time_clk_monotonic_raw(),
-     CLOCK_PROCESS_CPUTIME_ID: int = time_clk_process_cputime(),
-     CLOCK_THREAD_CPUTIME_ID: int = time_clk_thread_cputime();
+glob CLOCK_REALTIME: int = _CLOCK_REALTIME_ID,
+     CLOCK_MONOTONIC: int = _CLOCK_MONOTONIC_ID,
+     CLOCK_MONOTONIC_RAW: int = _CLOCK_MONOTONIC_RAW_ID,
+     CLOCK_PROCESS_CPUTIME_ID: int = _CLOCK_PROCESS_CPUTIME_ID,
+     CLOCK_THREAD_CPUTIME_ID: int = _CLOCK_THREAD_CPUTIME_ID;
 
 
 def:pub time -> float {
