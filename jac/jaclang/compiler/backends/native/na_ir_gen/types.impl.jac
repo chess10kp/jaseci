@@ -752,11 +752,57 @@ impl NaIRGenTypes._lower_class_type(t: any) -> (ir.Type | None) {
 
 impl NaIRGenTypes._lower_function_type(t: any) -> ir.Type {
     raw = self._lower_function_type_raw(t);
+    _already = self._closure_struct_of(raw);
+    if _already is not None {
+        return raw;
+    }
     (_sig_name, sig_st, _fnty_env) = self._closure_sig_struct(raw.pointee);
     return sig_st.as_pointer();
 }
 
+impl NaIRGenTypes._frontend_type_is_any(t: any) -> bool {
+    """Whether a frontend type is the erased `any`/`Any`.""";
+    if t is None {
+        return False;
+    }
+    try {
+        import from jaclang.compiler.type_system.types { ClassType as _CT }
+        if isinstance(t, _CT) {
+            return t.shared.class_name in ("any", "Any", "object");
+        }
+    } except ImportError { }
+    return str(t) in ("<any>", "any", "Any");
+}
+
+impl NaIRGenTypes._bare_callable_type() -> ir.Type {
+    """Canonical repr for a bare/erased `Callable` value.
+
+    A bare `Callable` carries no static signature, so a raw function pointer
+    can neither capture a bound receiver nor be invoked with runtime-arity
+    arguments. Lower it to the closure-pair shape instead: a pointer to
+    `{ i64 code; ptr env }` where `code` is a per-callee trampoline with the
+    uniform signature `%JacVal (ptr args_list, ptr env)` and `env` is the
+    captured receiver (null for plain functions). Calls build a jacval list
+    of the arguments and go through the trampoline.
+    """;
+    if self._bare_callable_sname {
+        return self.struct_types[self._bare_callable_sname].as_pointer();
+    }
+    if self?.jacval_type is None {
+        return ir.IntType(8).as_pointer();
+    }
+    self._emit_list_helpers("jacval", self.jacval_type);
+    _argsl = self.list_types["jacval"].as_pointer();
+    _fnty = ir.FunctionType(self.jacval_type, [_argsl]);
+    (_name, _st, _fe) = self._closure_sig_struct(_fnty);
+    self._bare_callable_sname = _name;
+    return _st.as_pointer();
+}
+
 impl NaIRGenTypes._lower_function_type_raw(t: any) -> ir.Type {
+    if not (t.parameters or []) and self._frontend_type_is_any(t.return_type) {
+        return self._bare_callable_type();
+    }
     ret_type: ir.Type = ir.VoidType();
     if t.return_type is not None {
         _r = self._lower_type(t.return_type);
@@ -2029,6 +2075,9 @@ impl NaIRGenTypes._coerce_type_inner(val: ir.Value, target_type: ir.Type) -> ir.
                 _wfn = self.builder.bitcast(
                     _wfn, _wfn.type.as_pointer(), name="clos.wrap.fnp"
                 );
+            }
+            if _clos_tgt == self._bare_callable_sname and isinstance(val, ir.Function) {
+                _wfn = self._emit_callable_trampoline(val, False);
             }
             _wclos = self._alloc_iter_struct(_clos_tgt);
             _wfn_slot = self.builder.gep(
@@ -3698,6 +3747,105 @@ impl NaIRGenTypes._emit_comparison(
                 break;
             }
         }
+        for (dk, dt) in self.dict_types.items() {
+            if left.type == dt.as_pointer() and right.type == dt.as_pointer() {
+                dhelpers = self.dict_helpers.get(dk);
+                if dhelpers is not None and (op == Tok.EE or op == Tok.NE) {
+                    i64_t = ir.IntType(64);
+                    i1_t = ir.IntType(1);
+                    dlen_a = self.builder.call(
+                        dhelpers["len"], [left], name="dcmp.la"
+                    );
+                    dlen_b = self.builder.call(
+                        dhelpers["len"], [right], name="dcmp.lb"
+                    );
+                    dlen_eq = self.builder.icmp_unsigned(
+                        "==", dlen_a, dlen_b, name="dcmp.leq"
+                    );
+                    func = self.builder.basic_block.function;
+                    entry_bb = self.builder.basic_block;
+                    loop_bb = func.append_basic_block(name="dcmp.loop");
+                    key_bb = func.append_basic_block(name="dcmp.key");
+                    val_bb = func.append_basic_block(name="dcmp.val");
+                    false_bb = func.append_basic_block(name="dcmp.false");
+                    true_bb = func.append_basic_block(name="dcmp.true");
+                    done_bb = func.append_basic_block(name="dcmp.done");
+                    self.builder.cbranch(dlen_eq, loop_bb, false_bb);
+                    self.builder.position_at_start(loop_bb);
+                    dcmp_i = self.builder.phi(i64_t, name="dcmp.i");
+                    dcmp_i.add_incoming(ir.Constant(i64_t, 0), entry_bb);
+                    dcmp_at_end = self.builder.icmp_unsigned(
+                        ">=", dcmp_i, dlen_a, name="dcmp.atend"
+                    );
+                    self.builder.cbranch(dcmp_at_end, true_bb, key_bb);
+                    self.builder.position_at_start(key_bb);
+                    dcmp_k = self.builder.call(
+                        dhelpers["get_key"], [left, dcmp_i], name="dcmp.k"
+                    );
+                    dcmp_has = self.builder.call(
+                        dhelpers["contains"], [right, dcmp_k], name="dcmp.has"
+                    );
+                    self.builder.cbranch(dcmp_has, val_bb, false_bb);
+                    self.builder.position_at_start(val_bb);
+                    dcmp_la = self.builder.call(
+                        dhelpers["get"], [left, dcmp_k], name="dcmp.va"
+                    );
+                    dcmp_rb = self.builder.call(
+                        dhelpers["get"], [right, dcmp_k], name="dcmp.vb"
+                    );
+                    dcmp_vt = dhelpers["val_type"];
+                    if isinstance(dcmp_vt, (ir.DoubleType, ir.FloatType)) {
+                        dcmp_vne = self.builder.fcmp_ordered(
+                            "!=", dcmp_la, dcmp_rb, name="dcmp.vne"
+                        );
+                    } elif self?.jacval_type and dcmp_vt == self.jacval_type {
+                        dcmp_vne = self.builder.not_(
+                            self._emit_jacval_eq(dcmp_la, dcmp_rb), name="dcmp.vne"
+                        );
+                    } elif dcmp_vt == ir.IntType(8).as_pointer() {
+                        dcmp_scmp = self._call_str_cmp(
+                            self.builder, dcmp_la, dcmp_rb, name="dcmp.scmp"
+                        );
+                        dcmp_vne = self.builder.icmp_signed(
+                            "!=",
+                            dcmp_scmp,
+                            ir.Constant(ir.IntType(32), 0),
+                            name="dcmp.vne"
+                        );
+                    } elif isinstance(dcmp_vt, ir.IntType) {
+                        dcmp_vne = self.builder.icmp_signed(
+                            "!=", dcmp_la, dcmp_rb, name="dcmp.vne"
+                        );
+                    } else {
+                        dcmp_vne = self.builder.icmp_unsigned(
+                            "!=", dcmp_la, dcmp_rb, name="dcmp.vne"
+                        );
+                    }
+                    dcmp_next_bb = func.append_basic_block(name="dcmp.next");
+                    self.builder.cbranch(dcmp_vne, false_bb, dcmp_next_bb);
+                    self.builder.position_at_start(dcmp_next_bb);
+                    dcmp_ni = self.builder.add(
+                        dcmp_i, ir.Constant(i64_t, 1), name="dcmp.ni"
+                    );
+                    dcmp_i.add_incoming(dcmp_ni, dcmp_next_bb);
+                    self.builder.branch(loop_bb);
+                    self.builder.position_at_start(false_bb);
+                    self.builder.branch(done_bb);
+                    self.builder.position_at_start(true_bb);
+                    self.builder.branch(done_bb);
+                    self.builder.position_at_start(done_bb);
+                    dcmp_result = self.builder.phi(i1_t, name="dcmp.eq.result");
+                    dcmp_result.add_incoming(ir.Constant(i1_t, 1), true_bb);
+                    dcmp_result.add_incoming(ir.Constant(i1_t, 0), false_bb);
+                    if op == Tok.NE {
+                        return self.builder.not_(dcmp_result, name="dcmp.ne");
+                    }
+                    return dcmp_result;
+                }
+                break;
+            }
+        }
+
 
         rtype_ptr = self.range_struct_type.as_pointer();
         if left.type == rtype_ptr

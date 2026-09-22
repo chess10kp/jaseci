@@ -1,3 +1,100 @@
+import from jaclang.compiler.frontend.codeinfo { HDR_ALLOC_ID_OFF }
+
+impl NativeBuiltinEmitter.emit_jid(
+    self: NativeBuiltinEmitter, ctx: NativeEmitCtx, args: list[ir.Value]
+) -> (ir.Value | None) {
+    if not args {
+        return None;
+    }
+
+    p = ctx.pass_ref;
+    b = get_builder(p);
+    i8p = ir.IntType(8).as_pointer();
+    i32 = ir.IntType(32);
+    i64 = ir.IntType(64);
+    arg_val = args[0];
+
+    _is_graph_type = False;
+    for _part in (ctx.type_key or "").replace(" ", "").split("|") {
+        if (
+            _part
+            and _part not in ("None", "NoneType")
+            and p._arch_is_osp_name(_part)
+        ) {
+            _is_graph_type = True;
+            break;
+        }
+    }
+
+    obj_ptr: ir.Value;
+    if p.jacval_type is not None and arg_val.type == p.jacval_type {
+        _tag = b.extract_value(arg_val, 0, name="jid.tag");
+        _payload = b.extract_value(arg_val, 1, name="jid.payload");
+        _is_graph = b.icmp_unsigned(
+            "==", _tag, ir.Constant(ir.IntType(8), 6), name="jid.is_graph"
+        );
+        _has_payload = b.icmp_unsigned(
+            "!=", _payload, ir.Constant(i64, 0), name="jid.has_payload"
+        );
+        _invalid = b.not_(b.and_(_is_graph, _has_payload), name="jid.invalid");
+        p._emit_runtime_raise(
+            _invalid, "TypeError", "jid() requires a graph object"
+        );
+        obj_ptr = b.inttoptr(_payload, i8p, name="jid.boxed_ptr");
+    } elif p._opt_ptr_payload_of(arg_val.type) is not None {
+        if not _is_graph_type {
+            return None;
+        }
+        _payload = b.extract_value(arg_val, 1, name="jid.opt_payload");
+        _is_null = b.icmp_unsigned(
+            "==",
+            b.ptrtoint(_payload, i64, name="jid.opt_int"),
+            ir.Constant(i64, 0),
+            name="jid.opt_null",
+        );
+        p._emit_runtime_raise(
+            _is_null, "TypeError", "jid() requires a graph object"
+        );
+        obj_ptr = b.bitcast(_payload, i8p, name="jid.opt_ptr");
+    } elif isinstance(arg_val.type, ir.PointerType) {
+        if not _is_graph_type {
+            return None;
+        }
+        obj_ptr = b.bitcast(arg_val, i8p, name="jid.ptr");
+    } else {
+        return None;
+    }
+
+    _alloc_slot = b.gep(
+        obj_ptr, [ir.Constant(i64, HDR_ALLOC_ID_OFF)], name="jid.alloc_id.slot"
+    );
+    _header_id = b.load(
+        b.bitcast(_alloc_slot, i64.as_pointer(), name="jid.alloc_id.p"),
+        name="jid.alloc_id"
+    );
+    _pointer_id = b.ptrtoint(obj_ptr, i64, name="jid.pointer_id");
+    _identity = b.select(
+        b.icmp_unsigned("==", _header_id, ir.Constant(i64, 0), name="jid.no_alloc_id"),
+        _pointer_id,
+        _header_id,
+        name="jid.identity",
+    );
+
+    _buf = p._str_alloc(b, ir.Constant(i64, 33), name="jid.buf");
+    _fmt = p._make_global_string("%032llx", name_prefix=".jid.fmt");
+    _snprintf = p._get_or_declare_extern(
+        "snprintf", i32, [i8p, i64, i8p], var_arg=True
+    );
+    b.call(
+        _snprintf,
+        [_buf, ir.Constant(i64, 33), _fmt, _identity],
+        name="jid.format",
+    );
+    p._str_finish(b, _buf, ir.Constant(i64, 32));
+    p._mark_owned(_buf);
+    return _buf;
+}
+
 impl NativeIntEmitter.emit_to_bytes(
     self: NativeIntEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
@@ -728,6 +825,9 @@ impl NativeStrEmitter.emit_count(
     if not args {
         return None;
     }
+    if len(args) > 1 {
+        return None;
+    }
     p = ctx.pass_ref;
     b = get_builder(p);
     i8p = ir.IntType(8).as_pointer();
@@ -779,6 +879,9 @@ impl NativeStrEmitter.emit_find(
     if not args {
         return None;
     }
+    if len(args) > 2 {
+        return None;
+    }
     p = ctx.pass_ref;
     b = get_builder(p);
     i8p = ir.IntType(8).as_pointer();
@@ -786,16 +889,20 @@ impl NativeStrEmitter.emit_find(
     strstr_fn = p._get_or_declare_extern("strstr", i8p, [i8p, i8p]);
     search_from = target;
     if len(args) >= 2 {
-        slen = p._call_str_len(b, target, name="find.slen");
+        blen = p._call_str_len(b, target, name="find.blen");
+        cplen = p._call_utf8_cplen(b, target, blen, name="find.cplen");
         start = p._coerce_type(args[1], i64);
         neg = b.icmp_signed("<", start, ir.Constant(i64, 0), name="find.st.neg");
-        wrapped = b.add(start, slen, name="find.st.wrap");
+        wrapped = b.add(start, cplen, name="find.st.wrap");
         start = b.select(neg, wrapped, start, name="find.st.pos");
         below = b.icmp_signed("<", start, ir.Constant(i64, 0), name="find.st.lo");
         start = b.select(below, ir.Constant(i64, 0), start, name="find.st.lo.c");
-        above = b.icmp_signed(">", start, slen, name="find.st.hi");
-        start = b.select(above, slen, start, name="find.st.hi.c");
-        search_from = b.gep(target, [start], name="find.from");
+        above = b.icmp_signed(">", start, cplen, name="find.st.hi");
+        start = b.select(above, cplen, start, name="find.st.hi.c");
+        start_off = p._call_utf8_cp_off(
+            b, target, blen, start, name="find.st.off"
+        );
+        search_from = b.gep(target, [start_off], name="find.from");
     }
     found = b.call(strstr_fn, [search_from, args[0]], name="find.ptr");
     null_ptr = ir.Constant(i8p, None);
@@ -803,7 +910,12 @@ impl NativeStrEmitter.emit_find(
     target_int = b.ptrtoint(target, i64, name="find.tgt.int");
     found_int = b.ptrtoint(found, i64, name="find.fnd.int");
     diff = b.sub(found_int, target_int, name="find.diff");
-    return b.select(is_null, ir.Constant(i64, -1), diff, name="find.result");
+    # On a strstr miss `found` is NULL, so the raw diff goes negative; the
+    # cplen bound check is unsigned and would scan unboundedly. Clamp the
+    # miss to a zero-length scan — the select below still reports -1.
+    diff = b.select(is_null, ir.Constant(i64, 0), diff, name="find.diff.ok");
+    cp_pos = p._call_utf8_cplen(b, target, diff, name="find.cppos");
+    return b.select(is_null, ir.Constant(i64, -1), cp_pos, name="find.result");
 }
 
 impl NativeStrEmitter.emit_rfind(
@@ -812,13 +924,32 @@ impl NativeStrEmitter.emit_rfind(
     if not args {
         return None;
     }
+    if len(args) > 2 {
+        return None;
+    }
     p = ctx.pass_ref;
     b = get_builder(p);
     i8p = ir.IntType(8).as_pointer();
     i64 = ir.IntType(64);
     strstr_fn = p._get_or_declare_extern("strstr", i8p, [i8p, i8p]);
     slen = p._call_str_len(b, target, name="rfind.slen");
+    cplen = p._call_utf8_cplen(b, target, slen, name="rfind.cplen");
     sub_len = p._call_str_len(b, args[0], name="rfind.sub.len");
+    search_from = target;
+    if len(args) >= 2 {
+        start = p._coerce_type(args[1], i64);
+        neg = b.icmp_signed("<", start, ir.Constant(i64, 0), name="rfind.st.neg");
+        wrapped = b.add(start, cplen, name="rfind.st.wrap");
+        start = b.select(neg, wrapped, start, name="rfind.st.pos");
+        below = b.icmp_signed("<", start, ir.Constant(i64, 0), name="rfind.st.lo");
+        start = b.select(below, ir.Constant(i64, 0), start, name="rfind.st.lo.c");
+        above = b.icmp_signed(">", start, cplen, name="rfind.st.hi");
+        start = b.select(above, cplen, start, name="rfind.st.hi.c");
+        start_off = p._call_utf8_cp_off(
+            b, target, slen, start, name="rfind.st.off"
+        );
+        search_from = b.gep(target, [start_off], name="rfind.from");
+    }
     null_ptr = ir.Constant(i8p, None);
     target_int = b.ptrtoint(target, i64, name="rfind.tgt.int");
     func = b.basic_block.function;
@@ -840,14 +971,15 @@ impl NativeStrEmitter.emit_rfind(
     b.position_at_start(loop_bb);
     cur_ptr = b.phi(i8p, name="rfind.cur");
     last_pos = b.phi(i64, name="rfind.last");
-    cur_ptr.add_incoming(target, search_bb);
+    cur_ptr.add_incoming(search_from, search_bb);
     last_pos.add_incoming(ir.Constant(i64, -1), search_bb);
     found = b.call(strstr_fn, [cur_ptr, args[0]], name="rfind.found.ptr");
     is_null = b.icmp_unsigned("==", found, null_ptr, name="rfind.null");
     b.cbranch(is_null, done_bb, found_bb);
     b.position_at_start(found_bb);
     found_int = b.ptrtoint(found, i64, name="rfind.fnd.int");
-    new_pos = b.sub(found_int, target_int, name="rfind.pos");
+    new_pos_b = b.sub(found_int, target_int, name="rfind.pos.b");
+    new_pos = p._call_utf8_cplen(b, target, new_pos_b, name="rfind.pos");
     next_int = b.add(found_int, sub_len, name="rfind.next.int");
     next_ptr = b.inttoptr(next_int, i8p, name="rfind.next.ptr");
     cur_ptr.add_incoming(next_ptr, found_bb);
@@ -855,7 +987,7 @@ impl NativeStrEmitter.emit_rfind(
     b.branch(loop_bb);
     b.position_at_start(done_bb);
     result = b.phi(i64, name="rfind.result");
-    result.add_incoming(slen, empty_bb);
+    result.add_incoming(cplen, empty_bb);
     result.add_incoming(last_pos, loop_bb);
     return result;
 }
@@ -864,6 +996,9 @@ impl NativeStrEmitter.emit_index(
     self: NativeStrEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
     if not args {
+        return None;
+    }
+    if len(args) > 1 {
         return None;
     }
     p = ctx.pass_ref;
@@ -877,13 +1012,17 @@ impl NativeStrEmitter.emit_index(
     p._emit_runtime_raise(is_null, "ValueError", "substring not found");
     target_int = b.ptrtoint(target, i64, name="index.tgt.int");
     found_int = b.ptrtoint(found, i64, name="index.fnd.int");
-    return b.sub(found_int, target_int, name="index.result");
+    diff_idx = b.sub(found_int, target_int, name="index.diff");
+    return p._call_utf8_cplen(b, target, diff_idx, name="index.result");
 }
 
 impl NativeStrEmitter.emit_rindex(
     self: NativeStrEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
     if not args {
+        return None;
+    }
+    if len(args) > 1 {
         return None;
     }
     p = ctx.pass_ref;
@@ -911,10 +1050,42 @@ impl NativeStrEmitter.emit_startswith(
     i32 = ir.IntType(32);
     i64 = ir.IntType(64);
     strncmp_fn = p._get_or_declare_extern("strncmp", i32, [i8p, i8p, i64]);
+    blen = p._call_str_len(b, target, name="sw.tgt.len");
+    cplen = p._call_utf8_cplen(b, target, blen, name="sw.tgt.cplen");
+    lo = ir.Constant(i64, 0);
+    hi = cplen;
+    if len(args) >= 2 {
+        start = p._coerce_type(args[1], i64);
+        neg = b.icmp_signed("<", start, ir.Constant(i64, 0), name="sw.st.neg");
+        wrapped = b.add(start, cplen, name="sw.st.wrap");
+        start = b.select(neg, wrapped, start, name="sw.st.pos");
+        below = b.icmp_signed("<", start, ir.Constant(i64, 0), name="sw.st.lo");
+        start = b.select(below, lo, start, name="sw.st.lo.c");
+        above = b.icmp_signed(">", start, cplen, name="sw.st.hi");
+        start = b.select(above, cplen, start, name="sw.st.hi.c");
+        lo = start;
+    }
+    if len(args) >= 3 {
+        end = p._coerce_type(args[2], i64);
+        neg = b.icmp_signed("<", end, ir.Constant(i64, 0), name="sw.en.neg");
+        wrapped = b.add(end, cplen, name="sw.en.wrap");
+        end = b.select(neg, wrapped, end, name="sw.en.pos");
+        below = b.icmp_signed("<", end, lo, name="sw.en.lo");
+        end = b.select(below, lo, end, name="sw.en.lo.c");
+        above = b.icmp_signed(">", end, cplen, name="sw.en.hi");
+        end = b.select(above, cplen, end, name="sw.en.hi.c");
+        hi = end;
+    }
+    lo_off = p._call_utf8_cp_off(b, target, blen, lo, name="sw.lo.off");
+    hi_off = p._call_utf8_cp_off(b, target, blen, hi, name="sw.hi.off");
+    region_len = b.sub(hi_off, lo_off, name="sw.region.len");
     prefix_len = p._call_str_len(b, args[0], name="sw.pfx.len");
-    cmp = b.call(strncmp_fn, [target, args[0], prefix_len], name="sw.cmp");
+    fits = b.icmp_unsigned("<=", prefix_len, region_len, name="sw.fits");
+    region = b.gep(target, [lo_off], name="sw.region");
+    cmp = b.call(strncmp_fn, [region, args[0], prefix_len], name="sw.cmp");
     is_zero = b.icmp_signed("==", cmp, ir.Constant(i32, 0), name="sw.eq");
-    return b.zext(is_zero, i64, name="sw.result");
+    matched = b.and_(fits, is_zero, name="sw.match");
+    return b.zext(matched, i64, name="sw.result");
 }
 
 impl NativeStrEmitter.emit_endswith(
@@ -925,17 +1096,52 @@ impl NativeStrEmitter.emit_endswith(
     }
     p = ctx.pass_ref;
     b = get_builder(p);
+    i8p = ir.IntType(8).as_pointer();
     i32 = ir.IntType(32);
     i64 = ir.IntType(64);
-    target_len = p._call_str_len(b, target, name="ew.tgt.len");
+    strncmp_fn = p._get_or_declare_extern("strncmp", i32, [i8p, i8p, i64]);
+    blen = p._call_str_len(b, target, name="ew.tgt.len");
+    cplen = p._call_utf8_cplen(b, target, blen, name="ew.tgt.cplen");
+    lo = ir.Constant(i64, 0);
+    hi = cplen;
+    if len(args) >= 2 {
+        start = p._coerce_type(args[1], i64);
+        neg = b.icmp_signed("<", start, ir.Constant(i64, 0), name="ew.st.neg");
+        wrapped = b.add(start, cplen, name="ew.st.wrap");
+        start = b.select(neg, wrapped, start, name="ew.st.pos");
+        below = b.icmp_signed("<", start, ir.Constant(i64, 0), name="ew.st.lo");
+        start = b.select(below, lo, start, name="ew.st.lo.c");
+        above = b.icmp_signed(">", start, cplen, name="ew.st.hi");
+        start = b.select(above, cplen, start, name="ew.st.hi.c");
+        lo = start;
+    }
+    if len(args) >= 3 {
+        end = p._coerce_type(args[2], i64);
+        neg = b.icmp_signed("<", end, ir.Constant(i64, 0), name="ew.en.neg");
+        wrapped = b.add(end, cplen, name="ew.en.wrap");
+        end = b.select(neg, wrapped, end, name="ew.en.pos");
+        below = b.icmp_signed("<", end, lo, name="ew.en.lo");
+        end = b.select(below, lo, end, name="ew.en.lo.c");
+        above = b.icmp_signed(">", end, cplen, name="ew.en.hi");
+        end = b.select(above, cplen, end, name="ew.en.hi.c");
+        hi = end;
+    }
+    lo_off = p._call_utf8_cp_off(b, target, blen, lo, name="ew.lo.off");
+    hi_off = p._call_utf8_cp_off(b, target, blen, hi, name="ew.hi.off");
+    region_len = b.sub(hi_off, lo_off, name="ew.region.len");
     suffix_len = p._call_str_len(b, args[0], name="ew.sfx.len");
-    too_long = b.icmp_unsigned(">", suffix_len, target_len, name="ew.toolong");
-    offset = b.sub(target_len, suffix_len, name="ew.offset");
-    end_ptr = b.gep(target, [offset], name="ew.end.ptr");
-    cmp = p._call_str_cmp(b, end_ptr, args[0], name="ew.cmp");
+    too_long = b.icmp_unsigned(">", suffix_len, region_len, name="ew.toolong");
+    rel = b.sub(region_len, suffix_len, name="ew.rel");
+    at = b.add(lo_off, rel, name="ew.at");
+    # A too-long suffix drives `at` before the region; clamp into the buffer
+    # so the (discarded) comparison below cannot read out of bounds.
+    neg_at = b.icmp_signed("<", at, lo_off, name="ew.at.neg");
+    at = b.select(neg_at, lo_off, at, name="ew.at.safe");
+    end_ptr = b.gep(target, [at], name="ew.end.ptr");
+    cmp = b.call(strncmp_fn, [end_ptr, args[0], suffix_len], name="ew.cmp");
     is_match = b.icmp_signed("==", cmp, ir.Constant(i32, 0), name="ew.match");
-    match_i64 = b.zext(is_match, i64, name="ew.match.i64");
-    return b.select(too_long, ir.Constant(i64, 0), match_i64, name="ew.result");
+    matched = b.and_(is_match, b.not_(too_long, name="ew.fits"), name="ew.and");
+    return b.zext(matched, i64, name="ew.result");
 }
 
 impl NativeStrEmitter.emit_replace(
@@ -1149,6 +1355,9 @@ impl NativeStrEmitter.emit_removesuffix(
 impl NativeStrEmitter.emit_split(
     self: NativeStrEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
+    if len(args) > 1 {
+        return None;
+    }
     if args {
         return ctx.pass_ref._codegen_str_split(target, args[0]);
     }
@@ -1158,6 +1367,9 @@ impl NativeStrEmitter.emit_split(
 impl NativeStrEmitter.emit_rsplit(
     self: NativeStrEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
+    if len(args) > 1 {
+        return None;
+    }
     if args {
         return ctx.pass_ref._codegen_str_split(target, args[0]);
     }
@@ -1167,6 +1379,9 @@ impl NativeStrEmitter.emit_rsplit(
 impl NativeStrEmitter.emit_splitlines(
     self: NativeStrEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
+    if args {
+        return None;
+    }
     p = ctx.pass_ref;
     nl_sep = p._make_global_string("\n", name_prefix=".nl.sep");
     return p._codegen_str_split(target, nl_sep);
@@ -5032,7 +5247,63 @@ impl NativeBuiltinEmitter.emit_setattr(
 impl NativeBuiltinEmitter.emit_hasattr(
     self: NativeBuiltinEmitter, ctx: NativeEmitCtx, args: list[ir.Value]
 ) -> (ir.Value | None) {
-    return None;
+    # Native objects are fixed-layout structs, so a literal-name hasattr is
+    # decidable at compile time: True iff the receiver archetype's layout
+    # (which includes inherited fields) declares the attribute. Dynamic
+    # names compare against the same static field list at runtime.
+    p = ctx.pass_ref;
+    arch_name: str = "";
+    for _part in (ctx.type_key or "").replace(" ", "").split("|") {
+        if (
+            _part
+            and _part not in ("None", "NoneType")
+            and p._arch_is_osp_name(_part)
+        ) {
+            arch_name = _part.split(".")[-1];
+            break;
+        }
+    }
+    if not arch_name {
+        return None;
+    }
+    fields = p.struct_field_order.get(arch_name);
+    if fields is None {
+        return None;
+    }
+    b = get_builder(p);
+    i8p = ir.IntType(8).as_pointer();
+    name_node = ctx.arg_nodes[1];
+    if len(args) < 2 or len(ctx.arg_nodes) < 2 {
+        return None;
+    }
+    import jaclang.compiler.frontend.unitree as _hu_uni;
+    if isinstance(name_node, (_hu_uni.String, _hu_uni.MultiString)) {
+        attr_name = name_node.lit_value;
+        present = attr_name in fields;
+        return ir.Constant(ir.IntType(1), 1 if present else 0);
+    }
+    # Dynamic name: the archetype is still static, so linear-compare the
+    # runtime string against the archetype's field-name constants.
+    if not fields {
+        return ir.Constant(ir.IntType(1), 0);
+    }
+    strcmp_fn = p._get_or_declare_extern(
+        "strcmp", ir.IntType(32), [i8p, i8p]
+    );
+    name_ptr = args[1];
+    if not isinstance(name_ptr.type, ir.PointerType) or name_ptr.type != i8p {
+        return None;
+    }
+    matched: (ir.Value | None) = None;
+    for fname in fields {
+        fglob = p._make_global_string(fname, name_prefix=".hasattr.f");
+        eq = b.icmp_signed(
+            "==", b.call(strcmp_fn, [fglob, name_ptr], name="hasattr.cmp"),
+            ir.Constant(ir.IntType(32), 0), name="hasattr.eq"
+        );
+        matched = eq if matched is None else b.or_(matched, eq, name="hasattr.or");
+    }
+    return matched;
 }
 
 impl NativeBuiltinEmitter.emit_delattr(

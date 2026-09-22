@@ -1393,6 +1393,7 @@ impl NaIRGenObjects._read_field_or_refuse(
     """;
     _mark = len(self.errors_had);
     _val = self._codegen_field_access(obj_val, field_name, arch_name, nd);
+
     if _val is None and len(self.errors_had) == _mark {
         _val = self._codegen_class_const_read(obj_val, arch_name, field_name);
         if _val is None {
@@ -2474,6 +2475,12 @@ impl NaIRGenObjects._codegen_method_call(nd: uni.FuncCall) -> (ir.Value | None) 
             }
             return None;
         }
+        if method_name in ("init", "__init__", "postinit", "__post_init__") {
+            # No MRO ancestor defines an initializer: the call targets the
+            # root no-op initializer (CPython object.__init__), so lower it
+            # as a None-valued no-op instead of failing the whole method.
+            return ir.Constant(ir.IntType(8).as_pointer(), None);
+        }
         self.emit(
             E5092,
             node_override=nd,
@@ -2604,6 +2611,60 @@ impl NaIRGenObjects._codegen_method_call(nd: uni.FuncCall) -> (ir.Value | None) 
         and method_name in self.struct_field_types[_fld_struct]
     ) {
         _fld_ty = self.struct_field_types[_fld_struct][method_name];
+        _pair_ty: (ir.Type | None) = None;
+        if isinstance(_fld_ty, ir.PointerType) and (
+            getattr(_fld_ty.pointee, "name", None) == self._bare_callable_sname
+            if self._bare_callable_sname
+            else False
+        ) {
+            _pair_ty = _fld_ty;
+        }
+        _fld_opt_pl = self._opt_payload_of(_fld_ty);
+        _opt_want = (
+            _fld_opt_pl is not None
+            and self._bare_callable_sname != ""
+            and isinstance(_fld_opt_pl, ir.PointerType)
+            and getattr(_fld_opt_pl.pointee, "name", None) == self._bare_callable_sname
+        );
+        if _opt_want {
+            _obj_v = self._codegen_expr(trailer.target);
+            if _obj_v is not None {
+                _idx = self.struct_field_indices[_fld_struct][method_name];
+                _fld_ptr = self.builder.gep(
+                    _obj_v,
+                    [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), _idx)],
+                    name=f"{method_name}.fldptr"
+                );
+                _opt_v = self.builder.load(_fld_ptr, name=f"{method_name}.opt");
+                _tag = self.builder.extract_value(_opt_v, 0, name=f"{method_name}.tag");
+                _is_none = self.builder.icmp_unsigned(
+                    "==", _tag, ir.Constant(ir.IntType(8), 0), name=f"{method_name}.isnone"
+                );
+                self._emit_runtime_raise(
+                    _is_none, "TypeError",
+                    f"calling '{method_name}()' where its value is None"
+                );
+                _pair = self.builder.extract_value(_opt_v, 1, name=f"{method_name}.pair");
+                return self._codegen_closure_call(
+                    nd, _pair, self._bare_callable_sname
+                );
+            }
+        }
+        if _pair_ty is not None {
+            _obj_v = self._codegen_expr(trailer.target);
+            if _obj_v is not None {
+                _idx = self.struct_field_indices[_fld_struct][method_name];
+                _fld_ptr = self.builder.gep(
+                    _obj_v,
+                    [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), _idx)],
+                    name=f"{method_name}.fldptr"
+                );
+                _pair = self.builder.load(_fld_ptr, name=f"{method_name}.clos");
+                return self._codegen_closure_call(
+                    nd, _pair, self._bare_callable_sname
+                );
+            }
+        }
         if (
             isinstance(_fld_ty, ir.PointerType)
             and isinstance(_fld_ty.pointee, ir.FunctionType)
@@ -3859,6 +3920,15 @@ impl NaIRGenObjects._codegen_field_assign(
 
     if _setter is None and self._refuse_opaque_field(target, type_name, field_name) {
         return;
+    }
+
+    # OSP edge handles arrive as raw integers; narrow them to the edge
+    # layout the same way the read path (_narrow_receiver_ptr) does, so a
+    # field store on a bound edge (`e.rank = r`) addresses the layout.
+    if isinstance(obj_val.type, ir.IntType) and (type_name in self.struct_types) {
+        obj_val = self.builder.inttoptr(
+            obj_val, self.struct_types[type_name].as_pointer(), name="osp.handle.ptr"
+        );
     }
 
     if _setter is not None {

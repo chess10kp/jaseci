@@ -1064,6 +1064,47 @@ impl NaIRGenCalls._emit_unsupported_builtin_call(
     );
 }
 
+impl NaIRGenCalls._emit_jid(nd: uni.FuncCall) -> (ir.Value | None) {
+    params_l = nd.params or [];
+    if len(params_l) != 1 or isinstance(params_l[0], uni.KWPair) {
+        self.emit(
+            E5092,
+            node_override=nd,
+            kind="builtin call",
+            name="jid",
+            help_text="jid() takes exactly one positional graph object argument."
+        );
+        return None;
+    }
+
+    arg_node = params_l[0];
+    arg_val = self._codegen_expr(arg_node);
+    if arg_val is None {
+        self._emit_unsupported_builtin_call(nd, "jid");
+        return None;
+    }
+
+    _kwargs = self._split_call_kwargs(nd);
+    result = self._dispatch_builtin(
+        "jid",
+        [arg_val],
+        kwargs=_kwargs,
+        kw_node=nd,
+        type_key=(self._type_key_of(arg_node) or ""),
+        arg_nodes=[arg_node]
+    );
+    if isinstance(arg_val.type, ir.PointerType) and self._is_owned(arg_val) {
+        self._emit_rc_release_simple(arg_val, op="jid_arg", loc="");
+    }
+    if result is not None {
+        return result;
+    }
+    if not _kwargs {
+        self._emit_unsupported_builtin_call(nd, "jid");
+    }
+    return None;
+}
+
 impl NaIRGenCalls._emit_new(nd: uni.FuncCall) -> (ir.Value | None) {
     params_l = nd.params or [];
     if not params_l or any([isinstance(p, uni.KWPair) for p in params_l]) {
@@ -1299,6 +1340,34 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         }
     }
 
+    if _call_kind != "method" and func_name in self._native_stdlib_bare_names {
+        (_bare_mod, _orig_name) = self._native_stdlib_bare_names[func_name];
+        if _bare_mod == "time" {
+            return self._emit_time_call(_orig_name, nd);
+        }
+        if _bare_mod == "math" {
+            _mres = self._emit_math_call(_orig_name, nd);
+            if _mres is not None {
+                return _mres;
+            }
+        }
+        if _bare_mod == "os" {
+            return self._emit_os_call(_orig_name, nd);
+        }
+        if _bare_mod == "os.path" {
+            return self._emit_ospath_call(_orig_name, nd);
+        }
+        if _bare_mod == "random" {
+            return self._emit_random_call(_orig_name, nd);
+        }
+        if _bare_mod == "struct" {
+            _sres = self._emit_struct_call(_orig_name, nd);
+            if _sres is not None {
+                return _sres;
+            }
+        }
+    }
+
     import from jaclang.compiler.types { types as jtypes }
     _callee_t = nd.target?.type;
     if isinstance(_callee_t, jtypes.ClassType)
@@ -1350,6 +1419,10 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         if func_name == "new" {
             return self._emit_new(nd);
         }
+        if func_name == "jid" {
+            return self._emit_jid(nd);
+        }
+
 
         if func_name == "Region" {
             import from jaclang.compiler.expr_keys { is_builtin_region_name }
@@ -1396,10 +1469,18 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
 
                     if self._str_desc_ty is not None
                         and arg_val.type == self._str_desc_ty {
-                        _len_result = self.builder.extract_value(
+                        _desc_data = self.builder.extract_value(
+                            arg_val,
+                            len(list(self._str_desc_ty.elements)) - 2,
+                            name="s.len.data"
+                        );
+                        _desc_blen = self.builder.extract_value(
                             arg_val,
                             len(list(self._str_desc_ty.elements)) - 1,
-                            name="s.len.o1"
+                            name="s.len.blen"
+                        );
+                        _len_result = self._call_utf8_cplen(
+                            self.builder, _desc_data, _desc_blen, name="s.len.cplen"
                         );
                     }
 
@@ -1452,11 +1533,13 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
                             }
                         }
                     }
-
                     if _len_result is None
                         and arg_val.type == ir.IntType(8).as_pointer() {
-                        _len_result = self._call_str_len(
-                            self.builder, arg_val, name="str.len"
+                        _str_blen = self._call_str_len(
+                            self.builder, arg_val, name="str.len.b"
+                        );
+                        _len_result = self._call_utf8_cplen(
+                            self.builder, arg_val, _str_blen, name="str.len"
                         );
                     }
                     if _len_result is not None {
@@ -1617,10 +1700,10 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
                 );
                 return ptr;
             }
-        }
+    }
 
         if func_name
-            in ("abs", "min", "max", "pow", "divmod", "sum", "any", "all", "format") {
+            in ("abs", "min", "max", "pow", "divmod", "sum", "any", "all", "format", "hasattr") {
             params_l = nd.params or [];
             arg_vals: list[ir.Value] = [];
             arg_nodes: list = [];
@@ -1633,7 +1716,12 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
             }
             if arg_vals {
                 result = self._dispatch_builtin(
-                    func_name, arg_vals, arg_nodes=arg_nodes
+                    func_name,
+                    arg_vals,
+                    type_key=(
+                        self._type_key_of(arg_nodes[0]) if arg_nodes else ""
+                    ),
+                    arg_nodes=arg_nodes
                 );
 
                 for _barg in arg_vals {
@@ -1938,17 +2026,23 @@ impl NaIRGenCalls._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
     if (
         func_name in self._native_skipped_methods and func_name not in self.generic_fns
     ) {
-        self.emit(
-            E5092,
-            node_override=nd,
-            kind="function",
-            name=func_name,
-            help_text=f"'{func_name}' demoted to its Python-only implementation "
-            f"(native seam), so a native caller cannot reach it; hoist the "
-            f"blocking construct out of '{func_name}' or move this caller off "
-            f"the native pathway."
-        );
-        return None;
+        _skip_binding = self.ir_in.gen.interop_manifest.bindings.get(func_name);
+        if not (
+            _skip_binding is not None
+            and _skip_binding.source_context.value == "server"
+        ) {
+            self.emit(
+                E5092,
+                node_override=nd,
+                kind="function",
+                name=func_name,
+                help_text=f"'{func_name}' demoted to its Python-only implementation "
+                f"(native seam), so a native caller cannot reach it; hoist the "
+                f"blocking construct out of '{func_name}' or move this caller off "
+                f"the native pathway."
+            );
+            return None;
+        }
     }
     if func_name in self.decorated_fns {
         return self._codegen_decorated_call(nd, func_name);

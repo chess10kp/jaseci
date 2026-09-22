@@ -145,7 +145,13 @@ impl NaIRGenCore._run_impl(ir_in: uni.Module) -> uni.Module {
             self._codegen_ability(stmt);
         } elif isinstance(stmt, uni.ModuleCode) {
             _entry_nodes.append(stmt);
-        } elif isinstance(stmt, uni.Test) {
+        }
+    }
+    # Tests lower LAST: a test that calls a function demoted during this
+    # pass must observe the completed skip set, otherwise it emits a direct
+    # call into the demoted function's abort() stub and dies at runtime.
+    for stmt in ModuleCodegenPass.iter_context_stmts(self.ir_in, CodeContext.NATIVE) {
+        if isinstance(stmt, uni.Test) {
             self._codegen_test(stmt);
         }
     }
@@ -1333,7 +1339,11 @@ impl NaIRGenCore._process_clib_imports(module: uni.Module) -> None {
                 for item in stmt.items {
                     import os;
                     import from jaclang.compiler.passes.capability_check_pass {
-                        classify_native_import
+                        classify_native_import,
+                        import_bound_name
+                    }
+                    import from jaclang.compiler.backends.native.na_ir_gen.constants {
+                        NATIVE_STDLIB_FUNC_TABLES
                     }
                     import from jaclang.compiler.frontend.codeinfo {
                         is_bundled_native_module,
@@ -1342,6 +1352,22 @@ impl NaIRGenCore._process_clib_imports(module: uni.Module) -> None {
                     (mod_name, _supported) = classify_native_import(item);
                     if _supported {
                         self._native_stdlib_modules.add(mod_name);
+                        if isinstance(item, uni.ModuleItem) {
+                            _fns = NATIVE_STDLIB_FUNC_TABLES.get(mod_name);
+                            if (
+                                _fns is not None
+                                and isinstance(item.name, uni.Name)
+                                and item.name.value in _fns
+                            ) {
+                                _bound = import_bound_name(item);
+                                if _bound is not None {
+                                    self._native_stdlib_bare_names[_bound] = (
+                                        mod_name,
+                                        item.name.value
+                                    );
+                                }
+                            }
+                        }
                     } elif mod_name is not None
                         and is_bundled_native_module(mod_name) {
                         self._native_module_imports.add(mod_name);
@@ -1448,6 +1474,19 @@ impl NaIRGenCore._process_clib_imports(module: uni.Module) -> None {
                     self.emit(E5060, name=fn_name);
                     continue;
                 }
+                # When walking an IMPORTED module's clib decls, an extern whose
+                # name the current module defines itself (e.g. surface fn
+                # `fcntl.ioctl` vs the libc extern `ioctl` declared inside
+                # `_fcntl_native`) must not be forward-declared: the surface
+                # definition wins, and the imported module's own calls stay
+                # bound inside its own IR.
+                if (
+                    module is not self.ir_in
+                    and fn_name is not None
+                    and fn_name in self._own_body_ability_names()
+                ) {
+                    continue;
+                }
                 self._declare_clib_ability(decl);
                 if fn_name {
                     self.clib_extern_names.add(fn_name);
@@ -1464,6 +1503,19 @@ impl NaIRGenCore._process_clib_imports(module: uni.Module) -> None {
             self.has_native_code = True;
         }
     }
+}
+
+impl NaIRGenCore._own_body_ability_names -> set {
+    names: set = set();
+    if self.ir_in is None {
+        return names;
+    }
+    for stmt_ in self.ir_in.body {
+        if isinstance(stmt_, uni.Ability) and stmt_.name_ref is not None {
+            names.add(str(stmt_.name_ref.sym_name));
+        }
+    }
+    return names;
 }
 
 impl NaIRGenCore._resolve_clib_lib_name(components: list[str], level: int) -> str {

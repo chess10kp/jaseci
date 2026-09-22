@@ -414,10 +414,10 @@ impl NaIRGenExpr._codegen_lambda(nd: uni.LambdaExpr) -> (ir.Value | None) {
         tail = nd.tail_return_expr();
         if tail is not None {
             val = self._codegen_expr(tail);
-            if val is not None {
+            if val is not None and ret_type != ir.VoidType() {
                 self.builder.ret(self._coerce_type(val, ret_type));
             } else {
-                if len(self.errors_had) == _lam_errs0 {
+                if val is None and len(self.errors_had) == _lam_errs0 {
                     self.emit(
                         E5092,
                         node_override=nd,
@@ -426,17 +426,21 @@ impl NaIRGenExpr._codegen_lambda(nd: uni.LambdaExpr) -> (ir.Value | None) {
                         help_text="An expression in this lambda body could not lower natively; an unresolvable name here usually means the lambda reads a variable its enclosing frame cannot expose (e.g. a module-entry local)."
                     );
                 }
-                self.builder.ret(self._zero_const(ret_type));
+                if ret_type == ir.VoidType() {
+                    self.builder.ret_void();
+                } else {
+                    self.builder.ret(self._zero_const(ret_type));
+                }
             }
         } else {
             self._codegen_body(body);
         }
     } else {
         val = self._codegen_expr(body);
-        if val is not None {
+        if val is not None and ret_type != ir.VoidType() {
             self.builder.ret(self._coerce_type(val, ret_type));
         } else {
-            if len(self.errors_had) == _lam_errs0 {
+            if val is None and len(self.errors_had) == _lam_errs0 {
                 self.emit(
                     E5092,
                     node_override=nd,
@@ -445,7 +449,11 @@ impl NaIRGenExpr._codegen_lambda(nd: uni.LambdaExpr) -> (ir.Value | None) {
                     help_text="An expression in this lambda body could not lower natively; an unresolvable name here usually means the lambda reads a variable its enclosing frame cannot expose (e.g. a module-entry local)."
                 );
             }
-            self.builder.ret(self._zero_const(ret_type));
+            if ret_type == ir.VoidType() {
+                self.builder.ret_void();
+            } else {
+                self.builder.ret(self._zero_const(ret_type));
+            }
         }
     }
 
@@ -798,7 +806,17 @@ impl NaIRGenExpr._codegen_compare(nd: uni.CompareExpr) -> (ir.Value | None) {
     if len(nd.ops) > 1 and len(nd.rights) == len(nd.ops) {
         return self._codegen_compare_chain(nd, left);
     }
+    # An empty container literal on the right (``xs == []``) has no element
+    # type of its own; give it the left operand's container type while it
+    # lowers, the same way BoolExpr lends its left type to the right side.
+    _cmp_peer_saved = self._peer_container_ty;
+    self._peer_container_ty = (
+        left.type
+        if isinstance(left.type, ir.PointerType)
+        else self._opt_ptr_payload_of(left.type)
+    );
     right = self._codegen_expr(nd.rights[0]);
+    self._peer_container_ty = _cmp_peer_saved;
     if right is None {
         return None;
     }
@@ -1423,7 +1441,14 @@ impl NaIRGenExpr._codegen_compare_chain(
     result: (ir.Value | None) = None;
     cur = left;
     for (i, op_name) in enumerate(op_names) {
+        _chain_peer_saved = self._peer_container_ty;
+        self._peer_container_ty = (
+            cur.type
+            if isinstance(cur.type, ir.PointerType)
+            else self._opt_ptr_payload_of(cur.type)
+        );
         right = self._codegen_required(nd.rights[i]);
+        self._peer_container_ty = _chain_peer_saved;
         if right is None {
             return None;
         }
@@ -2014,6 +2039,12 @@ impl NaIRGenExpr._codegen_atom_trailer(nd: uni.AtomTrailer) -> (ir.Value | None)
                 }
             }
 
+            _mref = self._codegen_method_reference_value(
+                nd, target_name, right_name
+            );
+            if _mref is not None {
+                return _mref;
+            }
             _fa_type_name = self._struct_name_of(nd.target);
             if _fa_type_name is not None {
                 type_name = _fa_type_name;

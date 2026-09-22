@@ -827,10 +827,14 @@ impl JacCompiler.stamp_native_import_facts(
     driver read left in a sealed pass. It now consumes a bool.
     """;
     import os;
+    drop_when_native_owned = target_program.options.native_import_drop;
     for imp in mod.get_all_sub_nodes(uni.Import) {
         target = native_only_import_target(imp, target_program);
-        imp.native_only_drop = target is not None
-            and (os.sep + 'jaclang' + os.sep) not in os.path.abspath(target);
+        imp.native_only_drop = (
+            target is not None
+            and drop_when_native_owned
+            and (os.sep + 'jaclang' + os.sep) not in os.path.abspath(target)
+        );
     }
 }
 
@@ -1030,7 +1034,11 @@ impl JacCompiler.stamp_boundary_facts(
                     facts.from_loc_resolved = None;
                 }
                 facts.is_service = nd.is_service_import;
-                if (nd.items and not facts.is_service and nd.in_client_context()) {
+                if (
+                    nd.items
+                    and not facts.is_service
+                    and (nd.in_client_context() or in_native_mod)
+                ) {
                     resolved = facts.from_loc_resolved;
                     if (resolved is not None and resolved.endswith('.jac')) {
                         try {

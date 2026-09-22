@@ -84,6 +84,30 @@ def _pyb_instantiate(
     return shadow;
 }
 
+def pyb_mirror_member(mod_path: str, name: str) -> object {
+    """Bind one member of a natively-placed module into the server codespace.
+
+    Server-side code that imports from a module pinned native cannot emit a
+    plain Python import (the native lane owns the module), so the JCIR
+    emitter splices calls to this helper instead: it loads the target
+    module's server-tier image through the ordinary Jac import machinery and
+    hands back the named member. Without it, constructing a native-placed
+    obj from server code dies with NameError because the dropped import
+    binds nothing (B7).
+
+    When real per-module AOT execution lands, this seam upgrades to
+    dylib-backed shadows without touching consumer code.
+    """
+    member = getattr(_pyb_import_module(mod_path), name, None);
+    if member is None {
+        raise AttributeError(
+            f"native-placed module '{mod_path}' exposes no '{name}' "
+                + "to mirror into the server codespace"
+        );
+    }
+    return member;
+}
+
 def _pyb_shadow_of(owner_addr: int) -> object {
     shadow = _pyb_shadows.get(owner_addr);
     if shadow is None {
@@ -156,4 +180,56 @@ def register_py_callbacks(
         cb_addr = ctypes.cast(cb, ctypes.c_void_p).value;
         llvm.add_symbol(binding.name, cb_addr);
     }
+}
+
+def ensure_py_funcs_loaded(
+    manifest: InteropManifest,
+    py_func_table: dict[(str, Callable[(..., object)])],
+    base_path: str
+) -> int {
+    """Fill the native->server callback table before native execution.
+
+    register_py_callbacks binds each native_imports symbol to a ctypes
+    trampoline that resolves the Python callable lazily from
+    py_func_table. The JCIR registration splice can only fill that table
+    when the importing module's Python image executes under the Jac meta
+    importer (which injects __jac_interop_py_funcs__ via
+    get_native_interop_setup). A natively-executed entry never runs its
+    Python image, so the native boot path must resolve the bound server
+    functions directly: import each binding's source module through the
+    ordinary Jac import machinery and register the named member. Returns
+    the number of functions made callable.
+    """
+    loaded: int = 0;
+    for binding in manifest.native_imports {
+        if binding.kind != 'function' or binding.name in py_func_table {
+            continue;
+        }
+        src_mod = binding.source_module or '';
+        if not src_mod {
+            continue;
+        }
+        try {
+            import from jaclang.runtime.runtime { JacModule }
+            mods = JacModule.jac_import(target=src_mod, base_path=base_path);
+            mod = mods[0] if isinstance(mods, tuple) else mods;
+            fn = getattr(mod, binding.name, None);
+        } except Exception as e {
+            logger.warning(
+                f"native interop: failed to load '{binding.name}' from "
+                    + f"'{src_mod}': {e}"
+            );
+            continue;
+        }
+        if fn is None {
+            logger.warning(
+                f"native interop: '{src_mod}' exposes no '{binding.name}' "
+                    + "for the native callback table"
+            );
+            continue;
+        }
+        py_func_table[binding.name] = fn;
+        loaded += 1;
+    }
+    return loaded;
 }
