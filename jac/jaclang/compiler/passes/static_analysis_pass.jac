@@ -23,7 +23,6 @@ import from jaclang.compiler.frontend.unitree {
     Float,
     ForeverStmt,
     FormattedValue,
-    FuncSignature,
     IfStmt,
     ImplDef,
     Import,
@@ -41,12 +40,12 @@ import from jaclang.compiler.frontend.unitree {
     RaiseStmt,
     ReturnStmt,
     Semi,
-    SubTag,
     Test,
     Token,
     UniNode,
     UniScopeNode,
-    WhileStmt
+    WhileStmt,
+    in_type_position
 }
 
 import from jaclang.compiler.frontend.constant { ExprCtx, SymbolType }
@@ -67,7 +66,8 @@ import from jaclang.compiler.frontend.diagnostics {
     E2027,
     E2055,
     E2083,
-    E2085
+    E2085,
+    E2086
 }
 import type from jaclang.compiler.driver.program { JacProgram }
 
@@ -280,6 +280,7 @@ walker StaticAnalysisPass {
     def _check_unused_symbols(scope: UniScopeNode) -> None;
     def _check_undefined_names(mod: Module) -> None;
     def _literal_case_suggestion(name: str) -> (str | None);
+    def _enclosing_class_member(name_nd: Name) -> (str | None);
     def _osp_shape_position(name_nd: Name) -> (str | None);
     def _native_type_position(name_nd: Name) -> (str | None);
     def _check_unreachable_code(mod: Module) -> None;
