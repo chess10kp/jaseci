@@ -14,9 +14,11 @@ searches **nearest-wins**:
 1. the importing project's own tree (a flat sibling, then the dotted hierarchy
    walked up to the filesystem root), then
 2. this bundled root (`native_stdlib_root()`), which is native **by
-   location** -- its modules are plain `.jac` files. At either step a per-OS
-   variant `<name>.<os>.jac` (e.g. `_dirent_native.darwin.jac`) is probed
-   before the plain `<name>.jac`.
+   location** -- its modules are plain `.jac` files. At either step a
+   per-architecture variant `<name>.<arch>.jac` (e.g.
+   `_math_fused.aarch64.jac`) is probed first, then a per-OS variant
+   `<name>.<os>.jac` (e.g. `_dirent_native.darwin.jac`), then the plain
+   `<name>.jac`.
 
 So `import from os.path { normpath }` binds CPython's `posixpath` on the sv
 (Python) pathway and `na_stdlib/os/path.jac` on the na (native) pathway (the
@@ -376,11 +378,21 @@ native layout records the emitted name separately from its source-level key.
   CPython 3.14 **type-and-message** exactly (e.g. `sqrt(-1)` ->
   `ValueError: expected a nonnegative input, got -1.0`; `log(4, 1)` ->
   `ZeroDivisionError: division by zero`; `fsum([inf, -inf])` ->
-  `ValueError: -inf + inf in fsum`), pinned in `prim_math.jac`. `gcd`,
-  `lcm`, and `hypot` are variadic on the Python pathway; on native they take
-  up to ten arguments through defaulted extras (the same bounded-arity
-  pattern as `os.path.join`, whose identity defaults keep the zero-argument
-  call congruent); `isclose`'s tolerances and `prod`'s
+  `ValueError: -inf + inf in fsum`), pinned in `prim_math.jac`.
+  Results are CPython's, not merely close to them: the libm wrappers call the
+  same host libm CPython calls, `gamma`/`lgamma` are ports of CPython's own
+  Lanczos `m_tgamma`/`m_lgamma` (CPython does not use libm for these), and
+  `hypot`/`dist` port its `vector_norm` and `sumprod` its triple-length
+  accumulator. Where CPython's C build fuses a multiply-add (clang contracts
+  `a*b + c` into one rounding on aarch64, never on baseline x86-64),
+  `_math_fused.<arch>.jac` supplies the same fused or unfused `fmadd`. A
+  randomized sv/na differential sweep over every real function is
+  bit-identical on macOS arm64. `floor`/`ceil`/`trunc` return an `int`
+  argument unchanged (no float round trip), `gcd`/`lcm`/`hypot` are truly
+  variadic (bundled modules may export `*args`; see the capability check),
+  and the reducers take any iterable (`list`, `tuple`, `range`) through
+  `[C: Iterable]` type parameters. The reducers and `hypot` allocate nothing
+  per element beyond their inputs. `isclose`'s tolerances and `prod`'s
   `start` are keyword-only. `frexp`, `modf`, `ldexp`, `nextafter`, and
   `ulp` are pure-Jac float-bit manipulation with no libm dependency, so
   they are wasm-portable; the remaining libm wrappers resolve through host
@@ -388,13 +400,11 @@ native layout records the emitted name separately from its source-level key.
   1.2.5 `exp2` and `fma` are vendored in `wasm_rt/vendor/math` (`fma`
   inlines the generic `a_clz_64` from musl's `atomic.h` in place of the
   arch include), and `erfc` ships inside the vendored `erf.c`. SCOPE/divergences:
-  integer results are i64-bounded -- `factorial`, `isqrt`, `comb`, `perm`,
-  `gcd`, and `lcm` raise `OverflowError` where CPython returns a bignum,
-  and `prod`/`sumprod` raise at the i64 boundary instead of silently
-  degrading to float;
+  integer results are i64-bounded -- `factorial`, `comb`, `perm`, and `lcm`
+  raise `OverflowError` where CPython returns a bignum, and `prod`/`sumprod`
+  raise at the i64 boundary instead of silently degrading to float; and
   parameters are statically typed rather than dispatched through
-  `__index__`/`__float__`/`__trunc__`; and iterable arguments accept
-  `list[T]` only (no arbitrary iterables). Both plain `import math` and
+  `__index__`/`__float__`/`__trunc__`. Both plain `import math` and
   `import from math { ... }` bind it.
 - **`cmath.jac`** (Mechanism B, over the same `_math_native` libm floor) --
   a pure-Jac port of CPython's `cmathmodule.c` complex algorithms: the full
@@ -409,8 +419,16 @@ native layout records the emitted name separately from its source-level key.
   `OverflowError: math range error`), pinned in `prim_cmath.jac`. SCOPE:
   parameters are `complex`-typed -- unlike CPython, a plain `float`/`int`
   argument is not implicitly coerced (pass `complex(x, 0.0)`); results are
-  native `JacComplex` values. The libm wrappers link against host libm on
-  native and against the vendored musl bitcode on wasm.
+  native `JacComplex` values; and results can differ from CPython's in the
+  last one or two bits (the C build's optimizer reorders the same formulas).
+  The complex operators themselves (`+ - * / **`, including mixed
+  `complex`/real operands) are lowered by the compiler after CPython 3.14's
+  `complexobject.c`: C99 Annex G mixed-mode rules (signed zeros and
+  infinities survive `1.0 - z`, `z * 2.0`, ...), infinity recovery in `*`
+  and `/`, `ZeroDivisionError("division by zero")`, and `_Py_c_pow` /
+  `c_powi` with `OverflowError("complex exponentiation")`. The libm wrappers
+  link against host libm on native and against the vendored musl bitcode on
+  wasm.
 
 The syscall-backed `os` / `os.path` entry points (`makedirs`, `realpath`,
 `mkdir`, `exists`, `getmtime`, `normcase`, ...) are Mechanism-A/H compiler

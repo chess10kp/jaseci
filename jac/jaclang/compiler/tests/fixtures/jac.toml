@@ -265,6 +265,7 @@
 "prim_match.match_seq_na" = "native"
 "prim_match.match_star_cl" = "client"
 "prim_match.match_star_na" = "native"
+"prim_math._congruence_na" = "native"
 "prim_math._core_na" = "native"
 "prim_math._errs_a_na" = "native"
 "prim_math._errs_b_na" = "native"

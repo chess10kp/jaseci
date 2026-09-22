@@ -20,7 +20,6 @@ import from _math_native {
     m_floor,
     m_fma,
     m_fmod,
-    m_lgamma,
     m_log,
     m_log2,
     m_log10,
@@ -32,9 +31,9 @@ import from _math_native {
     m_sqrt,
     m_tan,
     m_tanh,
-    m_tgamma,
     m_trunc
 }
+import from _math_fused { fmadd }
 
 glob:pub pi: float = 3.141592653589793,
      e: float = 2.718281828459045,
@@ -48,203 +47,432 @@ def:pub isnan(x: float) -> bool {
 
 
 def:pub isinf(x: float) -> bool {
-    return x == inf or x == -inf;
+    return m_fabs(x) > 1.7976931348623157e308;
 }
 
 
 def:pub isfinite(x: float) -> bool {
-    return not isnan(x) and not isinf(x);
+    return m_fabs(x) <= 1.7976931348623157e308;
 }
 
-glob _OP_ACOS: int = 0,
-     _OP_ACOSH: int = 1,
-     _OP_ASIN: int = 2,
-     _OP_ASINH: int = 3,
-     _OP_ATAN: int = 4,
-     _OP_ATANH: int = 5,
-     _OP_CBRT: int = 6,
-     _OP_COS: int = 7,
-     _OP_COSH: int = 8,
-     _OP_ERF: int = 9,
-     _OP_ERFC: int = 10,
-     _OP_EXP: int = 11,
-     _OP_EXP2: int = 12,
-     _OP_EXPM1: int = 13,
-     _OP_FABS: int = 14,
-     _OP_GAMMA: int = 15,
-     _OP_LGAMMA: int = 16,
-     _OP_LOG1P: int = 17,
-     _OP_SIN: int = 18,
-     _OP_SINH: int = 19,
-     _OP_SQRT: int = 20,
-     _OP_TAN: int = 21,
-     _OP_TANH: int = 22,
-     _OP_ATAN2: int = 23,
-     _OP_COPYSIGN: int = 24,
-     _OP_FMOD: int = 25,
-     _OP_REMAINDER: int = 26,
-     _OP_POW: int = 27;
-
-def _domain_msg(op: int, x: float) -> str {
-    if op == _OP_ACOS or op == _OP_ASIN {
-        return "expected a number in range from -1 up to 1, got " + str(x);
+def _domain_error(x: float, r: float, can_overflow: bool) -> bool {
+    if isnan(r) {
+        return not isnan(x);
     }
-    if op == _OP_ACOSH {
-        return "expected argument value not less than 1, got " + str(x);
-    }
-    if op == _OP_ATANH {
-        return "expected a number between -1 and 1, got " + str(x);
-    }
-    if op == _OP_COS or op == _OP_SIN or op == _OP_TAN {
-        return "expected a finite input, got " + str(x);
-    }
-    if op == _OP_GAMMA or op == _OP_LGAMMA {
-        return "expected a noninteger or positive integer, got " + str(x);
-    }
-    if op == _OP_LOG1P {
-        return "expected argument value > -1, got " + str(x);
-    }
-    if op == _OP_SQRT {
-        return "expected a nonnegative input, got " + str(x);
-    }
-    return "math domain error";
+    return not can_overflow and isinf(r) and isfinite(x);
 }
 
 
-def _check_unary(op: int, x: float, r: float) -> float {
-    if isnan(r) and not isnan(x) {
-        raise ValueError(_domain_msg(op, x));
-    }
-    if isinf(r) and isfinite(x) {
-        if (op == _OP_GAMMA or op == _OP_LGAMMA) and x <= 0.0 and x == m_floor(x) {
-            raise ValueError(_domain_msg(op, x));
-        }
-        if op == _OP_COSH
-            or op == _OP_EXP
-            or op == _OP_EXP2
-            or op == _OP_EXPM1
-            or op == _OP_GAMMA
-            or op == _OP_LGAMMA
-            or op == _OP_SINH {
-            raise OverflowError("math range error");
-        }
-        raise ValueError(_domain_msg(op, x));
+def _range_error(x: float, r: float) -> bool {
+    return isinf(r) and isfinite(x);
+}
+
+
+def _got(prefix: str, x: float) -> str {
+    return prefix + str(x);
+}
+
+def:pub acos(x: float) -> float {
+    r = m_acos(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a number in range from -1 up to 1, got ", x));
     }
     return r;
 }
 
-def:pub acos(x: float) -> float {
-    return _check_unary(_OP_ACOS, x, m_acos(x));
-}
-
 
 def:pub acosh(x: float) -> float {
-    return _check_unary(_OP_ACOSH, x, m_acosh(x));
+    r = m_acosh(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected argument value not less than 1, got ", x));
+    }
+    return r;
 }
 
 
 def:pub asin(x: float) -> float {
-    return _check_unary(_OP_ASIN, x, m_asin(x));
+    r = m_asin(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a number in range from -1 up to 1, got ", x));
+    }
+    return r;
 }
 
 
 def:pub asinh(x: float) -> float {
-    return _check_unary(_OP_ASINH, x, m_asinh(x));
+    r = m_asinh(x);
+    if _domain_error(x, r, False) {
+        raise ValueError("math domain error");
+    }
+    return r;
 }
 
 
 def:pub atan(x: float) -> float {
-    return _check_unary(_OP_ATAN, x, m_atan(x));
+    r = m_atan(x);
+    if _domain_error(x, r, False) {
+        raise ValueError("math domain error");
+    }
+    return r;
 }
 
 
 def:pub atanh(x: float) -> float {
-    return _check_unary(_OP_ATANH, x, m_atanh(x));
+    r = m_atanh(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a number between -1 and 1, got ", x));
+    }
+    return r;
 }
 
 
 def:pub cbrt(x: float) -> float {
-    return _check_unary(_OP_CBRT, x, m_cbrt(x));
+    r = m_cbrt(x);
+    if _domain_error(x, r, False) {
+        raise ValueError("math domain error");
+    }
+    return r;
 }
 
 
 def:pub cos(x: float) -> float {
-    return _check_unary(_OP_COS, x, m_cos(x));
+    r = m_cos(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a finite input, got ", x));
+    }
+    return r;
 }
 
 
 def:pub cosh(x: float) -> float {
-    return _check_unary(_OP_COSH, x, m_cosh(x));
+    r = m_cosh(x);
+    if _domain_error(x, r, True) {
+        raise ValueError("math domain error");
+    }
+    if _range_error(x, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub erf(x: float) -> float {
-    return _check_unary(_OP_ERF, x, m_erf(x));
+    r = m_erf(x);
+    if _domain_error(x, r, False) {
+        raise ValueError("math domain error");
+    }
+    return r;
 }
 
 
 def:pub erfc(x: float) -> float {
-    return _check_unary(_OP_ERFC, x, m_erfc(x));
+    r = m_erfc(x);
+    if _domain_error(x, r, False) {
+        raise ValueError("math domain error");
+    }
+    return r;
 }
 
 
 def:pub exp(x: float) -> float {
-    return _check_unary(_OP_EXP, x, m_exp(x));
+    r = m_exp(x);
+    if _domain_error(x, r, True) {
+        raise ValueError("math domain error");
+    }
+    if _range_error(x, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub exp2(x: float) -> float {
-    return _check_unary(_OP_EXP2, x, m_exp2(x));
+    r = m_exp2(x);
+    if _domain_error(x, r, True) {
+        raise ValueError("math domain error");
+    }
+    if _range_error(x, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub expm1(x: float) -> float {
-    return _check_unary(_OP_EXPM1, x, m_expm1(x));
+    r = m_expm1(x);
+    if _domain_error(x, r, True) {
+        raise ValueError("math domain error");
+    }
+    if _range_error(x, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub fabs(x: float) -> float {
-    return _check_unary(_OP_FABS, x, m_fabs(x));
+    return m_fabs(x);
+}
+
+
+glob _LANCZOS_NUM: list[float] = [
+         23531376880.410759688572007674451636754734846804940,
+         42919803642.649098768957899047001988850926355848959,
+         35711959237.355668049440185451547166705960488635843,
+         17921034426.037209699919755754458931112671403265390,
+         6039542586.3520280050642916443072979210699388420708,
+         1439720407.3117216736632230727949123939715485786772,
+         248874557.86205415651146038641322942321632125127801,
+         31426415.585400194380614231628318205362874684987640,
+         2876370.6289353724412254090516208496135991145378768,
+         186056.26539522349504029498971604569928220784236328,
+         8071.6720023658162106380029022722506138218516325024,
+         210.82427775157934587250973392071336271166969580291,
+         2.5066282746310002701649081771338373386264310793408
+     ],
+     _LANCZOS_DEN: list[float] = [
+         0.0,
+         39916800.0,
+         120543840.0,
+         150917976.0,
+         105258076.0,
+         45995730.0,
+         13339535.0,
+         2637558.0,
+         357423.0,
+         32670.0,
+         1925.0,
+         66.0,
+         1.0
+     ],
+     _GAMMA_INTEGRAL: list[float] = [
+         1.0,
+         1.0,
+         2.0,
+         6.0,
+         24.0,
+         120.0,
+         720.0,
+         5040.0,
+         40320.0,
+         362880.0,
+         3628800.0,
+         39916800.0,
+         479001600.0,
+         6227020800.0,
+         87178291200.0,
+         1307674368000.0,
+         20922789888000.0,
+         355687428096000.0,
+         6402373705728000.0,
+         121645100408832000.0,
+         2432902008176640000.0,
+         51090942171709440000.0,
+         1124000727777607680000.0
+     ];
+
+def _sinpi(x: float) -> float {
+    y = m_fmod(m_fabs(x), 2.0);
+    t = 2.0 * y;
+    n = int(m_trunc(t));
+    if t - float(n) >= 0.5 {
+        n += 1;
+    }
+    r: float = 0.0;
+    if n == 0 {
+        r = m_sin(3.141592653589793 * y);
+    } elif n == 1 {
+        r = m_cos(3.141592653589793 * (y - 0.5));
+    } elif n == 2 {
+        r = m_sin(3.141592653589793 * (1.0 - y));
+    } elif n == 3 {
+        r = -m_cos(3.141592653589793 * (y - 1.5));
+    } else {
+        r = m_sin(3.141592653589793 * (y - 2.0));
+    }
+    return m_copysign(1.0, x) * r;
+}
+
+
+def _lanczos_sum(x: float) -> float {
+    num: float = 0.0;
+    den: float = 0.0;
+    if x < 5.0 {
+        i = 12;
+        while i >= 0 {
+            num = fmadd(num, x, _LANCZOS_NUM[i]);
+            den = fmadd(den, x, _LANCZOS_DEN[i]);
+            i -= 1;
+        }
+    } else {
+        for i in range(13) {
+            num = num / x + _LANCZOS_NUM[i];
+            den = den / x + _LANCZOS_DEN[i];
+        }
+    }
+    return num / den;
+}
+
+
+def _gamma_domain(x: float) -> str {
+    return _got("expected a noninteger or positive integer, got ", x);
 }
 
 
 def:pub gamma(x: float) -> float {
-    return _check_unary(_OP_GAMMA, x, m_tgamma(x));
+    if not isfinite(x) {
+        if isnan(x) or x > 0.0 {
+            return x;
+        }
+        raise ValueError(_gamma_domain(x));
+    }
+    if x == 0.0 {
+        raise ValueError(_gamma_domain(x));
+    }
+    if x == m_floor(x) {
+        if x < 0.0 {
+            raise ValueError(_gamma_domain(x));
+        }
+        if x <= 23.0 {
+            return _GAMMA_INTEGRAL[int(x) - 1];
+        }
+    }
+    absx = m_fabs(x);
+    if absx < 1e-20 {
+        tiny = 1.0 / x;
+        if isinf(tiny) {
+            raise OverflowError("math range error");
+        }
+        return tiny;
+    }
+    if absx > 200.0 {
+        if x < 0.0 {
+            return 0.0 / _sinpi(x);
+        }
+        raise OverflowError("math range error");
+    }
+    y = absx + 5.524680040776729583740234375;
+    z: float = 0.0;
+    if absx > 5.524680040776729583740234375 {
+        q = y - absx;
+        z = q - 5.524680040776729583740234375;
+    } else {
+        q = y - 5.524680040776729583740234375;
+        z = q - absx;
+    }
+    z = z * 6.024680040776729583740234375 / y;
+    r: float = 0.0;
+    if x < 0.0 {
+        r = -3.141592653589793 / _sinpi(absx) / absx * m_exp(y) / _lanczos_sum(absx);
+        r = fmadd(-z, r, r);
+        if absx < 140.0 {
+            r /= m_pow(y, absx - 0.5);
+        } else {
+            sqrtpow = m_pow(y, absx / 2.0 - 0.25);
+            r /= sqrtpow;
+            r /= sqrtpow;
+        }
+    } else {
+        r = _lanczos_sum(absx) / m_exp(y);
+        r = fmadd(z, r, r);
+        if absx < 140.0 {
+            r *= m_pow(y, absx - 0.5);
+        } else {
+            sqrtpow = m_pow(y, absx / 2.0 - 0.25);
+            r *= sqrtpow;
+            r *= sqrtpow;
+        }
+    }
+    if isinf(r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub lgamma(x: float) -> float {
-    return _check_unary(_OP_LGAMMA, x, m_lgamma(x));
+    if not isfinite(x) {
+        if isnan(x) {
+            return x;
+        }
+        return inf;
+    }
+    if x == m_floor(x) and x <= 2.0 {
+        if x <= 0.0 {
+            raise ValueError(_gamma_domain(x));
+        }
+        return 0.0;
+    }
+    absx = m_fabs(x);
+    if absx < 1e-20 {
+        return -m_log(absx);
+    }
+    r = m_log(_lanczos_sum(absx)) - 6.024680040776729583740234375;
+    r = fmadd(absx - 0.5, m_log(absx + 6.024680040776729583740234375 - 0.5) - 1.0, r);
+    if x < 0.0 {
+        r = 1.1447298858494002 - m_log(m_fabs(_sinpi(absx))) - m_log(absx) - r;
+    }
+    if isinf(r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub log1p(x: float) -> float {
-    return _check_unary(_OP_LOG1P, x, m_log1p(x));
+    r = m_log1p(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected argument value > -1, got ", x));
+    }
+    return r;
 }
 
 
 def:pub sin(x: float) -> float {
-    return _check_unary(_OP_SIN, x, m_sin(x));
+    r = m_sin(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a finite input, got ", x));
+    }
+    return r;
 }
 
 
 def:pub sinh(x: float) -> float {
-    return _check_unary(_OP_SINH, x, m_sinh(x));
+    r = m_sinh(x);
+    if _domain_error(x, r, True) {
+        raise ValueError("math domain error");
+    }
+    if _range_error(x, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub sqrt(x: float) -> float {
-    return _check_unary(_OP_SQRT, x, m_sqrt(x));
+    r = m_sqrt(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a nonnegative input, got ", x));
+    }
+    return r;
 }
 
 
 def:pub tan(x: float) -> float {
-    return _check_unary(_OP_TAN, x, m_tan(x));
+    r = m_tan(x);
+    if _domain_error(x, r, False) {
+        raise ValueError(_got("expected a finite input, got ", x));
+    }
+    return r;
 }
 
 
 def:pub tanh(x: float) -> float {
-    return _check_unary(_OP_TANH, x, m_tanh(x));
+    r = m_tanh(x);
+    if _domain_error(x, r, False) {
+        raise ValueError("math domain error");
+    }
+    return r;
 }
 
 def _float_to_int(r: float) -> int {
@@ -261,71 +489,95 @@ def _float_to_int(r: float) -> int {
 }
 
 
-def:pub ceil(x: float) -> int {
-    return _float_to_int(m_ceil(x));
-}
-
-
-def:pub floor(x: float) -> int {
-    return _float_to_int(m_floor(x));
-}
-
-
-def:pub trunc(x: float) -> int {
-    return _float_to_int(m_trunc(x));
-}
-
-def _binary(op: int, x: float, y: float) -> float {
-    r: float = 0.0;
-    if op == _OP_ATAN2 {
-        r = m_atan2(x, y);
-    } elif op == _OP_COPYSIGN {
-        r = m_copysign(x, y);
-    } elif op == _OP_FMOD {
-        r = m_fmod(x, y);
-    } elif op == _OP_REMAINDER {
-        r = m_remainder(x, y);
-    } else {
-        r = m_pow(x, y);
+def:pub ceil[T](x: T) -> int {
+    if isinstance(x, int) {
+        xi: int = x;
+        return xi;
     }
-    if isnan(r) {
-        if not isnan(x) and not isnan(y) {
-            raise ValueError("math domain error");
-        }
-        return r;
+    return _float_to_int(m_ceil(float(x)));
+}
+
+
+def:pub floor[T](x: T) -> int {
+    if isinstance(x, int) {
+        xi: int = x;
+        return xi;
     }
-    if isinf(r) and isfinite(x) and isfinite(y) {
-        if op == _OP_POW and x == 0.0 {
-            raise ValueError("math domain error");
-        }
+    return _float_to_int(m_floor(float(x)));
+}
+
+
+def:pub trunc[T](x: T) -> int {
+    if isinstance(x, int) {
+        xi: int = x;
+        return xi;
+    }
+    return _float_to_int(m_trunc(float(x)));
+}
+
+def _binary_domain_error(x: float, y: float, r: float) -> bool {
+    return isnan(r) and not isnan(x) and not isnan(y);
+}
+
+
+def _binary_range_error(x: float, y: float, r: float) -> bool {
+    return isinf(r) and isfinite(x) and isfinite(y);
+}
+
+
+def:pub atan2(y: float, x: float) -> float {
+    r = m_atan2(y, x);
+    if _binary_domain_error(y, x, r) {
+        raise ValueError("math domain error");
+    }
+    if _binary_range_error(y, x, r) {
         raise OverflowError("math range error");
     }
     return r;
 }
 
 
-def:pub atan2(y: float, x: float) -> float {
-    return _binary(_OP_ATAN2, y, x);
-}
-
-
 def:pub copysign(x: float, y: float) -> float {
-    return _binary(_OP_COPYSIGN, x, y);
+    return m_copysign(x, y);
 }
 
 
 def:pub fmod(x: float, y: float) -> float {
-    return _binary(_OP_FMOD, x, y);
+    r = m_fmod(x, y);
+    if _binary_domain_error(x, y, r) {
+        raise ValueError("math domain error");
+    }
+    if _binary_range_error(x, y, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub remainder(x: float, y: float) -> float {
-    return _binary(_OP_REMAINDER, x, y);
+    r = m_remainder(x, y);
+    if _binary_domain_error(x, y, r) {
+        raise ValueError("math domain error");
+    }
+    if _binary_range_error(x, y, r) {
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
 def:pub pow(x: float, y: float) -> float {
-    return _binary(_OP_POW, x, y);
+    r = m_pow(x, y);
+    if _binary_domain_error(x, y, r) {
+        raise ValueError("math domain error");
+    }
+    if _binary_range_error(x, y, r) {
+        if x == 0.0 {
+            raise ValueError("math domain error");
+        }
+        raise OverflowError("math range error");
+    }
+    return r;
 }
 
 
@@ -352,14 +604,14 @@ def:pub radians(x: float) -> float {
 
 def:pub log(x: float, base: float | None = None) -> float {
     if x <= 0.0 {
-        raise ValueError("expected a positive input, got " + str(x));
+        raise ValueError(_got("expected a positive input, got ", x));
     }
     num = m_log(x);
     if base is None {
         return num;
     }
     if base <= 0.0 {
-        raise ValueError("expected a positive input, got " + str(base));
+        raise ValueError(_got("expected a positive input, got ", base));
     }
     den = m_log(base);
     if den == 0.0 {
@@ -371,7 +623,7 @@ def:pub log(x: float, base: float | None = None) -> float {
 
 def:pub log2(x: float) -> float {
     if x <= 0.0 {
-        raise ValueError("expected a positive input, got " + str(x));
+        raise ValueError(_got("expected a positive input, got ", x));
     }
     return m_log2(x);
 }
@@ -379,7 +631,7 @@ def:pub log2(x: float) -> float {
 
 def:pub log10(x: float) -> float {
     if x <= 0.0 {
-        raise ValueError("expected a positive input, got " + str(x));
+        raise ValueError(_got("expected a positive input, got ", x));
     }
     return m_log10(x);
 }
@@ -403,16 +655,17 @@ def:pub isqrt(n: int) -> int {
     if n < 0 {
         raise ValueError("isqrt() argument must be nonnegative");
     }
-    if n < 2 {
-        return n;
+    r = int(m_sqrt(float(n)));
+    if r > 3037000499 {
+        r = 3037000499;
     }
-    x = n // 2 + 1;
-    y = (x + n // x) // 2;
-    while y < x {
-        x = y;
-        y = (x + n // x) // 2;
+    while r * r > n {
+        r -= 1;
     }
-    return x;
+    while r < 3037000499 and (r + 1) * (r + 1) <= n {
+        r += 1;
+    }
+    return r;
 }
 
 
@@ -434,64 +687,30 @@ def _gcd(a: int, b: int) -> int {
 }
 
 
-def _gcd_all(*ints: int) -> int {
+def:pub gcd(*integers: int) -> int {
     r: int = 0;
-    for v in ints {
+    for v in integers {
         r = _gcd(r, v);
     }
     return r;
 }
 
 
-def:pub gcd(
-    a: int = 0,
-    b: int = 0,
-    p1: int = 0,
-    p2: int = 0,
-    p3: int = 0,
-    p4: int = 0,
-    p5: int = 0,
-    p6: int = 0,
-    p7: int = 0,
-    p8: int = 0
-) -> int {
-    return _gcd_all(a, b, p1, p2, p3, p4, p5, p6, p7, p8);
-}
-
-
-def _lcm_all(*ints: int) -> int {
+def:pub lcm(*integers: int) -> int {
     r: int = 1;
-    for v in ints {
-        if v < 0 {
-            v = -v;
-        }
-        if r == 0 or v == 0 {
+    for v in integers {
+        a = v if v >= 0 else -v;
+        if r == 0 or a == 0 {
             r = 0;
             continue;
         }
-        q = r // _gcd(r, v);
-        if v > 9223372036854775807 // q {
+        q = r // _gcd(r, a);
+        if a > 9223372036854775807 // q {
             raise OverflowError("lcm() result too large");
         }
-        r = q * v;
+        r = q * a;
     }
     return r;
-}
-
-
-def:pub lcm(
-    a: int = 1,
-    b: int = 1,
-    p1: int = 1,
-    p2: int = 1,
-    p3: int = 1,
-    p4: int = 1,
-    p5: int = 1,
-    p6: int = 1,
-    p7: int = 1,
-    p8: int = 1
-) -> int {
-    return _lcm_all(a, b, p1, p2, p3, p4, p5, p6, p7, p8);
 }
 
 
@@ -678,7 +897,7 @@ def:pub ulp(x: float) -> float {
     return following - x;
 }
 
-def:pub fsum[T](data: list[T]) -> float {
+def:pub fsum[C: Iterable](data: C) -> float {
     partials: list[float] = [];
     special: float = 0.0;
     infinities: float = 0.0;
@@ -755,132 +974,106 @@ def:pub fsum[T](data: list[T]) -> float {
     return high;
 }
 
-def _double_sum(a: float, b: float) -> tuple[(float, float)] {
-    high = a + b;
-    rounded = high - a;
-    return (high, (a - (high - rounded)) + (b - rounded));
+def _frexp_exponent(x: float) -> int {
+    field = (__float_bits(x) >> 52) & 2047;
+    if field == 0 {
+        return _frexp_exponent(x * 18446744073709551616.0) - 64;
+    }
+    return field - 1022;
 }
 
 
-def _fast_sum(a: float, b: float) -> tuple[(float, float)] {
-    high = a + b;
-    return (high, (a - high) + b);
+def _power_of_two(k: int) -> float {
+    if k >= -1022 {
+        return __bits_float((k + 1023) << 52);
+    }
+    return __bits_float(1 << (k + 1074));
 }
 
 
-def _double_product(a: float, b: float) -> tuple[(float, float)] {
-    high = a * b;
-    return (high, m_fma(a, b, -high));
-}
-
-
-def _triple_product(
-    a: float, b: float, total: tuple[(float, float, float)]
-) -> tuple[(float, float, float)] {
-    product = _double_product(a, b);
-    high = _double_sum(total[0], product[0]);
-    first = _double_sum(total[1], product[1]);
-    second = _double_sum(first[0], high[1]);
-    return (high[0], second[0], total[2] + first[1] + second[1]);
-}
-
-
-def _triple_value(total: tuple[(float, float, float)]) -> float {
-    last = _double_sum(total[1], total[0]);
-    return total[2] + last[1] + last[0];
-}
-
-
-def _norm(values: list[float], largest: float, found_nan: bool) -> float {
+def _vector_norm(vec: list[float], largest: float, found_nan: bool) -> float {
     if isinf(largest) {
         return largest;
     }
     if found_nan {
         return nan;
     }
-    if largest == 0.0 or len(values) <= 1 {
+    if largest == 0.0 or len(vec) <= 1 {
         return largest;
     }
-    (frac, power) = frexp(largest);
-    if power < -1023 {
-        for i in range(len(values)) {
-            values[i] = values[i] / 2.2250738585072014e-308;
-        }
-        return 2.2250738585072014e-308
-            * _norm(values, largest / 2.2250738585072014e-308, found_nan);
+    pre: float = 1.0;
+    post: float = 1.0;
+    top = largest;
+    max_e = _frexp_exponent(top);
+    if max_e < -1023 {
+        pre = 4.49423283715579e307;
+        post = 2.2250738585072014e-308;
+        top = top * pre;
+        max_e = _frexp_exponent(top);
     }
-    scale = ldexp(1.0, -power);
-    total: float = 1.0;
-    fraction1: float = 0.0;
-    fraction2: float = 0.0;
-    for value in values {
-        x = value * scale;
-        product = _double_product(x, x);
-        addition = _fast_sum(total, product[0]);
-        total = addition[0];
-        fraction1 += product[1];
-        fraction2 += addition[1];
+    scale = _power_of_two(-max_e);
+    csum: float = 1.0;
+    frac1: float = 0.0;
+    frac2: float = 0.0;
+    for value in vec {
+        x = (m_fabs(value) * pre) * scale;
+        hi = x * x;
+        lo = m_fma(x, x, -hi);
+        s = csum + hi;
+        frac2 += (csum - s) + hi;
+        csum = s;
+        frac1 += lo;
     }
-    result = m_sqrt(total - 1.0 + (fraction1 + fraction2));
-    correction = _double_product(-result, result);
-    addition = _fast_sum(total, correction[0]);
-    total = addition[0];
-    fraction1 += correction[1];
-    fraction2 += addition[1];
-    residual = total - 1.0 + (fraction1 + fraction2);
-    result += residual / (2.0 * result);
-    return result / scale;
+    h = m_sqrt(csum - 1.0 + (frac1 + frac2));
+    hi = -h * h;
+    lo = m_fma(-h, h, -hi);
+    s = csum + hi;
+    frac2 += (csum - s) + hi;
+    csum = s;
+    frac1 += lo;
+    h += (csum - 1.0 + (frac1 + frac2)) / (2.0 * h);
+    return post * (h / scale);
 }
 
 
-def _hypot_all(*coords: float) -> float {
-    values: list[float] = [];
+def:pub hypot(*coordinates: float) -> float {
     largest: float = 0.0;
     found_nan = False;
-    for v in coords {
+    for v in coordinates {
         x = m_fabs(v);
-        values.append(x);
         found_nan = found_nan or isnan(x);
         if x > largest {
             largest = x;
         }
     }
-    return _norm(values, largest, found_nan);
+    return _vector_norm(coordinates, largest, found_nan);
 }
 
 
-def:pub hypot(
-    a: float = 0.0,
-    b: float = 0.0,
-    p1: float = 0.0,
-    p2: float = 0.0,
-    p3: float = 0.0,
-    p4: float = 0.0,
-    p5: float = 0.0,
-    p6: float = 0.0,
-    p7: float = 0.0,
-    p8: float = 0.0
-) -> float {
-    return _hypot_all(a, b, p1, p2, p3, p4, p5, p6, p7, p8);
-}
-
-
-def:pub dist[T](p: list[T], q: list[T]) -> float {
-    if len(p) != len(q) {
-        raise ValueError("both points must have the same number of dimensions");
+def:pub dist[P: Iterable, Q: Iterable](p: P, q: Q) -> float {
+    diffs: list[float] = [];
+    for v in p {
+        diffs.append(float(v));
     }
-    values: list[float] = [];
+    n = 0;
     largest: float = 0.0;
     found_nan = False;
-    for i in range(len(p)) {
-        d = m_fabs(float(p[i]) - float(q[i]));
-        values.append(d);
+    for w in q {
+        if n >= len(diffs) {
+            raise ValueError("both points must have the same number of dimensions");
+        }
+        d = m_fabs(diffs[n] - float(w));
+        diffs[n] = d;
         found_nan = found_nan or isnan(d);
         if d > largest {
             largest = d;
         }
+        n += 1;
     }
-    return _norm(values, largest, found_nan);
+    if n != len(diffs) {
+        raise ValueError("both points must have the same number of dimensions");
+    }
+    return _vector_norm(diffs, largest, found_nan);
 }
 
 
@@ -911,7 +1104,7 @@ def _iadd_fits(a: int, b: int) -> bool {
 }
 
 
-def:pub prod[T](data: list[T], *, start: int | float = 1) -> (int | float) {
+def:pub prod[C: Iterable](data: C, *, start: int | float = 1) -> (int | float) {
     ri: int = 1;
     rf: float = 1.0;
     isint = True;
@@ -947,45 +1140,97 @@ def:pub prod[T](data: list[T], *, start: int | float = 1) -> (int | float) {
 }
 
 
-def:pub sumprod[T](p: list[T], q: list[T]) -> (int | float) {
-    if len(p) != len(q) {
+def _tl_to_double(hi: float, lo: float, tiny: float) -> float {
+    last_hi = lo + hi;
+    z = last_hi - lo;
+    last_lo = (lo - (last_hi - z)) + (hi - z);
+    return tiny + last_lo + last_hi;
+}
+
+
+def:pub sumprod[P: Iterable, Q: Iterable](p: P, q: Q) -> (int | float) {
+    p_flts: list[float] = [];
+    p_ints: list[int] = [];
+    p_int = True;
+    for v in p {
+        if isinstance(v, int) {
+            vi: int = v;
+            p_ints.append(vi);
+        } else {
+            p_int = False;
+        }
+        p_flts.append(float(v));
+    }
+    q_flts: list[float] = [];
+    q_ints: list[int] = [];
+    q_int = True;
+    for w in q {
+        if isinstance(w, int) {
+            wi: int = w;
+            q_ints.append(wi);
+        } else {
+            q_int = False;
+        }
+        q_flts.append(float(w));
+    }
+    if len(p_flts) != len(q_flts) {
         raise ValueError("Inputs are not the same length");
     }
-    total: tuple[(float, float, float)] = (0.0, 0.0, 0.0);
-    ri: int = 0;
-    isint = True;
-    for i in range(len(p)) {
-        x = p[i];
-        y = q[i];
-        if isint {
-            if isinstance(x, int) and isinstance(y, int) {
-                xi: int = x;
-                yi: int = y;
-                if _imul_fits(xi, yi) {
-                    t = xi * yi;
-                    if _iadd_fits(ri, t) {
-                        ri += t;
-                    } else {
-                        raise OverflowError("sumprod() result too large");
-                    }
-                } else {
-                    raise OverflowError("sumprod() result too large");
-                }
-            } else {
-                isint = False;
+    if p_int and q_int {
+        total: int = 0;
+        for i in range(len(p_ints)) {
+            a = p_ints[i];
+            b = q_ints[i];
+            if not _imul_fits(a, b) {
+                raise OverflowError("sumprod() result too large");
             }
-            if not isint {
-                total = _triple_product(float(ri), 1.0, total);
+            t = a * b;
+            if not _iadd_fits(total, t) {
+                raise OverflowError("sumprod() result too large");
+            }
+            total += t;
+        }
+        return total;
+    }
+    hi: float = 0.0;
+    lo: float = 0.0;
+    tiny: float = 0.0;
+    in_use = False;
+    general = False;
+    acc: float = 0.0;
+    for i in range(len(p_flts)) {
+        x = p_flts[i];
+        y = q_flts[i];
+        if not general {
+            ph = x * y;
+            pl = m_fma(x, y, -ph);
+            s_hi = hi + ph;
+            s_z = s_hi - hi;
+            s_lo = (hi - (s_hi - s_z)) + (ph - s_z);
+            r1_hi = lo + pl;
+            r1_z = r1_hi - lo;
+            r1_lo = (lo - (r1_hi - r1_z)) + (pl - r1_z);
+            r2_hi = r1_hi + s_lo;
+            r2_z = r2_hi - r1_hi;
+            r2_lo = (r1_hi - (r2_hi - r2_z)) + (s_lo - r2_z);
+            if isfinite(s_hi) {
+                hi = s_hi;
+                lo = r2_hi;
+                tiny = tiny + r1_lo + r2_lo;
+                in_use = True;
+                continue;
+            }
+            general = True;
+            if in_use {
+                acc = _tl_to_double(hi, lo, tiny);
             }
         }
-        if not isint {
-            total = _triple_product(float(x), float(y), total);
-        }
+        acc += x * y;
     }
-    if isint {
-        return ri;
+    if general {
+        return acc;
     }
-    return _triple_value(total);
+    return _tl_to_double(hi, lo, tiny);
 }
 
 

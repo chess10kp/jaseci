@@ -385,6 +385,36 @@ def math_py -> dict[any, any] {
     } except Exception as exc {
         r["err_fma_over"] = "WRONG-TYPE: " + str(exc);
     }
+    # result types are part of the contract: rounding returns int, not float
+    r["floor_repr"] = str(floor(2.7));
+    r["ceil_repr"] = str(ceil(-2.1));
+    r["trunc_repr"] = str(trunc(-2.7));
+    r["floor_expr_repr"] = str(floor(3.7) + 1);
+    r["floor_int_exact"] = floor(9007199254740993);
+    r["ceil_int_exact"] = ceil(-9007199254740993);
+    # any iterable is accepted, not only list
+    r["fsum_tuple"] = fsum((0.1, 0.2, 0.3));
+    r["fsum_range"] = fsum(range(10));
+    r["prod_range"] = prod(range(1, 8));
+    r["prod_tuple"] = prod((1.5, 2.0));
+    r["dist_tuple"] = dist((0.0, 0.0), (3.0, 4.0));
+    r["dist_mixed"] = dist([1, 2, 3], (4.0, 6.0, 8.0));
+    r["sumprod_range"] = sumprod((1, 2, 3), range(3));
+    r["sumprod_mixed"] = sumprod([0.1, 0.2], (3, 4));
+    # arity is not capped
+    r["gcd_many"] = gcd(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24);
+    r["lcm_many"] = lcm(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+    r["hypot_many"] = hypot(
+        1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0
+    );
+    r["hypot_one"] = hypot(-3.5);
+    r["gcd_none"] = gcd();
+    r["lcm_none"] = lcm();
+    # CPython's own Lanczos gamma/lgamma, away from the integer table
+    r["gamma_frac"] = gamma(4.919272155929015);
+    r["lgamma_neg"] = lgamma(-17.431905766684515);
+    r["isqrt_max"] = isqrt(9223372036854775807);
+    r["isqrt_edge"] = isqrt(9223372030926249000);
     return r;
 }
 
@@ -711,6 +741,39 @@ def _errs_b_na(r: dict[str, any]) {
     }
 }
 
+def _congruence_na(r: dict[str, any]) {
+    # result types are part of the contract: rounding returns int, not float
+    r["floor_repr"] = str(floor(2.7));
+    r["ceil_repr"] = str(ceil(-2.1));
+    r["trunc_repr"] = str(trunc(-2.7));
+    r["floor_expr_repr"] = str(floor(3.7) + 1);
+    r["floor_int_exact"] = floor(9007199254740993);
+    r["ceil_int_exact"] = ceil(-9007199254740993);
+    # any iterable is accepted, not only list
+    r["fsum_tuple"] = fsum((0.1, 0.2, 0.3));
+    r["fsum_range"] = fsum(range(10));
+    r["prod_range"] = prod(range(1, 8));
+    r["prod_tuple"] = prod((1.5, 2.0));
+    r["dist_tuple"] = dist((0.0, 0.0), (3.0, 4.0));
+    r["dist_mixed"] = dist([1, 2, 3], (4.0, 6.0, 8.0));
+    r["sumprod_range"] = sumprod((1, 2, 3), range(3));
+    r["sumprod_mixed"] = sumprod([0.1, 0.2], (3, 4));
+    # arity is not capped
+    r["gcd_many"] = gcd(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24);
+    r["lcm_many"] = lcm(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+    r["hypot_many"] = hypot(
+        1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0
+    );
+    r["hypot_one"] = hypot(-3.5);
+    r["gcd_none"] = gcd();
+    r["lcm_none"] = lcm();
+    # CPython's own Lanczos gamma/lgamma, away from the integer table
+    r["gamma_frac"] = gamma(4.919272155929015);
+    r["lgamma_neg"] = lgamma(-17.431905766684515);
+    r["isqrt_max"] = isqrt(9223372036854775807);
+    r["isqrt_edge"] = isqrt(9223372030926249000);
+}
+
 def math_na -> dict[str, any] {
     r: dict[str, any] = {};
     _core_na(r);
@@ -718,5 +781,6 @@ def math_na -> dict[str, any] {
     _misc_na(r);
     _errs_a_na(r);
     _errs_b_na(r);
+    _congruence_na(r);
     return r;
 }

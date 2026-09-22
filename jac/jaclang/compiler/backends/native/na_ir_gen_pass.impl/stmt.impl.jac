@@ -3304,6 +3304,38 @@ impl NaIRGenPass._codegen_for(nd: uni.InForStmt) -> None {
         self._str_norm_optional(self._codegen_expr(nd.collection))
     );
 
+    if _coll_memo is not None
+        and self?.range_struct_type
+        and _coll_memo.type == self.range_struct_type.as_pointer() {
+        _rv_i32 = ir.IntType(32);
+        _rv_parts: list[ir.Value] = [];
+        for (_rv_idx, _rv_name) in [(0, "start"), (1, "stop"), (2, "step")] {
+            _rv_parts.append(
+                self.builder.load(
+                    self.builder.gep(
+                        _coll_memo,
+                        [ir.Constant(_rv_i32, 0), ir.Constant(_rv_i32, _rv_idx)],
+                        name=f"forrv.{_rv_name}.p"
+                    ),
+                    name=f"forrv.{_rv_name}"
+                )
+            );
+        }
+        self._codegen_for_indexed(
+            nd,
+            kind="range",
+            collection_val=_rv_parts[1],
+            helpers=None,
+            var_names=[loop_var_name],
+            var_types=[ir.IntType(64)],
+            rc_vars=False,
+            coll_release_op="",
+            range_start=_rv_parts[0],
+            range_step=_rv_parts[2]
+        );
+        return;
+    }
+
     dict_type_key: (str | None) = self._dict_key_of(nd.collection);
     if _coll_memo is not None {
         dict_type_key = self._dict_key_reconcile(dict_type_key, _coll_memo);

@@ -2972,40 +2972,7 @@ impl NaIRGenPass._emit_binary_op(
 
     ctype_ptr = self.complex_struct_type.as_pointer();
     if left.type == ctype_ptr or right.type == ctype_ptr {
-        _lc = left if left.type == ctype_ptr else self._emit_make_complex(left);
-        _rc = right if right.type == ctype_ptr else self._emit_make_complex(right);
-        if _lc is None or _rc is None {
-            return None;
-        }
-        if op == Tok.DIV {
-            return self._codegen_complex_div(_lc, _rc);
-        }
-        (ar, ai) = self._load_complex_parts(_lc);
-        (br, bi) = self._load_complex_parts(_rc);
-        rr: (ir.Value | None) = None;
-        ri: (ir.Value | None) = None;
-        if op == Tok.PLUS {
-            rr = self.builder.fadd(ar, br, name="c.add.r");
-            ri = self.builder.fadd(ai, bi, name="c.add.i");
-        } elif op == Tok.MINUS {
-            rr = self.builder.fsub(ar, br, name="c.sub.r");
-            ri = self.builder.fsub(ai, bi, name="c.sub.i");
-        } elif op == Tok.STAR_MUL {
-            rr = self.builder.fsub(
-                self.builder.fmul(ar, br, name="c.m1"),
-                self.builder.fmul(ai, bi, name="c.m2"),
-                name="c.mul.r"
-            );
-            ri = self.builder.fadd(
-                self.builder.fmul(ar, bi, name="c.m3"),
-                self.builder.fmul(ai, br, name="c.m4"),
-                name="c.mul.i"
-            );
-        }
-        if rr is not None and ri is not None {
-            return self._emit_complex_value(rr, ri);
-        }
-        return None;
+        return self._emit_complex_binop(op, left, right);
     }
 
     if self?.jacval_type

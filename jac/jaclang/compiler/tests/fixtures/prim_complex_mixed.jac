@@ -7,7 +7,7 @@ lowering and opts out (returns {}).
 """
 
 obj CBox {
-    has f: complex;
+    has f: complex = complex(0, 0);
 }
 
 def cmixed_py -> dict[any, any] {
@@ -26,7 +26,7 @@ def cmixed_py -> dict[any, any] {
     box_div = CBox();
     box_div.f = complex(1, 1);
     box_div.f /= 2;
-    return {
+    r: dict[any, any] = {
         "add_scalar": (c1 + 1) == complex(4, 4),
         "sub_scalar": (c1 - 2) == complex(1, 4),
         "mul_scalar": (c1 * 2) == complex(6, 8),
@@ -42,6 +42,55 @@ def cmixed_py -> dict[any, any] {
         "aug_field_pow": box_pow.f == complex(0, 2),
         "aug_field_div": box_div.f == complex(0.5, 0.5)
     };
+    inf = float("inf");
+    nan = float("nan");
+    r["radd_keeps_neg_zero"] = str((1.0 + complex(1.0, -0.0)).imag);
+    r["add_keeps_neg_zero"] = str((complex(1.0, -0.0) + 2).imag);
+    r["rsub_negates_imag"] = str((1.0 - complex(0.0, 0.0)).imag);
+    r["sub_keeps_neg_zero"] = str((complex(1.0, -0.0) - 1.0).imag);
+    r["mul_real_inf"] = str((complex(inf, 1.0) * 2.0).imag);
+    r["rmul_real_inf"] = str((2.0 * complex(1.0, inf)).real);
+    r["div_real_inf"] = str((complex(inf, 1.0) / 2.0).imag);
+    z_rdiv = 3.0 / complex(2.0, 1.0);
+    r["rdiv"] = str(z_rdiv.real) + " " + str(z_rdiv.imag);
+    r["rdiv_inf"] = str((3.0 / complex(inf, 1.0)).imag);
+    r["prod_recovers_inf"] = str((complex(inf, nan) * complex(1.0, 1.0)).imag);
+    r["quot_recovers_inf"] = str((complex(inf, nan) / complex(1.0, 1.0)).imag);
+    z_quot_by_inf = complex(1.0, 1.0) / complex(inf, inf);
+    r["quot_by_inf"] = str(z_quot_by_inf.real) + " " + str(z_quot_by_inf.imag);
+    z_pow_neg_int = complex(1.0, 2.0) ** -2;
+    r["pow_neg_int"] = str(z_pow_neg_int.real) + " " + str(z_pow_neg_int.imag);
+    r["div_zero_cc"] = "no-raise";
+    try {
+        complex(1.0, 1.0) / complex(0.0, 0.0);
+    } except ZeroDivisionError as exc {
+        r["div_zero_cc"] = "ZeroDivisionError: " + str(exc);
+    }
+    r["div_zero_cr"] = "no-raise";
+    try {
+        complex(1.0, 1.0) / 0.0;
+    } except ZeroDivisionError as exc {
+        r["div_zero_cr"] = "ZeroDivisionError: " + str(exc);
+    }
+    r["div_zero_rc"] = "no-raise";
+    try {
+        1.0 / complex(0.0, 0.0);
+    } except ZeroDivisionError as exc {
+        r["div_zero_rc"] = "ZeroDivisionError: " + str(exc);
+    }
+    r["pow_overflow"] = "no-raise";
+    try {
+        complex(0.0, 1e300) ** 2;
+    } except OverflowError as exc {
+        r["pow_overflow"] = "OverflowError: " + str(exc);
+    }
+    r["pow_zero_neg"] = "no-raise";
+    try {
+        complex(0.0, 0.0) ** -1;
+    } except ZeroDivisionError as exc {
+        r["pow_zero_neg"] = "ZeroDivisionError: " + str(exc);
+    }
+    return r;
 }
 
 def cmixed_cl -> dict[any, any] {
@@ -80,5 +129,53 @@ def cmixed_na -> dict[str, any] {
         "aug_field_pow": box_pow.f == complex(0, 2),
         "aug_field_div": box_div.f == complex(0.5, 0.5)
     };
+    inf = float("inf");
+    nan = float("nan");
+    r["radd_keeps_neg_zero"] = str((1.0 + complex(1.0, -0.0)).imag);
+    r["add_keeps_neg_zero"] = str((complex(1.0, -0.0) + 2).imag);
+    r["rsub_negates_imag"] = str((1.0 - complex(0.0, 0.0)).imag);
+    r["sub_keeps_neg_zero"] = str((complex(1.0, -0.0) - 1.0).imag);
+    r["mul_real_inf"] = str((complex(inf, 1.0) * 2.0).imag);
+    r["rmul_real_inf"] = str((2.0 * complex(1.0, inf)).real);
+    r["div_real_inf"] = str((complex(inf, 1.0) / 2.0).imag);
+    z_rdiv = 3.0 / complex(2.0, 1.0);
+    r["rdiv"] = str(z_rdiv.real) + " " + str(z_rdiv.imag);
+    r["rdiv_inf"] = str((3.0 / complex(inf, 1.0)).imag);
+    r["prod_recovers_inf"] = str((complex(inf, nan) * complex(1.0, 1.0)).imag);
+    r["quot_recovers_inf"] = str((complex(inf, nan) / complex(1.0, 1.0)).imag);
+    z_quot_by_inf = complex(1.0, 1.0) / complex(inf, inf);
+    r["quot_by_inf"] = str(z_quot_by_inf.real) + " " + str(z_quot_by_inf.imag);
+    z_pow_neg_int = complex(1.0, 2.0) ** -2;
+    r["pow_neg_int"] = str(z_pow_neg_int.real) + " " + str(z_pow_neg_int.imag);
+    r["div_zero_cc"] = "no-raise";
+    try {
+        complex(1.0, 1.0) / complex(0.0, 0.0);
+    } except ZeroDivisionError as exc {
+        r["div_zero_cc"] = "ZeroDivisionError: " + str(exc);
+    }
+    r["div_zero_cr"] = "no-raise";
+    try {
+        complex(1.0, 1.0) / 0.0;
+    } except ZeroDivisionError as exc {
+        r["div_zero_cr"] = "ZeroDivisionError: " + str(exc);
+    }
+    r["div_zero_rc"] = "no-raise";
+    try {
+        1.0 / complex(0.0, 0.0);
+    } except ZeroDivisionError as exc {
+        r["div_zero_rc"] = "ZeroDivisionError: " + str(exc);
+    }
+    r["pow_overflow"] = "no-raise";
+    try {
+        complex(0.0, 1e300) ** 2;
+    } except OverflowError as exc {
+        r["pow_overflow"] = "OverflowError: " + str(exc);
+    }
+    r["pow_zero_neg"] = "no-raise";
+    try {
+        complex(0.0, 0.0) ** -1;
+    } except ZeroDivisionError as exc {
+        r["pow_zero_neg"] = "ZeroDivisionError: " + str(exc);
+    }
     return r;
 }

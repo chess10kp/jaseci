@@ -361,11 +361,18 @@ def bundled_native_module_names -> list[str] {
     if stdlib_root is None {
         return [];
     }
-    return sorted(
-        f[:-4]
-        for f in os.listdir(stdlib_root)
-        if f.endswith(".jac") and not f.startswith("_") and f != "__init__.jac"
-    );
+    names: set[str] = set();
+    for item in os.listdir(stdlib_root) {
+        if item.startswith("_") or item.startswith(".") {
+            continue;
+        }
+        if os.path.isdir(os.path.join(stdlib_root, item)) {
+            names.add(item);
+        } elif item.endswith(".jac") {
+            names.add(item.split(".")[0]);
+        }
+    }
+    return sorted(names);
 }
 
 def is_native_by_location(file_path: str) -> bool {
@@ -510,8 +517,25 @@ def native_target_os -> str {
     return "linux";
 }
 
+def native_target_arch -> str {
+    import platform;
+    _t = effective_native_target();
+    machine = (_t.split("-")[0] if _t else platform.machine()).lower();
+    if machine in ("arm64", "aarch64") or machine.startswith("arm64") {
+        return "aarch64";
+    }
+    if machine in ("x86_64", "amd64", "x64") {
+        return "x86_64";
+    }
+    return machine;
+}
+
 def _native_variant_path(base_no_ext: str) -> (str | None) {
     import os;
+    _archv = f"{base_no_ext}.{native_target_arch()}.jac";
+    if os.path.exists(_archv) {
+        return _archv;
+    }
     _osv = os.path.join(f"{base_no_ext}.{native_target_os()}.jac");
     if os.path.exists(_osv) {
         return _osv;

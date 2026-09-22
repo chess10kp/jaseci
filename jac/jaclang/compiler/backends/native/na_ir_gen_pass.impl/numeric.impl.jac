@@ -104,328 +104,658 @@ impl NaIRGenPass._load_complex_parts(ptr: ir.Value) -> tuple[(ir.Value, ir.Value
     return (re, im);
 }
 
+impl NaIRGenPass._target_fuses_fp -> bool {
+    triple = str(self.llvm_module.triple or "").lower();
+    return triple.startswith("aarch64") or triple.startswith("arm64");
+}
+
+impl NaIRGenPass._emit_fmadd(a: ir.Value, b: ir.Value, c: ir.Value) -> ir.Value {
+    if self._target_fuses_fp() {
+        f64 = ir.DoubleType();
+        fma_fn = self._get_or_declare_extern("fma", f64, [f64, f64, f64]);
+        return self.builder.call(fma_fn, [a, b, c], name="c.fma");
+    }
+    return self.builder.fadd(self.builder.fmul(a, b, name="c.fm"), c, name="c.fa");
+}
+
+impl NaIRGenPass._fp_fabs(v: ir.Value) -> ir.Value {
+    f64 = ir.DoubleType();
+    fabs_fn = self._get_or_declare_extern("fabs", f64, [f64]);
+    return self.builder.call(fabs_fn, [v], name="c.abs");
+}
+
+impl NaIRGenPass._fp_copysign(mag: ir.Value, sgn: ir.Value) -> ir.Value {
+    f64 = ir.DoubleType();
+    copysign_fn = self._get_or_declare_extern("copysign", f64, [f64, f64]);
+    return self.builder.call(copysign_fn, [mag, sgn], name="c.cps");
+}
+
+impl NaIRGenPass._fp_isnan(v: ir.Value) -> ir.Value {
+    return self.builder.fcmp_unordered("!=", v, v, name="c.isnan");
+}
+
+impl NaIRGenPass._fp_isinf(v: ir.Value) -> ir.Value {
+    inf = ir.Constant(ir.DoubleType(), float("inf"));
+    return self.builder.fcmp_ordered("==", self._fp_fabs(v), inf, name="c.isinf");
+}
+
+impl NaIRGenPass._fp_isfinite(v: ir.Value) -> ir.Value {
+    inf = ir.Constant(ir.DoubleType(), float("inf"));
+    return self.builder.fcmp_ordered("<", self._fp_fabs(v), inf, name="c.isfin");
+}
+
+impl NaIRGenPass._emit_c_prod(
+    ar: ir.Value, ai: ir.Value, br: ir.Value, bi: ir.Value
+) -> tuple[(ir.Value, ir.Value)] {
+    b = self.builder;
+    f64 = ir.DoubleType();
+    one = ir.Constant(f64, 1.0);
+    zero = ir.Constant(f64, 0.0);
+    inf = ir.Constant(f64, float("inf"));
+    ac = b.fmul(ar, br, name="cm.ac");
+    bd = b.fmul(ai, bi, name="cm.bd");
+    ad = b.fmul(ar, bi, name="cm.ad");
+    bc = b.fmul(ai, br, name="cm.bc");
+    rr = b.fsub(ac, bd, name="cm.r");
+    ri = b.fadd(ad, bc, name="cm.i");
+    both_nan = b.and_(self._fp_isnan(rr), self._fp_isnan(ri), name="cm.nan2");
+    a_inf = self._fp_isinf(ar);
+    b_inf = self._fp_isinf(ai);
+    z_inf = b.or_(a_inf, b_inf, name="cm.zinf");
+    a1 = b.select(z_inf, self._fp_copysign(b.select(a_inf, one, zero), ar), ar);
+    b1 = b.select(z_inf, self._fp_copysign(b.select(b_inf, one, zero), ai), ai);
+    c1 = b.select(b.and_(z_inf, self._fp_isnan(br)), self._fp_copysign(zero, br), br);
+    d1 = b.select(b.and_(z_inf, self._fp_isnan(bi)), self._fp_copysign(zero, bi), bi);
+    c_inf = self._fp_isinf(c1);
+    d_inf = self._fp_isinf(d1);
+    w_inf = b.or_(c_inf, d_inf, name="cm.winf");
+    c2 = b.select(w_inf, self._fp_copysign(b.select(c_inf, one, zero), c1), c1);
+    d2 = b.select(w_inf, self._fp_copysign(b.select(d_inf, one, zero), d1), d1);
+    a2 = b.select(b.and_(w_inf, self._fp_isnan(a1)), self._fp_copysign(zero, a1), a1);
+    b2 = b.select(b.and_(w_inf, self._fp_isnan(b1)), self._fp_copysign(zero, b1), b1);
+    boxed = b.or_(z_inf, w_inf, name="cm.boxed");
+    prod_inf = b.or_(
+        b.or_(self._fp_isinf(ac), self._fp_isinf(bd)),
+        b.or_(self._fp_isinf(ad), self._fp_isinf(bc)),
+        name="cm.pinf"
+    );
+    ovf = b.and_(b.not_(boxed), prod_inf, name="cm.ovf");
+    a3 = b.select(b.and_(ovf, self._fp_isnan(a2)), self._fp_copysign(zero, a2), a2);
+    b3 = b.select(b.and_(ovf, self._fp_isnan(b2)), self._fp_copysign(zero, b2), b2);
+    c3 = b.select(b.and_(ovf, self._fp_isnan(c2)), self._fp_copysign(zero, c2), c2);
+    d3 = b.select(b.and_(ovf, self._fp_isnan(d2)), self._fp_copysign(zero, d2), d2);
+    recalc = b.and_(both_nan, b.or_(boxed, ovf), name="cm.recalc");
+    rec_r = b.fmul(
+        inf, self._emit_fmadd(a3, c3, b.fneg(b.fmul(b3, d3))), name="cm.rec.r"
+    );
+    rec_i = b.fmul(inf, self._emit_fmadd(a3, d3, b.fmul(b3, c3)), name="cm.rec.i");
+    return (
+        b.select(recalc, rec_r, rr, name="cm.out.r"),
+        b.select(recalc, rec_i, ri, name="cm.out.i")
+    );
+}
+
+impl NaIRGenPass._emit_c_quot(
+    ar: ir.Value, ai: ir.Value, br: ir.Value, bi: ir.Value
+) -> tuple[(ir.Value, ir.Value)] {
+    f64 = ir.DoubleType();
+    zero = ir.Constant(f64, 0.0);
+    one = ir.Constant(f64, 1.0);
+    inf = ir.Constant(f64, float("inf"));
+    fnan = ir.Constant(f64, float("nan"));
+    func = self.builder.function;
+    res_r = self._entry_alloca(f64, "cq.r");
+    res_i = self._entry_alloca(f64, "cq.i");
+    abs_br = self._fp_fabs(br);
+    abs_bi = self._fp_fabs(bi);
+    re_bb = func.append_basic_block(name="cq.re");
+    re_zero_bb = func.append_basic_block(name="cq.re.zero");
+    re_div_bb = func.append_basic_block(name="cq.re.div");
+    chk_im_bb = func.append_basic_block(name="cq.chk.im");
+    im_bb = func.append_basic_block(name="cq.im");
+    nan_bb = func.append_basic_block(name="cq.nan");
+    post_bb = func.append_basic_block(name="cq.post");
+    rec_bb = func.append_basic_block(name="cq.rec");
+    rec_a_bb = func.append_basic_block(name="cq.rec.a");
+    rec_chk_b_bb = func.append_basic_block(name="cq.rec.chkb");
+    rec_b_bb = func.append_basic_block(name="cq.rec.b");
+    done_bb = func.append_basic_block(name="cq.done");
+    self.builder.cbranch(
+        self.builder.fcmp_ordered(">=", abs_br, abs_bi, name="cq.ge"), re_bb, chk_im_bb
+    );
+
+    self.builder.position_at_end(re_bb);
+    self.builder.cbranch(
+        self.builder.fcmp_ordered("==", abs_br, zero, name="cq.bz"),
+        re_zero_bb,
+        re_div_bb
+    );
+    self.builder.position_at_end(re_zero_bb);
+    self.builder.store(zero, res_r);
+    self.builder.store(zero, res_i);
+    self.builder.branch(post_bb);
+    self.builder.position_at_end(re_div_bb);
+    ratio = self.builder.fdiv(bi, br, name="cq.ratio");
+    denom = self._emit_fmadd(bi, ratio, br);
+    self.builder.store(
+        self.builder.fdiv(self._emit_fmadd(ai, ratio, ar), denom, name="cq.rr"), res_r
+    );
+    self.builder.store(
+        self.builder.fdiv(
+            self._emit_fmadd(self.builder.fneg(ar), ratio, ai), denom, name="cq.ri"
+        ),
+        res_i
+    );
+    self.builder.branch(post_bb);
+
+    self.builder.position_at_end(chk_im_bb);
+    self.builder.cbranch(
+        self.builder.fcmp_ordered(">=", abs_bi, abs_br, name="cq.ge2"), im_bb, nan_bb
+    );
+    self.builder.position_at_end(im_bb);
+    ratio2 = self.builder.fdiv(br, bi, name="cq.ratio2");
+    denom2 = self._emit_fmadd(br, ratio2, bi);
+    self.builder.store(
+        self.builder.fdiv(self._emit_fmadd(ar, ratio2, ai), denom2, name="cq.rr2"),
+        res_r
+    );
+    self.builder.store(
+        self.builder.fdiv(
+            self._emit_fmadd(ai, ratio2, self.builder.fneg(ar)), denom2, name="cq.ri2"
+        ),
+        res_i
+    );
+    self.builder.branch(post_bb);
+
+    self.builder.position_at_end(nan_bb);
+    self.builder.store(fnan, res_r);
+    self.builder.store(fnan, res_i);
+    self.builder.branch(post_bb);
+
+    self.builder.position_at_end(post_bb);
+    cur_r = self.builder.load(res_r, name="cq.cur.r");
+    cur_i = self.builder.load(res_i, name="cq.cur.i");
+    self.builder.cbranch(
+        self.builder.and_(self._fp_isnan(cur_r), self._fp_isnan(cur_i), name="cq.nan2"),
+        rec_bb,
+        done_bb
+    );
+
+    self.builder.position_at_end(rec_bb);
+    a_inf = self.builder.or_(self._fp_isinf(ar), self._fp_isinf(ai), name="cq.ainf");
+    b_fin = self.builder.and_(
+        self._fp_isfinite(br), self._fp_isfinite(bi), name="cq.bfin"
+    );
+    self.builder.cbranch(
+        self.builder.and_(a_inf, b_fin, name="cq.case.a"), rec_a_bb, rec_chk_b_bb
+    );
+    self.builder.position_at_end(rec_a_bb);
+    box_ax = self._fp_copysign(
+        self.builder.select(self._fp_isinf(ar), one, zero, name="cq.box_ax.m"), ar
+    );
+    box_ay = self._fp_copysign(
+        self.builder.select(self._fp_isinf(ai), one, zero, name="cq.box_ay.m"), ai
+    );
+    self.builder.store(
+        self.builder.fmul(
+            inf,
+            self._emit_fmadd(box_ax, br, self.builder.fmul(box_ay, bi)),
+            name="cq.ra"
+        ),
+        res_r
+    );
+    self.builder.store(
+        self.builder.fmul(
+            inf,
+            self._emit_fmadd(
+                box_ay, br, self.builder.fneg(self.builder.fmul(box_ax, bi))
+            ),
+            name="cq.ia"
+        ),
+        res_i
+    );
+    self.builder.branch(done_bb);
+
+    self.builder.position_at_end(rec_chk_b_bb);
+    b_inf = self.builder.or_(
+        self._fp_isinf(abs_br), self._fp_isinf(abs_bi), name="cq.binf"
+    );
+    a_fin = self.builder.and_(
+        self._fp_isfinite(ar), self._fp_isfinite(ai), name="cq.afin"
+    );
+    self.builder.cbranch(
+        self.builder.and_(b_inf, a_fin, name="cq.case.b"), rec_b_bb, done_bb
+    );
+    self.builder.position_at_end(rec_b_bb);
+    box_x = self._fp_copysign(
+        self.builder.select(self._fp_isinf(br), one, zero, name="cq.box_x.m"), br
+    );
+    box_y = self._fp_copysign(
+        self.builder.select(self._fp_isinf(bi), one, zero, name="cq.box_y.m"), bi
+    );
+    self.builder.store(
+        self.builder.fmul(
+            zero,
+            self._emit_fmadd(ar, box_x, self.builder.fmul(ai, box_y)),
+            name="cq.rb"
+        ),
+        res_r
+    );
+    self.builder.store(
+        self.builder.fmul(
+            zero,
+            self._emit_fmadd(
+                ai, box_x, self.builder.fneg(self.builder.fmul(ar, box_y))
+            ),
+            name="cq.ib"
+        ),
+        res_i
+    );
+    self.builder.branch(done_bb);
+
+    self.builder.position_at_end(done_bb);
+    return (
+        self.builder.load(res_r, name="cq.out.r"),
+        self.builder.load(res_i, name="cq.out.i")
+    );
+}
+
+impl NaIRGenPass._emit_rc_quot(
+    x: ir.Value, br: ir.Value, bi: ir.Value
+) -> tuple[(ir.Value, ir.Value)] {
+    f64 = ir.DoubleType();
+    zero = ir.Constant(f64, 0.0);
+    one = ir.Constant(f64, 1.0);
+    fnan = ir.Constant(f64, float("nan"));
+    func = self.builder.function;
+    res_r = self._entry_alloca(f64, "rq.r");
+    res_i = self._entry_alloca(f64, "rq.i");
+    abs_br = self._fp_fabs(br);
+    abs_bi = self._fp_fabs(bi);
+    re_bb = func.append_basic_block(name="rq.re");
+    re_zero_bb = func.append_basic_block(name="rq.re.zero");
+    re_div_bb = func.append_basic_block(name="rq.re.div");
+    chk_im_bb = func.append_basic_block(name="rq.chk.im");
+    im_bb = func.append_basic_block(name="rq.im");
+    nan_bb = func.append_basic_block(name="rq.nan");
+    post_bb = func.append_basic_block(name="rq.post");
+    rec_bb = func.append_basic_block(name="rq.rec");
+    done_bb = func.append_basic_block(name="rq.done");
+    self.builder.cbranch(
+        self.builder.fcmp_ordered(">=", abs_br, abs_bi, name="rq.ge"), re_bb, chk_im_bb
+    );
+
+    self.builder.position_at_end(re_bb);
+    self.builder.cbranch(
+        self.builder.fcmp_ordered("==", abs_br, zero, name="rq.bz"),
+        re_zero_bb,
+        re_div_bb
+    );
+    self.builder.position_at_end(re_zero_bb);
+    self.builder.store(zero, res_r);
+    self.builder.store(zero, res_i);
+    self.builder.branch(post_bb);
+    self.builder.position_at_end(re_div_bb);
+    ratio = self.builder.fdiv(bi, br, name="rq.ratio");
+    denom = self._emit_fmadd(bi, ratio, br);
+    self.builder.store(self.builder.fdiv(x, denom, name="rq.rr"), res_r);
+    self.builder.store(
+        self.builder.fdiv(
+            self.builder.fmul(self.builder.fneg(x), ratio, name="rq.ni"),
+            denom,
+            name="rq.ri"
+        ),
+        res_i
+    );
+    self.builder.branch(post_bb);
+
+    self.builder.position_at_end(chk_im_bb);
+    self.builder.cbranch(
+        self.builder.fcmp_ordered(">=", abs_bi, abs_br, name="rq.ge2"), im_bb, nan_bb
+    );
+    self.builder.position_at_end(im_bb);
+    ratio2 = self.builder.fdiv(br, bi, name="rq.ratio2");
+    denom2 = self._emit_fmadd(br, ratio2, bi);
+    self.builder.store(
+        self.builder.fdiv(
+            self.builder.fmul(x, ratio2, name="rq.nr2"), denom2, name="rq.rr2"
+        ),
+        res_r
+    );
+    self.builder.store(
+        self.builder.fdiv(self.builder.fneg(x), denom2, name="rq.ri2"), res_i
+    );
+    self.builder.branch(post_bb);
+
+    self.builder.position_at_end(nan_bb);
+    self.builder.store(fnan, res_r);
+    self.builder.store(fnan, res_i);
+    self.builder.branch(post_bb);
+
+    self.builder.position_at_end(post_bb);
+    cur_r = self.builder.load(res_r, name="rq.cur.r");
+    cur_i = self.builder.load(res_i, name="rq.cur.i");
+    need = self.builder.and_(
+        self.builder.and_(self._fp_isnan(cur_r), self._fp_isnan(cur_i)),
+        self.builder.and_(
+            self._fp_isfinite(x),
+            self.builder.or_(self._fp_isinf(abs_br), self._fp_isinf(abs_bi))
+        ),
+        name="rq.need"
+    );
+    self.builder.cbranch(need, rec_bb, done_bb);
+    self.builder.position_at_end(rec_bb);
+    box_x = self._fp_copysign(
+        self.builder.select(self._fp_isinf(br), one, zero, name="rq.box_x.m"), br
+    );
+    box_y = self._fp_copysign(
+        self.builder.select(self._fp_isinf(bi), one, zero, name="rq.box_y.m"), bi
+    );
+    self.builder.store(
+        self.builder.fmul(zero, self.builder.fmul(x, box_x), name="rq.rec.r"), res_r
+    );
+    self.builder.store(
+        self.builder.fmul(
+            zero, self.builder.fmul(self.builder.fneg(x), box_y), name="rq.rec.i"
+        ),
+        res_i
+    );
+    self.builder.branch(done_bb);
+
+    self.builder.position_at_end(done_bb);
+    return (
+        self.builder.load(res_r, name="rq.out.r"),
+        self.builder.load(res_i, name="rq.out.i")
+    );
+}
+
+impl NaIRGenPass._emit_complex_binop(
+    op: str, left: ir.Value, right: ir.Value
+) -> (ir.Value | None) {
+    ctype_ptr = self.complex_struct_type.as_pointer();
+    f64 = ir.DoubleType();
+    zero = ir.Constant(f64, 0.0);
+    b = self.builder;
+    l_cplx = left.type == ctype_ptr;
+    r_cplx = right.type == ctype_ptr;
+    if l_cplx and r_cplx {
+        (ar, ai) = self._load_complex_parts(left);
+        (br, bi) = self._load_complex_parts(right);
+        if op == Tok.PLUS {
+            return self._emit_complex_value(
+                b.fadd(ar, br, name="cadd.r"), b.fadd(ai, bi, name="cadd.i")
+            );
+        }
+        if op == Tok.MINUS {
+            return self._emit_complex_value(
+                b.fsub(ar, br, name="csub.r"), b.fsub(ai, bi, name="csub.i")
+            );
+        }
+        if op == Tok.STAR_MUL {
+            (pr, pi) = self._emit_c_prod(ar, ai, br, bi);
+            return self._emit_complex_value(pr, pi);
+        }
+        if op == Tok.DIV {
+            self._emit_runtime_raise(
+                b.and_(b.fcmp_ordered("==", br, zero), b.fcmp_ordered("==", bi, zero)),
+                "ZeroDivisionError",
+                "division by zero"
+            );
+            (qr, qi) = self._emit_c_quot(ar, ai, br, bi);
+            return self._emit_complex_value(qr, qi);
+        }
+        return None;
+    }
+    real_side = right if l_cplx else left;
+    if not isinstance(real_side.type, (ir.IntType, ir.DoubleType, ir.FloatType)) {
+        return None;
+    }
+    x = self._coerce_type(real_side, f64);
+    if x is None {
+        return None;
+    }
+    if l_cplx {
+        (ar, ai) = self._load_complex_parts(left);
+        if op == Tok.PLUS {
+            return self._emit_complex_value(b.fadd(ar, x, name="crad.r"), ai);
+        }
+        if op == Tok.MINUS {
+            return self._emit_complex_value(b.fsub(ar, x, name="crsb.r"), ai);
+        }
+        if op == Tok.STAR_MUL {
+            return self._emit_complex_value(
+                b.fmul(ar, x, name="crml.r"), b.fmul(ai, x, name="crml.i")
+            );
+        }
+        if op == Tok.DIV {
+            self._emit_runtime_raise(
+                b.fcmp_ordered("==", x, zero), "ZeroDivisionError", "division by zero"
+            );
+            return self._emit_complex_value(
+                b.fdiv(ar, x, name="crdv.r"), b.fdiv(ai, x, name="crdv.i")
+            );
+        }
+        return None;
+    }
+    (br, bi) = self._load_complex_parts(right);
+    if op == Tok.PLUS {
+        return self._emit_complex_value(b.fadd(br, x, name="rcad.r"), bi);
+    }
+    if op == Tok.MINUS {
+        return self._emit_complex_value(
+            b.fsub(x, br, name="rcsb.r"), b.fneg(bi, name="rcsb.i")
+        );
+    }
+    if op == Tok.STAR_MUL {
+        return self._emit_complex_value(
+            b.fmul(br, x, name="rcml.r"), b.fmul(bi, x, name="rcml.i")
+        );
+    }
+    if op == Tok.DIV {
+        self._emit_runtime_raise(
+            b.and_(b.fcmp_ordered("==", br, zero), b.fcmp_ordered("==", bi, zero)),
+            "ZeroDivisionError",
+            "division by zero"
+        );
+        (qr, qi) = self._emit_rc_quot(x, br, bi);
+        return self._emit_complex_value(qr, qi);
+    }
+    return None;
+}
+
 impl NaIRGenPass._codegen_complex_pow(
     base: ir.Value, exp: ir.Value
 ) -> (ir.Value | None) {
     f64 = ir.DoubleType();
     i64 = ir.IntType(64);
     ctype_ptr = self.complex_struct_type.as_pointer();
-
     _cb = base if base.type == ctype_ptr else self._emit_make_complex(base);
     _ce = exp if exp.type == ctype_ptr else self._emit_make_complex(exp);
     if _cb is None or _ce is None {
         return None;
     }
-
     (ar, ai) = self._load_complex_parts(_cb);
-    (wr, wi) = self._load_complex_parts(_ce);
-
-    hypot_fn = self._get_or_declare_extern("hypot", f64, [f64, f64]);
-    floor_fn = self._get_or_declare_extern("floor", f64, [f64]);
-    fabs_fn = self._get_or_declare_extern("fabs", f64, [f64]);
-    log_fn = self._get_or_declare_extern("log", f64, [f64]);
-    atan2_fn = self._get_or_declare_extern("atan2", f64, [f64, f64]);
-    exp_fn = self._get_or_declare_extern("exp", f64, [f64]);
-    cos_fn = self._get_or_declare_extern("cos", f64, [f64]);
-    sin_fn = self._get_or_declare_extern("sin", f64, [f64]);
-
+    (br, bi) = self._load_complex_parts(_ce);
+    b = self.builder;
     fzero = ir.Constant(f64, 0.0);
     fone = ir.Constant(f64, 1.0);
-    mag = self.builder.call(hypot_fn, [ar, ai], name="cp.len");
-    theta = self.builder.call(atan2_fn, [ai, ar], name="cp.theta");
-    func = self.builder.function;
-
+    floor_fn = self._get_or_declare_extern("floor", f64, [f64]);
+    hypot_fn = self._get_or_declare_extern("hypot", f64, [f64, f64]);
+    pow_fn = self._get_or_declare_extern("pow", f64, [f64, f64]);
+    atan2_fn = self._get_or_declare_extern("atan2", f64, [f64, f64]);
+    exp_fn = self._get_or_declare_extern("exp", f64, [f64]);
+    log_fn = self._get_or_declare_extern("log", f64, [f64]);
+    cos_fn = self._get_or_declare_extern("cos", f64, [f64]);
+    sin_fn = self._get_or_declare_extern("sin", f64, [f64]);
+    func = b.function;
     res_r = self._entry_alloca(f64, "cp.res.r");
     res_i = self._entry_alloca(f64, "cp.res.i");
-
-    zero_bb = func.append_basic_block(name="cp.zero");
-    nonzero_bb = func.append_basic_block(name="cp.nonzero");
-    done_bb = func.append_basic_block(name="cp.done");
-    is_zero = self.builder.fcmp_ordered("==", mag, fzero, name="cp.iszero");
-    self.builder.cbranch(is_zero, zero_bb, nonzero_bb);
-
-    self.builder.position_at_end(zero_bb);
-    bad_exp = self.builder.or_(
-        self.builder.fcmp_ordered("<", wr, fzero, name="cp.wrneg"),
-        self.builder.fcmp_ordered("!=", wi, fzero, name="cp.winz"),
-        name="cp.badexp"
-    );
-    self._emit_runtime_raise(
-        bad_exp, "ZeroDivisionError", "zero to a negative or complex power"
-    );
-
-    zr = self.builder.select(
-        self.builder.fcmp_ordered("==", wr, fzero, name="cp.wrzero"),
-        fone,
-        fzero,
-        name="cp.zr"
-    );
-    self.builder.store(zr, res_r);
-    self.builder.store(fzero, res_i);
-    self.builder.branch(done_bb);
-
-    self.builder.position_at_end(nonzero_bb);
-    wr_floor = self.builder.call(floor_fn, [wr], name="cp.wrfloor");
-
-    is_int_exp = self.builder.and_(
-        self.builder.fcmp_ordered("==", wi, fzero, name="cp.wizero"),
-        self.builder.and_(
-            self.builder.fcmp_ordered("==", wr, wr_floor, name="cp.wrint"),
-            self.builder.fcmp_ordered(
-                "<=",
-                self.builder.call(fabs_fn, [wr], name="cp.wrabs"),
-                ir.Constant(f64, 100.0),
-                name="cp.wrsml"
-            ),
-            name="cp.wrchk"
-        ),
-        name="cp.isintexp"
-    );
-    int_bb = func.append_basic_block(name="cp.int");
-    gen_bb = func.append_basic_block(name="cp.gen");
-    self.builder.cbranch(is_int_exp, int_bb, gen_bb);
-
-    self.builder.position_at_end(int_bb);
     acc_r = self._entry_alloca(f64, "cp.acc.r");
     acc_i = self._entry_alloca(f64, "cp.acc.i");
     cur_r = self._entry_alloca(f64, "cp.cur.r");
     cur_i = self._entry_alloca(f64, "cp.cur.i");
-    n_ctr = self._entry_alloca(i64, "cp.n");
-    self.builder.store(fone, acc_r);
-    self.builder.store(fzero, acc_i);
-    self.builder.store(ar, cur_r);
-    self.builder.store(ai, cur_i);
-    n_abs = self.builder.call(fabs_fn, [wr], name="cp.nabs");
-    self.builder.store(self.builder.fptosi(n_abs, i64, name="cp.ni"), n_ctr);
-    loop_bb = func.append_basic_block(name="cp.iloop");
-    odd_bb = func.append_basic_block(name="cp.iodd");
-    even_bb = func.append_basic_block(name="cp.ieven");
-    idone_bb = func.append_basic_block(name="cp.idone");
-    self.builder.branch(loop_bb);
+    mask_slot = self._entry_alloca(i64, "cp.mask");
 
-    self.builder.position_at_end(loop_bb);
-    n_cur = self.builder.load(n_ctr, name="cp.n.cur");
-    n_pos = self.builder.icmp_signed(">", n_cur, ir.Constant(i64, 0), name="cp.n.pos");
-    self.builder.cbranch(n_pos, odd_bb, idone_bb);
-
-    self.builder.position_at_end(odd_bb);
-    n_bit = self.builder.and_(
-        self.builder.load(n_ctr, name="cp.n.ld"), ir.Constant(i64, 1), name="cp.n.bit"
-    );
-    is_odd = self.builder.icmp_signed(
-        "!=", n_bit, ir.Constant(i64, 0), name="cp.n.odd"
-    );
-    mul_bb = func.append_basic_block(name="cp.imul");
-    self.builder.cbranch(is_odd, mul_bb, even_bb);
-
-    self.builder.position_at_end(mul_bb);
-    a_r = self.builder.load(acc_r, name="cp.a.r");
-    a_i = self.builder.load(acc_i, name="cp.a.i");
-    c_r = self.builder.load(cur_r, name="cp.c.r");
-    c_i = self.builder.load(cur_i, name="cp.c.i");
-    self.builder.store(
-        self.builder.fsub(
-            self.builder.fmul(a_r, c_r, name="cp.m1"),
-            self.builder.fmul(a_i, c_i, name="cp.m2"),
-            name="cp.mr"
-        ),
-        acc_r
-    );
-    self.builder.store(
-        self.builder.fadd(
-            self.builder.fmul(a_r, c_i, name="cp.m3"),
-            self.builder.fmul(a_i, c_r, name="cp.m4"),
-            name="cp.mi"
-        ),
-        acc_i
-    );
-    self.builder.branch(even_bb);
-
-    self.builder.position_at_end(even_bb);
-    c2_r = self.builder.load(cur_r, name="cp.c2.r");
-    c2_i = self.builder.load(cur_i, name="cp.c2.i");
-    self.builder.store(
-        self.builder.fsub(
-            self.builder.fmul(c2_r, c2_r, name="cp.s1"),
-            self.builder.fmul(c2_i, c2_i, name="cp.s2"),
-            name="cp.sr"
-        ),
-        cur_r
-    );
-    self.builder.store(
-        self.builder.fmul(
-            ir.Constant(f64, 2.0),
-            self.builder.fmul(c2_r, c2_i, name="cp.s3"),
-            name="cp.si"
-        ),
-        cur_i
-    );
-    self.builder.store(
-        self.builder.ashr(
-            self.builder.load(n_ctr, name="cp.n.sh"),
-            ir.Constant(i64, 1),
-            name="cp.n.next"
-        ),
-        n_ctr
-    );
-    self.builder.branch(loop_bb);
-
-    self.builder.position_at_end(idone_bb);
-    fin_r = self.builder.load(acc_r, name="cp.f.r");
-    fin_i = self.builder.load(acc_i, name="cp.f.i");
-    neg_exp = self.builder.fcmp_ordered("<", wr, fzero, name="cp.negexp");
+    int_bb = func.append_basic_block(name="cp.int");
+    loop_bb = func.append_basic_block(name="cp.loop");
+    body_bb = func.append_basic_block(name="cp.body");
+    mul_bb = func.append_basic_block(name="cp.mul");
+    sq_bb = func.append_basic_block(name="cp.sq");
+    after_bb = func.append_basic_block(name="cp.after");
     inv_bb = func.append_basic_block(name="cp.inv");
-    st_bb = func.append_basic_block(name="cp.istore");
-    self.builder.cbranch(neg_exp, inv_bb, st_bb);
+    keep_bb = func.append_basic_block(name="cp.keep");
+    gen_bb = func.append_basic_block(name="cp.gen");
+    one_bb = func.append_basic_block(name="cp.one");
+    gen2_bb = func.append_basic_block(name="cp.gen2");
+    azero_bb = func.append_basic_block(name="cp.azero");
+    calc_bb = func.append_basic_block(name="cp.calc");
+    im_bb = func.append_basic_block(name="cp.imexp");
+    trig_bb = func.append_basic_block(name="cp.trig");
+    chk_bb = func.append_basic_block(name="cp.chk");
+    done_bb = func.append_basic_block(name="cp.done");
 
-    self.builder.position_at_end(inv_bb);
-
-    (inv_r, inv_i) = self._emit_complex_div_parts(fone, fzero, fin_r, fin_i);
-    self.builder.store(inv_r, res_r);
-    self.builder.store(inv_i, res_i);
-    self.builder.branch(done_bb);
-
-    self.builder.position_at_end(st_bb);
-    self.builder.store(fin_r, res_r);
-    self.builder.store(fin_i, res_i);
-    self.builder.branch(done_bb);
-
-    self.builder.position_at_end(gen_bb);
-    lnr = self.builder.call(log_fn, [mag], name="cp.lnr");
-    a = self.builder.fsub(
-        self.builder.fmul(wr, lnr, name="cp.a1"),
-        self.builder.fmul(wi, theta, name="cp.a2"),
-        name="cp.a"
-    );
-    ang = self.builder.fadd(
-        self.builder.fmul(wr, theta, name="cp.b1"),
-        self.builder.fmul(wi, lnr, name="cp.b2"),
-        name="cp.ang"
-    );
-    m = self.builder.call(exp_fn, [a], name="cp.mag");
-    grr = self.builder.fmul(
-        m, self.builder.call(cos_fn, [ang], name="cp.cos"), name="cp.grr"
-    );
-    gri = self.builder.fmul(
-        m, self.builder.call(sin_fn, [ang], name="cp.sin"), name="cp.gri"
-    );
-    self.builder.store(grr, res_r);
-    self.builder.store(gri, res_i);
-    self.builder.branch(done_bb);
-
-    self.builder.position_at_end(done_bb);
-    out_r = self.builder.load(res_r, name="cp.out.r");
-    out_i = self.builder.load(res_i, name="cp.out.i");
-    return self._emit_complex_value(out_r, out_i);
-}
-
-impl NaIRGenPass._emit_complex_div_parts(
-    ar: ir.Value, ai: ir.Value, br: ir.Value, bi: ir.Value
-) -> tuple[(ir.Value, ir.Value)] {
-    f64 = ir.DoubleType();
-    fzero = ir.Constant(f64, 0.0);
-    fabs_fn = self._get_or_declare_extern("fabs", f64, [f64]);
-
-    res_r = self._entry_alloca(f64, "cd.res.r");
-    res_i = self._entry_alloca(f64, "cd.res.i");
-
-    bzero = self.builder.and_(
-        self.builder.fcmp_ordered("==", br, fzero, name="cd.brz"),
-        self.builder.fcmp_ordered("==", bi, fzero, name="cd.biz"),
-        name="cd.bzero"
-    );
-    self._emit_runtime_raise(bzero, "ZeroDivisionError", "complex division by zero");
-
-    abs_br = self.builder.call(fabs_fn, [br], name="cd.abr");
-    abs_bi = self.builder.call(fabs_fn, [bi], name="cd.abi");
-    func = self.builder.function;
-    done_bb = func.append_basic_block(name="cd.done");
-
-    re_ge_bb = func.append_basic_block(name="cd.rege");
-    im_gt_bb = func.append_basic_block(name="cd.imgt");
-    nan_bb = func.append_basic_block(name="cd.nan");
-    use_re = self.builder.fcmp_ordered(">=", abs_br, abs_bi, name="cd.uge");
-    use_im = self.builder.fcmp_ordered("<", abs_br, abs_bi, name="cd.ult");
-
-    re_or_im = self.builder.or_(use_re, use_im, name="cd.ord");
-    mid_bb = func.append_basic_block(name="cd.mid");
-    self.builder.cbranch(re_or_im, mid_bb, nan_bb);
-    self.builder.position_at_end(mid_bb);
-    self.builder.cbranch(use_re, re_ge_bb, im_gt_bb);
-
-    self.builder.position_at_end(re_ge_bb);
-    ratio1 = self.builder.fdiv(bi, br, name="cd.ratio1");
-    denom1 = self.builder.fadd(
-        br, self.builder.fmul(bi, ratio1, name="cd.d1x"), name="cd.denom1"
-    );
-    self.builder.store(
-        self.builder.fdiv(
-            self.builder.fadd(
-                ar, self.builder.fmul(ai, ratio1, name="cd.n1x"), name="cd.n1"
+    is_int = b.and_(
+        b.fcmp_ordered("==", bi, fzero, name="cp.bi0"),
+        b.and_(
+            b.fcmp_ordered(
+                "==", br, b.call(floor_fn, [br], name="cp.flr"), name="cp.bint"
             ),
-            denom1,
-            name="cd.r1"
-        ),
-        res_r
-    );
-    self.builder.store(
-        self.builder.fdiv(
-            self.builder.fsub(
-                ai, self.builder.fmul(ar, ratio1, name="cd.i1x"), name="cd.i1"
+            b.fcmp_ordered(
+                "<=", self._fp_fabs(br), ir.Constant(f64, 100.0), name="cp.small"
             ),
-            denom1,
-            name="cd.ri1"
+            name="cp.intchk"
         ),
-        res_i
+        name="cp.isint"
     );
-    self.builder.branch(done_bb);
+    b.cbranch(is_int, int_bb, gen_bb);
 
-    self.builder.position_at_end(im_gt_bb);
-    ratio2 = self.builder.fdiv(br, bi, name="cd.ratio2");
-    denom2 = self.builder.fadd(
-        self.builder.fmul(br, ratio2, name="cd.d2x"), bi, name="cd.denom2"
+    b.position_at_end(int_bb);
+    n = b.fptosi(br, i64, name="cp.n");
+    is_neg = b.icmp_signed("<", n, ir.Constant(i64, 0), name="cp.nneg");
+    m = b.select(is_neg, b.neg(n, name="cp.nabs"), n, name="cp.m");
+    b.store(fone, acc_r);
+    b.store(fzero, acc_i);
+    b.store(ar, cur_r);
+    b.store(ai, cur_i);
+    b.store(ir.Constant(i64, 1), mask_slot);
+    b.branch(loop_bb);
+
+    b.position_at_end(loop_bb);
+    mask_v = b.load(mask_slot, name="cp.mask.v");
+    b.cbranch(b.icmp_signed(">=", m, mask_v, name="cp.more"), body_bb, after_bb);
+
+    b.position_at_end(body_bb);
+    b.cbranch(
+        b.icmp_signed("!=", b.and_(m, mask_v), ir.Constant(i64, 0), name="cp.bit"),
+        mul_bb,
+        sq_bb
     );
-    self.builder.store(
-        self.builder.fdiv(
-            self.builder.fadd(
-                self.builder.fmul(ar, ratio2, name="cd.n2x"), ai, name="cd.n2"
-            ),
-            denom2,
-            name="cd.r2"
+
+    b.position_at_end(mul_bb);
+    (mr, mi) = self._emit_c_prod(
+        b.load(acc_r), b.load(acc_i), b.load(cur_r), b.load(cur_i)
+    );
+    b.store(mr, acc_r);
+    b.store(mi, acc_i);
+    b.branch(sq_bb);
+
+    b.position_at_end(sq_bb);
+    b.store(b.shl(b.load(mask_slot), ir.Constant(i64, 1), name="cp.mask.n"), mask_slot);
+    c_r = b.load(cur_r, name="cp.c.r");
+    c_i = b.load(cur_i, name="cp.c.i");
+    (sr, si) = self._emit_c_prod(c_r, c_i, c_r, c_i);
+    b.store(sr, cur_r);
+    b.store(si, cur_i);
+    b.branch(loop_bb);
+
+    b.position_at_end(after_bb);
+    b.cbranch(is_neg, inv_bb, keep_bb);
+
+    b.position_at_end(inv_bb);
+    pw_r = b.load(acc_r, name="cp.pw.r");
+    pw_i = b.load(acc_i, name="cp.pw.i");
+    self._emit_runtime_raise(
+        b.and_(b.fcmp_ordered("==", pw_r, fzero), b.fcmp_ordered("==", pw_i, fzero)),
+        "ZeroDivisionError",
+        "zero to a negative or complex power"
+    );
+    (iq_r, iq_i) = self._emit_c_quot(fone, fzero, pw_r, pw_i);
+    b.store(iq_r, res_r);
+    b.store(iq_i, res_i);
+    b.branch(chk_bb);
+
+    b.position_at_end(keep_bb);
+    b.store(b.load(acc_r), res_r);
+    b.store(b.load(acc_i), res_i);
+    b.branch(chk_bb);
+
+    b.position_at_end(gen_bb);
+    b.cbranch(
+        b.and_(b.fcmp_ordered("==", br, fzero), b.fcmp_ordered("==", bi, fzero)),
+        one_bb,
+        gen2_bb
+    );
+    b.position_at_end(one_bb);
+    b.store(fone, res_r);
+    b.store(fzero, res_i);
+    b.branch(done_bb);
+
+    b.position_at_end(gen2_bb);
+    b.cbranch(
+        b.and_(b.fcmp_ordered("==", ar, fzero), b.fcmp_ordered("==", ai, fzero)),
+        azero_bb,
+        calc_bb
+    );
+    b.position_at_end(azero_bb);
+    self._emit_runtime_raise(
+        b.or_(b.fcmp_unordered("!=", bi, fzero), b.fcmp_ordered("<", br, fzero)),
+        "ZeroDivisionError",
+        "zero to a negative or complex power"
+    );
+    b.store(fzero, res_r);
+    b.store(fzero, res_i);
+    b.branch(done_bb);
+
+    b.position_at_end(calc_bb);
+    vabs = b.call(hypot_fn, [ar, ai], name="cp.vabs");
+    len0 = b.call(pow_fn, [vabs, br], name="cp.len");
+    at = b.call(atan2_fn, [ai, ar], name="cp.at");
+    phase0 = b.fmul(at, br, name="cp.phase");
+    calc_end = b.block;
+    b.cbranch(b.fcmp_unordered("!=", bi, fzero, name="cp.bim"), im_bb, trig_bb);
+    b.position_at_end(im_bb);
+    len1 = b.fmul(
+        len0, b.call(exp_fn, [b.fmul(b.fneg(at), bi)], name="cp.ex"), name="cp.len1"
+    );
+    phase1 = self._emit_fmadd(bi, b.call(log_fn, [vabs], name="cp.lv"), phase0);
+    im_end = b.block;
+    b.branch(trig_bb);
+    b.position_at_end(trig_bb);
+    len_v = b.phi(f64, name="cp.len.v");
+    len_v.add_incoming(len0, calc_end);
+    len_v.add_incoming(len1, im_end);
+    phase_v = b.phi(f64, name="cp.phase.v");
+    phase_v.add_incoming(phase0, calc_end);
+    phase_v.add_incoming(phase1, im_end);
+    b.store(b.fmul(len_v, b.call(cos_fn, [phase_v]), name="cp.rr"), res_r);
+    b.store(b.fmul(len_v, b.call(sin_fn, [phase_v]), name="cp.ri"), res_i);
+    b.branch(chk_bb);
+
+    b.position_at_end(chk_bb);
+    self._emit_runtime_raise(
+        b.or_(
+            self._fp_isinf(b.load(res_r, name="cp.chk.r")),
+            self._fp_isinf(b.load(res_i, name="cp.chk.i"))
         ),
-        res_r
+        "OverflowError",
+        "complex exponentiation"
     );
-    self.builder.store(
-        self.builder.fdiv(
-            self.builder.fsub(
-                self.builder.fmul(ai, ratio2, name="cd.i2x"), ar, name="cd.i2"
-            ),
-            denom2,
-            name="cd.ri2"
-        ),
-        res_i
+    b.branch(done_bb);
+
+    b.position_at_end(done_bb);
+    return self._emit_complex_value(
+        b.load(res_r, name="cp.out.r"), b.load(res_i, name="cp.out.i")
     );
-    self.builder.branch(done_bb);
-
-    self.builder.position_at_end(nan_bb);
-    fnan = ir.Constant(f64, float("nan"));
-    self.builder.store(fnan, res_r);
-    self.builder.store(fnan, res_i);
-    self.builder.branch(done_bb);
-
-    self.builder.position_at_end(done_bb);
-    out_r = self.builder.load(res_r, name="cd.out.r");
-    out_i = self.builder.load(res_i, name="cd.out.i");
-    return (out_r, out_i);
-}
-
-impl NaIRGenPass._codegen_complex_div(
-    left: ir.Value, right: ir.Value
-) -> (ir.Value | None) {
-    (ar, ai) = self._load_complex_parts(left);
-    (br, bi) = self._load_complex_parts(right);
-    (out_r, out_i) = self._emit_complex_div_parts(ar, ai, br, bi);
-    return self._emit_complex_value(out_r, out_i);
 }
 
 impl NaIRGenPass._emit_make_complex(v: ir.Value) -> (ir.Value | None) {

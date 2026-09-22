@@ -82,6 +82,7 @@ impl NaIRGenPass.postinit -> None {
 
     self._range_struct_type = self.llvm_module.context.get_identified_type("JacRange");
     self.range_struct_type.set_body(ir.IntType(64), ir.IntType(64), ir.IntType(64));
+    self.type_map["range"] = self.range_struct_type.as_pointer();
 
     self._slice_struct_type = self.llvm_module.context.get_identified_type("JacSlice");
     self.slice_struct_type.set_body(ir.IntType(64), ir.IntType(64), ir.IntType(64));
@@ -1256,6 +1257,11 @@ impl NaIRGenPass._forward_declare_imported_ability(
             );
         if _fd_demoted {
             self._native_skipped_methods.add(name);
+            if declaring_module is not None {
+                self._native_skipped_import_origin.setdefault(name, set()).add(
+                    os.path.realpath(declaring_module.source.file_path)
+                );
+            }
             return;
         }
     }
