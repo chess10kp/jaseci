@@ -364,6 +364,34 @@ native layout records the emitted name separately from its source-level key.
   links are created via libc `link`/`symlink` when trivial. Native-host only.
   Pinned sv<->na congruent by `test_tarfile_equivalence.jac`.
 
+- **`sqlite3.jac`** (Mechanism F surface) + **`_sqlite3_native.jac`** (FFI
+  floor over the system `libsqlite3`, 3.53.x) -- the DB-API 2.0 core of
+  CPython 3.14 `sqlite3`: `connect()` (with the full CPython kwarg set --
+  `database`/`timeout`/`detect_types`/`isolation_level`/`check_same_thread`/
+  `factory`/`cached_statements`/`uri`/`autocommit`; `timeout`, `uri`,
+  `isolation_level` and `autocommit` are honored, the rest are accepted for
+  signature parity), `Connection` (`cursor`/`execute`/`executemany`/
+  `executescript`/`commit`/`rollback`/`close`/`in_transaction`/
+  `total_changes`/context manager), `Cursor` (`execute`/`executemany`/
+  `executescript`/`fetchone`/`fetchmany`/`fetchall`/`description`/`rowcount`/
+  `lastrowid`/`arraysize`/`connection`/`close`/iteration), `complete_statement`,
+  `Binary`, `apilevel`/`paramstyle`/`threadsafety`/`sqlite_version`/
+  `sqlite_version_info`, the `PARSE_*`/`LEGACY_TRANSACTION_CONTROL`/
+  `SQLITE_*` constants, and the full CPython exception hierarchy (`Error` ->
+  `InterfaceError`/`DatabaseError` -> `InternalError`/`OperationalError`/
+  `ProgrammingError`/`IntegrityError`/`DataError`/`NotSupportedError`).
+  Parameter binding covers positional `?`, numbered `?N`, named `:name`,
+  `@name`, and `$name` (dict params), plus `NULL`/`bool`/`int`/`float`/`str`/
+  `bytes`-blob values; transaction semantics follow CPython's legacy mode
+  (DML opens an implicit transaction, DDL does not; `executescript` commits
+  first). Error parity is class AND `sqlite3_errmsg` text, probed against
+  CPython 3.14. DIVERGENCES: rows and `description` entries materialize as
+  `list`, not `tuple` (the native boundary has no tuple boxing); `parameters`
+  takes `list`/`dict`/`None`, not tuple; `executemany` takes
+  `list[list[any]]`; `row_factory`/`text_factory`/`create_function`/
+  `set_authorizer`/`blobopen`/`backup` are out of scope. Native-host only.
+  Pinned sv<->na congruent by `prim_sqlite3.jac`.
+
 The syscall-backed `os` / `os.path` entry points (`makedirs`, `realpath`,
 `mkdir`, `exists`, `getmtime`, `normcase`, ...) are Mechanism-A/H compiler
 intercepts, reached via the flat `import os`, not bundled here (see
