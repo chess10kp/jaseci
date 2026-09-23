@@ -2,14 +2,12 @@ import from _signal_native {
     sig_install_fn,
     sig_install_addr,
     sig_kill_self,
-    sig_send,
     sig_alarm,
     sig_pause,
     sig_describe,
-    sig_mask,
-    sig_errno,
-    sig_errno_text
+    sig_mask
 }
+import from _errno_native { last_errno, errno_message_for }
 
 glob:pub SIGHUP: int = 1,
      SIGINT: int = 2,
@@ -65,10 +63,11 @@ def _check_signum(signum: int) {
     }
 }
 
-def _sig_dfl_impl(signum: int, frame: any) {
-    sig_install_addr(signum, 0);
-    sig_kill_self(signum);
+def _os_error(code: int) {
+    raise OSError("[Errno " + str(code) + "] " + errno_message_for(code));
 }
+
+def _sig_dfl_impl(signum: int, frame: any) {}
 
 def _sig_ign_impl(signum: int, frame: any) {}
 
@@ -82,9 +81,15 @@ def:pub default_int_handler(signum: int, frame: any) {
 def:pub signal(signum: int, handler: Callable[[int, any], None]) -> any {
     _check_signum(signum);
     prev = getsignal(signum);
-    old = sig_install_fn(signum, handler);
+    if handler is SIG_DFL {
+        old = sig_install_addr(signum, 0);
+    } elif handler is SIG_IGN {
+        old = sig_install_addr(signum, 1);
+    } else {
+        old = sig_install_fn(signum, handler);
+    }
     if old == -1 {
-        raise OSError("[Errno " + str(sig_errno()) + "] " + sig_errno_text());
+        _os_error(last_errno());
     }
     _shadow[signum] = handler;
     return prev;
@@ -99,12 +104,10 @@ def:pub getsignal(signum: int) -> any {
 }
 
 def:pub raise_signal(signum: int) {
-    if signum < 0 {
-        raise ValueError("signal number out of range");
-    }
+    _check_signum(signum);
     rc = sig_kill_self(signum);
     if rc != 0 {
-        raise OSError("[Errno " + str(sig_errno()) + "] " + sig_errno_text());
+        _os_error(last_errno());
     }
 }
 
@@ -119,15 +122,30 @@ def:pub pause {
     sig_pause();
 }
 
-def:pub strsignal(signum: int) -> str {
+"""Description for `signum`, or None when it has none (CPython semantics).
+
+glibc `sigdescr_np` answers NULL for the reserved slots 32/33 and for the
+realtime range, which CPython's `strsignal` surfaces as None and as
+"Real-time signal <n>" respectively -- handled before the FFI call so a NULL
+never reaches the string return.
+"""
+def:pub strsignal(signum: int) -> (str | None) {
     _check_signum(signum);
+    if signum >= SIGRTMIN and signum <= SIGRTMAX {
+        return "Real-time signal " + str(signum - SIGRTMIN);
+    }
+    if signum == 32 or signum == 33 {
+        return None;
+    }
     return sig_describe(signum);
 }
 
+"""CPython returns every signum in [1, NSIG) except 32/33, which glibc
+reserves for NPTL internals (SIGCANCEL/SIGSETXID)."""
 def:pub valid_signals -> list[int] {
     out: list[int] = [];
     for s in range(1, NSIG) {
-        if s != SIGKILL and s != SIGSTOP {
+        if s != 32 and s != 33 {
             out.append(s);
         }
     }
@@ -138,9 +156,9 @@ def:pub pthread_sigmask(how: int, mask: list[int]) -> list[int] {
     if how < SIG_BLOCK or how > SIG_SETMASK {
         raise ValueError("value specified for how (" + str(how) + ") invalid");
     }
-    out = sig_mask(how, mask, NSIG);
-    if len(out) == 1 and out[0] <= 0 {
-        raise OSError("[Errno " + str(-out[0]) + "] " + sig_errno_text());
+    (rc, out) = sig_mask(how, mask, NSIG);
+    if rc != 0 {
+        _os_error(rc);
     }
     return out;
 }

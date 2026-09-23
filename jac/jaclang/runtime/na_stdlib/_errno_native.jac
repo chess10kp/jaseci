@@ -13,6 +13,10 @@ def:pub errno_message -> str {
     return strerror(i32(last_errno()));
 }
 
+def:pub errno_message_for(code: int) -> str {
+    return strerror(i32(code));
+}
+
 def:pub raise_os_error(operation: str, path: str, code: int) {
     message = operation + ": " + strerror(i32(code)) + ": " + path;
     if code == 2 {
@@ -23,9 +27,6 @@ def:pub raise_os_error(operation: str, path: str, code: int) {
     }
     if code == 20 {
         raise NotADirectoryError(message);
-    }
-    if code == 21 {
-        raise IsADirectoryError(message);
     }
     if code == 13 or code == 1 {
         raise PermissionError(message);

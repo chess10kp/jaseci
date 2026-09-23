@@ -1,23 +1,12 @@
-import from c { def fork -> i32;  }
-import from c { def system(command: str) -> i32;  }
-import from c { def _exit(status: i32);  }
 import from c { def waitpid(pid: i32, status: bytes, options: i32) -> i32;  }
 import from c { def kill(pid: i32, signum: i32) -> i32;  }
-import from c { def setsid -> i32;  }
 import from c { def pipe(fds: bytes) -> i32;  }
-import from c { def dup2(oldfd: i32, newfd: i32) -> i32;  }
-import from c { def open(path: str, flags: i32, mode: i32) -> i32;  }
 import from c { def close(fd: i32) -> i32;  }
 import from c { def read(fd: i32, buf: bytes, count: u64) -> i64;  }
 import from c { def write(fd: i32, buf: bytes, count: u64) -> i64;  }
 import from c { def usleep(usec: u32) -> i32;  }
-import from c { def time(t: int) -> i64;  }
-import from c { def setenv(name: str, value: str, overwrite: i32) -> i32;  }
-import from c { def unsetenv(name: str) -> i32;  }
-import from c { def clearenv -> i32;  }
-import from c { def chdir(path: str) -> i32;  }
-import from c { def getpid -> i32;  }
-import from c { def execvp(file: str, argv: int) -> i32;  }
+import from c { def clock_gettime(clk: i32, ts: bytes) -> i32;  }
+import from c { def poll(fds: int, nfds: u64, timeout: i32) -> i32;  }
 import from c { def strdup(s: str) -> int;  }
 import from c { def malloc(size: int) -> int;  }
 import from c { def free(p: int);  }
@@ -38,25 +27,18 @@ import from c {
     ) -> i32;
 }
 import from c { def posix_spawn_file_actions_addchdir_np(fa: int, path: str) -> i32;  }
-import from c { def posix_spawnattr_init(at: int) -> i32;  }
-import from c { def posix_spawnattr_setflags(at: int, flags: i32) -> i32;  }
-import from c { def posix_spawnattr_destroy(at: int) -> i32;  }
-import from _errno_native { last_errno, errno_message }
+import from c { def bsd_signal(signum: i32, handler: int) -> int;  }
+
+glob _CLOCK_MONOTONIC: int = 1,
+     _EV_READ: int = 1,
+     _EV_WRITE: int = 4,
+     _OPEN_MODE_0666: int = 438,
+     _FA_SIZE: int = 256,
+     _SIGPIPE: int = 13,
+     _SIG_IGN: int = 1;
 
 def _lo32(buf: bytes, off: int) -> int {
-    return buf[off] | (buf[off + 1] << 8) | (buf[off + 2] << 16) | (buf[off + 3] << 24);
-}
-
-def:pub sp_fork -> int {
-    return fork();
-}
-
-def:pub sp_system(command: str) -> int {
-    return system(command);
-}
-
-def:pub sp_exit(status: int) {
-    _exit(i32(status));
+    return int.from_bytes(buf[off:off + 4], "little");
 }
 
 def:pub sp_waitpid(pid: int, options: int) -> list[int] {
@@ -69,25 +51,10 @@ def:pub sp_kill(pid: int, signum: int) -> int {
     return kill(i32(pid), i32(signum));
 }
 
-def:pub sp_setsid -> int {
-    return setsid();
-}
-
 def:pub sp_pipe -> list[int] {
     buf = b"\x00" * 8;
     rc = pipe(buf);
-    if rc != 0 {
-        return [-1, -1];
-    }
-    return [_lo32(buf, 0), _lo32(buf, 4)];
-}
-
-def:pub sp_dup2(oldfd: int, newfd: int) -> int {
-    return dup2(i32(oldfd), i32(newfd));
-}
-
-def:pub sp_open_devnull -> int {
-    return open("/dev/null", i32(2), i32(0));
+    return [int(rc), _lo32(buf, 0), _lo32(buf, 4)];
 }
 
 def:pub sp_close(fd: int) -> int {
@@ -111,43 +78,31 @@ def:pub sp_usleep(usec: int) -> int {
     return usleep(u32(usec));
 }
 
-def:pub sp_time -> int {
-    return int(time(0));
+def:pub sp_now_ms -> int {
+    ts = b"\x00" * 16;
+    clock_gettime(i32(_CLOCK_MONOTONIC), ts);
+    sec = int.from_bytes(ts[0:8], "little");
+    nsec = int.from_bytes(ts[8:16], "little");
+    return sec * 1000 + nsec // 1000000;
 }
 
-def:pub sp_setenv(name: str, value: str) -> int {
-    return setenv(name, value, i32(1));
-}
-
-def:pub sp_unsetenv(name: str) -> int {
-    return unsetenv(name);
-}
-
-def:pub sp_clearenv -> int {
-    return clearenv();
-}
-
-def:pub sp_chdir(path: str) -> int {
-    return chdir(path);
-}
-
-def:pub sp_getpid -> int {
-    return getpid();
-}
-
-def:pub sp_execvp(args: list[str]) -> int {
-    n = len(args);
-    if n == 0 {
-        return -1;
-    }
-    buf = malloc((n + 1) * 8);
-    i = 0;
-    while i < n {
-        __mem_store_i64(buf + i * 8, strdup(args[i]));
-        i += 1;
-    }
-    __mem_store_i64(buf + n * 8, 0);
-    return int(execvp(args[0], buf));
+def:pub sp_pollio(rfd1: int, rfd2: int, wfd: int, timeout_ms: int) -> list[int] {
+    fds = malloc(24);
+    __mem_store_i32(fds + 0, i32(rfd1));
+    __mem_store_i32(fds + 4, i32(_EV_READ));
+    __mem_store_i32(fds + 8, i32(rfd2));
+    __mem_store_i32(fds + 12, i32(_EV_READ));
+    __mem_store_i32(fds + 16, i32(wfd));
+    __mem_store_i32(fds + 20, i32(_EV_WRITE));
+    rc = poll(fds, u64(3), i32(timeout_ms));
+    out = [
+        int(rc),
+        __mem_load_i32(fds + 4) >> 16,
+        __mem_load_i32(fds + 12) >> 16,
+        __mem_load_i32(fds + 20) >> 16
+    ];
+    free(fds);
+    return out;
 }
 
 def:pub sp_strvec(items: list[str]) -> int {
@@ -162,8 +117,17 @@ def:pub sp_strvec(items: list[str]) -> int {
     return buf;
 }
 
+def:pub sp_strvec_free(vec: int, n: int) {
+    i = 0;
+    while i < n {
+        free(__mem_load_i64(vec + i * 8));
+        i += 1;
+    }
+    free(vec);
+}
+
 def:pub sp_fa_new -> int {
-    fa = malloc(256);
+    fa = malloc(_FA_SIZE);
     posix_spawn_file_actions_init(fa);
     return fa;
 }
@@ -177,7 +141,9 @@ def:pub sp_fa_close(fa: int, fd: int) -> int {
 }
 
 def:pub sp_fa_open(fa: int, fd: int, path: str, flags: int) -> int {
-    return posix_spawn_file_actions_addopen(fa, i32(fd), path, i32(flags), i32(438));
+    return posix_spawn_file_actions_addopen(
+        fa, i32(fd), path, i32(flags), i32(_OPEN_MODE_0666)
+    );
 }
 
 def:pub sp_fa_chdir(fa: int, path: str) -> int {
@@ -189,28 +155,12 @@ def:pub sp_fa_free(fa: int) {
     free(fa);
 }
 
-def:pub sp_attr_new(flags: int) -> int {
-    at = malloc(512);
-    posix_spawnattr_init(at);
-    posix_spawnattr_setflags(at, i32(flags));
-    return at;
-}
-
-def:pub sp_attr_free(at: int) {
-    posix_spawnattr_destroy(at);
-    free(at);
-}
-
 def:pub sp_spawn(path: str, fa: int, at: int, argv: int, envp: int) -> list[int] {
     pidb = b"\x00" * 8;
     rc = posix_spawnp(pidb, path, fa, at, argv, envp);
     return [int(rc), _lo32(pidb, 0)];
 }
 
-def:pub sp_errno -> int {
-    return last_errno();
-}
-
-def:pub sp_errno_text -> str {
-    return errno_message();
+def:pub sp_ignore_sigpipe {
+    bsd_signal(i32(_SIGPIPE), _SIG_IGN);
 }

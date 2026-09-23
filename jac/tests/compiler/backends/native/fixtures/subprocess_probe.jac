@@ -1,7 +1,7 @@
 """Congruence probe: `import subprocess` must answer what CPython answers.
 
 Runs on the sv pathway (CPython's subprocess) and the na pathway
-(na_stdlib/subprocess.jac). Only deterministic, lane-identical lines are
+(na_stdlib/subprocess.linux.jac). Only deterministic, lane-identical lines are
 printed; exception messages are not printed because the repr differs.
 """
 
@@ -19,6 +19,8 @@ import from subprocess {
     CalledProcessError,
     TimeoutExpired
 }
+
+glob EMPTY_ENV: dict[str, str] = {};
 
 with entry {
     cp = run(["echo", "hello"], capture_output=True, text=True);
@@ -96,6 +98,38 @@ with entry {
     (po, pe) = p2.communicate();
     pos: str = str(po);
     print("popen-out=" + pos.strip() + " err-none=" + str(pe is None));
+
+    try {
+        run(["/nonexistent-jac-probe-binary"], capture_output=True);
+        print("fnf-missed");
+    } except FileNotFoundError {
+        print("fnf-raised");
+    }
+
+    cp9 = run(
+        ["sh", "-c", "echo H[$HOME]"], env=EMPTY_ENV, capture_output=True, text=True
+    );
+    o9: str = str(cp9.stdout);
+    print("emptyenv=" + o9.strip());
+
+    p3 = Popen(args=["cat"], stdin=PIPE, stdout=PIPE, text=True);
+    (po3, _pe3) = p3.communicate();
+    po3s: str = str(po3);
+    print("cat-len=" + str(len(po3s)) + " pid-pos=" + str(p3.pid > 0));
+
+    try {
+        run(["true"], stdin=PIPE, input="x");
+        print("ve-stdin-missed");
+    } except ValueError {
+        print("ve-stdin-raised");
+    }
+
+    try {
+        run(["true"], capture_output=True, stdout=PIPE);
+        print("ve-capture-missed");
+    } except ValueError {
+        print("ve-capture-raised");
+    }
 
     print("done");
 }

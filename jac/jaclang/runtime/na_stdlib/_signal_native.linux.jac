@@ -1,7 +1,11 @@
 import from c { def bsd_signal(signum: i32, handler: int) -> int;  }
 import from c { def kill(pid: i32, signum: i32) -> i32;  }
 import from c { def getpid -> i32;  }
-import from c { def ualarm(usecs: u32, interval: u32) -> u32;  }
+import from c {
+    def setitimer(which: i32, new_value: int, old_value: int) -> i32;
+}
+import from c { def malloc(size: int) -> int;  }
+import from c { def free(p: int);  }
 import from c {
     def select(
         nfds: i32, readfds: int, writefds: int, exceptfds: int, timeout: int
@@ -12,7 +16,8 @@ import from c { def sigprocmask(how: i32, set: bytes, oldset: bytes) -> i32;  }
 import from c { def sigemptyset(set: bytes) -> i32;  }
 import from c { def sigaddset(set: bytes, signum: i32) -> i32;  }
 import from c { def sigismember(set: bytes, signum: i32) -> i32;  }
-import from _errno_native { last_errno, errno_message }
+
+glob _ITIMER_REAL: int = 0;
 
 glob _fn_handlers: dict[int, Callable[[int, any], None]] = {};
 
@@ -38,12 +43,24 @@ def:pub sig_kill_self(signum: int) -> int {
     return kill(getpid(), i32(signum));
 }
 
-def:pub sig_send(pid: int, signum: int) -> int {
-    return kill(i32(pid), i32(signum));
-}
-
+"""`alarm(3)` under a collision-free name: `alarm` itself would collide with
+`signal.linux.jac`'s `def:pub alarm` in the flat symbol table, and `ualarm`'s
+u32 microseconds wrap near 4295s. glibc spells `alarm` as
+setitimer(ITIMER_REAL, {0,0,seconds,0}, &old) returning the old it_value
+rounded up to whole seconds -- mirrored here verbatim."""
 def:pub sig_alarm(seconds: int) -> int {
-    return int(ualarm(u32(seconds * 1000000), u32(0))) // 1000000;
+    new_it = malloc(32);
+    old_it = malloc(32);
+    __mem_store_i64(new_it + 0, 0);
+    __mem_store_i64(new_it + 8, 0);
+    __mem_store_i64(new_it + 16, seconds);
+    __mem_store_i64(new_it + 24, 0);
+    setitimer(i32(_ITIMER_REAL), new_it, old_it);
+    old_sec = __mem_load_i64(old_it + 16);
+    old_usec = __mem_load_i64(old_it + 24);
+    free(new_it);
+    free(old_it);
+    return int(old_sec + (1 if old_usec > 0 else 0));
 }
 
 def:pub sig_pause {
@@ -54,7 +71,7 @@ def:pub sig_describe(signum: int) -> str {
     return sigdescr_np(i32(signum));
 }
 
-def:pub sig_mask(how: int, signums: list[int], nsig: int) -> list[int] {
+def:pub sig_mask(how: int, signums: list[int], nsig: int) -> tuple[(int, list[int])] {
     set_bits = b"\x00" * 128;
     sigemptyset(set_bits);
     for s in signums {
@@ -65,7 +82,7 @@ def:pub sig_mask(how: int, signums: list[int], nsig: int) -> list[int] {
     old_bits = b"\x00" * 128;
     rc = sigprocmask(i32(how), set_bits, old_bits);
     if rc != 0 {
-        return [-rc];
+        return (int(rc), []);
     }
     out: list[int] = [];
     for s in range(1, nsig) {
@@ -73,13 +90,5 @@ def:pub sig_mask(how: int, signums: list[int], nsig: int) -> list[int] {
             out.append(s);
         }
     }
-    return out;
-}
-
-def:pub sig_errno -> int {
-    return last_errno();
-}
-
-def:pub sig_errno_text -> str {
-    return errno_message();
+    return (0, out);
 }

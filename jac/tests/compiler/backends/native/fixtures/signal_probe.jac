@@ -1,7 +1,7 @@
 """Congruence probe: `import signal` must answer what CPython answers.
 
 Runs on the sv pathway (CPython's signal) and the na pathway
-(na_stdlib/signal.jac). Only deterministic, lane-identical lines are
+(na_stdlib/signal.linux.jac). Only deterministic, lane-identical lines are
 printed; the handler frame argument is ignored because na delivers None.
 """
 
@@ -58,7 +58,9 @@ with entry {
     signal(SIGUSR1, SIG_DFL);
     signal(SIGUSR1, h1);
 
-    print("strsignal=" + strsignal(SIGUSR1));
+    print("strsignal=" + str(strsignal(SIGUSR1)));
+    print("strsig33=" + str(strsignal(33)));
+    print("strsig34=" + str(strsignal(34)));
     print("alarm=" + str(alarm(0)));
 
     vs = valid_signals();
