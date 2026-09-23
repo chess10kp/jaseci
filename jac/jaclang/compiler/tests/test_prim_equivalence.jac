@@ -482,6 +482,14 @@ glob STR_NA_GAPS: list[any] = [
              ["na"]
          ),
          (
+             "urllib.request bundled",
+             "prim_urllib_request.jac",
+             "urlreq_py",
+             "urlreq_cl",
+             "urlreq_na",
+             ["na"]
+         ),
+         (
              "urllib.robotparser bundled",
              "prim_robotparser.jac",
              "robot_py",

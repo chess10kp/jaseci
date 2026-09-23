@@ -435,7 +435,7 @@ obj:pub RobotFileParser {
         self.entries.append(ent);
         for agent in ent.useragents {
             ag = agent.lower();
-            cur = self.groups.get(ag);
+            cur = self.groups.get(ag, None);
             if cur == None {
                 self.groups[ag] = ent;
             } else {
@@ -534,7 +534,7 @@ obj:pub RobotFileParser {
     }
 
     def _find_entry(useragent: str) -> (Entry | None) {
-        g = self.groups.get(useragent.lower());
+        g = self.groups.get(useragent.lower(), None);
         if g != None {
             ge: Entry = g;
             return ge;
@@ -544,7 +544,7 @@ obj:pub RobotFileParser {
                 return ent;
             }
         }
-        g2 = self.groups.get("*");
+        g2 = self.groups.get("*", None);
         if g2 != None {
             gstar: Entry = g2;
             return gstar;
@@ -569,7 +569,9 @@ obj:pub RobotFileParser {
         }
         sp = urlsplit(url);
         u = sp.path;
-        if len(sp.query) > 0 or "?" in url {
+        qpos = url.find("?");
+        fpos = url.find("#");
+        if len(sp.query) > 0 or (qpos >= 0 and (fpos < 0 or qpos < fpos)) {
             u += "?" + sp.query;
         }
         if len(sp.fragment) > 0 {
