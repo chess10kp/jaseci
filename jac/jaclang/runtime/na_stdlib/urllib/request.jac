@@ -432,25 +432,25 @@ obj:pub OpenerDirector {
         }
         req.timeout = timeout;
         protocol = req.type;
-        print("dbg open: proto " + protocol);
+        write_file_bytes("/tmp/dbg_proto", protocol.encode());
 
         if protocol in self.process_request {
             for processor in self.process_request[protocol] {
-                print("dbg req_for");
+                write_file_bytes("/tmp/dbg_reqfor", b"1");
                 req = processor.request_for(protocol, req);
             }
         }
-        print("dbg before _open");
+        write_file_bytes("/tmp/dbg_preopen", b"1");
         response = self._open(req, data);
-        print("dbg after _open");
+        write_file_bytes("/tmp/dbg_postopen", b"1");
 
         if protocol in self.process_response {
             for processor in self.process_response[protocol] {
-                print("dbg resp_for");
+                write_file_bytes("/tmp/dbg_respfor", b"1");
                 response = processor.response_for(protocol, req, response);
             }
         }
-        print("dbg open done");
+        write_file_bytes("/tmp/dbg_done", b"1");
         return response;
     }
 
