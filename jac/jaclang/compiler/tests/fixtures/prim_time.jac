@@ -16,31 +16,39 @@ def time_py -> dict[any, any] {
     t1: float = time.monotonic();
     p0: int = time.process_time_ns();
     p1: int = time.process_time_ns();
-    neg: str = "?";
+    neg: str = "no-raise";
     try {
         time.sleep(-1.0);
     } except ValueError as e {
         neg = "ValueError: " + str(e);
+    } except Exception as e {
+        neg = "WRONG-TYPE: " + str(e);
     }
-    nan_e: str = "?";
+    nan_e: str = "no-raise";
     try {
         time.sleep(float("nan"));
     } except ValueError as e {
         nan_e = "ValueError: " + str(e);
+    } except Exception as e {
+        nan_e = "WRONG-TYPE: " + str(e);
     }
-    inf_e: str = "?";
+    inf_e: str = "no-raise";
     try {
         time.sleep(float("inf"));
     } except OverflowError {
         # str(e) is CPython-build-dependent ("platform time_t" vs "C PyTime_t");
         # the except arm itself proves the type, so pin that only.
         inf_e = "OverflowError";
+    } except Exception as e {
+        inf_e = "WRONG-TYPE: " + str(e);
     }
-    cgt_e: str = "?";
+    cgt_e: str = "no-raise";
     try {
         time.clock_gettime_ns(99999);
     } except OSError as e {
         cgt_e = "OSError: " + str(e);
+    } except Exception as e {
+        cgt_e = "WRONG-TYPE: " + str(e);
     }
     return {
         "time_positive": time.time() > 1700000000.0,
@@ -84,31 +92,39 @@ def time_na -> dict[str, any] {
     t1: float = time.monotonic();
     p0: int = time.process_time_ns();
     p1: int = time.process_time_ns();
-    neg: str = "?";
+    neg: str = "no-raise";
     try {
         time.sleep(-1.0);
     } except ValueError as e {
         neg = "ValueError: " + str(e);
+    } except Exception as e {
+        neg = "WRONG-TYPE: " + str(e);
     }
-    nan_e: str = "?";
+    nan_e: str = "no-raise";
     try {
         time.sleep(float("nan"));
     } except ValueError as e {
         nan_e = "ValueError: " + str(e);
+    } except Exception as e {
+        nan_e = "WRONG-TYPE: " + str(e);
     }
-    inf_e: str = "?";
+    inf_e: str = "no-raise";
     try {
         time.sleep(float("inf"));
     } except OverflowError {
         # str(e) is CPython-build-dependent ("platform time_t" vs "C PyTime_t");
         # the except arm itself proves the type, so pin that only.
         inf_e = "OverflowError";
+    } except Exception as e {
+        inf_e = "WRONG-TYPE: " + str(e);
     }
-    cgt_e: str = "?";
+    cgt_e: str = "no-raise";
     try {
         time.clock_gettime_ns(99999);
     } except OSError as e {
         cgt_e = "OSError: " + str(e);
+    } except Exception as e {
+        cgt_e = "WRONG-TYPE: " + str(e);
     }
     cgt_diff: int = time.clock_gettime_ns(time.CLOCK_MONOTONIC) - time.monotonic_ns();
     return {

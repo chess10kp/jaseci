@@ -30,5 +30,10 @@ with entry {
         i += 1;
     }
     f1: float = time.monotonic();
-    print("bundled_monotonic_ns_per_iter:", (f1 - f0) * 1000000000.0 / N, "acc:", acc);
+    print(
+        "bundled_monotonic_float_ns_per_iter:",
+        (f1 - f0) * 1000000000.0 / N,
+        "acc:",
+        acc
+    );
 }
