@@ -25,7 +25,7 @@ jobs:
       - name: Check out (fixed = tip with the change, baseline = 35eac7dfa)
         uses: actions/checkout@v5
         with:
-          ref: ${{ matrix.variant == 'baseline' && '35eac7dfa' || github.sha }}
+          ref: ${{ matrix.variant == 'baseline' && '35eac7dfaeea689478903f47dcdc091e062c7bce' || github.sha }}
           fetch-depth: 1
 
       - name: Set up Zig 0.16.0
