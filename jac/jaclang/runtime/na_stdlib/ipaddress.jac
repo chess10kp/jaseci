@@ -744,6 +744,7 @@ obj _AddrBase {
         _hi: u64 = u64(0),
         _lo: u64 = u64(0),
         _scope: (str | None) = None;
+
     has packed: bytes { getter; }
     has compressed: str { getter; }
     has exploded: str { getter; }
@@ -1350,6 +1351,7 @@ obj _NetBase {
         _mask_hi: u64 = u64(0),
         _mask_lo: u64 = u64(0),
         _prefixlen: int = 0;
+
     has network_address: _AddrBase { getter; }
     has broadcast_address: _AddrBase { getter; }
     has netmask: _AddrBase { getter; }

@@ -30,7 +30,7 @@ import urllib.error as uerr;
 import warnings;
 
 
-def urlerr_py() -> dict[any, any] {
+def urlerr_py -> dict[any, any] {
     warnings.simplefilter("ignore", DeprecationWarning);
     u = uerr.URLError("boom", "f.txt");
     h = uerr.HTTPError("http://x/", 404, "NF", "H", None);
@@ -104,7 +104,7 @@ def urlerr_py() -> dict[any, any] {
 }
 
 
-def urlerr_cl() -> dict[any, any] {
+def urlerr_cl -> dict[any, any] {
     return {};
 }
 
@@ -112,20 +112,13 @@ def urlerr_cl() -> dict[any, any] {
 # ---- native lane ----
 
 import from io { BytesIO, StringIO }
-import from urllib.response {
-    addbase,
-    addclosehook,
-    addinfo,
-    addinfourl
-}
+import from urllib.response { addbase, addclosehook, addinfo, addinfourl }
 import from urllib.error { ContentTooShortError, HTTPError, URLError }
 
 
-def urlerr_na() -> dict[str, any] {
+def urlerr_na -> dict[str, any] {
     u = URLError(reason="boom", filename="f.txt");
-    h = HTTPError(
-        url="http://x/", code=404, msg="NF", hdrs="H", fp=None
-    );
+    h = HTTPError(url="http://x/", code=404, msg="NF", hdrs="H", fp=None);
     c = ContentTooShortError(message="short", content=b"abc");
     caught1 = 0;
     try {

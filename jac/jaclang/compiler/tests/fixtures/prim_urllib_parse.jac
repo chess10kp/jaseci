@@ -42,7 +42,7 @@ def _ro(x: (str | None)) -> str {
 }
 
 
-def urlparse_py() -> dict[any, any] {
+def urlparse_py -> dict[any, any] {
     warnings.simplefilter("ignore", DeprecationWarning);
     r = up.urlparse("http://user:pass@host.com:8080/path;params?q=1#frag");
     s = up.urlsplit("https://[2001:db8::1]:443/a/b?x#y");
@@ -155,13 +155,12 @@ def urlparse_py() -> dict[any, any] {
 }
 
 
-def urlparse_cl() -> dict[any, any] {
+def urlparse_cl -> dict[any, any] {
     return {};
 }
 
 
 # ---- native lane ----
-
 
 def _os(x: (str | None)) -> str {
     if isinstance(x, str) {
@@ -179,7 +178,7 @@ def _oi(x: (int | None)) -> str {
 }
 
 
-def urlparse_na() -> dict[str, any] {
+def urlparse_na -> dict[str, any] {
     r = up.urlparse("http://user:pass@host.com:8080/path;params?q=1#frag");
     s = up.urlsplit("https://[2001:db8::1]:443/a/b?x#y");
     tt: tuple[((str | None), str)] = up.splittype("http://h/p");
@@ -194,9 +193,7 @@ def urlparse_na() -> dict[str, any] {
     sv: tuple[(str, (str | None))] = up.splitvalue("a=v");
     qsl: list[tuple[(str, str)]] = up.parse_qsl("a=1&b=2&a=3");
     qsl_blank: list[tuple[(str, str)]] = up.parse_qsl("a=1&&b=");
-    qsl_keep: list[tuple[(str, str)]] = up.parse_qsl(
-        "a=1&&b=", keep_blank_values=True
-    );
+    qsl_keep: list[tuple[(str, str)]] = up.parse_qsl("a=1&&b=", keep_blank_values=True);
     qsl_semi: list[tuple[(str, str)]] = up.parse_qsl("a;b", separator=";");
     qsl_parts: list[str] = [];
     for (k, v) in qsl {

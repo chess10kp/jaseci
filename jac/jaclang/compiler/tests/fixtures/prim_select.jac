@@ -30,7 +30,7 @@ import from select {
 import from socket { socket, socketpair }
 
 
-def select_py() -> dict[any, any] {
+def select_py -> dict[any, any] {
     sp = socketpair();
     a = sp[0];
     b = sp[1];
@@ -108,12 +108,12 @@ def select_py() -> dict[any, any] {
 }
 
 
-def select_cl() -> dict[any, any] {
+def select_cl -> dict[any, any] {
     return {};
 }
 
 
-def select_na() -> dict[str, any] {
+def select_na -> dict[str, any] {
     sp: tuple[(socket, socket)] = socketpair();
     a = sp[0];
     b = sp[1];

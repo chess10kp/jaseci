@@ -33,7 +33,7 @@ def _fup_s(fup: any) -> str {
 }
 
 
-def urlreq_py() -> dict[any, any] {
+def urlreq_py -> dict[any, any] {
     r: any = ureq.Request("http://example.com/path?q=1#frag");
     r2: any = ureq.Request("http://ex.com/p", data=b"abc");
     r3: any = ureq.Request("http://ex.com/p", method="PUT");
@@ -79,7 +79,7 @@ def urlreq_py() -> dict[any, any] {
 }
 
 
-def urlreq_cl() -> dict[any, any] {
+def urlreq_cl -> dict[any, any] {
     return {};
 }
 
@@ -113,7 +113,7 @@ def _fup_na(fup: any) -> str {
 }
 
 
-def urlreq_na() -> dict[str, any] {
+def urlreq_na -> dict[str, any] {
     r = Request("http://example.com/path?q=1#frag");
     r2 = Request("http://ex.com/p", b"abc");
     r3 = Request("http://ex.com/p", method="PUT");

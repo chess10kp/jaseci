@@ -366,7 +366,6 @@ obj:pub SockFile {
     }
 
     def flush {}
-
     def close {
         if not self.closed {
             self.closed = True;

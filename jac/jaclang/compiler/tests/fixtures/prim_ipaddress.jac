@@ -17,7 +17,7 @@ divergent-by-construction results are probed as pinned strings.
 import ipaddress;
 
 
-def ipaddress_py() -> dict[any, any] {
+def ipaddress_py -> dict[any, any] {
     a = ipaddress.IPv4Address("192.168.1.1");
     b = ipaddress.IPv6Address("::ffff:10.0.0.1");
     n = ipaddress.IPv4Network("192.168.1.0/24");
@@ -98,25 +98,64 @@ def ipaddress_py() -> dict[any, any] {
         "contains_yes": 1 if a in n else 0,
         "contains_no": 1 if ipaddress.IPv4Address("10.1.2.3") in n else 0,
         "subnets": str([str(x) for x in n.subnets()]),
-        "hosts4": str([str(x) for x in ipaddress.IPv4Network("192.168.1.0/29").hosts()]),
+        "hosts4": str(
+            [str(x) for x in ipaddress.IPv4Network("192.168.1.0/29").hosts()]
+        ),
         "subnet_of": 1 if n.subnet_of(ipaddress.IPv4Network("192.168.0.0/16")) else 0,
         "overlaps": 1 if n.overlaps(ipaddress.IPv4Network("192.168.1.128/25")) else 0,
         "supernet4": str(ipaddress.IPv4Network("192.168.1.0/25").supernet()),
         "net6": str(ipaddress.IPv6Network("2001:db8::/32")),
         "net6_mask": str(ipaddress.IPv6Network("2001:db8::/32").netmask),
         "net6_hostm": str(ipaddress.IPv6Network("2001:db8::/32").hostmask),
-        "contains6": 1 if ipaddress.IPv6Address("2001:db8::1") in ipaddress.IPv6Network("2001:db8::/32") else 0,
+        "contains6": 1
+            if ipaddress.IPv6Address("2001:db8::1")
+                in ipaddress.IPv6Network("2001:db8::/32")
+            else 0,
         "hosts6": str([str(x) for x in n6.hosts()]),
         "subnets6": str([str(x) for x in n6.subnets()]),
         "supernet6": str(n6.supernet()),
-        "exclude4": str([str(x) for x in ipaddress.IPv4Network("192.0.2.0/28").address_exclude(ipaddress.IPv4Network("192.0.2.8/30"))]),
-        "exclude6": str([str(x) for x in ipaddress.IPv6Network("2001:db8::/32").address_exclude(ipaddress.IPv6Network("2001:db8:8000::/33"))]),
-        "summ4": str([str(x) for x in ipaddress.summarize_address_range(ipaddress.ip_address("192.0.2.0"), ipaddress.ip_address("192.0.2.130"))]),
-        "summ6": str([str(x) for x in ipaddress.summarize_address_range(ipaddress.ip_address("2001:db8::"), ipaddress.ip_address("2001:db8::20"))]),
+        "exclude4": str(
+            [
+                str(x)
+                for x in ipaddress.IPv4Network("192.0.2.0/28").address_exclude(
+                    ipaddress.IPv4Network("192.0.2.8/30")
+                )
+            ]
+        ),
+        "exclude6": str(
+            [
+                str(x)
+                for x in ipaddress.IPv6Network("2001:db8::/32").address_exclude(
+                    ipaddress.IPv6Network("2001:db8:8000::/33")
+                )
+            ]
+        ),
+        "summ4": str(
+            [
+                str(x)
+                for x in ipaddress.summarize_address_range(
+                    ipaddress.ip_address("192.0.2.0"),
+                    ipaddress.ip_address("192.0.2.130")
+                )
+            ]
+        ),
+        "summ6": str(
+            [
+                str(x)
+                for x in ipaddress.summarize_address_range(
+                    ipaddress.ip_address("2001:db8::"),
+                    ipaddress.ip_address("2001:db8::20")
+                )
+            ]
+        ),
         "net6_geti": str(n6[1]),
         "net4_geti_neg": str(ipaddress.IPv4Network("192.168.1.0/30")[-1]),
-        "eq4": 1 if ipaddress.IPv4Address("10.0.0.1") == ipaddress.IPv4Address("10.0.0.1") else 0,
-        "lt4": 1 if ipaddress.IPv4Address("10.0.0.1") < ipaddress.IPv4Address("10.0.0.2") else 0,
+        "eq4": 1
+            if ipaddress.IPv4Address("10.0.0.1") == ipaddress.IPv4Address("10.0.0.1")
+            else 0,
+        "lt4": 1
+            if ipaddress.IPv4Address("10.0.0.1") < ipaddress.IPv4Address("10.0.0.2")
+            else 0,
         "lt6": 1 if ipaddress.IPv6Address("::1") < ipaddress.IPv6Address("::2") else 0,
         "nonstrict4": str(ipaddress.IPv4Network("192.168.1.7/24", False)),
         "nonstrict6": str(ipaddress.IPv6Network("2001:db8::1/32", False)),
@@ -136,12 +175,12 @@ def ipaddress_py() -> dict[any, any] {
 }
 
 
-def ipaddress_cl() -> dict[any, any] {
+def ipaddress_cl -> dict[any, any] {
     return {};
 }
 
 
-def ipaddress_na() -> dict[str, any] {
+def ipaddress_na -> dict[str, any] {
     a = ipaddress.IPv4Address("192.168.1.1");
     b = ipaddress.IPv6Address("::ffff:10.0.0.1");
     n = ipaddress.IPv4Network("192.168.1.0/24");
@@ -223,26 +262,72 @@ def ipaddress_na() -> dict[str, any] {
         "contains_yes": 1 if n.__contains__(a) else 0,
         "contains_no": 1 if n.__contains__(ipaddress.IPv4Address("10.1.2.3")) else 0,
         "subnets": str([str(x) for x in n.subnets()]),
-        "hosts4": str([str(x) for x in ipaddress.IPv4Network("192.168.1.0/29").hosts()]),
+        "hosts4": str(
+            [str(x) for x in ipaddress.IPv4Network("192.168.1.0/29").hosts()]
+        ),
         "subnet_of": 1 if n.subnet_of(ipaddress.IPv4Network("192.168.0.0/16")) else 0,
         "overlaps": 1 if n.overlaps(ipaddress.IPv4Network("192.168.1.128/25")) else 0,
         "supernet4": str(ipaddress.IPv4Network("192.168.1.0/25").supernet()),
         "net6": str(ipaddress.IPv6Network("2001:db8::/32")),
         "net6_mask": str(ipaddress.IPv6Network("2001:db8::/32").netmask),
         "net6_hostm": str(ipaddress.IPv6Network("2001:db8::/32").hostmask),
-        "contains6": 1 if ipaddress.IPv6Network("2001:db8::/32").__contains__(ipaddress.IPv6Address("2001:db8::1")) else 0,
+        "contains6": 1
+            if ipaddress.IPv6Network("2001:db8::/32").__contains__(
+                ipaddress.IPv6Address("2001:db8::1")
+            )
+            else 0,
         "hosts6": str([str(x) for x in n6.hosts()]),
         "subnets6": str([str(x) for x in n6.subnets()]),
         "supernet6": str(n6.supernet()),
-        "exclude4": str([str(x) for x in ipaddress.IPv4Network("192.0.2.0/28").address_exclude(ipaddress.IPv4Network("192.0.2.8/30"))]),
-        "exclude6": str([str(x) for x in ipaddress.IPv6Network("2001:db8::/32").address_exclude(ipaddress.IPv6Network("2001:db8:8000::/33"))]),
-        "summ4": str([str(x) for x in ipaddress.summarize_address_range(ipaddress.ip_address("192.0.2.0"), ipaddress.ip_address("192.0.2.130"))]),
-        "summ6": str([str(x) for x in ipaddress.summarize_address_range(ipaddress.ip_address("2001:db8::"), ipaddress.ip_address("2001:db8::20"))]),
+        "exclude4": str(
+            [
+                str(x)
+                for x in ipaddress.IPv4Network("192.0.2.0/28").address_exclude(
+                    ipaddress.IPv4Network("192.0.2.8/30")
+                )
+            ]
+        ),
+        "exclude6": str(
+            [
+                str(x)
+                for x in ipaddress.IPv6Network("2001:db8::/32").address_exclude(
+                    ipaddress.IPv6Network("2001:db8:8000::/33")
+                )
+            ]
+        ),
+        "summ4": str(
+            [
+                str(x)
+                for x in ipaddress.summarize_address_range(
+                    ipaddress.ip_address("192.0.2.0"),
+                    ipaddress.ip_address("192.0.2.130")
+                )
+            ]
+        ),
+        "summ6": str(
+            [
+                str(x)
+                for x in ipaddress.summarize_address_range(
+                    ipaddress.ip_address("2001:db8::"),
+                    ipaddress.ip_address("2001:db8::20")
+                )
+            ]
+        ),
         "net6_geti": str(n6.__getitem__(1)),
         "net4_geti_neg": str(ipaddress.IPv4Network("192.168.1.0/30").__getitem__(-1)),
-        "eq4": 1 if ipaddress.IPv4Address("10.0.0.1").__eq__(ipaddress.IPv4Address("10.0.0.1")) else 0,
-        "lt4": 1 if ipaddress.IPv4Address("10.0.0.1").__lt__(ipaddress.IPv4Address("10.0.0.2")) else 0,
-        "lt6": 1 if ipaddress.IPv6Address("::1").__lt__(ipaddress.IPv6Address("::2")) else 0,
+        "eq4": 1
+            if ipaddress.IPv4Address("10.0.0.1").__eq__(
+                ipaddress.IPv4Address("10.0.0.1")
+            )
+            else 0,
+        "lt4": 1
+            if ipaddress.IPv4Address("10.0.0.1").__lt__(
+                ipaddress.IPv4Address("10.0.0.2")
+            )
+            else 0,
+        "lt6": 1
+            if ipaddress.IPv6Address("::1").__lt__(ipaddress.IPv6Address("::2"))
+            else 0,
         "nonstrict4": str(ipaddress.IPv4Network("192.168.1.7/24", False)),
         "nonstrict6": str(ipaddress.IPv6Network("2001:db8::1/32", False)),
         "sixtofour": str(ipaddress.IPv6Address("2002::1").sixtofour),

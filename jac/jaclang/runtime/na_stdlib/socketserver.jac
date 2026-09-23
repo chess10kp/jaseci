@@ -48,7 +48,6 @@ obj:pub BaseServer {
     }
 
     def handle_request_noblock {}
-
     def serve_forever(poll_interval: float = 0.5) {
         self._is_shut_down = False;
         try {
@@ -73,9 +72,7 @@ obj:pub BaseServer {
     }
 
     def service_actions {}
-
     def handle_timeout {}
-
     def verify_request(
         request: Socket, client_address: tuple[(str, int, int, int)]
     ) -> bool {
@@ -96,17 +93,13 @@ obj:pub BaseServer {
     }
 
     def close_request(request: Socket) {}
-
     def handle_error(request: Socket, client_address: tuple[(str, int, int, int)]) {
         sys.stderr.write("Exception occurred during processing of request\n");
     }
 
     def server_close {}
-
     def server_bind {}
-
     def server_activate {}
-
     def enter -> BaseServer {
         return self;
     }
@@ -275,7 +268,6 @@ obj:pub UDPServer(TCPServer) {
     }
 
     def server_activate {}
-
     def handle_request {
         r = _select([self.socket.fileno()], [], [], self.timeout);
         if len(r[0]) == 0 {
@@ -355,7 +347,6 @@ obj:pub UDPServer(TCPServer) {
     }
 
     def close_request(request: tuple[(bytes, Socket)]) {}
-
     def handle_error(
         request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
@@ -775,9 +766,7 @@ obj:pub BaseRequestHandler {
     }
 
     def setup {}
-
     def handle {}
-
     def finish {}
 }
 

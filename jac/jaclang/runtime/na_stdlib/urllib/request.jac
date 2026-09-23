@@ -316,7 +316,6 @@ obj:pub BaseHandler {
     }
 
     def close {}
-
     def open_for(kind: str, req: Request) -> any {
         return None;
     }
@@ -395,7 +394,6 @@ obj:pub OpenerDirector {
     }
 
     def close {}
-
     def _call_open(kind: str, req: Request) -> any {
         if kind not in self.handle_open {
             return None;
