@@ -31,3 +31,6 @@ jobs:
             echo "=== probe: $p ==="
             ./zig-out/bin/jac run -b native ../scripts/probe/probe_$p.jac 2>&1 || echo "PROBE $p FAILED: $?"
           done
+          echo "=== probe: all10 under rc profile ==="
+          printf '\n[memory]\nprofile = "rc"\n' >> ../jac.toml
+          ./zig-out/bin/jac run -b native --no-cache ../scripts/probe/probe_all10.jac 2>&1 || echo "PROBE all10-rc FAILED: $?"
