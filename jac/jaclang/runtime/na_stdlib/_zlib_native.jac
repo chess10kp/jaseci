@@ -154,7 +154,10 @@ def:pub z_inflate_all(
     }
     data = b"";
     if status == Z_STREAM_END {
-        data = buf if total == cap else buf[0:total];
+        if total < cap {
+            __mem_store_i64(ba - 8, total);
+        }
+        data = buf;
     }
     consumed: int = __mem_load_i64(sa + _ZS_TOTAL_IN);
     inflateEnd(strm);
