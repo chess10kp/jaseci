@@ -61,32 +61,27 @@ with entry {
     rnd: bytes = make_random(65536);
     zcomp: bytes = zlib.compress(text);
     gcomp: bytes = gzip.compress(text);
-
     crc: int = zlib.crc32(text);
-    _bench("crc32_300k", 30, lambda { crc = zlib.crc32(text, crc); });
+    adl: int = zlib.adler32(text);
+
+    _bench("crc32_300k", 30, lambda { zlib.crc32(text, crc); });
     print("  digest=" + str(crc));
 
-    adl: int = zlib.adler32(text);
-    _bench("adler32_300k", 30, lambda { adl = zlib.adler32(text, adl); });
+    _bench("adler32_300k", 30, lambda { zlib.adler32(text, adl); });
     print("  digest=" + str(adl));
 
-    zout: bytes = b"";
-    _bench("zlib_compress_300k", 20, lambda { zout = zlib.compress(text); });
-    print("  digest=" + str(digest(zout)));
+    _bench("zlib_compress_300k", 20, lambda { zlib.compress(text); });
+    print("  digest=" + str(digest(zlib.compress(text))));
 
-    zback: bytes = b"";
-    _bench("zlib_decompress_300k", 20, lambda { zback = zlib.decompress(zcomp); });
-    print("  digest=" + str(digest(zback)));
+    _bench("zlib_decompress_300k", 20, lambda { zlib.decompress(zcomp); });
+    print("  digest=" + str(digest(zlib.decompress(zcomp))));
 
-    rout: bytes = b"";
-    _bench("zlib_compress_rand64k", 20, lambda { rout = zlib.compress(rnd); });
-    print("  digest=" + str(digest(rout)));
+    _bench("zlib_compress_rand64k", 20, lambda { zlib.compress(rnd); });
+    print("  digest=" + str(digest(zlib.compress(rnd))));
 
-    gout: bytes = b"";
-    _bench("gzip_compress_300k", 20, lambda { gout = gzip.compress(text); });
-    print("  digest=" + str(digest(gout)));
+    _bench("gzip_compress_300k", 20, lambda { gzip.compress(text); });
+    print("  digest=" + str(digest(gzip.compress(text))));
 
-    gback: bytes = b"";
-    _bench("gzip_decompress_300k", 20, lambda { gback = gzip.decompress(gcomp); });
-    print("  digest=" + str(digest(gback)));
+    _bench("gzip_decompress_300k", 20, lambda { gzip.decompress(gcomp); });
+    print("  digest=" + str(digest(gzip.decompress(gcomp))));
 }
