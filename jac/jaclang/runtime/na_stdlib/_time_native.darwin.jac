@@ -1,6 +1,6 @@
-import from c { def nanosleep(req: &bytes, rem: &mut bytes) -> i32;  }
+import from c { def nanosleep(req: int, rem: int) -> i32;  }
 import from _errno_native { EINTR, last_errno, raise_errno }
-import from _time_common { NS_PER_SEC, ts_load, ts_pack }
+import from _time_common { NS_PER_SEC }
 
 glob CLK_REALTIME: int = 0,
      CLK_MONOTONIC: int = 6,
@@ -11,13 +11,15 @@ glob CLK_REALTIME: int = 0,
 def:pub time_sleep_ns(ns: int) {
     sec: int = ns // NS_PER_SEC;
     nsec: int = ns % NS_PER_SEC;
-    req: own bytes = ts_pack(sec, nsec);
-    rem: own bytes = b"\x00" * 16;
-    while nanosleep(&req, &mut rem) != 0 {
+    req: int = __alloca(16);
+    __mem_store_i64(req, sec);
+    __mem_store_i64(req + 8, nsec);
+    rem: int = __alloca(16);
+    while nanosleep(req, rem) != 0 {
         code: int = last_errno();
         if code == EINTR {
-            req = ts_pack(ts_load(&rem, 0), ts_load(&rem, 8));
-            rem = b"\x00" * 16;
+            __mem_store_i64(req, __mem_load_i64(rem));
+            __mem_store_i64(req + 8, __mem_load_i64(rem + 8));
             continue;
         }
         raise_errno(code);
