@@ -432,19 +432,25 @@ obj:pub OpenerDirector {
         }
         req.timeout = timeout;
         protocol = req.type;
+        print("dbg open: proto " + protocol);
 
         if protocol in self.process_request {
             for processor in self.process_request[protocol] {
+                print("dbg req_for");
                 req = processor.request_for(protocol, req);
             }
         }
+        print("dbg before _open");
         response = self._open(req, data);
+        print("dbg after _open");
 
         if protocol in self.process_response {
             for processor in self.process_response[protocol] {
+                print("dbg resp_for");
                 response = processor.response_for(protocol, req, response);
             }
         }
+        print("dbg open done");
         return response;
     }
 

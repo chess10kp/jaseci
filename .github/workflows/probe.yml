@@ -27,7 +27,7 @@ jobs:
           python3 scripts/probe/loopback.py 8123 &
           sleep 1
           cd jac
-          for p in seven; do
+          for p in eight; do
             echo "=== probe: $p ==="
             ./zig-out/bin/jac run -b native ../scripts/probe/probe_$p.jac 2>&1 || echo "PROBE $p FAILED: $?"
           done
