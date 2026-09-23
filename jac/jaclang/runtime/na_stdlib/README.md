@@ -275,6 +275,45 @@ native layout records the emitted name separately from its source-level key.
   corrupted when consumed -- callers read `StringIO` content through a
   narrowed `fp`. Pinned sv<->na congruent by `prim_urllib_resperr.jac`.
 
+- **`urllib/request.jac`** (#6978) -- a pure-Jac port of CPython 3.14's
+  `urllib.request` opener/handler architecture over the bundled `socket` +
+  `ssl` floors (no libcurl): `Request` (computed `full_url` getter,
+  `set_full_url`/`set_data`, `add_header`/`has_header`/`get_header`,
+  redirect_dict), `OpenerDirector` + `BaseHandler` and the handler chain
+  (`ProxyHandler`, `UnknownHandler`, `HTTPHandler`, `HTTPSHandler`,
+  `HTTPDefaultErrorHandler`, `HTTPRedirectHandler`, `HTTPErrorProcessor`,
+  `HTTPCookieProcessor`, `FileHandler`, `FTPHandler`, `DataHandler`), the
+  password managers (`HTTPPasswordMgr` / `HTTPPasswordMgrWithDefaultRealm` /
+  `HTTPPasswordMgrWithPriorAuth`, flat-row storage because tuple-keyed dicts
+  do not lower), `HTTPBasicAuthHandler` / `ProxyBasicAuthHandler` and friends,
+  `build_opener` / `install_opener` / `urlopen` / `urlretrieve` /
+  `urlcleanup`, `pathname2url` / `url2pathname`, `parse_http_list` /
+  `parse_keqv_list` helpers, and env-based
+  `getproxies` / `proxy_bypass`. SCOPE (native gaps): handler discovery is
+  explicit-dispatch tables (`open_kinds`/`req_kinds`/`resp_kinds`/
+  `error_codes`) because `dir`/`getattr` reflection does not exist;
+  `FTPHandler` raises `URLError` (no bundled `ftplib`); `CacheFTPHandler` is
+  API-parity only; digest auth and macOS/Windows proxy discovery are out of
+  scope; `urlretrieve` writes the whole body in one `write_file_bytes` call
+  (reporthook still fires per 8 KiB block); `HTTPCookieProcessor` calls an
+  arbitrary cookiejar through the bridge. The HTTP exchange is implemented
+  directly over `socket`/`ssl`, parsing status + headers into an
+  `addinfourl`-derived response.
+
+- **`urllib/robotparser.jac`** (#6978) -- a pure-Jac port of CPython 3.14's
+  `urllib.robotparser` (RFC 9309): `RobotFileParser` (`set_url` / `read` /
+  `parse` / `can_fetch` / `crawl_delay` / `request_rate` / `site_maps` /
+  `mtime` / `modified`), the `RuleLine` / `Entry` helpers, `merge_entries`,
+  and `normalize_uri` / `normalize_pattern`. There is no bundled `re`, so
+  `*`/`$` patterns are matched by an equivalent manual scan (lazy `.*?`
+  between segments, greedy trailing `.*` for prefix rules, end-anchored last
+  segment for `$` rules) preserving match-length ordering;
+  `translate_pattern` is omitted, and `RequestRate` is a plain object rather
+  than a namedtuple. `modified()` uses a libc `time()` FFI. SCOPE: caught
+  cross-module exception fields are a backend gap, so `read()`'s 401/403/4xx
+  marking via `err.code` may be unreliable. Pinned sv<->na congruent by
+  `prim_robotparser.jac` (pure-parse surface only; `read()` needs network).
+
 - **`select.jac`** (#6978) + **`_select_native.jac`** -- a Mechanism F port of
   CPython 3.14's `select` over raw libc FFI: `select(rlist, wlist, xlist,
   timeout=None)` (fd_set bitmap + `timeval` packed into `bytes` buffers,
