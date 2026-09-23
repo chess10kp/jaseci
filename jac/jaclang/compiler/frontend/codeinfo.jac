@@ -223,6 +223,7 @@ glob NATIVE_RESERVED_C_SYMBOLS: frozenset[str] = frozenset(
                  "dlopen dlsym dlclose dlerror "
                  "main _start __libc_start_main __getmainargs mainCRTStartup "
                  "compress2 uncompress uncompress2 compressBound crc32_z adler32_z "
+                 "inflateInit2_ inflate inflateEnd zlibVersion "
                  "BZ2_bzBuffToBuffCompress BZ2_bzBuffToBuffDecompress "
                  "ZSTD_isError ZSTD_getErrorName ZSTD_compressBound ZSTD_freeCCtx "
                  "ZSTD_CCtx_setParameter ZSTD_compress2 ZSTD_freeDCtx ZSTD_DCtx_setParameter "
