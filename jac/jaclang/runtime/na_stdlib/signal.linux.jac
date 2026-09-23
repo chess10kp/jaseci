@@ -7,7 +7,7 @@ import from _signal_native {
     sig_describe,
     sig_mask
 }
-import from _errno_native { last_errno, errno_message_for }
+import from _errno_native { last_errno, raise_errno_error }
 
 glob:pub SIGHUP: int = 1,
      SIGINT: int = 2,
@@ -63,10 +63,6 @@ def _check_signum(signum: int) {
     }
 }
 
-def _os_error(code: int) {
-    raise OSError("[Errno " + str(code) + "] " + errno_message_for(code));
-}
-
 def _sig_dfl_impl(signum: int, frame: any) {}
 
 def _sig_ign_impl(signum: int, frame: any) {}
@@ -89,7 +85,7 @@ def:pub signal(signum: int, handler: Callable[[int, any], None]) -> any {
         old = sig_install_fn(signum, handler);
     }
     if old == -1 {
-        _os_error(last_errno());
+        raise_errno_error(last_errno());
     }
     _shadow[signum] = handler;
     return prev;
@@ -107,7 +103,7 @@ def:pub raise_signal(signum: int) {
     _check_signum(signum);
     rc = sig_kill_self(signum);
     if rc != 0 {
-        _os_error(last_errno());
+        raise_errno_error(last_errno());
     }
 }
 
@@ -122,13 +118,6 @@ def:pub pause {
     sig_pause();
 }
 
-"""Description for `signum`, or None when it has none (CPython semantics).
-
-glibc `sigdescr_np` answers NULL for the reserved slots 32/33 and for the
-realtime range, which CPython's `strsignal` surfaces as None and as
-"Real-time signal <n>" respectively -- handled before the FFI call so a NULL
-never reaches the string return.
-"""
 def:pub strsignal(signum: int) -> (str | None) {
     _check_signum(signum);
     if signum >= SIGRTMIN and signum <= SIGRTMAX {
@@ -140,8 +129,6 @@ def:pub strsignal(signum: int) -> (str | None) {
     return sig_describe(signum);
 }
 
-"""CPython returns every signum in [1, NSIG) except 32/33, which glibc
-reserves for NPTL internals (SIGCANCEL/SIGSETXID)."""
 def:pub valid_signals -> list[int] {
     out: list[int] = [];
     for s in range(1, NSIG) {
@@ -158,7 +145,7 @@ def:pub pthread_sigmask(how: int, mask: list[int]) -> list[int] {
     }
     (rc, out) = sig_mask(how, mask, NSIG);
     if rc != 0 {
-        _os_error(rc);
+        raise_errno_error(rc);
     }
     return out;
 }

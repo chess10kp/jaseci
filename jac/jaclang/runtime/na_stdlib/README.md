@@ -446,7 +446,12 @@ native layout records the emitted name separately from its source-level key.
   that delivers `(signum, None)` where CPython delivers `(signum, frame)`.
   `SIG_DFL`/`SIG_IGN` are sentinel callables that `signal()` maps onto real
   kernel dispositions; `getsignal` answers from a shadow dict since libc
-  cannot distinguish a Jac trampoline from a real handler. SCOPE/divergences:
+  cannot distinguish a Jac trampoline from a real handler. FFI names carry
+  a `sig_` prefix because `alarm`/`pause` externs would collide with the
+  public `def:pub` names in the flat symbol table -- `alarm` is spelled
+  `setitimer(ITIMER_REAL, ...)` and `pause` is spelled `select(0, NULL,
+  NULL, NULL, NULL)`, which sleeps until a signal interrupts it.
+  SCOPE/divergences:
   Linux only (signal numbers and `sigdescr_np` are glibc/Linux-specific, so
   the module carries the `.linux.` suffix and other platforms get a clean
   "not provided" rather than a link error); `valid_signals` and
@@ -469,8 +474,10 @@ native layout records the emitted name separately from its source-level key.
   raises `TimeoutExpired` and leaves the child running -- matching CPython;
   only `run()` kills on timeout. `shell=True` builds
   `["/bin/sh", "-c"] + args` verbatim, as CPython does. The first `Popen`
-  ignores `SIGPIPE` process-wide, matching CPython's interpreter startup, so
-  a write to a closed pipe fails with EPIPE instead of killing the caller.
+  installs `SIG_IGN` on `SIGPIPE` through `signal()` itself -- matching
+  CPython's interpreter startup, including `getsignal(SIGPIPE)` answering
+  `SIG_IGN` -- so a write to a closed pipe fails with EPIPE instead of
+  killing the caller.
   SCOPE/divergences:
   Linux only (`.linux.` suffix); `Popen` exposes `args`/`stdin`/`stdout`/
   `stderr`/`text`/`cwd`/`env`/`shell`/`pid`/`returncode` only -- no `start_new_session`,

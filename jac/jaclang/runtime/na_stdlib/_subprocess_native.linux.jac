@@ -27,15 +27,12 @@ import from c {
     ) -> i32;
 }
 import from c { def posix_spawn_file_actions_addchdir_np(fa: int, path: str) -> i32;  }
-import from c { def bsd_signal(signum: i32, handler: int) -> int;  }
 
 glob _CLOCK_MONOTONIC: int = 1,
      _EV_READ: int = 1,
      _EV_WRITE: int = 4,
      _OPEN_MODE_0666: int = 438,
-     _FA_SIZE: int = 256,
-     _SIGPIPE: int = 13,
-     _SIG_IGN: int = 1;
+     _FA_SIZE: int = 256;
 
 def _lo32(buf: bytes, off: int) -> int {
     return int.from_bytes(buf[off:off + 4], "little");
@@ -155,12 +152,8 @@ def:pub sp_fa_free(fa: int) {
     free(fa);
 }
 
-def:pub sp_spawn(path: str, fa: int, at: int, argv: int, envp: int) -> list[int] {
+def:pub sp_spawn(path: str, fa: int, argv: int, envp: int) -> list[int] {
     pidb = b"\x00" * 8;
-    rc = posix_spawnp(pidb, path, fa, at, argv, envp);
+    rc = posix_spawnp(pidb, path, fa, 0, argv, envp);
     return [int(rc), _lo32(pidb, 0)];
-}
-
-def:pub sp_ignore_sigpipe {
-    bsd_signal(i32(_SIGPIPE), _SIG_IGN);
 }

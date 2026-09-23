@@ -21,14 +21,12 @@ down with it.
 
 import ctypes;
 import os;
-import subprocess;
-import tempfile;
 import from tests.support {
-    jac_command,
     TESTS_DIR,
     compile_native,
     get_func,
     has_error_code,
+    native_build_fails,
     native_force_opts,
     sv_run,
     na_run,
@@ -288,23 +286,7 @@ test "a generic pack slot is a native list, not the bare erased pointer" {
 }
 
 test "a generic pack at a by-value type argument is refused, not lowered" {
-    out_bin = os.path.join(tempfile.mkdtemp(), "nope.bin");
-    comp = subprocess.run(
-        jac_command(
-            "build",
-            "--native",
-            os.path.join(FIXTURES, "varargs_generic_scalar.jac"),
-            "-o",
-            out_bin
-        ),
-        capture_output=True,
-        text=True,
-        timeout=900
-    );
-    combined = (comp.stdout or "") + (comp.stderr or "");
-    assert comp.returncode != 0 , (
-        f"an int in a pointer-element pack compiled silently: {combined[-600:]}"
-    );
+    combined = native_build_fails(os.path.join(FIXTURES, "varargs_generic_scalar.jac"));
     assert "Cell[int]" in combined , (
         f"diagnostic does not name the instantiation: {combined[-600:]}"
     );

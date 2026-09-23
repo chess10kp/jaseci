@@ -16,10 +16,10 @@ import from _subprocess_native {
     sp_write,
     sp_usleep,
     sp_now_ms,
-    sp_pollio,
-    sp_ignore_sigpipe
+    sp_pollio
 }
-import from _errno_native { last_errno, errno_message_for, raise_os_error }
+import from _errno_native { last_errno, raise_errno_error, raise_os_error }
+import from signal { signal, SIG_IGN, SIGPIPE }
 
 glob:pub PIPE: int = -1,
      STDOUT: int = -2,
@@ -46,14 +46,28 @@ obj:pub CalledProcessError(SubprocessError) {
     has returncode: int = 0,
         cmd: any = None,
         output: any = None,
-        stderr: any = None;
+        stderr: any = None,
+        stdout: any = None;
+
+    def postinit {
+        if self.stdout is None {
+            self.stdout = self.output;
+        }
+    }
 }
 
 obj:pub TimeoutExpired(SubprocessError) {
     has cmd: any = None,
         timeout: any = None,
         output: any = None,
-        stderr: any = None;
+        stderr: any = None,
+        stdout: any = None;
+
+    def postinit {
+        if self.stdout is None {
+            self.stdout = self.output;
+        }
+    }
 }
 
 obj:pub CompletedProcess {
@@ -101,12 +115,6 @@ def _deadline_ms(timeout: (int | float | None)) -> int {
     return -1;
 }
 
-def _os_error(prefix: str, code: int) {
-    raise OSError(
-        "[Errno " + str(code) + "] " + prefix + ": " + errno_message_for(code)
-    );
-}
-
 obj:pub Popen {
     has args: (str | list[str]) = "",
         stdin: (int | None) = None,
@@ -116,7 +124,7 @@ obj:pub Popen {
         cwd: (str | None) = None,
         env: (dict[str, str] | None) = None,
         shell: bool = False,
-        returncode: any = None,
+        returncode: (int | None) = None,
         pid: int = -1,
         _stdin_w: int = -1,
         _stdout_r: int = -1,
@@ -124,7 +132,7 @@ obj:pub Popen {
 
     def postinit {
         if not _sigpipe_ignored {
-            sp_ignore_sigpipe();
+            signal(SIGPIPE, SIG_IGN);
             _sigpipe_ignored = True;
         }
         r_in: list[int] = [0, -1, -1];
@@ -140,13 +148,14 @@ obj:pub Popen {
             r_err = sp_pipe();
         }
         if r_in[0] != 0 or r_out[0] != 0 or r_err[0] != 0 {
+            pipe_err = last_errno();
             for r in [r_in, r_out, r_err] {
                 if r[0] == 0 and r[1] >= 0 {
                     sp_close(r[1]);
                     sp_close(r[2]);
                 }
             }
-            _os_error("pipe", last_errno());
+            raise_errno_error(pipe_err, "pipe");
         }
         in_pipe = [r_in[1], r_in[2]];
         out_pipe = [r_out[1], r_out[2]];
@@ -165,6 +174,9 @@ obj:pub Popen {
             argv = [self.args];
         } else {
             argv = self.args;
+        }
+        if len(argv) == 0 {
+            raise IndexError("list index out of range");
         }
         fa = sp_fa_new();
         fa_rc = self._fa_stdio(fa, in_pipe, out_pipe, err_pipe);
@@ -187,7 +199,7 @@ obj:pub Popen {
             if e is not None {
                 envp = sp_strvec(envv);
             }
-            r = sp_spawn(argv[0], fa, 0, argv_v, envp);
+            r = sp_spawn(argv[0], fa, argv_v, envp);
             spawn_rc = r[0];
             child_pid = r[1];
         }
@@ -232,7 +244,7 @@ obj:pub Popen {
             rc = sp_fa_dup2(fa, in_pipe[0], 0);
         } elif self.stdin == DEVNULL {
             rc = sp_fa_open(fa, 0, "/dev/null", _O_RDWR);
-        } elif isinstance(self.stdin, int) and self.stdin >= 0 {
+        } elif isinstance(self.stdin, int) {
             rc = sp_fa_dup2(fa, self.stdin, 0);
         }
         if rc == 0 {
@@ -240,7 +252,7 @@ obj:pub Popen {
                 rc = sp_fa_dup2(fa, out_pipe[1], 1);
             } elif self.stdout == DEVNULL {
                 rc = sp_fa_open(fa, 1, "/dev/null", _O_RDWR);
-            } elif isinstance(self.stdout, int) and self.stdout >= 0 {
+            } elif isinstance(self.stdout, int) {
                 rc = sp_fa_dup2(fa, self.stdout, 1);
             }
         }
@@ -251,7 +263,7 @@ obj:pub Popen {
                 rc = sp_fa_dup2(fa, 1, 2);
             } elif self.stderr == DEVNULL {
                 rc = sp_fa_open(fa, 2, "/dev/null", _O_RDWR);
-            } elif isinstance(self.stderr, int) and self.stderr >= 0 {
+            } elif isinstance(self.stderr, int) {
                 rc = sp_fa_dup2(fa, self.stderr, 2);
             }
         }
@@ -290,7 +302,7 @@ obj:pub Popen {
             if err == _ECHILD {
                 return -2;
             }
-            _os_error("waitpid", err);
+            raise_errno_error(err, "waitpid");
         }
     }
 
@@ -377,7 +389,7 @@ obj:pub Popen {
                 if last_errno() == _EINTR {
                     continue;
                 }
-                _os_error("poll", last_errno());
+                raise_errno_error(last_errno(), "poll");
             }
             if wfd >= 0 {
                 if (pr[3] & (_POLLERR | _POLLHUP | _POLLNVAL)) != 0 {
@@ -435,7 +447,11 @@ obj:pub Popen {
             if rem <= 0 {
                 self._raise_timeout(timeout, bytes(out_acc), bytes(err_acc));
             }
-            self.`wait(rem / 1000.0);
+            try {
+                self.`wait(rem / 1000.0);
+            } except TimeoutExpired {
+                self._raise_timeout(timeout, bytes(out_acc), bytes(err_acc));
+            }
         } else {
             self.`wait();
         }

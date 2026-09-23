@@ -311,6 +311,32 @@ def native_build(
     return (comp.stdout or "") + (comp.stderr or "");
 }
 
+"""Build `src` natively expecting the compile to fail; return combined output.
+
+The counterpart to `native_build` for refusal-path tests: asserts the build
+did not succeed and hands back stdout+stderr so the caller can pin the
+diagnostic naming the offending construct.
+"""
+def native_build_fails(src: str, timeout: int = 900) -> str {
+    import os;
+    import subprocess;
+    import tempfile;
+    assert os.path.exists(src) , f"fixture missing: {src}";
+    out_bin = os.path.join(tempfile.mkdtemp(), "nope.bin");
+    comp = subprocess.run(
+        jac_command("build", "--native", src, "-o", out_bin),
+        capture_output=True,
+        text=True,
+        timeout=timeout
+    );
+    combined = (comp.stdout or "") + (comp.stderr or "");
+    assert comp.returncode != 0 , (
+        f"expected a refused native build for {os.path.basename(src)},"
+        f" but it compiled cleanly: {combined[-600:]}"
+    );
+    return combined;
+}
+
 """Run a built native binary and return its stdout; assert a clean exit."""
 def native_run(
     out_bin: str,

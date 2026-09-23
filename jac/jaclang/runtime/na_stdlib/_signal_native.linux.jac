@@ -1,9 +1,7 @@
 import from c { def bsd_signal(signum: i32, handler: int) -> int;  }
 import from c { def kill(pid: i32, signum: i32) -> i32;  }
 import from c { def getpid -> i32;  }
-import from c {
-    def setitimer(which: i32, new_value: int, old_value: int) -> i32;
-}
+import from c { def setitimer(which: i32, new_value: int, old_value: int) -> i32;  }
 import from c { def malloc(size: int) -> int;  }
 import from c { def free(p: int);  }
 import from c {
@@ -17,9 +15,8 @@ import from c { def sigemptyset(set: bytes) -> i32;  }
 import from c { def sigaddset(set: bytes, signum: i32) -> i32;  }
 import from c { def sigismember(set: bytes, signum: i32) -> i32;  }
 
-glob _ITIMER_REAL: int = 0;
-
-glob _fn_handlers: dict[int, Callable[[int, any], None]] = {};
+glob _ITIMER_REAL: int = 0,
+     _fn_handlers: dict[int, Callable[[int, any], None]] = {};
 
 def _trampoline(signum: int) {
     if signum in _fn_handlers {
@@ -29,7 +26,11 @@ def _trampoline(signum: int) {
 
 def:pub sig_install_fn(signum: int, handler: Callable[[int, any], None]) -> int {
     _fn_handlers[signum] = handler;
-    return bsd_signal(i32(signum), _trampoline);
+    old = bsd_signal(i32(signum), _trampoline);
+    if old == -1 {
+        del _fn_handlers[signum];
+    }
+    return old;
 }
 
 def:pub sig_install_addr(signum: int, handler: int) -> int {
@@ -43,11 +44,6 @@ def:pub sig_kill_self(signum: int) -> int {
     return kill(getpid(), i32(signum));
 }
 
-"""`alarm(3)` under a collision-free name: `alarm` itself would collide with
-`signal.linux.jac`'s `def:pub alarm` in the flat symbol table, and `ualarm`'s
-u32 microseconds wrap near 4295s. glibc spells `alarm` as
-setitimer(ITIMER_REAL, {0,0,seconds,0}, &old) returning the old it_value
-rounded up to whole seconds -- mirrored here verbatim."""
 def:pub sig_alarm(seconds: int) -> int {
     new_it = malloc(32);
     old_it = malloc(32);

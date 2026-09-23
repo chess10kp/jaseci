@@ -38,11 +38,9 @@ type-erased natively: `ContextVar[int]` is refused rather than lowered
 line rather than a defect.
 """
 
-import from tests.support { jac_command, na_run, same_lines, sv_run }
+import from tests.support { na_run, native_build_fails, same_lines, sv_run }
 
 import os;
-import subprocess;
-import tempfile;
 import from pathlib { Path }
 
 glob FIXTURES = str(Path(__file__).resolve().parent / "fixtures");
@@ -84,15 +82,8 @@ test "native contextvars answers what CPython's contextvars answers" {
 }
 
 test "a ContextVar at a scalar type argument is refused, not lowered" {
-    src = os.path.join(FIXTURES, "contextvars_unsupported.jac");
-    out_bin = os.path.join(tempfile.mkdtemp(), "nope.bin");
-    comp = subprocess.run(
-        jac_command("build", "--native", src, "-o", out_bin),
-        capture_output=True,
-        text=True,
-        timeout=900
+    combined = native_build_fails(
+        os.path.join(FIXTURES, "contextvars_unsupported.jac")
     );
-    combined = (comp.stdout or "") + (comp.stderr or "");
-    assert comp.returncode != 0 , f"an erased scalar slot compiled silently: {combined[-600:]}";
     assert "ContextVar[int]" in combined , f"diagnostic does not name the instantiation: {combined[-600:]}";
 }

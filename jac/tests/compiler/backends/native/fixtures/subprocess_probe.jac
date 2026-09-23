@@ -19,6 +19,7 @@ import from subprocess {
     CalledProcessError,
     TimeoutExpired
 }
+import from signal { getsignal, SIGPIPE, SIG_IGN }
 
 glob EMPTY_ENV: dict[str, str] = {};
 
@@ -74,8 +75,8 @@ with entry {
     try {
         check_call(["false"]);
         print("cce-missed");
-    } except CalledProcessError {
-        print("cce-raised");
+    } except CalledProcessError as cpe {
+        print("cce-raised alias=" + str(cpe.stdout is cpe.output));
     }
 
     cpok = run(["true"], capture_output=True);
@@ -129,6 +130,14 @@ with entry {
         print("ve-capture-missed");
     } except ValueError {
         print("ve-capture-raised");
+    }
+
+    print("sigpipe-ign=" + str(getsignal(SIGPIPE) is SIG_IGN));
+    try {
+        run([]);
+        print("empty-args-missed");
+    } except IndexError {
+        print("empty-args-raised");
     }
 
     print("done");

@@ -12,11 +12,9 @@ including an `obj` carrying a `Path`-typed `has` field with a `Path("")`
 default -- the shape `compiler/types/types.jac` declares.
 """
 
-import from tests.support { jac_command, na_run, same_lines, sv_run }
+import from tests.support { na_run, native_build_fails, same_lines, sv_run }
 
 import os;
-import subprocess;
-import tempfile;
 import from pathlib { Path }
 
 glob FIXTURES = str(Path(__file__).resolve().parent / "fixtures");
@@ -28,15 +26,6 @@ test "the native Path answers what CPython's Path answers" {
 }
 
 test "a Path member outside the provided surface fails the native compile" {
-    src = os.path.join(FIXTURES, "pathlib_unsupported.jac");
-    out_bin = os.path.join(tempfile.mkdtemp(), "nope.bin");
-    comp = subprocess.run(
-        jac_command("build", "--native", src, "-o", out_bin),
-        capture_output=True,
-        text=True,
-        timeout=900
-    );
-    combined = (comp.stdout or "") + (comp.stderr or "");
-    assert comp.returncode != 0 , f"unsupported Path member compiled silently: {combined[-600:]}";
+    combined = native_build_fails(os.path.join(FIXTURES, "pathlib_unsupported.jac"));
     assert "suffix" in combined , f"diagnostic does not name the member: {combined[-600:]}";
 }

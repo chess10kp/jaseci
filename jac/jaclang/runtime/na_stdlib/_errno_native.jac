@@ -17,6 +17,14 @@ def:pub errno_message_for(code: int) -> str {
     return strerror(i32(code));
 }
 
+def:pub raise_errno_error(code: int, operation: str = "") {
+    message = errno_message_for(code);
+    if operation != "" {
+        message = operation + ": " + message;
+    }
+    raise OSError("[Errno " + str(code) + "] " + message);
+}
+
 def:pub raise_os_error(operation: str, path: str, code: int) {
     message = operation + ": " + strerror(i32(code)) + ": " + path;
     if code == 2 {
