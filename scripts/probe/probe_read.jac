@@ -1,4 +1,6 @@
 import urllib.request;
+import from urllib.request { HTTPResp }
+import from io { BytesIO }
 
 with entry {
     op = urllib.request.OpenerDirector();
@@ -13,8 +15,8 @@ with entry {
     print("built 8");
     req = urllib.request.Request("http://127.0.0.1:8123/hello");
     resp = op.open(req);
-    if isinstance(resp, urllib.request.HTTPResp) {
-        r: urllib.request.HTTPResp = resp;
+    if isinstance(resp, HTTPResp) {
+        r: HTTPResp = resp;
         c = r.code;
         if c != None {
             ci: int = c;
@@ -22,14 +24,15 @@ with entry {
         } else {
             print("code null");
         }
-        u = r.url;
-        print("url " + u);
-        b = r.read();
-        if isinstance(b, bytes) {
-            bb: bytes = b;
-            print("body " + bb.decode());
+        print("url " + r.url);
+        print("blen " + str(r.body_length));
+        f = r.fp;
+        if isinstance(f, BytesIO) {
+            print("fp is BytesIO");
+            bb: BytesIO = f;
+            print("body " + bb.read().decode());
         } else {
-            print("body non-bytes");
+            print("fp not BytesIO");
         }
     } else {
         print("not HTTPResp");
