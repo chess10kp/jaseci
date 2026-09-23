@@ -900,7 +900,6 @@ walker NaIRGenPass {
 
     def _container_hdr_scope -> (ir.MDValue | None);
     def _tag_access_md(instr: ir.Value, kind: str, scope: (ir.MDValue | None)) -> None;
-
     def _emit_grow_array(
         b: ir.IRBuilder,
         old_data: ir.Value,

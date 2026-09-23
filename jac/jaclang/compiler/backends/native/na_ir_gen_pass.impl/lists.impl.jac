@@ -72,8 +72,7 @@ impl NaIRGenPass._emit_list_helpers(elem_type_name: str, elem_type: ir.Type) -> 
     cur_data = b.load(data_p2, name="old.data");
     need_grow = b.icmp_unsigned(">=", cur_len, cur_cap, name="need.grow");
     _grow_br = b.cbranch(need_grow, grow_bb, store_bb);
-    # Growth doubles cap, so the grow edge is taken at most once per
-    # ~cap appends; the weights keep the cold path out of the hot loop.
+
     if isinstance(_grow_br, ir.PredictableInstr) {
         _grow_br.set_weights([1, 2000]);
     }
@@ -82,8 +81,7 @@ impl NaIRGenPass._emit_list_helpers(elem_type_name: str, elem_type: ir.Type) -> 
     (_new_data, _new_cap) = self._emit_grow_array(
         b, cur_data, elem_type, cur_len, cur_cap
     );
-    # Header stores go after the allocation/copy/free calls so LLVM can
-    # prove they are the only writes to the header in this block.
+
     _cap_g_st = b.store(_new_cap, cap_p2);
     _data_g_st = b.store(_new_data, data_p2);
     b.branch(store_bb);
@@ -829,8 +827,7 @@ impl NaIRGenPass._emit_aos_list_helpers(tname: str) -> ir.Type {
     _a_br = b.cbranch(
         b.icmp_signed(">=", _a_len, _a_cap, name="a.full"), _a_grow, _a_store
     );
-    # Same cold-grow shape as the dense append: doubling makes the grow
-    # edge rare, so keep it out of the hot loop.
+
     if isinstance(_a_br, ir.PredictableInstr) {
         _a_br.set_weights([1, 2000]);
     }

@@ -957,14 +957,7 @@ impl NaIRGenPass._container_hdr_scope -> (object | None) {
     if self.llvm_module is None {
         return None;
     }
-    # Scoped-noalias domain for container header fields (len/cap/data)
-    # versus element data buffers. The buffer is always a distinct
-    # allocation from the header struct, so accesses through the data
-    # pointer can never alias header fields; tagging header accesses
-    # with !alias.scope and buffer accesses with !noalias lets LLVM
-    # keep the header fields in SSA values across append loops.
-    # Untagged accesses stay conservative: missing tags only lose
-    # optimization, never correctness.
+
     _mod = self.llvm_module;
     _domain = _mod.add_metadata(["jac.container.hdr"]);
     _scope = _mod.add_metadata(["jac.container.hdr.scope", _domain]);
