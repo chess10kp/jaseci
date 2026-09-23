@@ -60,6 +60,8 @@ glob _MAXCP: int = 1114111;
 
 glob _ESCAPE_SPECIAL: str = "()[]{}?*+-|^$\\.&~# \t\n\r\x0b\x0c";
 
+import from _re_posix_native { posix_compile, posix_exec, pm_i32 }
+
 
 def _isdig(c: int) -> bool {
     return c >= 48 and c <= 57;
@@ -1620,12 +1622,175 @@ obj:pub Match {
 }
 
 
+def _posix_translate(pat: str, flags: int) -> (str | None) {
+    if flags & (TEMPLATE | LOCALE | MULTILINE | DOTALL | VERBOSE) {
+        return None;
+    }
+    pb: bytes = pat.encode();
+    n: int = len(pb);
+    out: str = "";
+    i: int = 0;
+    inclass: bool = False;
+    class_first: bool = False;
+    prev_quant: bool = False;
+    while i < n {
+        c: int = pb[i];
+        if inclass {
+            if c == 92 or c == 91 {
+                return None;
+            }
+            if c == 93 and not class_first {
+                inclass = False;
+            }
+            out += pat[i:i + 1];
+            class_first = False;
+            i += 1;
+            continue;
+        }
+        if c == 92 {
+            if i + 1 >= n {
+                return None;
+            }
+            e: int = pb[i + 1];
+            if e == 100 {
+                out += "[0-9]";
+            } elif e == 68 {
+                out += "[^0-9]";
+            } elif e == 119 or e == 87 or e == 115 or e == 83 {
+                out += pat[i:i + 2];
+            } elif e == 110 {
+                out += "\n";
+            } elif e == 116 {
+                out += "\t";
+            } elif e == 114 {
+                out += "\r";
+            } elif e == 102 {
+                out += "\x0c";
+            } elif e == 118 {
+                out += "\x0b";
+            } elif e == 97 {
+                out += "\x07";
+            } elif (e >= 33 and e <= 47)
+                or (e >= 58 and e <= 64)
+                or (e >= 91 and e <= 96)
+                or (e >= 123 and e <= 126) {
+                out += "[";
+                out += pat[i + 1:i + 2];
+                out += "]";
+            } else {
+                return None;
+            }
+            i += 2;
+            prev_quant = False;
+            continue;
+        }
+        if c == 124 or c == 94 or c == 36 {
+            return None;
+        }
+        if c == 46 {
+            out += "[^\n]";
+            i += 1;
+            prev_quant = False;
+            continue;
+        }
+        if c == 40 {
+            if i + 1 < n and pb[i + 1] == 63 {
+                return None;
+            }
+            out += "(";
+            i += 1;
+            prev_quant = False;
+            continue;
+        }
+        if c == 123 {
+            j: int = i + 1;
+            if j < n and pb[j] == 44 {
+                k: int = j + 1;
+                ok: bool = True;
+                while k < n and pb[k] != 125 {
+                    if not _isdig(pb[k]) {
+                        ok = False;
+                        break;
+                    }
+                    k += 1;
+                }
+                if not ok or k >= n or k == j + 1 {
+                    return None;
+                }
+                out += "{0";
+                out += pat[j:k + 1];
+                i = k + 1;
+                prev_quant = True;
+                continue;
+            }
+            k2: int = j;
+            ndig: int = 0;
+            ncomma: int = 0;
+            ok2: bool = True;
+            while k2 < n and pb[k2] != 125 {
+                ch2: int = pb[k2];
+                if _isdig(ch2) {
+                    ndig += 1;
+                } elif ch2 == 44 {
+                    ncomma += 1;
+                    if ncomma > 1 {
+                        ok2 = False;
+                        break;
+                    }
+                } else {
+                    ok2 = False;
+                    break;
+                }
+                k2 += 1;
+            }
+            if not ok2 or k2 >= n or ndig == 0 {
+                return None;
+            }
+            out += pat[i:k2 + 1];
+            i = k2 + 1;
+            prev_quant = True;
+            continue;
+        }
+        if c == 42 or c == 43 or c == 63 {
+            if prev_quant {
+                return None;
+            }
+            out += pat[i:i + 1];
+            i += 1;
+            prev_quant = True;
+            continue;
+        }
+        if c == 91 {
+            inclass = True;
+            class_first = True;
+            out += "[";
+            i += 1;
+            if i < n and pb[i] == 94 {
+                out += "^";
+                i += 1;
+            }
+            prev_quant = False;
+            continue;
+        }
+        out += pat[i:i + 1];
+        i += 1;
+        prev_quant = False;
+    }
+    if inclass {
+        return None;
+    }
+    return out;
+}
+
+
 obj:pub Pattern {
     has _re: _Re,
         pattern: str = "",
         flags: int = 0,
         groups: int = 0,
-        groupindex: dict[str, int] = {};
+        groupindex: dict[str, int] = {},
+        _preg: bytes = b"",
+        _posix: bool = False;
 
     def init(pattern: str, flags: int = 0) {
         self.pattern = pattern;
@@ -1633,6 +1798,32 @@ obj:pub Pattern {
         self._re = _compile_re(pattern, flags);
         self.groups = self._re.ngroups;
         self.groupindex = self._re.names;
+        ep: (str | None) = _posix_translate(pattern, flags);
+        if ep is not None {
+            preg: bytes = posix_compile(ep, (flags & IGNORECASE) != 0);
+            if len(preg) > 0 {
+                self._preg = preg;
+                self._posix = True;
+            }
+        }
+    }
+
+    def _pm_slots(pm: bytes, base: int) -> list[int] {
+        slots: list[int] = [];
+        g: int = 0;
+        while g <= self.groups {
+            so: int = pm_i32(pm, g * 2);
+            eo: int = pm_i32(pm, g * 2 + 1);
+            if so < 0 or eo < so {
+                slots.append(-1);
+                slots.append(-1);
+            } else {
+                slots.append(base + so);
+                slots.append(base + eo);
+            }
+            g += 1;
+        }
+        return slots;
     }
 
     def _scan_from(st: _St, start: int) -> int {
@@ -1652,6 +1843,13 @@ obj:pub Pattern {
     }
 
     def _search_from(string: str, start: int, endpos: int) -> (Match | None) {
+        if self._posix {
+            pm: bytes = posix_exec(self._preg, string[start:endpos], self.groups + 1);
+            if len(pm) == 0 {
+                return None;
+            }
+            return Match(self._re, string, start, endpos, self._pm_slots(pm, start));
+        }
         st: _St = _new_st(string, endpos, self._re);
         r: int = self._scan_from(st, start);
         if r < 0 {
@@ -1676,6 +1874,13 @@ obj:pub Pattern {
         endpos = b[1];
         if pos > endpos {
             return None;
+        }
+        if self._posix {
+            pm: bytes = posix_exec(self._preg, string[pos:endpos], self.groups + 1);
+            if len(pm) == 0 or pm_i32(pm, 0) != 0 {
+                return None;
+            }
+            return Match(self._re, string, pos, endpos, self._pm_slots(pm, pos));
         }
         st: _St = _new_st(string, endpos, self._re);
         r: int = _run(self._re, st, 0, pos);
@@ -1704,6 +1909,24 @@ obj:pub Pattern {
         pos = b[0];
         endpos = b[1];
         out: list[Match] = [];
+        if self._posix {
+            p: int = pos;
+            while p <= endpos {
+                pm: bytes = posix_exec(self._preg, string[p:endpos], self.groups + 1);
+                if len(pm) == 0 {
+                    break;
+                }
+                m2: Match = Match(self._re, string, pos, endpos, self._pm_slots(pm, p));
+                out.append(m2);
+                nxt: int = p + pm_i32(pm, 1);
+                if nxt > p {
+                    p = nxt;
+                } else {
+                    p = nxt + 1;
+                }
+            }
+            return out;
+        }
         st: _St = _new_st(string, endpos, self._re);
         p: int = pos;
         while p <= endpos {
@@ -1732,6 +1955,34 @@ obj:pub Pattern {
         pos = b[0];
         endpos = b[1];
         out: list[str] = [];
+        if self._posix {
+            p: int = pos;
+            while p <= endpos {
+                pm: bytes = posix_exec(self._preg, string[p:endpos], self.groups + 1);
+                if len(pm) == 0 {
+                    break;
+                }
+                slots: list[int] = self._pm_slots(pm, p);
+                if self._re.ngroups == 0 {
+                    out.append(string[slots[0]:slots[1]]);
+                } else {
+                    lo: int = slots[2];
+                    hi: int = slots[3];
+                    if lo < 0 or hi < lo {
+                        out.append("");
+                    } else {
+                        out.append(string[lo:hi]);
+                    }
+                }
+                nxt: int = p + pm_i32(pm, 1);
+                if nxt > p {
+                    p = nxt;
+                } else {
+                    p = nxt + 1;
+                }
+            }
+            return out;
+        }
         st: _St = _new_st(string, endpos, self._re);
         p: int = pos;
         while p <= endpos {
