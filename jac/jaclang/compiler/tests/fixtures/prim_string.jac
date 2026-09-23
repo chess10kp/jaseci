@@ -18,8 +18,9 @@ import from string { capwords, digits, hexdigits, whitespace, Template }
 
 def string_py -> dict[any, any] {
     suberr: str = "no raise";
+    ma: dict[str, any] = {"a": "1"};
     try {
-        Template("$nope").substitute({"a": "1"});
+        Template("$nope").substitute(ma);
     } except KeyError {
         suberr = "KeyError";
     }
@@ -31,6 +32,9 @@ def string_py -> dict[any, any] {
     }
     ids: list[str] = Template("$a $b $a ${c} $$d").get_identifiers();
     m: dict[str, any] = {"n": 42};
+    m1: dict[str, any] = {"name": "W", "x": "1"};
+    m3: dict[str, any] = {"b": "z"};
+    me: dict[str, any] = {};
     return {
         "digs": digits,
         "hexn": len(hexdigits),
@@ -39,11 +43,9 @@ def string_py -> dict[any, any] {
         "cap2": capwords("a,b,,c", ","),
         "cap3": capwords("they're bill's"),
         "caperr": caperr,
-        "sub1": Template("Hello $name, ${x}y $$ $missing").safe_substitute(
-            {"name": "W", "x": "1"}
-        ),
+        "sub1": Template("Hello $name, ${x}y $$ $missing").safe_substitute(m1),
         "sub2": Template("$n").substitute(m),
-        "sub3": Template("A${b}C").substitute({"b": "z"}),
+        "sub3": Template("A${b}C").substitute(m3),
         "suberr": suberr,
         "valid1": Template("a $b").is_valid(),
         "valid2": Template("a $").is_valid(),
@@ -51,10 +53,10 @@ def string_py -> dict[any, any] {
         "ids0": ids[0],
         "ids1": ids[1],
         "idsn": len(ids),
-        "lit1": Template("$").safe_substitute({}),
-        "lit2": Template("${unclosed").safe_substitute({}),
-        "lit3": Template("$1x").safe_substitute({}),
-        "lit4": Template("x$y").safe_substitute({})
+        "lit1": Template("$").safe_substitute(me),
+        "lit2": Template("${unclosed").safe_substitute(me),
+        "lit3": Template("$1x").safe_substitute(me),
+        "lit4": Template("x$y").safe_substitute(me)
     };
 }
 
@@ -66,8 +68,9 @@ def string_cl -> dict[any, any] {
 
 def string_na -> dict[str, any] {
     suberr: str = "no raise";
+    ma: dict[str, any] = {"a": "1"};
     try {
-        Template("$nope").substitute({"a": "1"});
+        Template("$nope").substitute(ma);
     } except KeyError {
         suberr = "KeyError";
     }
@@ -79,6 +82,9 @@ def string_na -> dict[str, any] {
     }
     ids: list[str] = Template("$a $b $a ${c} $$d").get_identifiers();
     m: dict[str, any] = {"n": 42};
+    m1: dict[str, any] = {"name": "W", "x": "1"};
+    m3: dict[str, any] = {"b": "z"};
+    me: dict[str, any] = {};
     return {
         "digs": digits,
         "hexn": len(hexdigits),
@@ -87,11 +93,9 @@ def string_na -> dict[str, any] {
         "cap2": capwords("a,b,,c", ","),
         "cap3": capwords("they're bill's"),
         "caperr": caperr,
-        "sub1": Template("Hello $name, ${x}y $$ $missing").safe_substitute(
-            {"name": "W", "x": "1"}
-        ),
+        "sub1": Template("Hello $name, ${x}y $$ $missing").safe_substitute(m1),
         "sub2": Template("$n").substitute(m),
-        "sub3": Template("A${b}C").substitute({"b": "z"}),
+        "sub3": Template("A${b}C").substitute(m3),
         "suberr": suberr,
         "valid1": Template("a $b").is_valid(),
         "valid2": Template("a $").is_valid(),
@@ -99,9 +103,9 @@ def string_na -> dict[str, any] {
         "ids0": ids[0],
         "ids1": ids[1],
         "idsn": len(ids),
-        "lit1": Template("$").safe_substitute({}),
-        "lit2": Template("${unclosed").safe_substitute({}),
-        "lit3": Template("$1x").safe_substitute({}),
-        "lit4": Template("x$y").safe_substitute({})
+        "lit1": Template("$").safe_substitute(me),
+        "lit2": Template("${unclosed").safe_substitute(me),
+        "lit3": Template("$1x").safe_substitute(me),
+        "lit4": Template("x$y").safe_substitute(me)
     };
 }
