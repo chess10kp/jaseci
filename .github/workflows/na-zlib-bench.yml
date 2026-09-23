@@ -57,6 +57,9 @@ jobs:
             echo
             echo "=== lane: native (na_stdlib) ==="
             jac/zig-out/bin/jac run -b native scripts/bench_zlib_gzip.jac
+            echo
+            echo "=== lane: raw libz FFI floor (native) ==="
+            jac/zig-out/bin/jac run -b native scripts/bench_zlib_ffi_probe.jac
           } 2>&1 | tee bench-results.txt
 
       - name: Upload results
