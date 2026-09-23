@@ -145,6 +145,16 @@ def _in_pairs(pairs: list[int], c: int) -> bool {
 }
 
 
+def _name_index(names: dict[str, int], nm: str) -> int {
+    for k in names {
+        if k == nm {
+            return names[k];
+        }
+    }
+    return -1;
+}
+
+
 obj _Node {
     has kind: int = 0,
         ch: int = 0,
@@ -525,8 +535,8 @@ obj _P {
                     self._err("bad character in group name '" + nm + "'", nstart);
                 }
                 self.i += 1;
-                if nm in self.names {
-                    old: int = self.names[nm];
+                old: int = _name_index(self.names, nm);
+                if old >= 0 {
                     self._err(
                         "redefinition of group name '"
                             + nm
@@ -564,12 +574,13 @@ obj _P {
                 }
                 nm2: str = self.src[ns2:self.i];
                 self.i += 1;
-                if not (nm2 in self.names) {
+                gnum2: int = _name_index(self.names, nm2);
+                if gnum2 < 0 {
                     self._err("unknown group name '" + nm2 + "'", ns2);
                 }
                 nd = _Node();
                 nd.kind = _K_BACKREF;
-                nd.lo = self.names[nm2];
+                nd.lo = gnum2;
                 return nd;
             }
             self._err("unknown extension ?P", p0 + 1);
@@ -1522,8 +1533,9 @@ obj:pub Match {
         }
         if isinstance(i, str) {
             sv: str = i;
-            if sv in self._re.names {
-                return self._re.names[sv];
+            gn: int = _name_index(self._re.names, sv);
+            if gn >= 0 {
+                return gn;
             }
             raise IndexError("no such group");
         }
@@ -1888,9 +1900,8 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
                 }
             }
             if num < 0 {
-                if nm in re.names {
-                    num = re.names[nm];
-                } else {
+                num = _name_index(re.names, nm);
+                if num < 0 {
                     raise ValueError(
                         "unknown group name '"
                             + nm
