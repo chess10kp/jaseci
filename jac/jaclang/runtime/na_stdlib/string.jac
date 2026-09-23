@@ -19,14 +19,17 @@ def:pub capwords(s: str, sep: (str | None) = None) -> str {
         parts = s.split(sepv);
         joiner = sepv;
     }
-    out: list[str] = [];
+    out: str = "";
     i: int = 0;
     n: int = len(parts);
     while i < n {
-        out.append(parts[i].capitalize());
+        if i > 0 {
+            out += joiner;
+        }
+        out += parts[i].capitalize();
         i += 1;
     }
-    return joiner.join(out);
+    return out;
 }
 
 
