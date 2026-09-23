@@ -140,7 +140,7 @@ def bench_robot_parse(n: int) -> tuple[float, int] {
     while i < n {
         rp = urllib.robotparser.RobotFileParser("http://ex.com/robots.txt");
         rp.parse(lines);
-        acc += len(rp.entries);
+        acc += len(rp.site_maps() or []);
         i += 1;
     }
     return (time.perf_counter() - t0, acc);
