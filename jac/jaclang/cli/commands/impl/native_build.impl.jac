@@ -8,6 +8,8 @@ import from jaclang.compiler.backends.native.floor {
 }
 import os;
 import sys;
+import json;
+import time;
 
 import from jaclang.cli.console { console }
 
@@ -15,6 +17,56 @@ import from jaclang.compiler.backends.native.entry_points {
     finalize_native_ir,
     validate_native_application
 }
+import type from jaclang.compiler.driver.program { JacProgram }
+
+def _tmark(stages: dict[str, float], name: str, start: float) -> float {
+    now = time.perf_counter();
+    stages[name] = now - start;
+    return now;
+}
+
+
+def _emit_build_timing(
+    spec: str,
+    source: str,
+    memory: str,
+    stages: dict[str, float],
+    prog: JacProgram,
+    total: float,
+    extra: dict[str, any]
+) -> None {
+    if not spec {
+        return;
+    }
+    doc: dict[str, any] = {
+        "source": source,
+        "memory": memory,
+        "wall_seconds": total,
+        "stages": stages
+    };
+    for (k, v) in extra.items() {
+        doc[k] = v;
+    }
+    try {
+        import from operator { itemgetter }
+        doc["phases"] = dict(prog.analysis.phase_time);
+        top = sorted(prog.analysis.pass_time.items(), key=itemgetter(1), reverse=True);
+        doc["passes"] = {k: v for (k, v) in top[:25]};
+    } except Exception {}
+    line = "JAC_BUILD_TIMING " + json.dumps(doc, sort_keys=True);
+    if spec in ("1", "true", "yes", "stdout", "-") {
+        sys.stderr.write(line + "\n");
+    } else {
+        try {
+            with open(spec, "a") as tf {
+                tf.write(line + "\n");
+            }
+        } except Exception {
+            sys.stderr.write(line + "\n");
+        }
+    }
+}
+
 
 impl native_build(
     filename: str,
@@ -31,6 +83,11 @@ impl native_build(
         base_stem
     }
     import from jaclang.project { get_config }
+
+    _timing_spec = os.environ.get("JAC_BUILD_TIMING", "");
+    _t0 = time.perf_counter();
+    _stages: dict[str, float] = {};
+    _t = _t0;
 
     _cfg = get_config();
     _mem_cfg = _cfg.memory if _cfg else None;
@@ -121,6 +178,7 @@ impl native_build(
         traceback.print_exc();
         return 1;
     }
+    _t = _tmark(_stages, "compile_pipeline", _t);
 
     if prog.errors_had {
         for _err in prog.errors_had {
@@ -170,6 +228,7 @@ impl native_build(
             traceback.print_exc();
             return 1;
         }
+        _t = _tmark(_stages, "wasm_emit", _t);
         with open(output, "wb") as _wf {
             _wf.write(wasm_bytes);
         }
@@ -177,6 +236,15 @@ impl native_build(
         console.print(
             "  Instantiate with the `jac_host1` host object (see @jac/wasm_host)"
             " plus an `env` object for any FFI the app declares."
+        );
+        _emit_build_timing(
+            _timing_spec,
+            filename,
+            memory,
+            _stages,
+            prog,
+            time.perf_counter() - _t0,
+            {"wasm_bytes": len(wasm_bytes)}
         );
         return 0;
     }
@@ -187,6 +255,7 @@ impl native_build(
         console.error(str(error));
         return 1;
     }
+    _t = _tmark(_stages, "validate_ir", _t);
 
     console.print("  LLVM IR generated successfully.");
 
@@ -204,6 +273,7 @@ impl native_build(
     (archive_members, _floor_handled) = collect_floor_archives(
         clib_paths or [], ir_module.gen._clib_symbol_lib, triple, is_macos
     );
+    _t = _tmark(_stages, "floor_archives", _t);
     if archive_members {
         console.print(
             f"  Static-linking {len(archive_members)} floor archive member(s)."
@@ -232,6 +302,7 @@ impl native_build(
         is_macos,
         _static_musl
     );
+    _t = _tmark(_stages, "finalize_ir", _t);
     if shared {
         init_funcs = ["__jac_shared_init"];
         for _s in ir_module.gen._exported_symbols {
@@ -287,6 +358,7 @@ impl native_build(
         console.error(f"LLVM IR verification failed: {e}");
         return 1;
     }
+    _t = _tmark(_stages, "llvm_parse_verify", _t);
 
     _target_ovr = options.native_target or "";
     _llvm_target = (
@@ -303,12 +375,14 @@ impl native_build(
     }
     assert isinstance(_tm, llvm.TargetMachine);
     target_machine = _tm;
+    _t = _tmark(_stages, "target_machine", _t);
 
     _opt_level = int(options.opt_level or 0);
     _dump_path = options.dump_ir_path or "";
 
     import from jaclang.compiler.backends.native.shared_emit { optimize_native_module }
     optimize_native_module(mod, target_machine, _opt_level, internalize=not shared);
+    _t = _tmark(_stages, "llvm_optimize", _t);
 
     if _dump_path {
         with open(_dump_path, "w") as _df {
@@ -319,6 +393,7 @@ impl native_build(
     obj_bytes = target_machine.emit_object(mod);
     assert isinstance(obj_bytes, bytes);
     console.print(f"  Object code emitted ({len(obj_bytes)} bytes).");
+    _t = _tmark(_stages, "emit_object", _t);
 
     if is_windows {
         import from jaclang.compiler.backends.native.pe_linker { PeLinker }
@@ -334,6 +409,7 @@ impl native_build(
                 init_funcs=init_funcs,
                 soname=os.path.basename(output)
             );
+            _t = _tmark(_stages, "link", _t);
         } except Exception as e {
             console.error(f"PE linking failed: {e}");
             import traceback;
@@ -359,6 +435,7 @@ impl native_build(
                 soname=os.path.basename(output),
                 archive_members=archive_members
             );
+            _t = _tmark(_stages, "link", _t);
         } except Exception as e {
             console.error(f"Mach-O linking failed: {e}");
             import traceback;
@@ -389,6 +466,7 @@ impl native_build(
                 f"{len(_crt_objects)} crt object(s)."
             );
         }
+        _t = _tmark(_stages, "musl_collect", _t);
         try {
             success = ElfLinker.link(
                 obj_bytes=obj_bytes,
@@ -402,6 +480,7 @@ impl native_build(
                 archive_members=archive_members,
                 static_link=_static_musl
             );
+            _t = _tmark(_stages, "link", _t);
         } except Exception as e {
             console.error(f"ELF linking failed: {e}");
             import traceback;
@@ -432,6 +511,21 @@ impl native_build(
         console.print(f"  Binary written to {output} ({file_size} bytes).");
         console.print(f"  Run with: ./{output}");
     }
+    _emit_build_timing(
+        _timing_spec,
+        filename,
+        memory,
+        _stages,
+        prog,
+        time.perf_counter() - _t0,
+        {
+            "output": output,
+            "obj_bytes": len(obj_bytes),
+            "binary_bytes": file_size,
+            "archive_members": len(archive_members),
+            "export_symbols": len(export_symbols)
+        }
+    );
     return 0;
 }
 
