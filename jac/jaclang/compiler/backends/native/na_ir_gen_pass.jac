@@ -1115,7 +1115,8 @@ walker NaIRGenPass {
         key_val: ir.Value,
         key_type_name: str,
         val_type_name: str,
-        key_node: (uni.UniNode | None) = None
+        key_node: (uni.UniNode | None) = None,
+        collection: (uni.UniNode | None) = None
     ) -> (ir.Value | None);
 
     def _codegen_dict_set(
@@ -1737,6 +1738,17 @@ walker NaIRGenPass {
         value_node: (uni.Expr | None) = None
     ) -> None;
 
+    def _emit_field_store(
+        nd: uni.UniNode,
+        obj_val: ir.Value,
+        type_name: str,
+        field_name: str,
+        value: ir.Value,
+        skip_narrow_coerce: bool = False,
+        value_node: (uni.Expr | None) = None,
+        union_parts: (list[str] | None) = None
+    ) -> None;
+
     def _read_field_or_refuse(
         nd: uni.UniNode, obj_val: ir.Value, field_name: str, arch_name: str
     ) -> (ir.Value | None);
@@ -1808,6 +1820,10 @@ walker NaIRGenPass {
     def _codegen_disengage(nd: uni.DisengageStmt) -> None;
     def _codegen_report(nd: uni.ReportStmt) -> None;
     def _codegen_connect(nd: uni.BinaryExpr) -> (ir.Value | None);
+    def _osp_connect_assign(
+        co: uni.ConnectOp, edge_obj: ir.Value, edge_arch: (str | None)
+    ) -> bool;
+
     def _codegen_disconnect(nd: uni.BinaryExpr) -> (ir.Value | None);
     def _osp_disc_list_operand(expr: (uni.UniNode | None)) -> bool;
     def _codegen_edge_ref_trailer(nd: uni.EdgeRefTrailer) -> (ir.Value | None);
@@ -2113,7 +2129,8 @@ walker NaIRGenPass {
         range_start: (ir.Value | None) = None,
         elem_cast: (ir.Type | None) = None,
         unpack_target: (uni.TupleVal | None) = None,
-        range_step: (ir.Value | None) = None
+        range_step: (ir.Value | None) = None,
+        items_source: (uni.Expr | None) = None
     ) -> None;
 
     def _codegen_iter_for(nd: uni.IterForStmt) -> None;
@@ -2335,10 +2352,16 @@ walker NaIRGenPass {
         value: (ir.Value | None), collection: uni.UniNode
     ) -> (ir.Value | None);
 
+    def _restore_dict_read(
+        value: ir.Value, collection: (uni.UniNode | None)
+    ) -> ir.Value;
+
+    def _dict_read_llvm(storage: ir.Type, collection: (uni.UniNode | None)) -> ir.Type;
     def _list_elem_llvm_of(expr: (uni.UniNode | None)) -> (ir.Type | None);
+    def _dict_val_llvm_of(expr: (uni.UniNode | None)) -> (ir.Type | None);
     def _iter_elem_llvm_of(expr: (uni.UniNode | None)) -> (ir.Type | None);
     def _typed_elem_llvm_of(
-        expr: (uni.UniNode | None), prefix: str
+        expr: (uni.UniNode | None), prefix: str, arg_index: int = 0
     ) -> (ir.Type | None);
 
     def _static_elem_llvm_of(expr: (uni.UniNode | None)) -> (ir.Type | None);
