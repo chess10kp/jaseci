@@ -138,7 +138,7 @@ test "header scope is shared across get set and len helpers" {
 test "churn returns the same answer as the sv runtime" {
     (eng, _) = _compile();
     sv = _sv_module();
-    churn_sv = sv.churn;
+    churn_sv = getattr(sv, "churn");
     for n in [0, 1, 63, 64, 65, 500, 5000] {
         native = get_func(eng, "churn", ctypes.c_int64, ctypes.c_int64)(n);
         expected = churn_sv(n);
@@ -150,7 +150,7 @@ test "churn returns the same answer as the sv runtime" {
 test "managed-element churn returns the same answer as the sv runtime" {
     (eng, _) = _compile();
     sv = _sv_module();
-    churn_sv = sv.churn_str;
+    churn_sv = getattr(sv, "churn_str");
     for n in [0, 1, 63, 64, 65, 500, 5000] {
         native = get_func(eng, "churn_str", ctypes.c_int64, ctypes.c_int64)(n);
         expected = churn_sv(n);
