@@ -7,7 +7,8 @@ import from c { def ftell(stream: int) -> i64;  }
 import from _errno_native { last_errno, raise_os_error }
 
 glob _SEEK_SET: int = 0,
-     _SEEK_END: int = 2;
+     _SEEK_END: int = 2,
+     _PREALLOC_CAP: int = 67108864;
 
 def:pub read_file_bytes(path: str) -> bytes {
     if "\x00" in path {
@@ -26,6 +27,9 @@ def:pub read_file_bytes(path: str) -> bytes {
             }
             if end > 0 {
                 hint = end;
+                if hint > _PREALLOC_CAP {
+                    hint = _PREALLOC_CAP;
+                }
             }
         }
         result = bytearray();
