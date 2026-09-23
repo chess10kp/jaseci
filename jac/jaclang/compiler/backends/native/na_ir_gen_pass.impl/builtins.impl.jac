@@ -1,10 +1,11 @@
 impl NaIRGenPass._get_or_declare_extern(
-    name: str, ret_type: ir.Type, arg_types: list[ir.Type], var_arg: bool = False,
-    symbol: str = ""
+    name: str,
+    ret_type: ir.Type,
+    arg_types: list[ir.Type],
+    var_arg: bool = False,
+    symbol: str = "",
 ) -> ir.Function {
-    # `name` keys self.extern_funcs (semantic side); `symbol` is the emitted
-    # libc symbol when it differs (e.g. setjmp -> _setjmp).
-    emit = symbol if symbol else name;
+    emit = symbol or name;
     wanted = ir.FunctionType(ret_type, arg_types, var_arg=var_arg);
     existing: (ir.Function | None) = self.extern_funcs.get(name);
     if existing is None {
