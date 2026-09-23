@@ -303,7 +303,7 @@ def _insort(hs: list[BaseHandler], h: BaseHandler) {
 
 
 obj:pub BaseHandler {
-    has:pub parent: OpenerDirector,
+    has:pub parent: any = None,
         handler_order: int = 500,
         open_kinds: list[str] = [],
         error_codes: list[int] = [],
@@ -1017,7 +1017,7 @@ obj:pub HTTPPasswordMgrWithPriorAuth(HTTPPasswordMgrWithDefaultRealm) {
 
 
 obj:pub AbstractBasicAuthHandler {
-    has:pub passwd: HTTPPasswordMgr,
+    has:pub passwd: any = None,
         retry_count: int = 0,
         max_retries: int = 5;
 
@@ -1672,15 +1672,8 @@ def _is_local_authority(authority: str, resolve: bool) -> bool {
     if not resolve {
         return False;
     }
-    try {
-        addrs = resolve_all(authority, "0");
-        if len(addrs) > 0 {
-            return True;
-        }
-    } except Exception {
-        return False;
-    }
-    return False;
+    r: tuple[(list[bytes], int)] = resolve_all(authority, "0");
+    return r[1] == 0 and len(r[0]) > 0;
 }
 
 
@@ -1742,15 +1735,46 @@ def:pub noheaders -> Headers {
 }
 
 
+def _environ_pairs -> dict[str, str] {
+    env: dict[str, str] = {};
+    raw = b"";
+    try {
+        raw = read_file_bytes("/proc/self/environ");
+    } except OSError {
+        return env;
+    }
+    n = len(raw);
+    start = 0;
+    i = 0;
+    while i <= n {
+        if i == n or raw[i] == 0 {
+            if i > start {
+                ent = raw[start:i];
+                eq = 0;
+                while eq < len(ent) and ent[eq] != 61 {
+                    eq += 1;
+                }
+                if eq > 0 and eq < len(ent) {
+                    env[ent[0:eq].decode()] = ent[eq + 1:].decode();
+                }
+            }
+            start = i + 1;
+        }
+        i += 1;
+    }
+    return env;
+}
+
+
 def:pub getproxies_environment -> dict[str, str] {
     proxies: dict[str, str] = {};
     environment: list[tuple[(str, str, str)]] = [];
-    for name in os.environ.keys() {
+    env = _environ_pairs();
+    for name in env.keys() {
         if len(name) > 5
             and name[len(name) - 6] == "_"
             and name[len(name) - 5:].lower() == "proxy" {
-            value = os.environ[name];
-            v: str = value;
+            v: str = env[name];
             proxy_name = name[:len(name) - 6].lower();
             environment.append((name, v, proxy_name));
             if len(v) > 0 {
@@ -1758,7 +1782,7 @@ def:pub getproxies_environment -> dict[str, str] {
             }
         }
     }
-    if "REQUEST_METHOD" in os.environ {
+    if "REQUEST_METHOD" in env {
         if "http" in proxies {
             proxies.pop("http");
         }
@@ -1777,11 +1801,12 @@ def:pub getproxies_environment -> dict[str, str] {
 
 
 def:pub proxy_bypass_environment(host: str, proxies: any = None) -> bool {
-    p: dict[str, str];
+    p: dict[str, str] = {};
     if proxies == None {
         p = getproxies_environment();
-    } else {
-        p = proxies;
+    } elif isinstance(proxies, dict) {
+        pd: dict[str, str] = proxies;
+        p = pd;
     }
     if "no" not in p {
         return False;

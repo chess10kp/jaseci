@@ -18,24 +18,26 @@ import urllib.robotparser as urob;
 
 def robot_py -> dict[any, any] {
     rp: any = urob.RobotFileParser("http://ex.com/robots.txt");
-    rp.parse([
-        "# comment line",
-        "User-agent: *",
-        "Disallow: /private",
-        "Allow: /private/pub",
-        "",
-        "User-agent: badbot",
-        "Disallow: /",
-        "Crawl-delay: 5",
-        "Request-rate: 3/10",
-        "",
-        "User-agent: starbot",
-        "Disallow: /*.gif$",
-        "Disallow: /tmp/*",
-        "Disallow: /x$y",  # '$' not at end -> ValueError -> rule dropped
-        "",
-        "Sitemap: http://ex.com/sitemap.xml"
-    ]);
+    rp.parse(
+        [
+            "# comment line",
+            "User-agent: *",
+            "Disallow: /private",
+            "Allow: /private/pub",
+            "",
+            "User-agent: badbot",
+            "Disallow: /",
+            "Crawl-delay: 5",
+            "Request-rate: 3/10",
+            "",
+            "User-agent: starbot",
+            "Disallow: /*.gif$",
+            "Disallow: /tmp/*",
+            "Disallow: /x$y",  # '$' not at end -> ValueError -> rule dropped
+            "",
+            "Sitemap: http://ex.com/sitemap.xml"
+        ]
+    );
     rr: any = rp.request_rate("badbot");
     unread: any = urob.RobotFileParser("http://x/");
     return {
@@ -55,8 +57,8 @@ def robot_py -> dict[any, any] {
         "delay_bot": rp.crawl_delay("bot"),
         "rr_bad": str(rr.requests) + "/" + str(rr.seconds),
         "rr_bot": rp.request_rate("bot"),
-        "sitemaps": rp.site_maps(),
-        "sm_unread": unread.site_maps(),
+        "sitemaps": "|".join(rp.site_maps()),
+        "sm_unread": "|".join(unread.site_maps()),
         "str_has_ua": 1 if "User-agent: badbot" in str(rp) else 0,
         "str_has_rr": 1 if "Request-rate: 3/10" in str(rp) else 0,
         "unread_cf": unread.can_fetch("b", "http://x/p"),
@@ -78,24 +80,26 @@ import from urllib.robotparser { RobotFileParser, RequestRate }
 
 def robot_na -> dict[str, any] {
     rp = RobotFileParser("http://ex.com/robots.txt");
-    rp.parse([
-        "# comment line",
-        "User-agent: *",
-        "Disallow: /private",
-        "Allow: /private/pub",
-        "",
-        "User-agent: badbot",
-        "Disallow: /",
-        "Crawl-delay: 5",
-        "Request-rate: 3/10",
-        "",
-        "User-agent: starbot",
-        "Disallow: /*.gif$",
-        "Disallow: /tmp/*",
-        "Disallow: /x$y",
-        "",
-        "Sitemap: http://ex.com/sitemap.xml"
-    ]);
+    rp.parse(
+        [
+            "# comment line",
+            "User-agent: *",
+            "Disallow: /private",
+            "Allow: /private/pub",
+            "",
+            "User-agent: badbot",
+            "Disallow: /",
+            "Crawl-delay: 5",
+            "Request-rate: 3/10",
+            "",
+            "User-agent: starbot",
+            "Disallow: /*.gif$",
+            "Disallow: /tmp/*",
+            "Disallow: /x$y",
+            "",
+            "Sitemap: http://ex.com/sitemap.xml"
+        ]
+    );
     rr = rp.request_rate("badbot");
     rr_bad = "none";
     if rr != None {
@@ -120,8 +124,8 @@ def robot_na -> dict[str, any] {
         "delay_bot": rp.crawl_delay("bot"),
         "rr_bad": rr_bad,
         "rr_bot": rp.request_rate("bot"),
-        "sitemaps": rp.site_maps(),
-        "sm_unread": unread.site_maps(),
+        "sitemaps": "|".join(rp.site_maps()),
+        "sm_unread": "|".join(unread.site_maps()),
         "str_has_ua": 1 if "User-agent: badbot" in str(rp) else 0,
         "str_has_rr": 1 if "Request-rate: 3/10" in str(rp) else 0,
         "unread_cf": unread.can_fetch("b", "http://x/p"),
