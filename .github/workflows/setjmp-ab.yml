@@ -1,0 +1,180 @@
+# Experimental: controlled A/B for the `_setjmp` exception-frame change.
+#
+# Builds two jacpython binaries that differ ONLY in the setjmp extern symbol
+# (fixed = `_setjmp`, savemask=0; baseline = glibc `setjmp`), then benchmarks
+# them interleaved on a dedicated idle runner (ABAB blocks + strace counts).
+#
+# Not for production CI: ~2-4h of runner time per dispatch.
+
+name: setjmp A/B benchmark
+
+on:
+  push:
+    branches: [bench/setjmp-ab]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [fixed, baseline]
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Check out (fixed = tip with the change, baseline = 35eac7dfa)
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.variant == 'baseline' && '35eac7dfa' || github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Zig 0.16.0
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+          use-cache: false
+
+      - name: Fetch pinned LLVM
+        working-directory: jac
+        run: zig build fetch-llvm --summary all
+
+      - name: Build jacpython binary (${{ matrix.variant }})
+        working-directory: jac
+        env:
+          JACPYTHON: "1"
+        run: zig build build-python --summary all
+
+      - name: Verify variant signature
+        working-directory: jac
+        run: |
+          set -euo pipefail
+          LIB=.python-build/jacpython/linux-x86_64/python/install/lib/libpython3.14.so
+          S=$(objdump -d "$LIB" | grep -c 'call.*<setjmp@plt>' || true)
+          U=$(objdump -d "$LIB" | grep -c 'call.*<_setjmp@plt>' || true)
+          echo "setjmp@plt=$S _setjmp@plt=$U"
+          if [ "${{ matrix.variant }}" = fixed ]; then
+            [ "$U" -gt 500 ] && [ "$S" -eq 0 ]
+          else
+            [ "$S" -gt 500 ] && [ "$U" -eq 0 ]
+          fi
+
+      - name: Upload install tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: pybin-${{ matrix.variant }}
+          path: jac/.python-build/jacpython/linux-x86_64/python/install/
+          retention-days: 3
+
+  bench:
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source tree the compiler lowers
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Download both binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pybin-*
+          path: /tmp
+
+      - name: Stage working install tree (fixed variant)
+        run: |
+          set -euo pipefail
+          mv /tmp/pybin-fixed /tmp/inst_fixed
+          mv /tmp/pybin-baseline /tmp/pybin_baseline
+          /tmp/inst_fixed/bin/python3.14 --version
+
+      - name: Write bench harness
+        run: |
+          cat > /tmp/bench_compile.py <<'PYEOF'
+          """One-process compile benchmark: fresh JacProgram per iteration."""
+          import statistics
+          import sys
+          import time
+
+          import jaclang  # noqa: F401
+          from jaclang.compiler.driver.compile_options import CompileOptions
+          from jaclang.compiler.driver.program import JacProgram
+
+          target = sys.argv[1]
+          n = int(sys.argv[2])
+          opts = CompileOptions(no_ir_cache=True).for_symbols()
+          times = []
+          for i in range(n + 3):
+              prog = JacProgram()
+              t0 = time.perf_counter()
+              mod = prog.compile(file_path=target, options=opts)
+              dt = (time.perf_counter() - t0) * 1000.0
+              if i == 0 and mod is None:
+                  print("FATAL: no module produced")
+                  sys.exit(1)
+              if prog.errors_had:
+                  print(f"FATAL: {len(prog.errors_had)} compile errors on iteration {i}")
+                  for e in prog.errors_had[:3]:
+                      print(e.pretty_print())
+                  sys.exit(1)
+              if i >= 3:
+                  times.append(dt)
+          times.sort()
+          print(
+              f"n={len(times)} median={statistics.median(times):.2f}ms "
+              f"min={times[0]:.2f}ms max={times[-1]:.2f}ms"
+          )
+          PYEOF
+          printf 'with entry { x: int = 42; print(x); }\n' > /tmp/tiny.jac
+          cat > /tmp/abab.sh <<'SHEOF'
+          #!/bin/bash
+          # ABAB wall benchmark: swap baseline/fixed bin+lib per interleaved block.
+          set -e
+          WS="$GITHUB_WORKSPACE/jac"
+          INST=/tmp/inst_fixed
+          WL=$1; IT=$2; ROUNDS=$3
+          declare -a MED_A MED_B
+          for r in $(seq 1 "$ROUNDS"); do
+            if (( r % 2 == 1 )); then ORDER="A B"; else ORDER="B A"; fi
+            for T in $ORDER; do
+              if [ "$T" = A ]; then SRC=/tmp/inst_fixed; else SRC=/tmp/pybin_baseline; fi
+              cp "$SRC/bin/python3.14" "$INST/bin/python3.14"
+              cp "$SRC/lib/libpython3.14.so" "$INST/lib/libpython3.14.so"
+              OUT=$(cd "$WS" && PYTHONPATH="$WS" "$INST/bin/python3.14" \
+                    /tmp/bench_compile.py "$WL" "$IT" 2>/dev/null | grep -o 'median=[0-9.]*')
+              MED=${OUT#median=}
+              if [ "$T" = A ]; then MED_A+=("$MED"); else MED_B+=("$MED"); fi
+              echo "round $r $T median=${MED}ms"
+            done
+          done
+          cp /tmp/inst_fixed/bin/python3.14 "$INST/bin/python3.14"
+          cp /tmp/inst_fixed/lib/libpython3.14.so "$INST/lib/libpython3.14.so"
+          stat_line() { printf '%s\n' "$@" | sort -n | awk '{a[NR]=$1} END{if(NR%2)print a[(NR+1)/2]; else print (a[NR/2]+a[NR/2+1])/2}'; }
+          echo "A(fixed)    blocks: ${MED_A[*]} -> median=$(stat_line ${MED_A[*]})ms"
+          echo "B(baseline) blocks: ${MED_B[*]} -> median=$(stat_line ${MED_B[*]})ms"
+          SHEOF
+          chmod +x /tmp/abab.sh
+
+      - name: ABAB dataclasses.py (6 rounds x 5 iters)
+        run: /tmp/abab.sh /tmp/inst_fixed/lib/python3.14/dataclasses.py 5 6
+
+      - name: ABAB tiny.jac floor (6 rounds x 10 iters)
+        run: /tmp/abab.sh /tmp/tiny.jac 10 6
+
+      - name: strace rt_sigprocmask counts
+        run: |
+          set -euo pipefail
+          WS="$GITHUB_WORKSPACE/jac"
+          INST=/tmp/inst_fixed
+          for V in fixed baseline; do
+            if [ "$V" = baseline ]; then SRC=/tmp/pybin_baseline; else SRC=/tmp/inst_fixed; fi
+            cp "$SRC/bin/python3.14" "$INST/bin/python3.14"
+            cp "$SRC/lib/libpython3.14.so" "$INST/lib/libpython3.14.so"
+            C=$(cd "$WS" && PYTHONPATH="$WS" strace -f -c -e trace=rt_sigprocmask \
+                "$INST/bin/python3.14" /tmp/bench_compile.py \
+                "$INST/lib/python3.14/dataclasses.py" 5 2>&1 >/dev/null | \
+                grep -E '^\s+[0-9]+\s+rt_sigprocmask' | awk '{print $NF}' | tail -1)
+            echo "$V rt_sigprocmask calls: $C"
+          done
+          cp /tmp/inst_fixed/bin/python3.14 "$INST/bin/python3.14"
+          cp /tmp/inst_fixed/lib/libpython3.14.so "$INST/lib/libpython3.14.so"
