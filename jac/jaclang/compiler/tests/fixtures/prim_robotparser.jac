@@ -16,8 +16,9 @@ sitemaps, agent substring matching, and the implicit /robots.txt allow.
 import urllib.robotparser as urob;
 
 
-def _robots -> any {
-    return [
+def robot_py -> dict[any, any] {
+    rp: any = urob.RobotFileParser("http://ex.com/robots.txt");
+    rp.parse([
         "# comment line",
         "User-agent: *",
         "Disallow: /private",
@@ -34,13 +35,7 @@ def _robots -> any {
         "Disallow: /x$y",  # '$' not at end -> ValueError -> rule dropped
         "",
         "Sitemap: http://ex.com/sitemap.xml"
-    ];
-}
-
-
-def robot_py -> dict[any, any] {
-    rp: any = urob.RobotFileParser("http://ex.com/robots.txt");
-    rp.parse(_robots());
+    ]);
     rr: any = rp.request_rate("badbot");
     unread: any = urob.RobotFileParser("http://x/");
     return {
@@ -83,7 +78,24 @@ import from urllib.robotparser { RobotFileParser, RequestRate }
 
 def robot_na -> dict[str, any] {
     rp = RobotFileParser("http://ex.com/robots.txt");
-    rp.parse(_robots());
+    rp.parse([
+        "# comment line",
+        "User-agent: *",
+        "Disallow: /private",
+        "Allow: /private/pub",
+        "",
+        "User-agent: badbot",
+        "Disallow: /",
+        "Crawl-delay: 5",
+        "Request-rate: 3/10",
+        "",
+        "User-agent: starbot",
+        "Disallow: /*.gif$",
+        "Disallow: /tmp/*",
+        "Disallow: /x$y",
+        "",
+        "Sitemap: http://ex.com/sitemap.xml"
+    ]);
     rr = rp.request_rate("badbot");
     rr_bad = "none";
     if rr != None {

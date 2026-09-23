@@ -103,7 +103,7 @@ import from urllib.request {
 }
 
 
-def _fup_na(fup: any) -> str {
+def _fup_na(fup: tuple[((str | None), (str | None))]) -> str {
     a = fup[0];
     b = fup[1];
     if isinstance(a, str) and isinstance(b, str) {
