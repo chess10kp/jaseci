@@ -18,9 +18,6 @@ obj Memory {
         _on_commit: list[Callable] postinit,
         _lock: threading.RLock postinit;
 
-    # An accessor, not a field: subclasses like Session override it, and a
-    # plain `has` field here would let `Session(store=...)` bind a kwarg
-    # the accessor then shadows, silently discarding the injected store.
     has store: (any | None) {
         getter {
             return None;

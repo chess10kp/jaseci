@@ -104,6 +104,7 @@ def forget_database(conn: any, database: str) -> None;
 def list_databases(
     conn: any, prefix: str = DB_PREFIX, with_size: bool = True
 ) -> list[DbRecord];
+
 def load_record(conn: any, database: str) -> (DbRecord | None);
 def drop_database(conn: any, database: str, force: bool = False) -> bool;
 def drop_if_still_dead(conn: any, database: str) -> bool;

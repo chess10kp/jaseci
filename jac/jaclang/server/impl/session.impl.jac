@@ -295,11 +295,14 @@ def _json_default(o: object) -> str {
 }
 
 
-def _persist_hash(anchor: Anchor) -> int {
+def _persist_hash(anchor: Anchor, props: (any | None) = None) -> int {
     import from json { dumps }
     import from jaclang.data.serializer { Serializer }
     try {
-        data = Serializer.serialize(anchor, include_type=True);
+        data = props;
+        if data is None {
+            data = Serializer.serialize(anchor, include_type=True);
+        }
         if isinstance(data, dict) {
             data.pop('edges', None);
         }
@@ -326,10 +329,6 @@ impl Session.postinit -> None {
 
 
 impl Session._runtime_lease -> RuntimeLease {
-    # The cached lease is load-bearing, not incidental memoization:
-    # scratch_lease() computes `reset` at call time and mutates the
-    # process-global scratch state, so a second fetch could lose the
-    # reset decision made for the first.
     with self._lock {
         if self._lease is None {
             self._lease = runtime_for_base(self.base_path or '', self.target_path);
@@ -835,7 +834,6 @@ impl Session._flush_locked(full: bool) -> None {
         } else {
             candidates = list(self._dirty.keys());
         }
-        import from json { dumps }
         import from jaclang.data.serializer { Serializer }
         rows: list[AnchorRow] = [];
         pending: list[tuple[Anchor, int]] = [];
@@ -845,14 +843,10 @@ impl Session._flush_locked(full: bool) -> None {
                 continue;
             }
             props: any = None;
-            h = 0;
             try {
                 props = Serializer.serialize(anchor, include_type=True);
-                if isinstance(props, dict) {
-                    props.pop('edges', None);
-                }
-                h = hash(dumps(props, sort_keys=True));
             } except Exception {}
+            h = _persist_hash(anchor, props);
             if h != 0 and self._flushed_hash.get(id) == h and id not in self._dirty {
                 continue;
             }
