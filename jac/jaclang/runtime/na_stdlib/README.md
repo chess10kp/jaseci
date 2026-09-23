@@ -382,15 +382,42 @@ native layout records the emitted name separately from its source-level key.
   `ProgrammingError`/`IntegrityError`/`DataError`/`NotSupportedError`).
   Parameter binding covers positional `?`, numbered `?N`, named `:name`,
   `@name`, and `$name` (dict params), plus `NULL`/`bool`/`int`/`float`/`str`/
-  `bytes`-blob values; transaction semantics follow CPython's legacy mode
-  (DML opens an implicit transaction, DDL does not; `executescript` commits
-  first). Error parity is class AND `sqlite3_errmsg` text, probed against
-  CPython 3.14. DIVERGENCES: rows and `description` entries materialize as
-  `list`, not `tuple` (the native boundary has no tuple boxing); `parameters`
-  takes `list`/`dict`/`None`, not tuple; `executemany` takes
-  `list[list[any]]`; `row_factory`/`text_factory`/`create_function`/
-  `set_authorizer`/`blobopen`/`backup` are out of scope. Native-host only.
-  Pinned sv<->na congruent by `prim_sqlite3.jac`.
+  `bytes`-blob values; params accept list, tuple, or dict; transaction
+  semantics follow CPython's legacy mode (DML opens an implicit transaction,
+  DDL does not; `executescript` commits first), plus the 3.12+ `autocommit`
+  kwarg (`True` suppresses implicit BEGIN, `False` opens one before every
+  statement, `LEGACY_TRANSACTION_CONTROL` keeps legacy mode).
+  `isolation_level` is validated case-insensitively against
+  `''`/`DEFERRED`/`IMMEDIATE`/`EXCLUSIVE`. A per-connection prepared
+  statement pool (mirrors CPython's `cached_statements=128` LRU as plain
+  FIFO-cap eviction) survives `execute`/`fetch` cycles; `reset` +
+  `clear_bindings` re-arms pooled statements. The one-statement tail check
+  inspects the raw `pzTail` bytes for non-whitespace via aligned
+  `__mem_load_i64` reads (never prepares the tail, matching CPython's
+  `*tail <= ' '` whitespace test). `Cursor.setinputsizes`/`setoutputsize`
+  exist as no-ops. Error parity is class AND `sqlite3_errmsg` text,
+  probed against CPython 3.14. DIVERGENCES: rows and `description` entries
+  materialize as `list`, not `tuple` (the native boundary has no tuple
+  boxing); `Binary()` returns `bytes`, not `memoryview`; `database` accepts
+  `str`/`bytes` but not `os.PathLike`; `check_same_thread`, `factory`, and
+  `detect_types` are accepted but inert; post-`connect()` assignment of an
+  invalid `isolation_level`/`autocommit` is validated lazily at the next
+  implicit `BEGIN` rather than at assignment (plain `has` fields have no
+  setter hook); exceptions carry no `sqlite_errorcode`/`sqlite_errorname`
+  attributes; CPython 3.12+ mixed-parameter-style `DeprecationWarning`s are
+  not emitted (no warnings module natively); invalid-UTF-8 TEXT columns
+  return the decode result of the bytes rather than falling back to
+  `bytes`; `row_factory`/`text_factory`/`create_function`/
+  `create_aggregate`/`create_collation`/`set_authorizer`/
+  `set_progress_handler`/`set_trace_callback`/`interrupt`/`blobopen`/
+  `backup`/`serialize`/`deserialize`/`iterdump`/`getlimit`/`setlimit`/
+  `getconfig`/`setconfig`/`enable_load_extension`/`register_adapter`/
+  `register_converter`/`Row`/`enable_shared_cache` are out of scope.
+  Native-host only. Pinned sv<->na congruent by `prim_sqlite3.jac`. NOTE:
+  the floor in `_socket_native.jac` binds `__connect` (glibc weak alias)
+  instead of `connect` -- the image-wide clib-extern bare-name set would
+  otherwise skip this module's `def:pub connect` body (SIGSEGV at
+  JIT-execute).
 
 The syscall-backed `os` / `os.path` entry points (`makedirs`, `realpath`,
 `mkdir`, `exists`, `getmtime`, `normcase`, ...) are Mechanism-A/H compiler

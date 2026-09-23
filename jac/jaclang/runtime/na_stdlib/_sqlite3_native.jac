@@ -24,6 +24,7 @@ import from sqlite3 { def sqlite3_column_type(stmt: int, i: i32) -> i32;  }
 import from sqlite3 { def sqlite3_column_int64(stmt: int, i: i32) -> i64;  }
 import from sqlite3 { def sqlite3_column_double(stmt: int, i: i32) -> f64;  }
 import from sqlite3 { def sqlite3_column_blob(stmt: int, i: i32) -> int;  }
+import from sqlite3 { def sqlite3_column_text(stmt: int, i: i32) -> int;  }
 import from sqlite3 { def sqlite3_column_bytes(stmt: int, i: i32) -> i32;  }
 import from sqlite3 { def sqlite3_column_name(stmt: int, i: i32) -> int;  }
 import from sqlite3 { def sqlite3_errmsg(db: int) -> int;  }
@@ -150,18 +151,26 @@ def:pub sq3_prep_sqlp -> int {
 }
 
 
-def:pub sq3_prepare_tail(db: int, tail: int) -> int {
-    __mem_store_i64(_OUT + 24, 0);
-    rc = sqlite3_prepare_v2(db, tail, -1, _OUT + 24, 0);
-    if rc != 0 {
-        return -int(rc);
+def:pub sq3_tail_nonws -> int {
+    p = sq3_prep_tail();
+    if p == 0 {
+        return 0;
+    }
+    i = 0;
+    while True {
+        a = (p + i) & -8;
+        sh = ((p + i) & 7) * 8;
+        b = (__mem_load_i64(a) >> sh) & 255;
+        if b == 0 {
+            return 0;
+        }
+
+        if b > 32 {
+            return 1;
+        }
+        i += 1;
     }
     return 0;
-}
-
-
-def:pub sq3_prep_stmt2 -> int {
-    return __mem_load_i64(_OUT + 24);
 }
 
 
@@ -219,6 +228,64 @@ def:pub sq3_column_raw(stmt: int, i: int) -> bytes {
         memcpy(buf, sqlite3_column_blob(stmt, i32(i)), i64(n));
     }
     return buf;
+}
+
+
+def:pub sq3_row(stmt: int, ncols: int) -> list[any] {
+    row: list[any] = [];
+    for i in range(ncols) {
+        ii = i32(i);
+        t = int(sqlite3_column_type(stmt, ii));
+        v: any = None;
+        if t == 1 {
+            v = int(sqlite3_column_int64(stmt, ii));
+        } elif t == 2 {
+            v = float(sqlite3_column_double(stmt, ii));
+        } elif t == 3 {
+            p = sqlite3_column_text(stmt, ii);
+            if p == 0 {
+                v = "";
+            } else {
+                v = strdup(p);
+            }
+        } elif t == 4 {
+            n = int(sqlite3_column_bytes(stmt, ii));
+            buf = b"\x00" * n;
+            if n > 0 {
+                memcpy(buf, sqlite3_column_blob(stmt, ii), i64(n));
+            }
+            v = buf;
+        }
+        row.append(v);
+    }
+    return row;
+}
+
+
+def:pub sq3_bind_seq(stmt: int, params: list[any], n: int) -> int {
+    for i in range(n) {
+        v = params[i];
+        j = i + 1;
+        if v is None {
+            sqlite3_bind_null(stmt, i32(j));
+        } elif isinstance(v, bool) {
+            sqlite3_bind_int64(stmt, i32(j), i64(1 if v else 0));
+        } elif isinstance(v, int) {
+            sqlite3_bind_int64(stmt, i32(j), i64(v));
+        } elif isinstance(v, float) {
+            sqlite3_bind_double(stmt, i32(j), v);
+        } elif isinstance(v, str) {
+            sqlite3_bind_text(stmt, i32(j), v, -1, i64(_SQLITE_TRANSIENT));
+        } elif isinstance(v, bytes) {
+            sqlite3_bind_blob(stmt, i32(j), v, i32(len(v)), i64(_SQLITE_TRANSIENT));
+        } elif isinstance(v, bytearray) {
+            bv = bytes(v);
+            sqlite3_bind_blob(stmt, i32(j), bv, i32(len(bv)), i64(_SQLITE_TRANSIENT));
+        } else {
+            return -j;
+        }
+    }
+    return 0;
 }
 
 

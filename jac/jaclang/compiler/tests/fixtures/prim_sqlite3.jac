@@ -143,6 +143,88 @@ def sqlite3_py -> dict[any, any] {
     out["dollar_p"] = _cell(cur.execute("select $a", p_dollar).fetchone(), 0);
     out["qnum1"] = _cell(cur.execute("select ?2,?1", [10, 20]).fetchone(), 0);
     out["qnum2"] = _cell(cur.execute("select ?2,?1", [10, 20]).fetchone(), 1);
+    cur.execute("delete from t where a=999");
+    out["del0_rc"] = cur.rowcount;
+    try {
+        cur.execute("select 1; select 2");
+        out["tail_two"] = "none";
+    } except Exception as e4 {
+        out["tail_two"] = type(e4).__name__ + ": " + str(e4);
+    }
+    try {
+        cur.execute("select 1; selct 2");
+        out["tail_synt"] = "none";
+    } except Exception as e5 {
+        out["tail_synt"] = type(e5).__name__ + ": " + str(e5);
+    }
+    out["tail_ws"] = _rcell(cur.execute("select 7;   ").fetchall(), 0, 0);
+    try {
+        cur.execute("select :a", [9]);
+        out["seq_named"] = "none";
+    } except Exception as e6 {
+        out["seq_named"] = type(e6).__name__ + ": " + str(e6);
+    }
+    try {
+        sqlite3.connect(":memory:", isolation_level="BOGUS");
+        out["iso_bad"] = "none";
+    } except ValueError as e7 {
+        out["iso_bad"] = "ValueError: " + str(e7);
+    } except Exception as e7x {
+        out["iso_bad"] = "WRONG-TYPE: " + str(e7x);
+    }
+    c_low = sqlite3.connect(":memory:", isolation_level="deferred");
+    c_low.execute("create table lt(a)");
+    c_low.execute("insert into lt values(1)");
+    out["iso_low"] = c_low.in_transaction;
+    c_low.close();
+    try {
+        sqlite3.complete_statement(1);
+        out["complete_bad"] = "none";
+    } except TypeError as e8 {
+        out["complete_bad"] = "TypeError: " + str(e8);
+    } except Exception as e8x {
+        out["complete_bad"] = "WRONG-TYPE: " + str(e8x);
+    }
+    try {
+        cur.execute("select 1").fetchmany("x");
+        out["fm_str"] = "none";
+    } except TypeError as e9 {
+        out["fm_str"] = "TypeError: " + str(e9);
+    } except Exception as e9x {
+        out["fm_str"] = "WRONG-TYPE: " + str(e9x);
+    }
+    try {
+        cur.execute("select ?", [{}]);
+        out["bind_dict"] = "none";
+    } except Exception as e10 {
+        out["bind_dict"] = type(e10).__name__ + ": " + str(e10);
+    }
+    cur.execute("create table u(x unique)");
+    cur.execute("insert into u values(1)");
+    con.commit();
+    try {
+        cur.execute("insert into u values(1)");
+        out["integrity"] = "none";
+    } except sqlite3.IntegrityError as e11 {
+        out["integrity"] = "IntegrityError: " + str(e11);
+    } except Exception as e11x {
+        out["integrity"] = "WRONG-TYPE: " + str(e11x);
+    }
+    out["ac_default"] = con.autocommit;
+    c_ac = sqlite3.connect(":memory:", autocommit=False);
+    c_ac.execute("select 1");
+    out["ac_f_sel"] = c_ac.in_transaction;
+    c_ac.close();
+    c_at = sqlite3.connect(":memory:", autocommit=True);
+    c_at.execute("create table z(a)");
+    c_at.execute("insert into z values(1)");
+    out["ac_t_ins"] = c_at.in_transaction;
+    out["ac_t_attr"] = c_at.autocommit;
+    c_at.close();
+    cur2 = con.cursor();
+    cur2.close();
+    cur2.close();
+    out["close_twice"] = "ok";
     con.executescript("create table e(x); insert into e values(5);");
     out["in_trans_es"] = con.in_transaction;
     out["es_val"] = _cell(con.execute("select x from e").fetchone(), 0);
@@ -316,6 +398,27 @@ def _params_na(out: dict[str, any]) {
     out["dollar_p"] = _cell_na(cur.execute("select $a", p_dollar).fetchone(), 0);
     out["qnum1"] = _cell_na(cur.execute("select ?2,?1", [10, 20]).fetchone(), 0);
     out["qnum2"] = _cell_na(cur.execute("select ?2,?1", [10, 20]).fetchone(), 1);
+    cur.execute("delete from t where a=999");
+    out["del0_rc"] = cur.rowcount;
+    try {
+        cur.execute("select 1; select 2");
+        out["tail_two"] = "none";
+    } except Exception as e4 {
+        out["tail_two"] = type(e4).__name__ + ": " + str(e4);
+    }
+    try {
+        cur.execute("select 1; selct 2");
+        out["tail_synt"] = "none";
+    } except Exception as e5 {
+        out["tail_synt"] = type(e5).__name__ + ": " + str(e5);
+    }
+    out["tail_ws"] = _rcell_na(cur.execute("select 7;   ").fetchall(), 0, 0);
+    try {
+        cur.execute("select :a", [9]);
+        out["seq_named"] = "none";
+    } except Exception as e6 {
+        out["seq_named"] = type(e6).__name__ + ": " + str(e6);
+    }
     con.close();
 }
 
@@ -346,6 +449,67 @@ def _script_err_na(out: dict[str, any]) {
     } except Exception as e2x {
         out["err_bind"] = "WRONG-TYPE: " + str(e2x);
     }
+    try {
+        sqlite3.connect(":memory:", isolation_level="BOGUS");
+        out["iso_bad"] = "none";
+    } except ValueError as e7 {
+        out["iso_bad"] = "ValueError: " + str(e7);
+    } except Exception as e7x {
+        out["iso_bad"] = "WRONG-TYPE: " + str(e7x);
+    }
+    c_low = sqlite3.connect(":memory:", isolation_level="deferred");
+    c_low.execute("create table lt(a)");
+    c_low.execute("insert into lt values(1)");
+    out["iso_low"] = c_low.in_transaction;
+    c_low.close();
+    try {
+        sqlite3.complete_statement(1);
+        out["complete_bad"] = "none";
+    } except TypeError as e8 {
+        out["complete_bad"] = "TypeError: " + str(e8);
+    } except Exception as e8x {
+        out["complete_bad"] = "WRONG-TYPE: " + str(e8x);
+    }
+    try {
+        cur.execute("select 1").fetchmany("x");
+        out["fm_str"] = "none";
+    } except TypeError as e9 {
+        out["fm_str"] = "TypeError: " + str(e9);
+    } except Exception as e9x {
+        out["fm_str"] = "WRONG-TYPE: " + str(e9x);
+    }
+    try {
+        cur.execute("select ?", [{}]);
+        out["bind_dict"] = "none";
+    } except Exception as e10 {
+        out["bind_dict"] = type(e10).__name__ + ": " + str(e10);
+    }
+    cur.execute("create table u(x unique)");
+    cur.execute("insert into u values(1)");
+    con.commit();
+    try {
+        cur.execute("insert into u values(1)");
+        out["integrity"] = "none";
+    } except sqlite3.IntegrityError as e11 {
+        out["integrity"] = "IntegrityError: " + str(e11);
+    } except Exception as e11x {
+        out["integrity"] = "WRONG-TYPE: " + str(e11x);
+    }
+    out["ac_default"] = con.autocommit;
+    c_ac = sqlite3.connect(":memory:", autocommit=False);
+    c_ac.execute("select 1");
+    out["ac_f_sel"] = c_ac.in_transaction;
+    c_ac.close();
+    c_at = sqlite3.connect(":memory:", autocommit=True);
+    c_at.execute("create table z(a)");
+    c_at.execute("insert into z values(1)");
+    out["ac_t_ins"] = c_at.in_transaction;
+    out["ac_t_attr"] = c_at.autocommit;
+    c_at.close();
+    cur2 = con.cursor();
+    cur2.close();
+    cur2.close();
+    out["close_twice"] = "ok";
     cur.close();
     con.close();
     con.close();
