@@ -11,8 +11,6 @@ glob:pub whitespace: str = " \t\n\r\x0b\x0c",
 
 def:pub capwords(s: str, sep: (str | None) = None) -> str {
     if sep is None {
-        # single pass over the bytes: collapse whitespace runs, uppercase
-        # each word's first byte, lowercase the rest — one output buffer
         bv: bytes = s.encode();
         n: int = len(bv);
         out: bytearray = bytearray();
