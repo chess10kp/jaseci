@@ -240,7 +240,7 @@ def _inflate(data: bytes, size: int) -> bytes {
     if size < 0 or size > z_inflate_bound(len(data)) {
         raise BadZipFile("Invalid DEFLATE output size");
     }
-    res: ZInflateResult = z_inflate_all(data, 0, len(data), -15, size + 1, size + 1);
+    res: ZInflateResult = z_inflate_all(data, 0, len(data), -15, size, size + 1);
     if res.status == Z_MEM_ERROR {
         raise MemoryError("zipfile: allocation failed");
     }

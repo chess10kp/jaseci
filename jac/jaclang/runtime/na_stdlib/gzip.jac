@@ -142,7 +142,11 @@ def:pub decompress(data: bytes) -> bytes {
             raise ValueError("gzip.decompress: incorrect length of data produced");
         }
 
-        result = result + member;
+        if len(result) == 0 {
+            result = member;
+        } else {
+            result = result + member;
+        }
         pos = tpos + 8;
     }
     return result;
