@@ -31,7 +31,7 @@ import jaclang;
 import from jaclang.compiler.backends.es { EsastGenPass }
 import from jaclang.compiler.backends.es.es_unparse { es_to_js }
 import from jaclang.compiler.backends.es.estree { Node as EsNode }
-import from jaclang.compiler.frontend.codeinfo { native_safe_sym }
+import from jaclang.compiler.frontend.codeinfo { native_glob_init_name }
 import from jaclang.compiler.driver.program { JacProgram }
 import from jaclang.compiler.driver.compile_options { CompileOptions }
 
@@ -418,7 +418,7 @@ def run_native_function(
             }
             seen_srcs.add(src_mod);
             imp_init = eng.get_function_address(
-                "__jac_glob_init_" + native_safe_sym(src_mod)
+                native_glob_init_name(src_mod, manifest)
             );
             if imp_init != 0 {
                 ctypes.CFUNCTYPE(None)(imp_init)();
