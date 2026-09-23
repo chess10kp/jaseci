@@ -670,6 +670,23 @@ Mechanism B exists to avoid writing twice. Reaching for one through the flat
 Functions that need a syscall (`os.path.realpath`, `exists`, ...) stay as
 Mechanism-A intercepts, not here.
 
+## Memory profile (`[memory]` in jac.toml)
+
+Native code runs under a refcounted managed heap; the profile selects the
+reclamation strategy:
+
+- `managed` (default): refcounting + a cycle tracker. The tracker books every
+  managed allocation -- on allocation-heavy workloads (parsing, slicing,
+  object churn) it costs 40-60% of runtime (measured: `urlparse` -61%,
+  `robotparser.can_fetch` -50%, `ipaddress.ip_address` -37% under `rc`).
+- `rc`: plain refcounting, no cycle tracker. Drop-in, no code changes; fastest
+  option when reference cycles are impossible or tolerable.
+- `nogc`: ownership-enforced -- `own`/`borrow` annotations on heap-typed
+  contract positions replace refcounting entirely. Largest win in principle,
+  but requires annotating every public signature in the enforced module
+  (`[memory] enforce = [...]` gates it per-module); these modules are not yet
+  annotated.
+
 ## Mechanism F: FFI floor + pure-Jac surface (`zlib`)
 
 `zlib` is the first Mechanism-F module (#6940 Phase 2): the DEFLATE engine is
