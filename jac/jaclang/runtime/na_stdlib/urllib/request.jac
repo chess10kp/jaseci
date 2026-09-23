@@ -73,7 +73,7 @@ import from socket { create_connection }
 import from _socket_native { resolve_all }
 import from ssl { create_default_context }
 import from io { BytesIO }
-import from base64 { b64encode }
+import from base64 { b64encode, b64decode }
 import from _file_native { read_file_bytes, write_file_bytes }
 
 
@@ -497,7 +497,7 @@ obj:pub OpenerDirector {
         } else {
             req = fullurl;
             if data != None {
-                req.data = data;
+                req.set_data(data);
             }
         }
         req.timeout = timeout;
@@ -836,6 +836,7 @@ obj:pub ProxyHandler(BaseHandler) {
     has:pub proxies: dict[str, str] = {};
 
     def init(proxies: any = None) {
+        self.handler_order = 100;
         if proxies == None {
             self.proxies = getproxies();
         } else {
@@ -1542,7 +1543,7 @@ def:pub parse_keqv_list(l: list[str]) -> dict[str, str] {
         kv = elt.split("=", 1);
         if len(kv) == 2 {
             v = kv[1];
-            if len(v) >= 2 and v[0] == "\"" and v[len(v) - 1] == "\"" {
+            if len(v) >= 1 and v[0] == "\"" and v[len(v) - 1] == "\"" {
                 v = v[1:len(v) - 1];
             }
             parsed[kv[0]] = v;
@@ -1681,7 +1682,6 @@ obj:pub DataHandler(BaseHandler) {
         }
         data = unquote_to_bytes(datastr);
         if mediatype.endswith(";base64") {
-            import from base64 { b64decode }
             data = b64decode(data);
             mediatype = mediatype[:len(mediatype) - 7];
         }
