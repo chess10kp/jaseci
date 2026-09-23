@@ -1124,27 +1124,35 @@ def _compile_node(nd: _Node, c: _C) {
         return;
     }
     if kind == _K_ALT {
-        ejects: list[int] = [];
+        splits: list[int] = [];
+        jmps: list[int] = [];
         last: int = len(nd.kids) - 1;
         j: int = 0;
         while j < last {
             si: int = _emit(c, _OP_SPLIT, len(c.prog) + 1, 0);
-            ejects.append(si);
+            splits.append(si);
             _compile_node(nd.kids[j], c);
             ji: int = _emit(c, _OP_JMP, 0, 0);
-            ejects.append(ji);
+            jmps.append(ji);
             j += 1;
         }
+        last_start: int = len(c.prog);
         _compile_node(nd.kids[last], c);
         e: int = len(c.prog);
         k: int = 0;
-        while k < len(ejects) {
-            ins: _Ins = c.prog[ejects[k]];
-            if ins.op == _OP_SPLIT {
-                ins.b = e;
+        while k < len(splits) {
+            sins: _Ins = c.prog[splits[k]];
+            if k + 1 < len(splits) {
+                sins.b = splits[k + 1];
             } else {
-                ins.a = e;
+                sins.b = last_start;
             }
+            k += 1;
+        }
+        k = 0;
+        while k < len(jmps) {
+            jins: _Ins = c.prog[jmps[k]];
+            jins.a = e;
             k += 1;
         }
         return;
