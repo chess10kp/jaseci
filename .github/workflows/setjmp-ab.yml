@@ -75,6 +75,20 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Zig 0.16.0
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+          use-cache: false
+
+      # the type checker's prelude loads jaclang/vendor/typeshed stubs from the
+      # source tree; fresh checkouts must materialize them (gitignored)
+      - name: Materialize typeshed
+        working-directory: jac
+        env:
+          JACPYTHON: "1"
+        run: zig build fetch-typeshed --summary all
+
       - name: Download both binaries
         uses: actions/download-artifact@v4
         with:
