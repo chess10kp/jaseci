@@ -458,6 +458,7 @@ obj:pub OpenerDirector {
         proto: str, req: Request, fp: any, code: int, msg: str, hdrs: any
     ) -> any {
         if proto == "http" or proto == "https" {
+            write_file_bytes("/tmp/dbg_err_in", str(code).encode());
             if code in self.handle_error {
                 for h in self.handle_error[code] {
                     result = h.error_for(code, req, fp, msg, hdrs);
@@ -467,6 +468,7 @@ obj:pub OpenerDirector {
                 }
             }
             for h in self.handle_error_default {
+                write_file_bytes("/tmp/dbg_err_def", b"1");
                 result = h.http_error_default(req, fp, code, msg, hdrs);
                 if result != None {
                     return result;
@@ -572,13 +574,17 @@ obj:pub HTTPErrorProcessor(BaseHandler) {
             msg = hr.msg;
             hdrs = hr.info();
         }
+        write_file_bytes("/tmp/dbg_hr_code", str(code).encode());
         if code < 200 or code >= 300 {
+            write_file_bytes("/tmp/dbg_hr_err", b"1");
             par = self.parent;
             if isinstance(par, OpenerDirector) {
                 od: OpenerDirector = par;
                 response = od.error("http", request, response, code, msg, hdrs);
             }
+            write_file_bytes("/tmp/dbg_hr_errdone", b"1");
         }
+        write_file_bytes("/tmp/dbg_hr_ret", b"1");
         return response;
     }
 
