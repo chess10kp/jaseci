@@ -1,4 +1,5 @@
 import from _hex { to_hex }
+import from _typename { typename }
 import from _hashlib_native {
     evp_md_for,
     digest_size_for,
@@ -51,7 +52,17 @@ obj:pub HMAC {
 }
 
 
-def:pub new(key: bytes, msg: (bytes | None) = None, digestmod: str = "") -> HMAC {
+def:pub new(key: any, msg: any = None, digestmod: str = "") -> HMAC {
+    k: bytes = b"";
+    if isinstance(key, bytearray) {
+        k = bytes(key);
+    } elif isinstance(key, bytes) {
+        k = key;
+    } else {
+        raise TypeError(
+            "key: expected bytes or bytearray, but got '" + typename(key) + "'"
+        );
+    }
     if digestmod == "" {
         raise TypeError("Missing required argument 'digestmod'.");
     }
@@ -60,11 +71,17 @@ def:pub new(key: bytes, msg: (bytes | None) = None, digestmod: str = "") -> HMAC
         raise ValueError("unsupported hash type " + digestmod);
     }
     data: bytes = b"";
-    if isinstance(msg, bytes) {
+    if isinstance(msg, bytearray) {
+        data = bytes(msg);
+    } elif isinstance(msg, bytes) {
         data = msg;
+    } elif isinstance(msg, str) {
+        raise TypeError("Strings must be encoded before hashing");
+    } elif msg is not None {
+        raise TypeError("object supporting the buffer API required");
     }
     hm = HMAC(
-        _ctx=hmac_ctx_new(md, key),
+        _ctx=hmac_ctx_new(md, k),
         digest_size=digest_size_for(digestmod),
         block_size=block_size_for(digestmod),
         name="hmac-" + digestmod
@@ -74,7 +91,7 @@ def:pub new(key: bytes, msg: (bytes | None) = None, digestmod: str = "") -> HMAC
 }
 
 
-def:pub digest(key: bytes, msg: bytes, digest: str) -> bytes {
+def:pub digest(key: any, msg: any, digest: str) -> bytes {
     return new(key, msg, digest).digest();
 }
 

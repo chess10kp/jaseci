@@ -376,20 +376,26 @@ native layout records the emitted name separately from its source-level key.
   data)`, `update`/`digest`/`hexdigest`/`copy`, and the `digest_size`/
   `block_size`/`name` attributes. `hmac.jac` mirrors it over `HMAC_CTX`
   (`new(key, msg=None, digestmod)` -- `digestmod` is required and its absence
-  raises `TypeError` like CPython; `digest(key, msg, digest)`;
+  raises `TypeError` like CPython, as does a non-bytes `msg`; `key`/`msg`
+  also accept `bytearray`; `digest(key, msg, digest)`;
   `compare_digest(a, b)`). Pinned sv<->na congruent by
   `test_prim_equivalence.jac`. SCOPE: `shake_128`/`shake_256` (XOF digests need
   `EVP_DigestFinalXOF` and a caller-supplied length) and `pbkdf2_hmac` are not
   provided; the `usedforsecurity` kwarg and callable `digestmod` are not
-  accepted; `update` takes `bytes` only (no buffer protocol); `algorithms_*`
+  accepted; algorithm lookup is the exact lowercase name (no case or alias
+  normalization); `update`/`new` `data`/`compare_digest` take `bytes` only
+  (no buffer protocol); `algorithms_*`
   sets are not exposed; `digest_size`/`block_size`/`name` are plain `has`
   fields (assignable, where CPython's are read-only).
 - **`secrets.jac`** (Mechanism F) + **`_csprng_native.jac`** (`RAND_bytes`
   floor) -- `token_bytes`/`token_hex`/`token_urlsafe` (`nbytes=None` ->
-  `DEFAULT_ENTROPY` = 32; negative -> `ValueError`), `randbelow`
+  `DEFAULT_ENTROPY` = 32; negative -> `ValueError`; other non-int ->
+  `TypeError`), `randbelow`
   (rejection-sampled over whole-byte draws), and `compare_digest` re-exported
   from `hmac`. `to_hex` lives once in `_hex` and is shared with
-  `hashlib`/`hmac`/`uuid`. SCOPE: `compare_digest` takes `bytes` only (str
+  `hashlib`/`hmac`/`uuid`; CPython-style type names in `TypeError` messages
+  come from `_typename.typename` (an `isinstance` ladder -- `type(v).__name__`
+  does not lower on `any`), also shared with `hmac`. SCOPE: `compare_digest` takes `bytes` only (str
   callers `.encode()`), and `SystemRandom`/`choice`/`randbits` are not
   provided. `uuid.jac` rides the same floor (`uuid4()` only).
 - **`uuid.jac`** (Mechanism F, same floor) -- `uuid4()` -> `UUID(hex,
@@ -429,7 +435,8 @@ Mechanism B exists to avoid writing twice. Reaching for one through the flat
    `json.loads`). `dict[str, any]` literals box their values fine. Unbox a
    boxed scalar before operating on it (`i: int = some_any; str(i)`), and check
    container/None branches with `isinstance` -- `x is None` does not lower to a
-   branch condition on the native pathway.
+   branch condition on the native pathway for a boxed `any` read out of a
+   container (on an `any` *parameter* it does; `_typename.jac` relies on it).
 3. Add a tri-backend equivalence fixture
    (`jac/jaclang/compiler/tests/fixtures/prim_<name>.jac`) and register it in
    `test_prim_equivalence.jac` with `require=["na"]` so sv/na congruence is

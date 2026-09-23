@@ -29,6 +29,7 @@ import from crypto {
 import from crypto { def HMAC_Update(ctx: int, data: bytes, n: u64) -> i32;  }
 import from crypto { def HMAC_Final(ctx: int, md_out: bytes, outlen: bytes) -> i32;  }
 
+glob _EVP_MAX_MD_SIZE: int = 64;
 
 def:pub evp_md_for(name: str) -> int {
     if name == "md5" {
@@ -162,7 +163,7 @@ def:pub evp_ctx_clone(ctx: int) -> int {
 
 def:pub evp_ctx_digest(ctx: int) -> bytes {
     tmp: int = evp_ctx_clone(ctx);
-    out = b"\x00" * 64;
+    out = b"\x00" * _EVP_MAX_MD_SIZE;
 
     outlen = b"\x00" * 4;
     if EVP_DigestFinal_ex(tmp, out, outlen) != 1 {
@@ -214,7 +215,7 @@ def:pub hmac_ctx_clone(ctx: int) -> int {
 
 def:pub hmac_ctx_digest(ctx: int) -> bytes {
     tmp: int = hmac_ctx_clone(ctx);
-    out = b"\x00" * 64;
+    out = b"\x00" * _EVP_MAX_MD_SIZE;
 
     outlen = b"\x00" * 4;
     if HMAC_Final(tmp, out, outlen) != 1 {

@@ -5,6 +5,9 @@ def:pub csprng_bytes(n: int) -> bytes {
     if n < 0 {
         raise ValueError("negative argument not allowed");
     }
+    if n > 2147483647 {
+        raise OverflowError("Python int too large to convert to C int");
+    }
     if n == 0 {
         return b"";
     }

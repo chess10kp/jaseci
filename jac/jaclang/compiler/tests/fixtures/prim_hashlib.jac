@@ -68,6 +68,34 @@ def hashlib_py -> dict[any, any] {
     } except TypeError as e {
         err_hm = str(e);
     }
+    err_msg = "?";
+    try {
+        bad_msg: any = "str";
+        hmac.new(key, bad_msg, "sha256");
+    } except TypeError as e {
+        err_msg = str(e);
+    }
+    err_keystr = "?";
+    try {
+        bad_key: any = "str";
+        hmac.new(bad_key, msg, "sha256");
+    } except TypeError as e {
+        err_keystr = str(e);
+    }
+    err_keyint = "?";
+    try {
+        bad_ki: any = 123;
+        hmac.new(bad_ki, msg, "sha256");
+    } except TypeError as e {
+        err_keyint = str(e);
+    }
+    err_msgint = "?";
+    try {
+        bad_mi: any = 123;
+        hmac.new(key, bad_mi, "sha256");
+    } except TypeError as e {
+        err_msgint = str(e);
+    }
 
     return {
         "md5": hashlib.md5(msg).hexdigest(),
@@ -101,9 +129,14 @@ def hashlib_py -> dict[any, any] {
         "hmac_sha1": hmac.new(key, msg, "sha1").hexdigest(),
         "hmac_sha512": hmac.new(key, msg, "sha512").hexdigest(),
         "hmac_name": hmac.new(key, msg, "sha256").name,
+        "hmac_sha3_name": hmac.new(key, msg, "sha3_256").name,
         "hmac_size": hmac.new(key, msg, "sha256").digest_size,
         "hmac_msg_none": hmac.new(key, None, "sha256").hexdigest(),
         "hmac_err_nodm": err_hm,
+        "hmac_err_msgstr": err_msg,
+        "hmac_err_keystr": err_keystr,
+        "hmac_err_keyint": err_keyint,
+        "hmac_err_msgint": err_msgint,
         "cd_eq": 1 if hmac.compare_digest(b"abc", b"abc") else 0,
         "cd_neq": 1 if hmac.compare_digest(b"abc", b"abd") else 0,
         "cd_len": 1 if hmac.compare_digest(b"abc", b"ab") else 0,
@@ -152,6 +185,34 @@ def hashlib_na -> dict[str, any] {
     } except TypeError as e {
         err_hm = str(e);
     }
+    err_msg = "?";
+    try {
+        bad_msg: any = "str";
+        hmac.new(key, bad_msg, "sha256");
+    } except TypeError as e {
+        err_msg = str(e);
+    }
+    err_keystr = "?";
+    try {
+        bad_key: any = "str";
+        hmac.new(bad_key, msg, "sha256");
+    } except TypeError as e {
+        err_keystr = str(e);
+    }
+    err_keyint = "?";
+    try {
+        bad_ki: any = 123;
+        hmac.new(bad_ki, msg, "sha256");
+    } except TypeError as e {
+        err_keyint = str(e);
+    }
+    err_msgint = "?";
+    try {
+        bad_mi: any = 123;
+        hmac.new(key, bad_mi, "sha256");
+    } except TypeError as e {
+        err_msgint = str(e);
+    }
 
     return {
         "md5": hashlib.md5(msg).hexdigest(),
@@ -185,9 +246,14 @@ def hashlib_na -> dict[str, any] {
         "hmac_sha1": hmac.new(key, msg, "sha1").hexdigest(),
         "hmac_sha512": hmac.new(key, msg, "sha512").hexdigest(),
         "hmac_name": hmac.new(key, msg, "sha256").name,
+        "hmac_sha3_name": hmac.new(key, msg, "sha3_256").name,
         "hmac_size": hmac.new(key, msg, "sha256").digest_size,
         "hmac_msg_none": hmac.new(key, None, "sha256").hexdigest(),
         "hmac_err_nodm": err_hm,
+        "hmac_err_msgstr": err_msg,
+        "hmac_err_keystr": err_keystr,
+        "hmac_err_keyint": err_keyint,
+        "hmac_err_msgint": err_msgint,
         "cd_eq": 1 if hmac.compare_digest(b"abc", b"abc") else 0,
         "cd_neq": 1 if hmac.compare_digest(b"abc", b"abd") else 0,
         "cd_len": 1 if hmac.compare_digest(b"abc", b"ab") else 0,

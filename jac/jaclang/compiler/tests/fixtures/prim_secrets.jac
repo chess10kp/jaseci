@@ -38,11 +38,28 @@ def secrets_py -> dict[any, any] {
     } except ValueError as e {
         tb_neg = str(e);
     }
+    tb_str = "?";
+    try {
+        bad_n: any = "x";
+        secrets.token_bytes(bad_n);
+    } except TypeError as e {
+        tb_str = str(e);
+    }
+    tb_flt = "?";
+    try {
+        bad_f: any = 1.5;
+        secrets.token_bytes(bad_f);
+    } except TypeError as e {
+        tb_flt = str(e);
+    }
     return {
         "tb16_len": len(secrets.token_bytes(16)),
         "tb0_len": len(secrets.token_bytes(0)),
         "tb_none_len": len(secrets.token_bytes(None)),
         "tb_neg": tb_neg,
+        "tb_str": tb_str,
+        "tb_flt": tb_flt,
+        "tb_bool_len": len(secrets.token_bytes(True)),
         "th16_len": len(secrets.token_hex(16)),
         "th0_len": len(secrets.token_hex(0)),
         "th_none_len": len(secrets.token_hex(None)),
@@ -88,11 +105,28 @@ def secrets_na -> dict[str, any] {
     } except ValueError as e {
         tb_neg = str(e);
     }
+    tb_str = "?";
+    try {
+        bad_n: any = "x";
+        secrets.token_bytes(bad_n);
+    } except TypeError as e {
+        tb_str = str(e);
+    }
+    tb_flt = "?";
+    try {
+        bad_f: any = 1.5;
+        secrets.token_bytes(bad_f);
+    } except TypeError as e {
+        tb_flt = str(e);
+    }
     return {
         "tb16_len": len(secrets.token_bytes(16)),
         "tb0_len": len(secrets.token_bytes(0)),
         "tb_none_len": len(secrets.token_bytes(None)),
         "tb_neg": tb_neg,
+        "tb_str": tb_str,
+        "tb_flt": tb_flt,
+        "tb_bool_len": len(secrets.token_bytes(True)),
         "th16_len": len(secrets.token_hex(16)),
         "th0_len": len(secrets.token_hex(0)),
         "th_none_len": len(secrets.token_hex(None)),

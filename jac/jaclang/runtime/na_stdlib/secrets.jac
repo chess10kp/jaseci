@@ -1,5 +1,6 @@
 import from _csprng_native { csprng_bytes }
 import from _hex { to_hex }
+import from _typename { typename }
 import from base64 { urlsafe_b64encode }
 import from hmac { compare_digest as _hmac_compare_digest }
 
@@ -11,21 +12,27 @@ def:pub compare_digest(a: bytes, b: bytes) -> bool {
 }
 
 
-def:pub token_bytes(nbytes: (int | None) = None) -> bytes {
+def:pub token_bytes(nbytes: any = None) -> bytes {
     n: int = DEFAULT_ENTROPY;
-    if isinstance(nbytes, int) {
+    if isinstance(nbytes, bool) {
+        n = 1 if nbytes else 0;
+    } elif isinstance(nbytes, int) {
         n = nbytes;
+    } elif nbytes is not None {
+        raise TypeError(
+            "'" + typename(nbytes) + "' object cannot be interpreted as an integer"
+        );
     }
     return csprng_bytes(n);
 }
 
 
-def:pub token_hex(nbytes: (int | None) = None) -> str {
+def:pub token_hex(nbytes: any = None) -> str {
     return to_hex(token_bytes(nbytes));
 }
 
 
-def:pub token_urlsafe(nbytes: (int | None) = None) -> str {
+def:pub token_urlsafe(nbytes: any = None) -> str {
     return urlsafe_b64encode(token_bytes(nbytes)).decode().rstrip("=");
 }
 
