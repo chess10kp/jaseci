@@ -133,10 +133,10 @@ def normalize_pattern(path: str) -> str {
 
 
 def _star_match_end(segments: list[str], s: str, fullm: bool) -> int {
-    """Equivalent of ``translate_pattern`` + ``re.match``/``fullmatch``:
-    segment 0 must be a prefix, middle segments are found lazily in order,
-    and the last segment follows a greedy ``.*`` (its last occurrence for a
-    prefix match; end-anchored for a full match). Returns ``m.end()`` or -1."""
+    # Equivalent of ``translate_pattern`` + ``re.match``/``fullmatch``:
+    # segment 0 must be a prefix, middle segments are found lazily in order,
+    # and the last segment follows a greedy ``.*`` (its last occurrence for a
+    # prefix match; end-anchored for a full match). Returns ``m.end()`` or -1.
     pos = 0;
     first = segments[0];
     if not s.startswith(first) {
@@ -275,7 +275,7 @@ obj:pub Entry {
     }
 
     def applies_to(useragent: (str | None)) -> bool {
-        """check if this entry applies to the specified agent"""
+        # check if this entry applies to the specified agent
         if useragent == None {
             return "*" in self.useragents;
         }
@@ -294,9 +294,9 @@ obj:pub Entry {
     }
 
     def allowance(filename: str) -> bool {
-        """Preconditions:
-        - our agent applies to this entry
-        - filename is URL encoded"""
+        # Preconditions:
+        # - our agent applies to this entry
+        # - filename is URL encoded
         best_match = -1;
         allow = True;
         for line in self.rulelines {
@@ -383,17 +383,17 @@ obj:pub RobotFileParser {
     }
 
     def mtime -> float {
-        """Returns the time the robots.txt file was last fetched."""
+        # Returns the time the robots.txt file was last fetched.
         return self.last_checked;
     }
 
     def modified {
-        """Sets the last-fetched time to now."""
+        # Sets the last-fetched time to now.
         self.last_checked = float(time(0));
     }
 
     def set_url(url: str) {
-        """Sets the URL referring to a robots.txt file."""
+        # Sets the URL referring to a robots.txt file.
         self.url = url;
         sp = urlsplit(url);
         self.host = sp.netloc;
@@ -401,7 +401,7 @@ obj:pub RobotFileParser {
     }
 
     def read {
-        """Reads the robots.txt URL and feeds it to the parser."""
+        # Reads the robots.txt URL and feeds it to the parser.
         f: (addinfourl | None) = None;
         try {
             r = urlopen(self.url);
@@ -446,11 +446,11 @@ obj:pub RobotFileParser {
     }
 
     def parse(lines: list[str]) {
-        """Parse the input lines from a robots.txt file.
-
-        We allow that a user-agent: line is not preceded by
-        one or more blank lines.
-        """
+        # Parse the input lines from a robots.txt file.
+#
+        # We allow that a user-agent: line is not preceded by
+        # one or more blank lines.
+        #
         # states:
         #   0: start state
         #   1: saw user-agent line
@@ -553,7 +553,7 @@ obj:pub RobotFileParser {
     }
 
     def can_fetch(useragent: str, url: str) -> bool {
-        """using the parsed robots.txt decide if useragent can fetch url"""
+        # using the parsed robots.txt decide if useragent can fetch url
         if self.disallow_all {
             return False;
         }
