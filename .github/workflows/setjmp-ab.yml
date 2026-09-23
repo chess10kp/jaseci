@@ -86,6 +86,8 @@ jobs:
           set -euo pipefail
           mv /tmp/pybin-fixed /tmp/inst_fixed
           mv /tmp/pybin-baseline /tmp/pybin_baseline
+          # upload-artifact does not preserve unix permissions
+          chmod +x /tmp/inst_fixed/bin/python3.14 /tmp/pybin_baseline/bin/python3.14
           /tmp/inst_fixed/bin/python3.14 --version
 
       - name: Write bench harness
