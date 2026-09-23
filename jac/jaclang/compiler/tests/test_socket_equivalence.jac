@@ -96,6 +96,19 @@ test "socket TCP client over the libc floor (sv<->na congruent)" {
         assert _call_na_int(eng, "socket_refused_caught_na") == 1 , (
             "connection-refused OSError must be catchable, not abort"
         );
+
+        # Server-side surface (Phase 2): a self-contained TCP loopback --
+        # setsockopt/bind/getsockname/listen/connect/accept + ping-pong.
+        # Returns the number of checks that held (4 == all pass).
+        assert _call_na_int(eng, "socket_server_na") == 4 , (
+            "TCP server path (bind/listen/accept/peer-addr/ping-pong)"
+        );
+
+        # UDP datagram surface: bind/sendto/recvfrom + decoded source address.
+        # 3 == all pass.
+        assert _call_na_int(eng, "socket_udp_na") == 3 , (
+            "UDP path (bind/sendto/recvfrom/source-addr)"
+        );
     } finally {
         srv.shutdown();
         os.environ.pop("JAC_SOCKET_TEST_PORT", None);

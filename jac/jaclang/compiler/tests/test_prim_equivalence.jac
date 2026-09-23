@@ -458,6 +458,38 @@ glob STR_NA_GAPS: list[any] = [
              ["na"]
          ),
          (
+             "ipaddress bundled",
+             "prim_ipaddress.jac",
+             "ipaddress_py",
+             "ipaddress_cl",
+             "ipaddress_na",
+             ["na"]
+         ),
+         (
+             "urllib.parse bundled",
+             "prim_urllib_parse.jac",
+             "urlparse_py",
+             "urlparse_cl",
+             "urlparse_na",
+             ["na"]
+         ),
+         (
+             "urllib.response+error bundled",
+             "prim_urllib_resperr.jac",
+             "urlerr_py",
+             "urlerr_cl",
+             "urlerr_na",
+             ["na"]
+         ),
+         (
+             "select bundled",
+             "prim_select.jac",
+             "select_py",
+             "select_cl",
+             "select_na",
+             ["na"]
+         ),
+         (
              "hashlib + hmac bundled",
              "prim_hashlib.jac",
              "hashlib_py",

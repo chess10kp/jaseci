@@ -112,6 +112,45 @@ obj:pub BytesIO {
         return self.read(size);
     }
 
+    def readline(size: int = -1) -> bytes {
+        self._check_closed();
+        total: int = len(self._buf);
+        if self._pos >= total {
+            return b"";
+        }
+        end: int = total;
+        i: int = self._pos;
+        while i < total {
+            if self._buf[i] == 10 {
+                end = i + 1;
+                break;
+            }
+            i += 1;
+        }
+        if size >= 0 and self._pos + size < end {
+            end = self._pos + size;
+        }
+        out = self._buf[self._pos:end];
+        self._pos = end;
+        return out;
+    }
+
+    def readlines(hint: int = -1) -> list[bytes] {
+        self._check_closed();
+        out: list[bytes] = [];
+        total: int = 0;
+        line = self.readline();
+        while len(line) > 0 {
+            out.append(line);
+            total += len(line);
+            if hint > 0 and total > hint {
+                break;
+            }
+            line = self.readline();
+        }
+        return out;
+    }
+
     def write(b: bytes) -> int {
         self._check_closed();
         n: int = len(b);

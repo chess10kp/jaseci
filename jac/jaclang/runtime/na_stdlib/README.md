@@ -219,6 +219,138 @@ native layout records the emitted name separately from its source-level key.
   CPython's bignum `Fraction` stays exact; keep components comfortably below
   ~3x10^9 (sqrt of i64 max).
 
+- **`ipaddress.jac`** (#6978) -- a pure-Jac (Mechanism B) port of CPython
+  3.14's `ipaddress`: `IPv4Address` / `IPv6Address` / `IPv4Network` /
+  `IPv6Network`, the `ip_address` / `ip_network` factories, and
+  `summarize_address_range`. IPv6 values are carried as two `u64` halves
+  (`_hi` / `_lo`) with `wrapping_*` arithmetic, since native `int` is a
+  checked i64 and `1 << 63`-style literals/overflows are runtime errors.
+  Strings, ints, and packed `bytes` constructors; compressed/exploded forms,
+  scope IDs, IPv4-mapped/6to4/Teredo lookups; netmask/hostmask parsing
+  (dotted and prefix forms); strict/non-strict networks; `hosts()`,
+  `subnets()`, `supernet()`, `address_exclude()`, iteration and indexing;
+  `AddressValueError` / `NetmaskValueError` exception classes. SCOPE:
+  `IPv6Address.__int__()` and `IPv6Network.num_addresses` past i64 max raise
+  a native overflow error where CPython's bignum stays exact; comparisons,
+  `in`, and indexing go through explicit dunder calls in the na fixture
+  (archetype operator dispatch is a backend gap).
+
+- **`urllib/parse.jac`** (#6978) -- a pure-Jac (Mechanism B) port of CPython
+  3.14's `urllib.parse` str-path surface: `urlparse` / `urlsplit` /
+  `urlunparse` / `urlunsplit` / `urljoin` / `urldefrag`, the quoting family
+  (`quote` / `quote_plus` / `quote_from_bytes` / `unquote` / `unquote_plus` /
+  `unquote_to_bytes`), `parse_qs` / `parse_qsl` / `urlencode`, `unwrap`, and
+  the deprecated `split*` helpers (`splittype` / `splithost` / `splituser` /
+  `splitpasswd` / `splitport` / `splitnport` / `splitquery` / `splittag` /
+  `splitattr` / `splitvalue`). Result objects (`ParseResult` / `SplitResult` /
+  `DefragResult`) expose the component fields plus `username` / `password` /
+  `hostname` / `port` getters, `geturl()`, and `__getitem__`; CPython's
+  bracketed-IPv4 and invalid/out-of-range port `ValueError`s match.
+  `str.partition` / `str.rpartition` crash native codegen, so the module
+  splits on `find` + slicing via local `_partition` / `_rpartition` helpers.
+  SCOPE (boxed-`any` tag loss: an `any` parameter stores typed-container
+  elements unboxed, so they read back as raw pointers):
+  `urlunparse`/`urlunsplit` take `ParseResult | SplitResult | DefragResult |
+  list[str]` (a union keeps element tags) rather than CPython's arbitrary
+  sequence, and `urlencode` takes `dict[str, str | list[str]] |
+  list[list[str]]` -- tuple component/pair sequences and `bytes`/
+  non-`str` scalar values are native gaps. Pinned sv<->na congruent by
+  `prim_urllib_parse.jac`.
+
+- **`urllib/response.jac` + `urllib/error.jac`** (#6978) -- pure-Jac ports of
+  CPython 3.14's response wrappers and error hierarchy. `response` provides
+  `addbase` / `addclosehook` / `addinfo` / `addinfourl` over the bundled
+  `io.BytesIO` / `io.StringIO` (`fp` is typed `BytesIO | StringIO`; arbitrary
+  duck-typed file objects are a native gap since calls need a static receiver
+  type). `error` provides `URLError(OSError)` with `reason` / `filename`,
+  `HTTPError(URLError, addinfourl)` (exception + response in one, `fp=None`
+  becomes an empty `BytesIO` as CPython does), and
+  `ContentTooShortError`. `addclosehook` invokes hooks through a `CloseHook`
+  archetype (`def call(args)`) because native first-class callables are a
+  backend gap. SCOPE (backend bugs worked around, not fixed): `except`
+  matching across module boundaries is exact-class only (a base-class
+  handler does not catch a subclass raised elsewhere), method calls on a
+  union-typed receiver mis-dispatch (all `fp` calls narrow through
+  `isinstance` first), and a `(bytes | str)` union value holding `str` is
+  corrupted when consumed -- callers read `StringIO` content through a
+  narrowed `fp`. Pinned sv<->na congruent by `prim_urllib_resperr.jac`.
+
+- **`select.jac`** (#6978) + **`_select_native.jac`** -- a Mechanism F port of
+  CPython 3.14's `select` over raw libc FFI: `select(rlist, wlist, xlist,
+  timeout=None)` (fd_set bitmap + `timeval` packed into `bytes` buffers,
+  `int.from_bytes` on the way back), `poll` (`register` / `modify` /
+  `unregister` / `poll(timeout_ms)`; `pollfd` structs packed 8 bytes each),
+  and Linux `epoll` (`register` / `modify` / `unregister` /
+  `poll(timeout_s, maxevents)` / `close` / `fileno` / `closed`), plus the
+  `POLL*` / `EPOLL*` constants and `PIPE_BUF`. Lists are typed `list[int]`
+  -- CPython's fileno()-bearing objects are a native gap, callers pass
+  `.fileno()`. Two FFI quirks shaped the floor: a clib extern lands in the
+  shared native symbol table under its C name, so libc `select` is bound as
+  `__select` to avoid shadowing the module's own `select` function, and
+  `socketpair` has no glibc `__` alias so `_socket_native.sock_pair` goes
+  through `syscall(53, ...)` (x86-64 `__NR_socketpair`; aarch64 would need
+  199) for the same reason. SCOPE: `select.error` is `OSError` (CPython
+  aliases it), `kqueue` / `devpoll` / `epoll.fromfd` and non-Linux targets
+  are unimplemented. Pinned sv<->na congruent by `prim_select.jac` (ES opts
+  out).
+
+- **`socket.jac`** (#6978) + **`_socket_native.jac`** -- a Mechanism F BSD
+  sockets surface over libc FFI (Phase 1 added the client side; Phase 2 the
+  server/datagram side). `socket(family, socktype, proto, fileno=-1)` with
+  `connect` / `send` / `sendall` / `recv` / `close` / `fileno`, module-level
+  `create_connection` and `socketpair` (via `syscall(53)`, x86-64
+  `__NR_socketpair`, because a libc `socketpair` extern would share a symbol
+  name with the surface function), plus Phase-2 `bind` / `listen` / `accept` /
+  `getsockname` / `setsockopt` (int options) / `sendto` / `recvfrom` /
+  `shutdown`, `connect_path` / `bind_path` / `sendto_path` for `AF_UNIX`,
+  `connect6` / `bind6` / `sendto6` for `AF_INET6` 4-tuples, and the
+  `AF_*`/`SOCK_*`/`IPPROTO_*`/`SHUT_*`/`SOL_SOCKET`/`SO_*`/`SOMAXCONN`/
+  `TCP_NODELAY` constants. Sockaddrs are packed as `bytes` in
+  `_socket_native` (`inet_pton`/`inet_ntop`/`strncpy` FFI; dotted hosts parse
+  directly, names fall back to `getaddrinfo` results). SCOPE: tuple-polymorphic
+  parameters do not lower natively, so CPython's single `bind(address)` /
+  `sendto(data, address)` split by family (`bind`/`bind6`/`bind_path`,
+  `sendto`/`sendto6`/`sendto_path`), and peer/sock addresses come back as a
+  normalized `(host, port, flowinfo, scopeid)` 4-tuple where CPython returns a
+  2-tuple for `AF_INET` and a `str` for `AF_UNIX` (na returns `(path, 0, 0,
+  0)`). `setsockopt` takes int values only, `getsockopt`/`setblocking`/timeouts
+  and `sendmsg`/`recvmsg` are unimplemented. Pinned sv<->na congruent by
+  `test_socket_equivalence.jac` / `prim_socket.jac`.
+
+- **`socketserver.jac`** (#6978) + **`_socketserver_native.jac`** -- a
+  Mechanism F port of CPython 3.14's `socketserver` over the bundled `socket`
+  + `select` floors: `BaseServer` / `TCPServer` / `UDPServer` /
+  `UnixStreamServer` / `UnixDatagramServer`, the `ThreadingMixIn` and
+  `ForkingMixIn` variants, and `BaseRequestHandler` / `StreamRequestHandler`
+  (`connection`/`rfile`/`wfile` via `SockFile`) / `DatagramRequestHandler`
+  (`packet`/`socket`/`rfile`/`wfile` via `BytesIO`). `handle_request`,
+  `serve_forever`, `shutdown`, `verify_request`, `process_request`,
+  `finish_request`, `shutdown_request`, `close_request`, `handle_error`,
+  `handle_timeout`, `fileno`, `server_bind`/`server_activate`/`server_close`,
+  `enter`/`exit` (context-manager names are keywords), `request_queue_size`,
+  `allow_reuse_address`/`allow_reuse_port`, `max_packet_size`, `timeout`, and
+  `daemon_threads`/`block_on_close`/`max_children`/`active_children` fields.
+  `ForkingMixIn` uses a real libc `fork`/`waitpid`/`_exit` floor
+  (`_socketserver_native`); `ThreadingMixIn` executes inline because there is
+  no native thread support. SCOPE divergences: **handlers are passed as
+  instances, not classes** -- `TCPServer(addr, Echo())` rather than
+  `TCPServer(addr, Echo)` -- because a class object held in a field cannot be
+  invoked natively, so `finish_request` calls `RequestHandlerClass.run(...)`,
+  which stores the request and drives `setup`/`handle`/`finish`; handler
+  classes therefore declare a no-arg `init` (`def init() {}`) and read the
+  request via `self.request` (typed `any` on `BaseRequestHandler`, unboxed to
+  `Socket` / `(bytes, Socket)` in each `setup`). `shutdown()` only sets a
+  flag (no inter-thread wait, so it is callable same-thread from a handler --
+  CPython's would deadlock there); `serve_forever`/`shutdown` are
+  single-threaded. Addresses are the normalized `(host, port, flowinfo,
+  scopeid)` 4-tuples from `socket`. Bare `except:` is written `except
+  Exception`; `handle_error` writes one stderr line instead of a traceback;
+  `StreamRequestHandler` timeout/rbufsize/wbufsize buffering knobs exist but
+  do not alter `SockFile` behavior; `BaseRequestHandler`'s `request` field is
+  `any`, so handler code that touches it demotes to the bridge. Pinned
+  sv<->na congruent by `test_socketserver_equivalence.jac` /
+  `prim_socketserver.jac` (TCP echo, `serve_forever`+`shutdown`, UDP echo).
+
 - **`pathlib.jac`** (#8201) -- a `Path` that carries one normalized POSIX
   string and derives every member from it, which is CPython's `PurePosixPath`
   value model: construction splits on `/`, drops empty and `.` components,

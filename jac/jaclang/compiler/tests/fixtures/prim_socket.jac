@@ -62,7 +62,15 @@ def socket_cl -> dict[any, any] {
 }
 
 
-import from socket { create_connection }
+import from socket {
+    create_connection,
+    socket as Socket,
+    AF_INET,
+    SOCK_STREAM,
+    SOCK_DGRAM,
+    SOL_SOCKET,
+    SO_REUSEADDR
+}
 
 # `_request`/`_status_of` are sv module-level helpers; native code can only
 # reach them through the JIT interop bridge, so the request string and status
@@ -110,4 +118,71 @@ def socket_refused_caught_na -> int {
     } except OSError as e {
         return 1;
     }
+}
+
+# Server-side surface (Phase 2): a full in-process TCP loopback exchange --
+# setsockopt, bind on an ephemeral port, getsockname, listen, connect, accept,
+# and a ping-pong over the accepted socket. Returns the count of checks that
+# held (4 == all pass).
+def socket_server_na -> int {
+    srv = Socket(AF_INET, SOCK_STREAM);
+    srv.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1);
+    srv.bind(("127.0.0.1", 0));
+    srv.listen(4);
+    sn: tuple[(str, int, int, int)] = srv.getsockname();
+    port = sn[1];
+    ok = 0;
+    if port > 0 {
+        ok += 1;
+    }
+    cli = Socket(AF_INET, SOCK_STREAM);
+    cli.connect(("127.0.0.1", port));
+    ac: tuple[(Socket, tuple[(str, int, int, int)])] = srv.accept();
+    cs: Socket = ac[0];
+    ca: tuple[(str, int, int, int)] = ac[1];
+    if ca[0] == "127.0.0.1" and ca[1] > 0 {
+        ok += 1;
+    }
+    cli.sendall(b"ping");
+    if cs.recv(8) == b"ping" {
+        ok += 1;
+    }
+    cs.sendall(b"pong");
+    if cli.recv(8) == b"pong" {
+        ok += 1;
+    }
+    cs.close();
+    cli.close();
+    srv.close();
+    return ok;
+}
+
+# UDP datagram surface: bind both ends on ephemeral ports, sendto one byte
+# pair, recvfrom the other, and confirm the decoded source address is the
+# sender's bound address. Returns the count of checks that held (3 == all).
+def socket_udp_na -> int {
+    u1 = Socket(AF_INET, SOCK_DGRAM);
+    u2 = Socket(AF_INET, SOCK_DGRAM);
+    u1.bind(("127.0.0.1", 0));
+    u2.bind(("127.0.0.1", 0));
+    sn1: tuple[(str, int, int, int)] = u1.getsockname();
+    sn2: tuple[(str, int, int, int)] = u2.getsockname();
+    p1 = sn1[1];
+    p2 = sn2[1];
+    n = u1.sendto(b"hi", ("127.0.0.1", p2));
+    rf: tuple[(bytes, tuple[(str, int, int, int)])] = u2.recvfrom(64);
+    ok = 0;
+    if n == 2 {
+        ok += 1;
+    }
+    if rf[0] == b"hi" {
+        ok += 1;
+    }
+    ra: tuple[(str, int, int, int)] = rf[1];
+    if ra[0] == "127.0.0.1" and ra[1] == p1 {
+        ok += 1;
+    }
+    u1.close();
+    u2.close();
+    return ok;
 }

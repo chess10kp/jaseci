@@ -1,5 +1,6 @@
 import from c { def fopen(path: str, mode: str) -> int;  }
 import from c { def fread(buffer: bytes, size: u64, count: u64, stream: int) -> u64;  }
+import from c { def fwrite(buffer: bytes, size: u64, count: u64, stream: int) -> u64;  }
 import from c { def ferror(stream: int) -> i32;  }
 import from c { def fclose(stream: int) -> i32;  }
 import from _errno_native { last_errno, raise_os_error }
@@ -26,6 +27,26 @@ def:pub read_file_bytes(path: str) -> bytes {
             }
         }
         return bytes(result);
+    } finally {
+        fclose(stream);
+    }
+}
+
+def:pub write_file_bytes(path: str, data: bytes) {
+    if "\x00" in path {
+        raise ValueError("embedded null byte");
+    }
+    stream = fopen(path, "wb");
+    if stream == 0 {
+        raise_os_error("open", path, last_errno());
+    }
+    try {
+        if len(data) > 0 {
+            written = int(fwrite(data, u64(1), u64(len(data)), stream));
+            if written < len(data) or ferror(stream) != i32(0) {
+                raise_os_error("write", path, last_errno());
+            }
+        }
     } finally {
         fclose(stream);
     }
