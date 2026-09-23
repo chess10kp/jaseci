@@ -16,7 +16,7 @@ sitemaps, agent substring matching, and the implicit /robots.txt allow.
 import urllib.robotparser as urob;
 
 
-def _robots() -> list[str] {
+def _robots() -> any {
     return [
         "# comment line",
         "User-agent: *",

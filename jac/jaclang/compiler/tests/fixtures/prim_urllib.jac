@@ -48,9 +48,10 @@ def urllib_redirect_py -> dict[any, any] {
 }
 
 
-import from urllib.request { HTTPResp, urlopen }
+import from urllib.request { urlopen }
 
 def _status_of(resp0: any) -> int {
+    import from urllib.request { HTTPResp }
     resp: HTTPResp = resp0;
     st = resp.status;
     if isinstance(st, int) {
@@ -60,6 +61,7 @@ def _status_of(resp0: any) -> int {
 }
 
 def _blen_of(resp0: any) -> int {
+    import from urllib.request { HTTPResp }
     resp: HTTPResp = resp0;
     return resp.body_length;
 }
