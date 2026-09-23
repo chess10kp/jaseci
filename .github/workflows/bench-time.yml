@@ -20,9 +20,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: branch-ffi
-            repository: chess10kp/jaseci
-            ref: bench/na-time
           - label: main-intercept
             repository: jaseci-labs/jaseci
             ref: main
@@ -163,4 +160,8 @@ jobs:
           BIN="$GITHUB_WORKSPACE/jac/zig-out/bin/jac"
           cd "$RUNNER_TEMP"
           cp "$GITHUB_WORKSPACE/bench.jac" .
+          # The old intercept emits its timespec alloca at the call site, so
+          # every loop iteration burns 16B of stack (jaseci-labs/jac#9487).
+          # Lift the limit so the lane can actually finish and print numbers.
+          ulimit -s unlimited || ulimit -s 1048576 || true
           JAC_NO_DEV_SOURCE=1 taskset -c 2 "$BIN" run -b native bench.jac
