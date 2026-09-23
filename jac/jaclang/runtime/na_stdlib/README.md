@@ -185,6 +185,64 @@ native layout records the emitted name separately from its source-level key.
   error-path/behavior divergence); `ratio` is the same IEEE-double value (only
   its `str` rendering would differ);
   `get_opcodes`/`unified_diff`/`ndiff`/`Differ`/`HtmlDiff` not provided.
+- **`string.jac`** (#6978 Phase 3) -- the nine ASCII constant sets
+  (`whitespace`/`ascii_lowercase`/`ascii_uppercase`/`ascii_letters`/`digits`/
+  `hexdigits`/`octdigits`/`punctuation`/`printable`), `capwords`, and a
+  `$`-`Template` subset (`substitute`/`safe_substitute`/`is_valid`/
+  `get_identifiers`) supporting `$name`, `${name}`, and `$$` with CPython's
+  placeholder scan order. `substitute` raises `KeyError` on a missing name and
+  `ValueError("Invalid placeholder in string: line N, col M")` on a malformed
+  one; `safe_substitute` preserves unresolved and malformed placeholders
+  literally. SCOPE: ASCII-only identifier characters (`idpattern` not
+  overridable -- `delimiter`/`idpattern`/`braceidpattern` subclassing and the
+  `flags`/`strict` knobs not provided); substitution values limited to
+  str/int/float/bool (other `any` values raise `ValueError` rather than
+  running `str()`); `Formatter`/brace-style templates not provided.
+- **`re.jac`** (#6978 Phase 3) -- a pure-Jac regex engine: explicit parser
+  (`_P`) producing a `_Node` AST, an instruction compiler, and a
+  backtracking VM (`_run`). Covers literals, character classes and ranges
+  (incl. negation and class escapes `\d`/`\w`/`\s`), anchors (`^`/`$`/`\A`/
+  `\Z`/`\b`/`\B`), greedy and lazy `*`/`+`/`?`/`{m,n}` repeats, alternation,
+  numbered and `(?P<n>)` named groups, backrefs (`\N`, `(?P=n)`), lookahead
+  (`(?=...)`/`(?!...)`), inline/global flags (`i`/`m`/`s`/`x`/`a`/`u`),
+  `(?#...)` comments, `VERBOSE` comment/whitespace skipping, and the module
+  surface
+  `compile`/`search`/`match`/`fullmatch`/`findall`/`finditer`/`split`/`sub`/
+  `subn`/`escape`/`purge` plus `Pattern`/`Match` objects (`group`/`groups`/
+  `groupdict`/`start`/`end`/`span`/`expand`, `groups`/`groupindex`/`pattern`/
+  `flags` on `Pattern`). Parse errors raise `ValueError` with CPython's
+  message text and position suffix ("... at position N"), covering
+  unterminated groups/classes, bad ranges, multiple/nothing-to-repeat,
+  unknown/duplicate/open group references, and non-leading global flags.
+  SCOPE/divergences: ASCII semantics only (`\w`/`\d`/`\s` and IGNORECASE
+  fold ASCII; no unicode categories or full casefold); no lookbehind,
+  conditional `(?(id)y|n)`, atomic `(?>...)`, possessive quantifiers, `\N{}`,
+  or `\p{}`; `sub`/`subn` take string replacements only (callable `repl` not
+  supported -- no native callable boundary); `findall` raises `ValueError`
+  on patterns with more than one group (CPython returns a list of tuples,
+  which the `list[str]` boundary cannot carry); `finditer` returns an eager
+  `list[Match]` rather than an iterator; `split` yields `None` for
+  non-participating groups as CPython does, so its element type is `any`;
+  `Match.groups()` returns `list[any]` (not a tuple); `Match[...]`
+  `__getitem__` and `Match.re`/`lastindex` not provided; LOCALE flag
+  ignored; `error`/`PatternError` surfaces as `ValueError` (catch
+  `Exception`/`ValueError` accordingly -- CPython's `re.error` is not a
+  `ValueError` subclass, so code catching `re.error` specifically diverges).
+- **`reprlib.jac`** (#6978 Phase 3) -- `repr` and a `Repr` object
+  (`repr`/`repr1`, mutable `maxlevel`/`maxtuple`/`maxlist`/`maxdict`/
+  `maxset`/`maxfrozenset`/`maxstring`/`maxlong`/`maxother` limits) rendering
+  bool/int/float/str/list/dict with CPython's conventions: quote selection
+  (prefer `'`, switch to `"` when the string contains `'` but not `"`),
+  `\\`/`\n`/`\t`/`\r`/`\xNN` escaping, `maxstring` middle-ellipsis fill,
+  `maxlong` truncation for ints, `maxlist`/`maxdict` item caps, sorted dict
+  keys for homogeneous int/str key sets, and `level <= 0` -> `"[...]"`/
+  `"{...}"` depth cutoffs. SCOPE/divergences: `set`/`frozenset` raise
+  `ValueError("reprlib: unsupported value type on native")` (same precedent
+  as `pprint.jac`); tuples and other unrecognized values render as `"None"`
+  (the native runtime cannot type-discriminate them -- see `pprint.jac`);
+  mixed-type dict keys keep insertion order (CPython's `sorted` fallback);
+  `recursive_repr`/`aRepr` attribute and `repr_*` dispatch hooks not
+  provided.
 
 - **`statistics.jac`** (#7593 item 18) -- double-precision
   `fmean`/`mean`/`median`/`median_low`/`median_high`/`variance`/`pvariance`/
