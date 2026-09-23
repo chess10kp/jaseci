@@ -1,0 +1,54 @@
+name: bench-time-bundled
+
+# Ad-hoc perf check for scripts/bench_time_bundled.jac: builds the jac
+# binary from this checkout and runs the bench as a self-contained native
+# binary. Dispatch only -- not part of PR CI.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the jac binary
+        uses: ./.github/actions/setup-jac
+        with:
+          need-build-inputs: "true"
+
+      - name: Materialize vendored runtimes
+        working-directory: jac
+        run: |
+          set -euxo pipefail
+          zig build fetch-typeshed --summary all
+          zig build vendor-musl --summary all
+
+      - name: Build the bench binary (native)
+        working-directory: jac
+        run: |
+          set -euxo pipefail
+          BIN="$PWD/zig-out/bin/jac"
+          "$BIN" build --native ../scripts/bench_time_bundled.jac -o "$PWD/bench_time_bundled"
+
+      - name: Run bench
+        working-directory: jac
+        run: |
+          set -euo pipefail
+          {
+            echo "### bench_time_bundled.jac -- native binary (${{ runner.os }} / ${{ runner.arch }}, $(nproc) vcpu)"
+            echo '```'
+            ./bench_time_bundled
+            echo '```'
+          } | tee bench.txt | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bench output
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-time-bundled
+          path: jac/bench.txt
+          if-no-files-found: error
