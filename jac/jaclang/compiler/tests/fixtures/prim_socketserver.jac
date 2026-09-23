@@ -84,7 +84,6 @@ import from socketserver {
 # no-arg `init` -- the request is delivered later via `run`/`begin`.
 obj _StreamEchoNa(StreamRequestHandler) {
     def init {}
-
     def handle {
         self.wfile.write(b"pong");
     }
@@ -92,7 +91,6 @@ obj _StreamEchoNa(StreamRequestHandler) {
 
 obj _DatagramEchoNa(DatagramRequestHandler) {
     def init {}
-
     def handle {
         self.wfile.write(b"pong");
     }
@@ -100,7 +98,6 @@ obj _DatagramEchoNa(DatagramRequestHandler) {
 
 obj _ShutdownEchoNa(StreamRequestHandler) {
     def init {}
-
     def handle {
         self.wfile.write(b"pong");
         # na divergence: shutdown() just sets a flag (no inter-thread wait),
