@@ -197,7 +197,9 @@ native layout records the emitted name separately from its source-level key.
   overridable -- `delimiter`/`idpattern`/`braceidpattern` subclassing and the
   `flags`/`strict` knobs not provided); substitution values limited to
   str/int/float/bool (other `any` values raise `ValueError` rather than
-  running `str()`); `Formatter`/brace-style templates not provided.
+  running `str()`); the mapping argument must be a real `dict[str, any]`
+  (native dicts are layout-specialized, so a `dict[str, str]` literal is
+  not interchangeable); `Formatter`/brace-style templates not provided.
 - **`re.jac`** (#6978 Phase 3) -- a pure-Jac regex engine: explicit parser
   (`_P`) producing a `_Node` AST, an instruction compiler, and a
   backtracking VM (`_run`). Covers literals, character classes and ranges
@@ -241,7 +243,10 @@ native layout records the emitted name separately from its source-level key.
   as `pprint.jac`); tuples and other unrecognized values render as `"None"`
   (the native runtime cannot type-discriminate them -- see `pprint.jac`);
   mixed-type dict keys keep insertion order (CPython's `sorted` fallback);
-  `recursive_repr`/`aRepr` attribute and `repr_*` dispatch hooks not
+  containers must reach `repr`/`Repr.repr` as `list[any]`/`dict[str, any]`
+  (the canonical `any` layouts -- concretely-typed literals reinterpret
+  badly through the `any` boundary); `recursive_repr`/`aRepr` attribute
+  and `repr_*` dispatch hooks not
   provided.
 
 - **`statistics.jac`** (#7593 item 18) -- double-precision

@@ -57,12 +57,12 @@ def re_py -> dict[any, any] {
         gd = mn.groupdict();
         gd0 = gd["w"];
     }
-    fi: list[any] = [];
+    fi_s: list[any] = [];
+    fi_e: list[any] = [];
     for mm in re.finditer("\\d+", "a1b22") {
-        fi.append(mm.span());
+        fi_s.append(mm.start());
+        fi_e.append(mm.end());
     }
-    fi0 = fi[0];
-    fi1 = fi[1];
     e1: str = "no raise";
     try {
         re.compile("(");
@@ -203,9 +203,9 @@ def re_py -> dict[any, any] {
         "ifi": mifi is not None,
         "ifx": mifx is not None,
         "exp": exp,
-        "fin": len(fi),
-        "fi0s": fi0[0],
-        "fi1e": fi1[1],
+        "fin": len(fi_s),
+        "fi0s": fi_s[0],
+        "fi1e": fi_e[1],
         "r23": r23,
         "r23l": r23l,
         "r2o": r2o,
@@ -267,12 +267,12 @@ def re_na -> dict[str, any] {
         gd = mn.groupdict();
         gd0 = gd["w"];
     }
-    fi: list[any] = [];
+    fi_s: list[any] = [];
+    fi_e: list[any] = [];
     for mm in re.finditer("\\d+", "a1b22") {
-        fi.append(mm.span());
+        fi_s.append(mm.start());
+        fi_e.append(mm.end());
     }
-    fi0 = fi[0];
-    fi1 = fi[1];
     e1: str = "no raise";
     try {
         re.compile("(");
@@ -413,9 +413,9 @@ def re_na -> dict[str, any] {
         "ifi": mifi is not None,
         "ifx": mifx is not None,
         "exp": exp,
-        "fin": len(fi),
-        "fi0s": fi0[0],
-        "fi1e": fi1[1],
+        "fin": len(fi_s),
+        "fi0s": fi_s[0],
+        "fi1e": fi_e[1],
         "r23": r23,
         "r23l": r23l,
         "r2o": r2o,

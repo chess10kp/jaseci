@@ -19,6 +19,19 @@ import from reprlib { Repr, repr }
 def reprlib_py -> dict[any, any] {
     r: Repr = Repr();
     r.maxlist = 2;
+    l1: list[any] = [1, 2, 3];
+    l2: list[any] = [1, 2, 3, 4, 5, 6, 7, 8];
+    l3: list[any] = [];
+    n1: list[any] = [1];
+    n2: list[any] = [n1];
+    n3: list[any] = [n2];
+    n4: list[any] = [n3];
+    n5: list[any] = [n4];
+    n6: list[any] = [n5];
+    n7: list[any] = [n6];
+    d1: dict[str, any] = {"b": 1, "a": 2, "c": 3, "d": 4, "e": 5};
+    d3: dict[str, any] = {};
+    ml: list[any] = [1, 2, 3, 4];
     return {
         "i": repr(42),
         "b": repr(True),
@@ -29,14 +42,13 @@ def reprlib_py -> dict[any, any] {
         "s4": repr("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
         "s5": repr(""),
         "n": repr(None),
-        "l1": repr([1, 2, 3]),
-        "l2": repr([1, 2, 3, 4, 5, 6, 7, 8]),
-        "l3": repr([]),
-        "l4": repr([[[[[[[1]]]]]]]),
-        "d1": repr({"b": 1, "a": 2, "c": 3, "d": 4, "e": 5}),
-        "d2": repr({2: 1, 10: 2, 1: 3}),
-        "d3": repr({}),
-        "ml": r.repr([1, 2, 3, 4])
+        "l1": repr(l1),
+        "l2": repr(l2),
+        "l3": repr(l3),
+        "l4": repr(n7),
+        "d1": repr(d1),
+        "d3": repr(d3),
+        "ml": r.repr(ml)
     };
 }
 
@@ -49,6 +61,19 @@ def reprlib_cl -> dict[any, any] {
 def reprlib_na -> dict[str, any] {
     r: Repr = Repr();
     r.maxlist = 2;
+    l1: list[any] = [1, 2, 3];
+    l2: list[any] = [1, 2, 3, 4, 5, 6, 7, 8];
+    l3: list[any] = [];
+    n1: list[any] = [1];
+    n2: list[any] = [n1];
+    n3: list[any] = [n2];
+    n4: list[any] = [n3];
+    n5: list[any] = [n4];
+    n6: list[any] = [n5];
+    n7: list[any] = [n6];
+    d1: dict[str, any] = {"b": 1, "a": 2, "c": 3, "d": 4, "e": 5};
+    d3: dict[str, any] = {};
+    ml: list[any] = [1, 2, 3, 4];
     return {
         "i": repr(42),
         "b": repr(True),
@@ -59,13 +84,12 @@ def reprlib_na -> dict[str, any] {
         "s4": repr("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
         "s5": repr(""),
         "n": repr(None),
-        "l1": repr([1, 2, 3]),
-        "l2": repr([1, 2, 3, 4, 5, 6, 7, 8]),
-        "l3": repr([]),
-        "l4": repr([[[[[[[1]]]]]]]),
-        "d1": repr({"b": 1, "a": 2, "c": 3, "d": 4, "e": 5}),
-        "d2": repr({2: 1, 10: 2, 1: 3}),
-        "d3": repr({}),
-        "ml": r.repr([1, 2, 3, 4])
+        "l1": repr(l1),
+        "l2": repr(l2),
+        "l3": repr(l3),
+        "l4": repr(n7),
+        "d1": repr(d1),
+        "d3": repr(d3),
+        "ml": r.repr(ml)
     };
 }
