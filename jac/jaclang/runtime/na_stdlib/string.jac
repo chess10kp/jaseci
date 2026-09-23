@@ -146,9 +146,12 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
         val: any = None;
         if isinstance(mapping, dict) {
             m2: dict[str, any] = mapping;
-            if name in m2 {
-                hit = True;
-                val = m2[name];
+            for k in m2 {
+                if k == name {
+                    hit = True;
+                    val = m2[k];
+                    break;
+                }
             }
         }
         if hit {
