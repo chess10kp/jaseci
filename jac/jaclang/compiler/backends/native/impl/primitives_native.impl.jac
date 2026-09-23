@@ -374,32 +374,16 @@ impl NativeBoolEmitter.emit_op_xor(
 impl NativeComplexEmitter._load_parts(
     self: NativeComplexEmitter, ctx: NativeEmitCtx, val: ir.Value
 ) -> (tuple[ir.Value, ir.Value] | None) {
-    p = ctx.pass_ref;
-    b = get_builder(p);
-    i32 = ir.IntType(32);
-    z0 = ir.Constant(i32, 0);
-    z1 = ir.Constant(i32, 1);
-    r = b.load(b.gep(val, [z0, z0], name="cx.rp"), name="cx.r");
-    im = b.load(b.gep(val, [z0, z1], name="cx.ip"), name="cx.i");
-    return (r, im);
+    return ctx.pass_ref._load_complex_parts(val);
 }
 
 impl NativeComplexEmitter._make_complex(
     self: NativeComplexEmitter, ctx: NativeEmitCtx, real: ir.Value, imag: ir.Value
 ) -> ir.Value {
     p = ctx.pass_ref;
-    b = get_builder(p);
-    i32 = ir.IntType(32);
-    i64 = ir.IntType(64);
-    z0 = ir.Constant(i32, 0);
-    z1 = ir.Constant(i32, 1);
-    ctype = p.complex_struct_type;
     p._set_rc_ctx("complex_new", "");
-    raw = b.call(p.rc_alloc_fn, [ir.Constant(i64, 16)], name="cx.raw");
+    ptr = p._emit_complex_value(real, imag);
     p._clear_rc_ctx();
-    ptr = b.bitcast(raw, ctype.as_pointer(), name="cx.ptr");
-    b.store(real, b.gep(ptr, [z0, z0], name="cx.srp"));
-    b.store(imag, b.gep(ptr, [z0, z1], name="cx.sip"));
     return ptr;
 }
 
@@ -1230,9 +1214,17 @@ impl NativeStrEmitter.emit_rsplit(
 impl NativeStrEmitter.emit_splitlines(
     self: NativeStrEmitter, ctx: NativeEmitCtx, target: ir.Value, args: list[ir.Value]
 ) -> (ir.Value | None) {
-    p = ctx.pass_ref;
-    nl_sep = p._make_global_string("\n", name_prefix=".nl.sep");
-    return p._codegen_str_split(target, nl_sep);
+    kwargs = ctx?.call_kwargs or {};
+    if len(args) > 1
+        or any(k != "keepends" for k in kwargs)
+        or (args and "keepends" in kwargs) {
+        return None;
+    }
+    keepends = args[0] if args else None;
+    if "keepends" in kwargs {
+        keepends = ctx.pass_ref._codegen_expr(kwargs["keepends"]);
+    }
+    return ctx.pass_ref._codegen_str_splitlines(target, keepends);
 }
 
 impl NativeStrEmitter.emit_join(
@@ -2839,10 +2831,25 @@ impl NativeListEmitter.emit_remove(
     at_end = b.icmp_unsigned(">=", fi, list_len, name="rem.atend");
     b.cbranch(at_end, done_bb, find_body);
     b.position_at_start(find_body);
-    elem = b.call(helpers["get"], [target, fi], name="rem.elem");
-    eq = b.icmp_signed("==", elem, search_val, name="rem.eq");
+    elem: ir.Value = b.call(helpers["get"], [target, fi], name="rem.elem");
+    if ctx.receiver_node is not None {
+        restored_elem = p._restore_list_read(elem, ctx.receiver_node);
+        restored_search = p._restore_list_read(search_val, ctx.receiver_node);
+        if restored_elem is None or restored_search is None {
+            return None;
+        }
+        elem = restored_elem;
+        search_val = restored_search;
+    }
+    eq = p._emit_comparison(
+        Tok.EE, elem, search_val, isinstance(elem.type, (ir.DoubleType, ir.FloatType))
+    );
+    if eq is None {
+        return None;
+    }
+    compare_end = b.basic_block;
     next_fi = b.add(fi, ir.Constant(i64, 1), name="rem.nextfi");
-    fi.add_incoming(next_fi, find_body);
+    fi.add_incoming(next_fi, compare_end);
     b.cbranch(eq, found_bb, find_bb);
 
     b.position_at_start(found_bb);
@@ -3049,11 +3056,26 @@ impl NativeListEmitter.emit_index(
     at_end = b.icmp_unsigned(">=", idx, list_len, name="idx.atend");
     b.cbranch(at_end, done_bb, check_bb);
     b.position_at_start(check_bb);
-    elem = b.call(helpers["get"], [target, idx], name="idx.elem");
-    eq = b.icmp_signed("==", elem, search_val, name="idx.eq");
+    elem: ir.Value = b.call(helpers["get"], [target, idx], name="idx.elem");
+    if ctx.receiver_node is not None {
+        restored_elem = p._restore_list_read(elem, ctx.receiver_node);
+        restored_search = p._restore_list_read(search_val, ctx.receiver_node);
+        if restored_elem is None or restored_search is None {
+            return None;
+        }
+        elem = restored_elem;
+        search_val = restored_search;
+    }
+    eq = p._emit_comparison(
+        Tok.EE, elem, search_val, isinstance(elem.type, (ir.DoubleType, ir.FloatType))
+    );
+    if eq is None {
+        return None;
+    }
+    compare_end = b.basic_block;
     next_idx = b.add(idx, ir.Constant(i64, 1), name="idx.next");
     b.cbranch(eq, found_bb, loop_bb);
-    idx.add_incoming(next_idx, check_bb);
+    idx.add_incoming(next_idx, compare_end);
     b.position_at_start(found_bb);
     b.branch(done_bb);
     b.position_at_start(done_bb);
@@ -3100,12 +3122,27 @@ impl NativeListEmitter.emit_count(
     at_end = b.icmp_unsigned(">=", idx, list_len, name="cnt.atend");
     b.cbranch(at_end, done_bb, body_bb);
     b.position_at_start(body_bb);
-    elem = b.call(helpers["get"], [target, idx], name="cnt.elem");
-    eq = b.icmp_signed("==", elem, search_val, name="cnt.eq");
+    elem: ir.Value = b.call(helpers["get"], [target, idx], name="cnt.elem");
+    if ctx.receiver_node is not None {
+        restored_elem = p._restore_list_read(elem, ctx.receiver_node);
+        restored_search = p._restore_list_read(search_val, ctx.receiver_node);
+        if restored_elem is None or restored_search is None {
+            return None;
+        }
+        elem = restored_elem;
+        search_val = restored_search;
+    }
+    eq = p._emit_comparison(
+        Tok.EE, elem, search_val, isinstance(elem.type, (ir.DoubleType, ir.FloatType))
+    );
+    if eq is None {
+        return None;
+    }
+    compare_end = b.basic_block;
     next_idx = b.add(idx, ir.Constant(i64, 1), name="cnt.next");
     b.cbranch(eq, inc_bb, loop_bb);
-    idx.add_incoming(next_idx, body_bb);
-    count.add_incoming(count, body_bb);
+    idx.add_incoming(next_idx, compare_end);
+    count.add_incoming(count, compare_end);
     b.position_at_start(inc_bb);
     new_count = b.add(count, ir.Constant(i64, 1), name="cnt.inc");
     next_idx2 = b.add(idx, ir.Constant(i64, 1), name="cnt.next2");
@@ -5831,6 +5868,36 @@ impl NativeBuiltinEmitter.emit_set(
     b = get_builder(p);
     i64 = ir.IntType(64);
     val = args[0];
+
+    if p._is_bytes_value(val) {
+        (key_spec, key_size) = p._hash_key_spec(i64);
+        p._emit_set_helpers(key_spec, i64, key_size);
+        helpers = p.set_helpers.get(key_spec);
+        if helpers is None {
+            return None;
+        }
+        count = p._bytes_len_val(val);
+        data = p._bytes_data_ptr(val);
+        result = b.call(helpers["new"], [], name="b2s.new");
+        func = b.basic_block.function;
+        entry_bb = b.basic_block;
+        loop_bb = func.append_basic_block(name="b2s.loop");
+        body_bb = func.append_basic_block(name="b2s.body");
+        done_bb = func.append_basic_block(name="b2s.done");
+        b.branch(loop_bb);
+        b.position_at_start(loop_bb);
+        index = b.phi(i64, name="b2s.idx");
+        index.add_incoming(ir.Constant(i64, 0), entry_bb);
+        b.cbranch(b.icmp_unsigned(">=", index, count), done_bb, body_bb);
+        b.position_at_start(body_bb);
+        byte = b.load(b.gep(data, [index]), name="b2s.byte");
+        b.call(helpers["add"], [result, b.zext(byte, i64, name="b2s.value")]);
+        next_index = b.add(index, ir.Constant(i64, 1));
+        index.add_incoming(next_index, body_bb);
+        b.branch(loop_bb);
+        b.position_at_start(done_bb);
+        return result;
+    }
 
     for (lk, lhelpers) in p.list_helpers.items() {
         ltype = p.list_types.get(lk);
