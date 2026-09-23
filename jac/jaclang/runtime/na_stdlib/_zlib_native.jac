@@ -82,54 +82,6 @@ def _store_u32(addr: int, value: int) {
 }
 
 
-def _inflate_init(
-    strm: bytes, src: bytes, src_off: int, src_len: int, window_bits: int
-) -> int {
-    sa: int = _payload_addr(strm);
-    in_ptr: int = 0;
-    if src_len > 0 {
-        in_ptr = _payload_addr(src) + src_off;
-    }
-    __mem_store_i64(sa + _ZS_NEXT_IN, in_ptr);
-    _store_u32(sa + _ZS_AVAIL_IN, src_len);
-    return _signed32(
-        inflateInit2_(strm, i32(window_bits), zlibVersion(), i32(_Z_STREAM_SIZE))
-    );
-}
-
-
-def _inflate_set_out(strm: bytes, out_addr: int, room: int) {
-    sa: int = _payload_addr(strm);
-    __mem_store_i64(sa + _ZS_NEXT_OUT, out_addr);
-    _store_u32(sa + _ZS_AVAIL_OUT, room);
-}
-
-
-def _inflate_refeed_in(strm: bytes, remaining: int) {
-    _store_u32(_payload_addr(strm) + _ZS_AVAIL_IN, remaining);
-}
-
-
-def _inflate(strm: bytes) -> int {
-    return _signed32(inflate(strm, i32(0)));
-}
-
-
-def _inflate_total_in(strm: bytes) -> int {
-    return __mem_load_i64(_payload_addr(strm) + _ZS_TOTAL_IN);
-}
-
-
-def _inflate_total_out(strm: bytes) -> int {
-    return __mem_load_i64(_payload_addr(strm) + _ZS_TOTAL_OUT);
-}
-
-
-def _inflate_end(strm: bytes) {
-    inflateEnd(strm);
-}
-
-
 obj:pub ZInflateResult {
     has status: int,
         consumed: int,
@@ -142,7 +94,16 @@ def:pub z_inflate_all(
     src: bytes, src_off: int, src_len: int, window_bits: int, cap: int, ceiling: int
 ) -> ZInflateResult {
     strm: bytes = b"\x00" * _Z_STREAM_SIZE;
-    rc: int = _inflate_init(strm, src, src_off, src_len, window_bits);
+    sa: int = _payload_addr(strm);
+    in_ptr: int = 0;
+    if src_len > 0 {
+        in_ptr = _payload_addr(src) + src_off;
+    }
+    __mem_store_i64(sa + _ZS_NEXT_IN, in_ptr);
+    _store_u32(sa + _ZS_AVAIL_IN, src_len);
+    rc: int = _signed32(
+        inflateInit2_(strm, i32(window_bits), zlibVersion(), i32(_Z_STREAM_SIZE))
+    );
     if rc != Z_OK {
         return ZInflateResult(status=rc, consumed=0, data=b"", init_ok=False);
     }
@@ -150,15 +111,17 @@ def:pub z_inflate_all(
         cap = 1;
     }
     buf: bytes = b"\x00" * cap;
+    ba: int = _payload_addr(buf);
     status: int = Z_OK;
     total: int = 0;
+    fed: int = 0;
     while status == Z_OK {
         if total == cap {
             if cap >= ceiling {
                 status = Z_BUF_ERROR;
                 break;
             }
-            fed: int = _inflate_total_in(strm);
+            fed = __mem_load_i64(sa + _ZS_TOTAL_IN);
             newcap: int = cap * 2;
             if fed > 0 {
                 pred: int = (total * src_len) // fed + total // 4 + 4096;
@@ -170,17 +133,19 @@ def:pub z_inflate_all(
                 newcap = ceiling;
             }
             nbuf: bytes = b"\x00" * newcap;
-            memcpy(nbuf, _payload_addr(buf), u64(total));
+            memcpy(nbuf, ba, u64(total));
             buf = nbuf;
+            ba = _payload_addr(nbuf);
             cap = newcap;
         }
-        _inflate_set_out(strm, _payload_addr(buf) + total, cap - total);
-        status = _inflate(strm);
-        total = _inflate_total_out(strm);
+        __mem_store_i64(sa + _ZS_NEXT_OUT, ba + total);
+        _store_u32(sa + _ZS_AVAIL_OUT, cap - total);
+        status = _signed32(inflate(strm, i32(0)));
+        total = __mem_load_i64(sa + _ZS_TOTAL_OUT);
         if status == Z_BUF_ERROR {
-            fed = _inflate_total_in(strm);
+            fed = __mem_load_i64(sa + _ZS_TOTAL_IN);
             if fed < src_len {
-                _inflate_refeed_in(strm, src_len - fed);
+                _store_u32(sa + _ZS_AVAIL_IN, src_len - fed);
                 status = Z_OK;
             } elif total == cap {
                 status = Z_OK;
@@ -191,7 +156,7 @@ def:pub z_inflate_all(
     if status == Z_STREAM_END {
         data = buf if total == cap else buf[0:total];
     }
-    consumed: int = _inflate_total_in(strm);
-    _inflate_end(strm);
+    consumed: int = __mem_load_i64(sa + _ZS_TOTAL_IN);
+    inflateEnd(strm);
     return ZInflateResult(status=status, consumed=consumed, data=data);
 }
