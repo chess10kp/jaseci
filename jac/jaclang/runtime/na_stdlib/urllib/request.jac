@@ -1320,6 +1320,8 @@ def _do_open(req: Request, use_tls: bool) -> HTTPResp {
         j += 1;
     }
     r = HTTPResp(fp=BytesIO(body), headers=hdrs, url=req.get_full_url(), code=status);
+    write_file_bytes("/tmp/dbg_ctor_code", str(status).encode());
+    r.code = status;
     r.msg = reason;
     r.body_length = len(body);
     return r;
