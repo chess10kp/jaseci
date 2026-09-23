@@ -6,6 +6,7 @@
 #   LANE 2  CPython loop -> `math.sqrt` + module rows
 #   LANE 3  Jac on the sv backend -> CPython bridge (same source)
 #   LANE 4  Jac on the native backend -> bundled na_stdlib (same source)
+#   LANE 4b lane 4 under [memory] profile="rc" (plain RC, no cycle tracker)
 #
 # Rows print name|n|ns_per_op|acc; acc must agree across lanes.
 #
@@ -23,5 +24,11 @@ echo
 echo "=== lane 3: jac sv backend -> cpython bridge ==="
 "$JAC" run -b python scripts/bench/bench_na_socket.jac
 echo
-echo "=== lane 4: jac native backend -> bundled na_stdlib ==="
+echo "=== lane 4: jac native backend -> bundled na_stdlib (managed) ==="
 "$JAC" run -b native scripts/bench/bench_na_socket.jac
+echo
+echo "=== lane 4b: same, under [memory] profile=rc (no cycle tracker) ==="
+cp jac.toml /tmp/jac.toml.bench.bak
+trap 'cp /tmp/jac.toml.bench.bak jac.toml' EXIT
+printf '\n[memory]\nprofile = "rc"\n' >> jac.toml
+"$JAC" run -b native --no-cache scripts/bench/bench_na_socket.jac
