@@ -46,6 +46,9 @@ jobs:
           zig build fetch-typeshed --summary all
           zig build vendor-musl --summary all
 
+      - name: Debug reprlib dict path
+        run: jac/zig-out/bin/jac run -b native scripts/bench/dbg_repr.jac
+
       - name: Run benchmarks
         run: |
           set -o pipefail
