@@ -565,11 +565,14 @@ obj:pub HTTPErrorProcessor(BaseHandler) {
         msg = "";
         hdrs: any = None;
         if isinstance(response, HTTPResp) {
+            write_file_bytes("/tmp/dbg_hr_is", b"1");
             hr: HTTPResp = response;
             c = hr.code;
             if c != None {
                 ci: int = c;
                 code = ci;
+            } else {
+                write_file_bytes("/tmp/dbg_hr_cnull", b"1");
             }
             msg = hr.msg;
             hdrs = hr.info();
@@ -602,7 +605,10 @@ obj:pub HTTPDefaultErrorHandler(BaseHandler) {
     def http_error_default(
         req: Request, fp: any, code: int, msg: str, hdrs: any
     ) -> any {
-        raise HTTPError(req.full_url, code, msg, hdrs, fp);
+        write_file_bytes("/tmp/dbg_deh_ctor", b"1");
+        e = HTTPError(req.full_url, code, msg, hdrs, fp);
+        write_file_bytes("/tmp/dbg_deh_raise", b"1");
+        raise e;
     }
 }
 
