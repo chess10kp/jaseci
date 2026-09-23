@@ -10,26 +10,53 @@ glob:pub whitespace: str = " \t\n\r\x0b\x0c",
 
 
 def:pub capwords(s: str, sep: (str | None) = None) -> str {
-    parts: list[str] = [];
-    joiner: str = " ";
     if sep is None {
-        parts = s.split();
-    } else {
-        sepv: str = sep;
-        parts = s.split(sepv);
-        joiner = sepv;
-    }
-    out: str = "";
-    i: int = 0;
-    n: int = len(parts);
-    while i < n {
-        if i > 0 {
-            out += joiner;
+        # single pass over the bytes: collapse whitespace runs, uppercase
+        # each word's first byte, lowercase the rest — one output buffer
+        bv: bytes = s.encode();
+        n: int = len(bv);
+        out: bytearray = bytearray();
+        inword: bool = False;
+        first: bool = True;
+        i: int = 0;
+        while i < n {
+            c: int = bv[i];
+            if c == 32 or (c >= 9 and c <= 13) {
+                inword = False;
+                i += 1;
+                continue;
+            }
+            if not inword {
+                inword = True;
+                if not first {
+                    out.append(32);
+                }
+                first = False;
+                if c >= 97 and c <= 122 {
+                    c -= 32;
+                }
+            } elif c >= 65 and c <= 90 {
+                c += 32;
+            }
+            out.append(c);
+            i += 1;
         }
-        out += parts[i].capitalize();
+        return bytes(out).decode();
+    }
+    sepv: str = sep;
+    parts: list[str] = s.split(sepv);
+    joiner: str = sepv;
+    out2: str = "";
+    i: int = 0;
+    n2: int = len(parts);
+    while i < n2 {
+        if i > 0 {
+            out2 += joiner;
+        }
+        out2 += parts[i].capitalize();
         i += 1;
     }
-    return out;
+    return out2;
 }
 
 
