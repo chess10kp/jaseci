@@ -58,6 +58,8 @@ glob _OP_CHAR: int = 1,
 
 glob _MAXCP: int = 1114111;
 
+glob _ESCAPE_SPECIAL: str = "()[]{}?*+-|^$\\.&~# \t\n\r\x0b\x0c";
+
 
 def _isdig(c: int) -> bool {
     return c >= 48 and c <= 57;
@@ -152,6 +154,20 @@ def _name_index(names: dict[str, int], nm: str) -> int {
         }
     }
     return -1;
+}
+
+
+def _bounds(n: int, pos: int, endpos: int) -> tuple[(int, int)] {
+    if endpos < 0 or endpos > n {
+        endpos = n;
+    }
+    if pos < 0 {
+        pos = 0;
+    }
+    if pos > n {
+        pos = n;
+    }
+    return (pos, endpos);
 }
 
 
@@ -1637,16 +1653,9 @@ obj:pub Pattern {
     }
 
     def search(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
-        n: int = len(string);
-        if endpos < 0 or endpos > n {
-            endpos = n;
-        }
-        if pos < 0 {
-            pos = 0;
-        }
-        if pos > n {
-            pos = n;
-        }
+        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        pos = b[0];
+        endpos = b[1];
         if pos > endpos {
             return None;
         }
@@ -1654,16 +1663,9 @@ obj:pub Pattern {
     }
 
     def `match(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
-        n: int = len(string);
-        if endpos < 0 or endpos > n {
-            endpos = n;
-        }
-        if pos < 0 {
-            pos = 0;
-        }
-        if pos > n {
-            pos = n;
-        }
+        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        pos = b[0];
+        endpos = b[1];
         if pos > endpos {
             return None;
         }
@@ -1690,16 +1692,9 @@ obj:pub Pattern {
     }
 
     def finditer(string: str, pos: int = 0, endpos: int = -1) -> list[Match] {
-        n: int = len(string);
-        if endpos < 0 or endpos > n {
-            endpos = n;
-        }
-        if pos < 0 {
-            pos = 0;
-        }
-        if pos > n {
-            pos = n;
-        }
+        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        pos = b[0];
+        endpos = b[1];
         out: list[Match] = [];
         p: int = pos;
         while p <= endpos {
@@ -1721,6 +1716,11 @@ obj:pub Pattern {
     }
 
     def findall(string: str, pos: int = 0, endpos: int = -1) -> list[str] {
+        if self._re.ngroups > 1 {
+            raise ValueError(
+                "findall: patterns with more than one group are not supported on native"
+            );
+        }
         ms: list[Match] = self.finditer(string, pos, endpos);
         out: list[str] = [];
         i: int = 0;
@@ -1728,7 +1728,7 @@ obj:pub Pattern {
             m: Match = ms[i];
             if self._re.ngroups == 0 {
                 out.append(m.string[m._slots[0]:m._slots[1]]);
-            } elif self._re.ngroups == 1 {
+            } else {
                 lo: int = m._slots[2];
                 hi: int = m._slots[3];
                 if lo < 0 or hi < lo {
@@ -1736,10 +1736,6 @@ obj:pub Pattern {
                 } else {
                     out.append(m.string[lo:hi]);
                 }
-            } else {
-                raise ValueError(
-                    "findall: patterns with more than one group are not supported on native"
-                );
             }
             i += 1;
         }
@@ -2071,10 +2067,9 @@ def:pub escape(pattern: str) -> str {
     out: str = "";
     i: int = 0;
     n: int = len(pattern);
-    special: str = "()[]{}?*+-|^$\\.&~# \t\n\r\x0b\x0c";
     while i < n {
         ch: str = pattern[i];
-        if ch in special {
+        if ch in _ESCAPE_SPECIAL {
             out += "\\";
         }
         out += ch;

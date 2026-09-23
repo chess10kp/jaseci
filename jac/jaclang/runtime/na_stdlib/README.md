@@ -237,12 +237,11 @@ native layout records the emitted name separately from its source-level key.
   (prefer `'`, switch to `"` when the string contains `'` but not `"`),
   `\\`/`\n`/`\t`/`\r`/`\xNN` escaping, `maxstring` middle-ellipsis fill,
   `maxlong` truncation for ints, `maxlist`/`maxdict` item caps, sorted dict
-  keys for homogeneous int/str key sets, and `level <= 0` -> `"[...]"`/
-  `"{...}"` depth cutoffs. SCOPE/divergences: `set`/`frozenset` raise
+  keys, and `level <= 0` -> `"[...]"`/`"{...}"` depth cutoffs.
+  SCOPE/divergences: `set`/`frozenset` raise
   `ValueError("reprlib: unsupported value type on native")` (same precedent
   as `pprint.jac`); tuples and other unrecognized values render as `"None"`
   (the native runtime cannot type-discriminate them -- see `pprint.jac`);
-  mixed-type dict keys keep insertion order (CPython's `sorted` fallback);
   containers must reach `repr`/`Repr.repr` as `list[any]`/`dict[str, any]`
   (the canonical `any` layouts -- concretely-typed literals reinterpret
   badly through the `any` boundary); `recursive_repr`/`aRepr` attribute
