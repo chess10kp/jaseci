@@ -112,7 +112,7 @@ def bench_robot_parse(n):
     for _ in range(n):
         rp = urllib.robotparser.RobotFileParser("http://ex.com/robots.txt")
         rp.parse(lines)
-        acc += len(rp.entries)
+        acc += len(rp.site_maps() or [])
     return time.perf_counter() - t0, acc
 
 
