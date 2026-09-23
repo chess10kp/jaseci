@@ -88,6 +88,9 @@ jobs:
           mv /tmp/pybin-baseline /tmp/pybin_baseline
           # upload-artifact does not preserve unix permissions
           chmod +x /tmp/inst_fixed/bin/python3.14 /tmp/pybin_baseline/bin/python3.14
+          mkdir -p /tmp/pristine_fixed/bin /tmp/pristine_fixed/lib
+          cp /tmp/inst_fixed/bin/python3.14 /tmp/pristine_fixed/bin/
+          cp /tmp/inst_fixed/lib/libpython3.14.so /tmp/pristine_fixed/lib/
           /tmp/inst_fixed/bin/python3.14 --version
 
       - name: Write bench harness
@@ -139,7 +142,7 @@ jobs:
           for r in $(seq 1 "$ROUNDS"); do
             if (( r % 2 == 1 )); then ORDER="A B"; else ORDER="B A"; fi
             for T in $ORDER; do
-              if [ "$T" = A ]; then SRC=/tmp/inst_fixed; else SRC=/tmp/pybin_baseline; fi
+              if [ "$T" = A ]; then SRC=/tmp/pristine_fixed; else SRC=/tmp/pybin_baseline; fi
               cp "$SRC/bin/python3.14" "$INST/bin/python3.14"
               cp "$SRC/lib/libpython3.14.so" "$INST/lib/libpython3.14.so"
               OUT=$(cd "$WS" && PYTHONPATH="$WS" "$INST/bin/python3.14" \
@@ -149,8 +152,8 @@ jobs:
               echo "round $r $T median=${MED}ms"
             done
           done
-          cp /tmp/inst_fixed/bin/python3.14 "$INST/bin/python3.14"
-          cp /tmp/inst_fixed/lib/libpython3.14.so "$INST/lib/libpython3.14.so"
+          cp /tmp/pristine_fixed/bin/python3.14 "$INST/bin/python3.14"
+          cp /tmp/pristine_fixed/lib/libpython3.14.so "$INST/lib/libpython3.14.so"
           stat_line() { printf '%s\n' "$@" | sort -n | awk '{a[NR]=$1} END{if(NR%2)print a[(NR+1)/2]; else print (a[NR/2]+a[NR/2+1])/2}'; }
           echo "A(fixed)    blocks: ${MED_A[*]} -> median=$(stat_line ${MED_A[*]})ms"
           echo "B(baseline) blocks: ${MED_B[*]} -> median=$(stat_line ${MED_B[*]})ms"
@@ -169,7 +172,7 @@ jobs:
           WS="$GITHUB_WORKSPACE/jac"
           INST=/tmp/inst_fixed
           for V in fixed baseline; do
-            if [ "$V" = baseline ]; then SRC=/tmp/pybin_baseline; else SRC=/tmp/inst_fixed; fi
+            if [ "$V" = baseline ]; then SRC=/tmp/pybin_baseline; else SRC=/tmp/pristine_fixed; fi
             cp "$SRC/bin/python3.14" "$INST/bin/python3.14"
             cp "$SRC/lib/libpython3.14.so" "$INST/lib/libpython3.14.so"
             C=$(cd "$WS" && PYTHONPATH="$WS" strace -f -c -e trace=rt_sigprocmask \
@@ -178,5 +181,5 @@ jobs:
                 grep -E '^\s+[0-9]+\s+rt_sigprocmask' | awk '{print $NF}' | tail -1)
             echo "$V rt_sigprocmask calls: $C"
           done
-          cp /tmp/inst_fixed/bin/python3.14 "$INST/bin/python3.14"
-          cp /tmp/inst_fixed/lib/libpython3.14.so "$INST/lib/libpython3.14.so"
+          cp /tmp/pristine_fixed/bin/python3.14 "$INST/bin/python3.14"
+          cp /tmp/pristine_fixed/lib/libpython3.14.so "$INST/lib/libpython3.14.so"
