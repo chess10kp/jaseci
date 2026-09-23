@@ -1,19 +1,3 @@
-"""Pure-Jac port of CPython 3.14's ``urllib.error`` (issue #6978).
-
-``URLError`` (an ``OSError``) is the base; ``HTTPError`` is both an exception
-and a valid response (it multi-inherits ``addinfourl``);
-``ContentTooShortError`` reports a short ``urlretrieve`` download.
-
-Native scope notes:
-
-- ``URLError.args`` is not assigned (native exception ``args`` are managed by
-  the raise machinery, not by ``init``); ``reason`` / ``filename`` carry the
-  payload instead.
-- ``HTTPError.fp`` accepts ``BytesIO | StringIO | None`` (``None`` becomes an
-  empty ``BytesIO``), matching the bundled ``urllib.response`` file-type
-  scope; ``headers`` is read-only (the CPython setter is a native gap).
-"""
-
 import from io { BytesIO, StringIO }
 import from urllib.response { addinfourl }
 
@@ -27,8 +11,6 @@ def _reason_str(r: any) -> str {
 
 
 obj:pub URLError(OSError) {
-    """Base exception for urllib errors; carries ``reason`` (and optionally
-    ``filename``) rather than the usual OSError errno/strerror pair."""
     has:pub reason: (str | None) = None,
         filename: (str | None) = None;
 
@@ -54,20 +36,11 @@ obj:pub URLError(OSError) {
 
 
 obj:pub HTTPError(URLError, addinfourl) {
-    """HTTP error: an exception that is also a valid response object.
-
-    ``code`` / ``headers`` / ``url`` / ``fp`` come from ``addinfourl`` so that
-    the inherited ``status`` / ``getcode`` / ``info`` accessors stay
-    consistent; ``msg`` and ``hdrs`` are the HTTPError-specific aliases."""
     has:pub msg: str = "",
         hdrs: any = None;
 
     def init(
-        url: str,
-        code: int,
-        msg: str,
-        hdrs: any,
-        fp: (BytesIO | StringIO | None)
+        url: str, code: int, msg: str, hdrs: any, fp: (BytesIO | StringIO | None)
     ) {
         self.code = code;
         self.msg = msg;
@@ -96,8 +69,6 @@ obj:pub HTTPError(URLError, addinfourl) {
 
 
 obj:pub ContentTooShortError(URLError) {
-    """Downloaded size does not match Content-Length; carries the partial
-    ``content``."""
     has:pub content: (bytes | str) = b"";
 
     def init(message: str, content: (bytes | str)) {

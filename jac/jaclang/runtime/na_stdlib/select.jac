@@ -1,9 +1,3 @@
-"""Pure-Jac port of CPython 3.14's ``select`` module (issue #6978), Linux
-variant: ``select()``, ``poll()``, ``epoll``, ``PIPE_BUF`` and the POLL*/EPOLL*
-constants. ``select.error`` is ``OSError`` (a builtin alias cannot be bound
-natively); ``kqueue`` / ``devpoll`` are non-Linux and out of scope here.
-"""
-
 import from _select_native {
     FD_SETSIZE,
     epoll_create,
@@ -136,7 +130,6 @@ def _ceil_f(x: float) -> int {
 
 
 def _ms_of(timeout: (int | float | None)) -> int {
-    # poll.poll() takes milliseconds directly; None/negative blocks forever.
     if timeout is None {
         return -1;
     }
@@ -156,7 +149,6 @@ def _ms_of(timeout: (int | float | None)) -> int {
 
 
 def _ms_ep(timeout: (int | float | None)) -> int {
-    # epoll.poll() takes seconds (like select); None/negative blocks forever.
     if timeout is None {
         return -1;
     }
@@ -176,7 +168,6 @@ def _ms_ep(timeout: (int | float | None)) -> int {
 
 
 obj:pub poll {
-    """``select.poll`` -- a poll(2) set of registered fds -> event masks."""
     has _fds: dict[int, int] = {};
 
     def:pub register(fd: int, eventmask: int = 0x001 | 0x002 | 0x004) {
@@ -228,12 +219,6 @@ obj:pub poll {
 
 
 obj:pub epoll {
-    """``select.epoll`` -- wraps an epoll(7) fd.
-
-    ``poll(timeout, maxevents)`` takes ``timeout`` in seconds like CPython;
-    ``sizehint`` is accepted for signature parity and ignored (epoll sizes
-    itself). ``fromfd`` is a native gap.
-    """
     has:pub closed: bool = False;
     has _epfd: int = -1;
 

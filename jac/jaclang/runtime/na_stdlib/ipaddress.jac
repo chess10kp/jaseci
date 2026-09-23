@@ -258,9 +258,7 @@ def _ip4_from_str(ip_str: str) -> int {
     }
     octets = ip_str.split(".");
     if len(octets) != 4 {
-        raise AddressValueError(
-            "Expected 4 octets in " + _repr_str(ip_str)
-        );
+        raise AddressValueError("Expected 4 octets in " + _repr_str(ip_str));
     }
     result = 0;
     for o in octets {
@@ -296,10 +294,7 @@ def _ip4_from_str(ip_str: str) -> int {
         ov = int(o);
         if ov > 255 {
             raise AddressValueError(
-                "Octet "
-                    + str(ov)
-                    + " (> 255) not permitted in "
-                    + _repr_str(ip_str)
+                "Octet " + str(ov) + " (> 255) not permitted in " + _repr_str(ip_str)
             );
         }
         result = (result << 8) | ov;
@@ -332,9 +327,7 @@ def _split_scope_id(ip_str: str) -> tuple[(str, str)] {
     addr = ip_str[0:idx];
     scope = ip_str[idx + 1:len(ip_str)];
     if len(scope) == 0 or scope.find("%") != -1 {
-        raise AddressValueError(
-            "Invalid IPv6 address: \"" + _repr_str(ip_str) + "\""
-        );
+        raise AddressValueError("Invalid IPv6 address: \"" + _repr_str(ip_str) + "\"");
     }
     return (addr, scope);
 }
@@ -360,27 +353,21 @@ def _ip6_from_str(full_str: str) -> tuple[(u64, u64, str)] {
     }
     parts = ip_str.split(":", 9);
     if len(parts) < 3 {
-        raise AddressValueError(
-            "At least 3 parts expected in " + _repr_str(ip_str)
-        );
+        raise AddressValueError("At least 3 parts expected in " + _repr_str(ip_str));
     }
     last = parts[len(parts) - 1];
     if last.find(".") != -1 {
         try {
             ipv4_int = _ip4_from_str(last);
         } except AddressValueError as exc {
-            raise AddressValueError(
-                str(exc) + " in " + _repr_str(ip_str)
-            );
+            raise AddressValueError(str(exc) + " in " + _repr_str(ip_str));
         }
         parts.pop();
         parts.append(_hex4((ipv4_int >> 16) & 0xffff));
         parts.append(_hex4(ipv4_int & 0xffff));
     }
     if len(parts) > 9 {
-        raise AddressValueError(
-            "At most 8 colons permitted in " + _repr_str(ip_str)
-        );
+        raise AddressValueError("At most 8 colons permitted in " + _repr_str(ip_str));
     }
     skip_index = -1;
     for i in range(1, len(parts) - 1) {
@@ -403,8 +390,7 @@ def _ip6_from_str(full_str: str) -> tuple[(u64, u64, str)] {
             parts_hi -= 1;
             if parts_hi != 0 {
                 raise AddressValueError(
-                    "Leading ':' only permitted as part of '::' in "
-                        + _repr_str(ip_str)
+                    "Leading ':' only permitted as part of '::' in " + _repr_str(ip_str)
                 );
             }
         }
@@ -420,27 +406,23 @@ def _ip6_from_str(full_str: str) -> tuple[(u64, u64, str)] {
         parts_skipped = 8 - (parts_hi + parts_lo);
         if parts_skipped < 1 {
             raise AddressValueError(
-                "Expected at most 7 other parts with '::' in "
-                    + _repr_str(ip_str)
+                "Expected at most 7 other parts with '::' in " + _repr_str(ip_str)
             );
         }
     } else {
         if len(parts) != 8 {
             raise AddressValueError(
-                "Exactly 8 parts expected without '::' in "
-                    + _repr_str(ip_str)
+                "Exactly 8 parts expected without '::' in " + _repr_str(ip_str)
             );
         }
         if len(parts[0]) == 0 {
             raise AddressValueError(
-                "Leading ':' only permitted as part of '::' in "
-                    + _repr_str(ip_str)
+                "Leading ':' only permitted as part of '::' in " + _repr_str(ip_str)
             );
         }
         if len(parts[len(parts) - 1]) == 0 {
             raise AddressValueError(
-                "Trailing ':' only permitted as part of '::' in "
-                    + _repr_str(ip_str)
+                "Trailing ':' only permitted as part of '::' in " + _repr_str(ip_str)
             );
         }
         parts_hi = len(parts);
@@ -467,16 +449,12 @@ def _ip6_from_str(full_str: str) -> tuple[(u64, u64, str)] {
 def _parse_hextet(hs: str, ip_str: str) -> int {
     if len(hs) == 0 {
         raise AddressValueError(
-            "invalid literal for int() with base 16: '' in "
-                + _repr_str(ip_str)
+            "invalid literal for int() with base 16: '' in " + _repr_str(ip_str)
         );
     }
     if not _is_hex_str(hs) {
         raise AddressValueError(
-            "Only hex digits permitted in "
-                + _repr_str(hs)
-                + " in "
-                + _repr_str(ip_str)
+            "Only hex digits permitted in " + _repr_str(hs) + " in " + _repr_str(ip_str)
         );
     }
     if len(hs) > 4 {
@@ -558,14 +536,10 @@ def _compress_hextets(hextets: list[str]) -> list[str] {
 def _ip6_to_str(hi: u64, lo: u64) -> str {
     hextets: list[str] = [];
     for shift in range(4) {
-        hextets.append(
-            _hex4(int((hi >> u64(48 - shift * 16)) & u64(0xffff)))
-        );
+        hextets.append(_hex4(int((hi >> u64(48 - shift * 16)) & u64(0xffff))));
     }
     for shift in range(4) {
-        hextets.append(
-            _hex4(int((lo >> u64(48 - shift * 16)) & u64(0xffff)))
-        );
+        hextets.append(_hex4(int((lo >> u64(48 - shift * 16)) & u64(0xffff))));
     }
     hextets = _compress_hextets(hextets);
     out = "";
@@ -613,9 +587,7 @@ def _ip6_explode(hi: u64, lo: u64) -> str {
 def _split_optional_netmask(address: str) -> list[str] {
     addr = address.split("/");
     if len(addr) > 2 {
-        raise AddressValueError(
-            "Only one '/' permitted in " + _repr_str(address)
-        );
+        raise AddressValueError("Only one '/' permitted in " + _repr_str(address));
     }
     return addr;
 }
@@ -649,8 +621,7 @@ def _check_int_address(address: int, version: int) {
     }
     if version == 4 and address > 4294967295 {
         raise AddressValueError(
-            str(address)
-                + " (>= 2**32) is not permitted as an IPv4 address"
+            str(address) + " (>= 2**32) is not permitted as an IPv4 address"
         );
     }
 }
@@ -769,10 +740,11 @@ def _in_net128(hi: u64, lo: u64, nhi: u64, nlo: u64, prefix: int) -> bool {
 
 
 obj _AddrBase {
-    has version: int = 0;
-    has _hi: u64 = u64(0);
-    has _lo: u64 = u64(0);
-    has _scope: (str | None) = None;
+    has version: int = 0,
+        _hi: u64 = u64(0),
+        _lo: u64 = u64(0),
+        _scope: (str | None) = None;
+
     has packed: bytes { getter; }
     has compressed: str { getter; }
     has exploded: str { getter; }
@@ -806,9 +778,7 @@ obj _AddrBase {
 
     def __int__ -> int {
         if self._hi != u64(0) or self._lo > u64(9223372036854775807) {
-            raise OverflowError(
-                "IPv6 address does not fit in a native 64-bit int"
-            );
+            raise OverflowError("IPv6 address does not fit in a native 64-bit int");
         }
         return int(self._lo);
     }
@@ -821,8 +791,7 @@ obj _AddrBase {
         out = "";
         if mapped != -1 {
             hi96 = self._hi >> u64(32);
-            lo96 = wrapping_shl(self._hi & u64(0xffffffff), 32)
-                | (self._lo >> u64(32));
+            lo96 = wrapping_shl(self._hi & u64(0xffffffff), 32) | (self._lo >> u64(32));
             out = _ip6_to_str(hi96, lo96) + ":" + _ip4_to_str(mapped);
         } else {
             out = _ip6_to_str(self._hi, self._lo);
@@ -1143,9 +1112,7 @@ impl _AddrBase.is_link_local.getter -> bool {
     if self.version == 4 {
         return _in_net32(self._lo, 2851995648, 16);
     }
-    return _in_net128(
-        self._hi, self._lo, u64(18338657682652659712), u64(0), 10
-    );
+    return _in_net128(self._hi, self._lo, u64(18338657682652659712), u64(0), 10);
 }
 
 
@@ -1187,9 +1154,7 @@ obj:pub IPv4Address(_AddrBase) {
             return;
         }
         if address.find("/") != -1 {
-            raise AddressValueError(
-                "Unexpected '/' in " + _repr_str(address)
-            );
+            raise AddressValueError("Unexpected '/' in " + _repr_str(address));
         }
         self._lo = u64(_ip4_from_str(address));
     }
@@ -1216,8 +1181,7 @@ obj:pub IPv6Address(_AddrBase) {
         if isinstance(address, int) {
             if address < 0 {
                 raise AddressValueError(
-                    str(address)
-                        + " (< 0) is not permitted as an IPv6 address"
+                    str(address) + " (< 0) is not permitted as an IPv6 address"
                 );
             }
             self._hi = u64(0);
@@ -1231,9 +1195,7 @@ obj:pub IPv6Address(_AddrBase) {
             return;
         }
         if address.find("/") != -1 {
-            raise AddressValueError(
-                "Unexpected '/' in " + _repr_str(address)
-            );
+            raise AddressValueError("Unexpected '/' in " + _repr_str(address));
         }
         (hi, lo, scope) = _ip6_from_str(address);
         self._hi = hi;
@@ -1247,13 +1209,11 @@ obj:pub IPv6Address(_AddrBase) {
         mapped = self._ipv4_mapped_ip();
         if mapped == -1 {
             raise AddressValueError(
-                "Can not apply to non-IPv4-mapped IPv6 address "
-                    + self.__str__()
+                "Can not apply to non-IPv4-mapped IPv6 address " + self.__str__()
             );
         }
         hi96 = self._hi >> u64(32);
-        lo96 = wrapping_shl(self._hi & u64(0xffffffff), 32)
-            | (self._lo >> u64(32));
+        lo96 = wrapping_shl(self._hi & u64(0xffffffff), 32) | (self._lo >> u64(32));
         return _ip6_to_str(hi96, lo96) + ":" + _ip4_to_str(mapped);
     }
 }
@@ -1298,9 +1258,7 @@ impl IPv6Address.sixtofour.getter -> (IPv4Address | None) {
 
 
 impl IPv6Address.is_site_local.getter -> bool {
-    return _in_net128(
-        self._hi, self._lo, u64(18356672081162141696), u64(0), 10
-    );
+    return _in_net128(self._hi, self._lo, u64(18356672081162141696), u64(0), 10);
 }
 
 
@@ -1387,12 +1345,13 @@ def _prefix_from_ip32(ip_int: int) -> int {
 
 
 obj _NetBase {
-    has version: int = 0;
-    has _net_hi: u64 = u64(0);
-    has _net_lo: u64 = u64(0);
-    has _mask_hi: u64 = u64(0);
-    has _mask_lo: u64 = u64(0);
-    has _prefixlen: int = 0;
+    has version: int = 0,
+        _net_hi: u64 = u64(0),
+        _net_lo: u64 = u64(0),
+        _mask_hi: u64 = u64(0),
+        _mask_lo: u64 = u64(0),
+        _prefixlen: int = 0;
+
     has network_address: _AddrBase { getter; }
     has broadcast_address: _AddrBase { getter; }
     has netmask: _AddrBase { getter; }
@@ -1433,10 +1392,7 @@ obj _NetBase {
             hostmask_hi = u64(0);
             hostmask_lo = hostmask_lo & u64(0xffffffff);
         }
-        return (
-            self._net_hi | hostmask_hi,
-            self._net_lo | hostmask_lo
-        );
+        return (self._net_hi | hostmask_hi, self._net_lo | hostmask_lo);
     }
 
     def _contains128(hi: u64, lo: u64) -> bool {
@@ -1492,9 +1448,8 @@ obj _NetBase {
         if c != 0 {
             return c < 0;
         }
-        return _cmp128(
-            self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo
-        ) < 0;
+        return _cmp128(self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo)
+            < 0;
     }
 
     def __gt__(other: _NetBase) -> bool {
@@ -1510,9 +1465,8 @@ obj _NetBase {
         if c != 0 {
             return c > 0;
         }
-        return _cmp128(
-            self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo
-        ) > 0;
+        return _cmp128(self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo)
+            > 0;
     }
 
     def __le__(other: _NetBase) -> bool {
@@ -1528,9 +1482,8 @@ obj _NetBase {
         if c != 0 {
             return c < 0;
         }
-        return _cmp128(
-            self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo
-        ) <= 0;
+        return _cmp128(self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo)
+            <= 0;
     }
 
     def __ge__(other: _NetBase) -> bool {
@@ -1546,9 +1499,8 @@ obj _NetBase {
         if c != 0 {
             return c > 0;
         }
-        return _cmp128(
-            self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo
-        ) >= 0;
+        return _cmp128(self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo)
+            >= 0;
     }
 
     def __hash__ -> int {
@@ -1639,22 +1591,19 @@ obj _NetBase {
     def compare_networks(other: _NetBase) -> int {
         if self.version != other.version {
             raise TypeError(
-                self.__str__()
-                    + " and "
-                    + other.__str__()
-                    + " are not of the same type"
+                self.__str__() + " and " + other.__str__() + " are not of the same type"
             );
         }
         c = _cmp128(self._net_hi, self._net_lo, other._net_hi, other._net_lo);
         if c != 0 {
             return c;
         }
-        return _cmp128(
-            self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo
-        );
+        return _cmp128(self._mask_hi, self._mask_lo, other._mask_hi, other._mask_lo);
     }
 
-    def subnets(prefixlen_diff: int = 1, new_prefix: (int | None) = None) -> _SubnetIter {
+    def subnets(
+        prefixlen_diff: int = 1, new_prefix: (int | None) = None
+    ) -> _SubnetIter {
         if self._prefixlen == self._maxpl() {
             return _SubnetIter(
                 _ver=self.version,
@@ -1757,9 +1706,7 @@ obj _NetBase {
             );
         }
         if not other.subnet_of(self) {
-            raise ValueError(
-                other.__str__() + " not contained in " + self.__str__()
-            );
+            raise ValueError(other.__str__() + " not contained in " + self.__str__());
         }
         if other.__eq__(self) {
             return iter([]);
@@ -1810,13 +1757,13 @@ def _is_subnet_of(a: _NetBase, b: _NetBase) -> bool {
 
 
 obj _AddrIter {
-    has _hi: u64 = u64(0);
-    has _lo: u64 = u64(0);
-    has _ehi: u64 = u64(0);
-    has _elo: u64 = u64(0);
-    has _ver: int = 4;
-    has _inclusive: bool = True;
-    has _done: bool = False;
+    has _hi: u64 = u64(0),
+        _lo: u64 = u64(0),
+        _ehi: u64 = u64(0),
+        _elo: u64 = u64(0),
+        _ver: int = 4,
+        _inclusive: bool = True,
+        _done: bool = False;
 
     def __iter__ -> _AddrIter {
         return self;
@@ -1849,17 +1796,17 @@ obj _AddrIter {
 
 
 obj _SubnetIter {
-    has _ver: int = 4;
-    has _cur_hi: u64 = u64(0);
-    has _cur_lo: u64 = u64(0);
-    has _step_hi: u64 = u64(0);
-    has _step_lo: u64 = u64(0);
-    has _end_hi: u64 = u64(0);
-    has _end_lo: u64 = u64(0);
-    has _prefix: int = 0;
-    has _done: bool = False;
-    has _open_end: bool = False;
-    has _single: bool = False;
+    has _ver: int = 4,
+        _cur_hi: u64 = u64(0),
+        _cur_lo: u64 = u64(0),
+        _step_hi: u64 = u64(0),
+        _step_lo: u64 = u64(0),
+        _end_hi: u64 = u64(0),
+        _end_lo: u64 = u64(0),
+        _prefix: int = 0,
+        _done: bool = False,
+        _open_end: bool = False,
+        _single: bool = False;
 
     def __iter__ -> _SubnetIter {
         return self;
@@ -1874,8 +1821,7 @@ obj _SubnetIter {
             return _mknet(self._ver, self._cur_hi, self._cur_lo, self._prefix);
         }
         if not self._open_end
-            and _cmp128(self._cur_hi, self._cur_lo, self._end_hi, self._end_lo)
-            >= 0 {
+            and _cmp128(self._cur_hi, self._cur_lo, self._end_hi, self._end_lo) >= 0 {
             self._done = True;
             raise StopIteration();
         }
@@ -1977,9 +1923,7 @@ impl _NetBase.num_addresses.getter -> int {
     (bhi, blo) = self._bcast();
     (dhi, dlo) = _sub128(bhi, blo, self._net_hi, self._net_lo);
     if dhi != u64(0) or dlo > u64(9223372036854775807) {
-        raise OverflowError(
-            "network size does not fit in a native 64-bit int"
-        );
+        raise OverflowError("network size does not fit in a native 64-bit int");
     }
     return int(dlo) + 1;
 }
@@ -1991,34 +1935,27 @@ impl _NetBase.with_prefixlen.getter -> str {
 
 
 impl _NetBase.with_netmask.getter -> str {
-    return self.network_address.__str__()
-        + "/"
-        + self.netmask.__str__();
+    return self.network_address.__str__() + "/" + self.netmask.__str__();
 }
 
 
 impl _NetBase.with_hostmask.getter -> str {
-    return self.network_address.__str__()
-        + "/"
-        + self.hostmask.__str__();
+    return self.network_address.__str__() + "/" + self.hostmask.__str__();
 }
 
 
 impl _NetBase.is_multicast.getter -> bool {
-    return self.network_address.is_multicast
-        and self.broadcast_address.is_multicast;
+    return self.network_address.is_multicast and self.broadcast_address.is_multicast;
 }
 
 
 impl _NetBase.is_reserved.getter -> bool {
-    return self.network_address.is_reserved
-        and self.broadcast_address.is_reserved;
+    return self.network_address.is_reserved and self.broadcast_address.is_reserved;
 }
 
 
 impl _NetBase.is_link_local.getter -> bool {
-    return self.network_address.is_link_local
-        and self.broadcast_address.is_link_local;
+    return self.network_address.is_link_local and self.broadcast_address.is_link_local;
 }
 
 
@@ -2067,8 +2004,7 @@ impl _NetBase.is_private.getter -> bool {
 impl _NetBase.is_global.getter -> bool {
     if self.version == 4 {
         (bhi, blo) = self._bcast();
-        if _in_net32(self._net_lo, 1681915904, 10)
-            and _in_net32(blo, 1681915904, 10) {
+        if _in_net32(self._net_lo, 1681915904, 10) and _in_net32(blo, 1681915904, 10) {
             return False;
         }
     }
@@ -2083,8 +2019,7 @@ impl _NetBase.is_unspecified.getter -> bool {
 
 
 impl _NetBase.is_loopback.getter -> bool {
-    return self.network_address.is_loopback
-        and self.broadcast_address.is_loopback;
+    return self.network_address.is_loopback and self.broadcast_address.is_loopback;
 }
 
 
@@ -2092,15 +2027,12 @@ impl _NetBase.is_site_local.getter -> bool {
     if self.version != 6 {
         return False;
     }
-    return self.network_address.is_site_local
-        and self.broadcast_address.is_site_local;
+    return self.network_address.is_site_local and self.broadcast_address.is_site_local;
 }
 
 
 def _report_invalid_netmask(netmask: any) {
-    raise NetmaskValueError(
-        _repr_any(netmask) + " is not a valid netmask"
-    );
+    raise NetmaskValueError(_repr_any(netmask) + " is not a valid netmask");
 }
 
 
@@ -2216,8 +2148,7 @@ obj:pub IPv6Network(_NetBase) {
         if isinstance(address, int) {
             if address < 0 {
                 raise AddressValueError(
-                    str(address)
-                        + " (< 0) is not permitted as an IPv6 address"
+                    str(address) + " (< 0) is not permitted as an IPv6 address"
                 );
             }
             net_lo = u64(address);
@@ -2285,15 +2216,12 @@ def:pub v6_int_to_packed(address: int) -> bytes {
 def:pub ip_address(address: (str | int | bytes)) -> _AddrBase {
     try {
         return IPv4Address(address);
-    } except AddressValueError {}
-    except NetmaskValueError {}
+    } except AddressValueError {} except NetmaskValueError {}
     try {
         return IPv6Address(address);
-    } except AddressValueError {}
-    except NetmaskValueError {}
+    } except AddressValueError {} except NetmaskValueError {}
     raise ValueError(
-        _repr_any(address)
-            + " does not appear to be an IPv4 or IPv6 address"
+        _repr_any(address) + " does not appear to be an IPv4 or IPv6 address"
     );
 }
 
@@ -2301,15 +2229,12 @@ def:pub ip_address(address: (str | int | bytes)) -> _AddrBase {
 def:pub ip_network(address: (str | int | bytes), strict: bool = True) -> _NetBase {
     try {
         return IPv4Network(address, strict);
-    } except AddressValueError {}
-    except NetmaskValueError {}
+    } except AddressValueError {} except NetmaskValueError {}
     try {
         return IPv6Network(address, strict);
-    } except AddressValueError {}
-    except NetmaskValueError {}
+    } except AddressValueError {} except NetmaskValueError {}
     raise ValueError(
-        _repr_any(address)
-            + " does not appear to be an IPv4 or IPv6 network"
+        _repr_any(address) + " does not appear to be an IPv4 or IPv6 network"
     );
 }
 
@@ -2330,10 +2255,7 @@ def:pub summarize_address_range(
 ) -> Iterator[_NetBase] {
     if first.version != last.version {
         raise TypeError(
-            first.__str__()
-                + " and "
-                + last.__str__()
-                + " are not of the same version"
+            first.__str__() + " and " + last.__str__() + " are not of the same version"
         );
     }
     if _cmp128(first._hi, first._lo, last._hi, last._lo) > 0 {

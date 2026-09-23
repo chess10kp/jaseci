@@ -1,72 +1,131 @@
-"""Pure-Jac port of CPython 3.14's ``urllib.parse`` (issue #6978).
-
-Implements the str-path API surface: ``urlparse`` / ``urlsplit`` /
-``urlunparse`` / ``urlunsplit`` / ``urljoin`` / ``urldefrag``, the quoting
-family (``quote`` / ``quote_plus`` / ``unquote`` / ``unquote_plus`` /
-``quote_from_bytes`` / ``unquote_to_bytes``), query helpers (``parse_qs`` /
-``parse_qsl`` / ``urlencode``), ``unwrap``, and the deprecated ``split*``
-helpers for backwards compatibility.
-
-Result objects are archetypes -- ``ParseResult`` / ``SplitResult`` /
-``DefragResult`` -- exposing the CPython namedtuple fields plus the
-``username`` / ``password`` / ``hostname`` / ``port`` getters and
-``geturl()``, and ``__getitem__`` for positional access.
-
-SCOPE / divergences:
-  * ``bytes`` URL arguments are not supported (str only); the result-object
-    ``encode``/``decode`` transcoding methods are omitted.
-  * ``unquote`` decodes UTF-8 manually: ``errors='strict'`` raises
-    ``ValueError``, ``errors='replace'`` (default) emits U+FFFD,
-    ``errors='ignore'`` drops invalid bytes. Replacement semantics are a
-    close approximation of CPython's, not byte-exact on malformed input.
-  * ``quote`` encodes UTF-8 only (the ``encoding`` parameter is accepted but
-    must be ``None`` or ``'utf-8'``).
-  * ``urlsplit`` is not ``lru_cache``d.
-  * ``_checknetloc``'s NFKC normalization check is omitted (non-ASCII netlocs
-    pass through unchecked); the bracketed-IPv6 checks are ported.
-"""
-
 import ipaddress;
 
 glob uses_relative: list[str] = [
-         "", "ftp", "http", "gopher", "nntp", "imap", "wais", "file",
-         "https", "shttp", "mms", "prospero", "rtsp", "rtsps", "rtspu",
-         "svn", "tel", "wais", "ldap", "sftp", "svn+ssh", "git", "git+ssh",
-         "smb", "ws", "wss", "itms-services"
+         "",
+         "ftp",
+         "http",
+         "gopher",
+         "nntp",
+         "imap",
+         "wais",
+         "file",
+         "https",
+         "shttp",
+         "mms",
+         "prospero",
+         "rtsp",
+         "rtsps",
+         "rtspu",
+         "svn",
+         "tel",
+         "wais",
+         "ldap",
+         "sftp",
+         "svn+ssh",
+         "git",
+         "git+ssh",
+         "smb",
+         "ws",
+         "wss",
+         "itms-services"
      ],
      uses_netloc: list[str] = [
-         "", "ftp", "http", "gopher", "nntp", "telnet", "imap", "wais",
-         "file", "mms", "https", "shttp", "snews", "prospero", "rtsp",
-         "rtsps", "rtspu", "rsync", "svn", "svn+ssh", "sftp", "nfs", "git",
-         "git+ssh", "ws", "wss", "itms-services"
+         "",
+         "ftp",
+         "http",
+         "gopher",
+         "nntp",
+         "telnet",
+         "imap",
+         "wais",
+         "file",
+         "mms",
+         "https",
+         "shttp",
+         "snews",
+         "prospero",
+         "rtsp",
+         "rtsps",
+         "rtspu",
+         "rsync",
+         "svn",
+         "svn+ssh",
+         "sftp",
+         "nfs",
+         "git",
+         "git+ssh",
+         "ws",
+         "wss",
+         "itms-services"
      ],
      uses_params: list[str] = [
-         "", "ftp", "hdl", "prospero", "http", "imap", "https", "shttp",
-         "rtsp", "rtsps", "rtspu", "sip", "sips", "mms", "sftp", "tel"
+         "",
+         "ftp",
+         "hdl",
+         "prospero",
+         "http",
+         "imap",
+         "https",
+         "shttp",
+         "rtsp",
+         "rtsps",
+         "rtspu",
+         "sip",
+         "sips",
+         "mms",
+         "sftp",
+         "tel"
      ],
      non_hierarchical: list[str] = [
-         "gopher", "hdl", "mailto", "news", "telnet", "wais", "imap",
-         "snews", "sip", "sips"
+         "gopher",
+         "hdl",
+         "mailto",
+         "news",
+         "telnet",
+         "wais",
+         "imap",
+         "snews",
+         "sip",
+         "sips"
      ],
      uses_query: list[str] = [
-         "", "http", "wais", "imap", "https", "shttp", "mms", "gopher",
-         "rtsp", "rtsps", "rtspu", "sip", "sips"
+         "",
+         "http",
+         "wais",
+         "imap",
+         "https",
+         "shttp",
+         "mms",
+         "gopher",
+         "rtsp",
+         "rtsps",
+         "rtspu",
+         "sip",
+         "sips"
      ],
      uses_fragment: list[str] = [
-         "", "ftp", "hdl", "http", "gopher", "news", "nntp", "wais",
-         "https", "shttp", "snews", "file", "prospero"
+         "",
+         "ftp",
+         "hdl",
+         "http",
+         "gopher",
+         "news",
+         "nntp",
+         "wais",
+         "https",
+         "shttp",
+         "snews",
+         "file",
+         "prospero"
      ],
      scheme_chars: str = "abcdefghijklmnopqrstuvwxyz"
-         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-.",
+     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-.",
      _ALWAYS_SAFE: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-         "abcdefghijklmnopqrstuvwxyz0123456789_.-~",
+     "abcdefghijklmnopqrstuvwxyz0123456789_.-~",
      _HEXDIG: str = "0123456789ABCDEFabcdef",
      _HEXUP: str = "0123456789ABCDEF";
 
 
-"""Internal tri-state for split components: ``None`` marks an absent
-component so ``_urlunsplit`` can distinguish 'http://h/?' from 'http://h/'.
-"""
 obj _Parts {
     has scheme: (str | None) = None,
         netloc: (str | None) = None,
@@ -82,6 +141,7 @@ obj:pub SplitResult {
         path: str = "",
         query: str = "",
         fragment: str = "";
+
     has username: (str | None) { getter; }
     has password: (str | None) { getter; }
     has hostname: (str | None) { getter; }
@@ -99,6 +159,7 @@ obj:pub ParseResult {
         params: str = "",
         query: str = "",
         fragment: str = "";
+
     has username: (str | None) { getter; }
     has password: (str | None) { getter; }
     has hostname: (str | None) { getter; }
@@ -285,13 +346,7 @@ def _urlsplit(url: str, scheme: (str | None), allow_fragments: bool) -> _Parts {
         query = url[qi + 1:];
         url = url[:qi];
     }
-    return _Parts(
-        scheme=sch,
-        netloc=netloc,
-        path=url,
-        query=query,
-        fragment=fragment
-    );
+    return _Parts(scheme=sch, netloc=netloc, path=url, query=query, fragment=fragment);
 }
 
 
@@ -359,7 +414,6 @@ def:pub urlparse(
 }
 
 
-"""Flatten a result object or component list into a component list."""
 def _components(
     c: (ParseResult | SplitResult | DefragResult | list[str])
 ) -> list[str] {
@@ -399,9 +453,7 @@ def:pub urlunparse(
     }
     query: (str | None) = c[4];
     fragment: (str | None) = c[5];
-    return _urlunsplit(
-        c[0] if len(c[0]) > 0 else None, netloc, url, query, fragment
-    );
+    return _urlunsplit(c[0] if len(c[0]) > 0 else None, netloc, url, query, fragment);
 }
 
 
@@ -410,7 +462,6 @@ def:pub urlunsplit(
 ) -> str {
     c = _components(components);
     if len(c) == 6 {
-        # tolerate a 6-tuple by merging params back into the path
         if len(c[3]) > 0 {
             c[2] = c[2] + ";" + c[3];
         }
@@ -431,9 +482,7 @@ def:pub urlunsplit(
     }
     query: (str | None) = c[3];
     fragment: (str | None) = c[4];
-    return _urlunsplit(
-        c[0] if len(c[0]) > 0 else None, netloc, c[2], query, fragment
-    );
+    return _urlunsplit(c[0] if len(c[0]) > 0 else None, netloc, c[2], query, fragment);
 }
 
 
@@ -451,17 +500,14 @@ def:pub urljoin(base: str, url: str, allow_fragments: bool = True) -> str {
     if not isinstance(scheme, str) {
         scheme = bscheme;
     }
-    if scheme != bscheme or (
-        isinstance(scheme, str) and len(scheme) > 0 and scheme not in uses_relative
-    ) {
+    if scheme != bscheme
+        or (
+            isinstance(scheme, str) and len(scheme) > 0 and scheme not in uses_relative
+        ) {
         return url;
     }
     netloc = u.netloc;
-    if (
-        not isinstance(scheme, str)
-        or len(scheme) == 0
-        or scheme in uses_netloc
-    ) {
+    if (not isinstance(scheme, str) or len(scheme) == 0 or scheme in uses_netloc) {
         if isinstance(netloc, str) and len(netloc) > 0 {
             return _urlunsplit(scheme, netloc, u.path, u.query, u.fragment);
         }
@@ -648,9 +694,11 @@ def _utf8_decode(bs: list[int], errors: str) -> str {
         for k in range(1, need + 1) {
             cp = (cp << 6) | (bs[i + k] & 0x3F);
         }
-        if cp > 0x10FFFF or (cp >= 0xD800 and cp <= 0xDFFF) or (
-            need == 1 and cp < 0x80
-        ) or (need == 2 and cp < 0x800) or (need == 3 and cp < 0x10000) {
+        if cp > 0x10FFFF
+            or (cp >= 0xD800 and cp <= 0xDFFF)
+            or (need == 1 and cp < 0x80)
+            or (need == 2 and cp < 0x800)
+            or (need == 3 and cp < 0x10000) {
             if errors == "strict" {
                 raise ValueError("invalid utf-8 codepoint");
             }
@@ -668,9 +716,7 @@ def _utf8_decode(bs: list[int], errors: str) -> str {
 }
 
 
-def:pub unquote(
-    string: str, encoding: str = "utf-8", errors: str = "replace"
-) -> str {
+def:pub unquote(string: str, encoding: str = "utf-8", errors: str = "replace") -> str {
     if "%" not in string {
         return string;
     }
@@ -883,9 +929,7 @@ def:pub urlencode(
     } else {
         for pair in query {
             if len(pair) != 2 {
-                raise TypeError(
-                    "not a valid non-string sequence or mapping object"
-                );
+                raise TypeError("not a valid non-string sequence or mapping object");
             }
             _enc_one(l, pair[0], pair[1], doseq, safe, encoding, errors);
         }
@@ -904,9 +948,6 @@ def:pub unwrap(url: str) -> str {
     }
     return url;
 }
-
-
-# ---- Deprecated split* helpers (kept for backwards compatibility) ----
 
 
 def:pub splittype(url: str) -> tuple[((str | None), str)] {
@@ -1032,9 +1073,6 @@ def:pub splitvalue(attr: str) -> tuple[(str, (str | None))] {
 }
 
 
-# ---- Result-object getters ----
-
-
 def _userinfo(netloc: str) -> tuple[((str | None), (str | None))] {
     (userinfo, have_info, hostinfo) = _rpartition(netloc, "@");
     if len(have_info) > 0 {
@@ -1080,9 +1118,7 @@ def _port_of(port: (str | None)) -> (int | None) {
         }
     }
     if not ok {
-        raise ValueError(
-            "Port could not be cast to integer value as '" + port + "'"
-        );
+        raise ValueError("Port could not be cast to integer value as '" + port + "'");
     }
     p = int(port);
     if p < 0 or p > 65535 {

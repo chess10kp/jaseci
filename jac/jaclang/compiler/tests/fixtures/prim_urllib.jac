@@ -50,26 +50,38 @@ def urllib_redirect_py -> dict[any, any] {
 
 import from urllib.request { urlopen }
 
+def _status_of(resp0: any) -> int {
+    import from urllib.request { HTTPResp }
+    resp: HTTPResp = resp0;
+    st = resp.status;
+    if isinstance(st, int) {
+        return st;
+    }
+    return -1;
+}
+
+def _blen_of(resp0: any) -> int {
+    import from urllib.request { HTTPResp }
+    resp: HTTPResp = resp0;
+    return resp.body_length;
+}
+
 def urlopen_status_na -> int {
     base = "http://127.0.0.1:" + os.getenv("JAC_URLLIB_TEST_PORT", "");
-    resp = urlopen(base + "/hello");
-    return resp.status;
+    return _status_of(urlopen(base + "/hello"));
 }
 
 def urlopen_body_length_na -> int {
     base = "http://127.0.0.1:" + os.getenv("JAC_URLLIB_TEST_PORT", "");
-    resp = urlopen(base + "/hello");
-    return resp.body_length;
+    return _blen_of(urlopen(base + "/hello"));
 }
 
 def urlopen_redirect_status_na -> int {
     base = "http://127.0.0.1:" + os.getenv("JAC_URLLIB_TEST_PORT", "");
-    resp = urlopen(base + "/redirect");
-    return resp.status;
+    return _status_of(urlopen(base + "/redirect"));
 }
 
 def urlopen_redirect_body_length_na -> int {
     base = "http://127.0.0.1:" + os.getenv("JAC_URLLIB_TEST_PORT", "");
-    resp = urlopen(base + "/redirect");
-    return resp.body_length;
+    return _blen_of(urlopen(base + "/redirect"));
 }

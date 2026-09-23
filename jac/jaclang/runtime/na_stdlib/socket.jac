@@ -54,9 +54,7 @@ obj:pub socket {
         proto: int = 0,
         _fd: int = -1;
 
-    def init(
-        family: int = 2, socktype: int = 1, proto: int = 0, fileno: int = -1
-    ) {
+    def init(family: int = 2, socktype: int = 1, proto: int = 0, fileno: int = -1) {
         self.family = family;
         self.socktype = socktype;
         self.proto = proto;
@@ -126,44 +124,42 @@ obj:pub socket {
         return sock_recv(self._fd, bufsize);
     }
 
-    def connect_path(path: str) -> None {
+    def connect_path(path: str) {
         sa = sa_un(path);
         if sock_connect(self._fd, sa) < 0 {
             raise OSError("connect to " + path + " failed: " + errno_message());
         }
     }
 
-    def connect6(address: tuple[(str, int, int, int)]) -> None {
+    def connect6(address: tuple[(str, int, int, int)]) {
         sa = sa_inet6(address[0], address[1], address[2], address[3]);
         if sock_connect(self._fd, sa) < 0 {
-            raise OSError(
-                "connect to " + address[0] + " failed: " + errno_message()
-            );
+            raise OSError("connect to " + address[0] + " failed: " + errno_message());
         }
     }
 
-    def bind(address: tuple[(str, int)]) -> None {
+    def bind(address: tuple[(str, int)]) {
         sa = sa_inet(address[0], address[1]);
         if sock_bind(self._fd, sa) < 0 {
             raise OSError("bind failed: " + errno_message());
         }
     }
 
-    def bind6(address: tuple[(str, int, int, int)]) -> None {
+    def bind6(address: tuple[(str, int, int, int)]) {
         sa = sa_inet6(address[0], address[1], address[2], address[3]);
         if sock_bind(self._fd, sa) < 0 {
             raise OSError("bind failed: " + errno_message());
         }
     }
 
-    def bind_path(path: str) -> None {
+    def bind_path(path: str) {
         sa = sa_un(path);
         if sock_bind(self._fd, sa) < 0 {
             raise OSError("bind failed: " + errno_message());
         }
     }
 
-    def listen(backlog: int = 4096) -> None {
+    def listen(backlog: int = 4096) {
         if sock_listen(self._fd, backlog) < 0 {
             raise OSError("listen failed: " + errno_message());
         }
@@ -174,7 +170,7 @@ obj:pub socket {
         return (d[1], d[2], d[3], d[4]);
     }
 
-    def accept() -> tuple[(socket, tuple[(str, int, int, int)])] {
+    def accept -> tuple[(socket, tuple[(str, int, int, int)])] {
         pr = sock_accept(self._fd);
         cfd = pr[0];
         if cfd < 0 {
@@ -186,19 +182,17 @@ obj:pub socket {
         return (cs, self._fmt_addr(pr[1]));
     }
 
-    def getsockname() -> tuple[(str, int, int, int)] {
+    def getsockname -> tuple[(str, int, int, int)] {
         return self._fmt_addr(sock_getsockname(self._fd));
     }
 
-    def setsockopt(level: int, optname: int, value: int) -> None {
+    def setsockopt(level: int, optname: int, value: int) {
         if sock_setsockopt(self._fd, level, optname, value) < 0 {
             raise OSError("setsockopt failed: " + errno_message());
         }
     }
 
-    def sendto(
-        data: bytes, address: tuple[(str, int)]
-    ) -> int {
+    def sendto(data: bytes, address: tuple[(str, int)]) -> int {
         sa = sa_inet(address[0], address[1]);
         sent = sock_sendto(self._fd, data, sa);
         if sent < 0 {
@@ -207,9 +201,7 @@ obj:pub socket {
         return sent;
     }
 
-    def sendto6(
-        data: bytes, address: tuple[(str, int, int, int)]
-    ) -> int {
+    def sendto6(data: bytes, address: tuple[(str, int, int, int)]) -> int {
         sa = sa_inet6(address[0], address[1], address[2], address[3]);
         sent = sock_sendto(self._fd, data, sa);
         if sent < 0 {
@@ -232,7 +224,7 @@ obj:pub socket {
         return (pr[0], self._fmt_addr(pr[1]));
     }
 
-    def shutdown(how: int) -> None {
+    def shutdown(how: int) {
         if sock_shutdown(self._fd, how) < 0 {
             raise OSError("shutdown failed: " + errno_message());
         }
@@ -248,7 +240,7 @@ obj:pub socket {
         return sa_inet(addr[0], addr[1]);
     }
 
-    def bind_addr(addr: tuple[(str, int, int, int)]) -> None {
+    def bind_addr(addr: tuple[(str, int, int, int)]) {
         if sock_bind(self._fd, self._sa4(addr)) < 0 {
             raise OSError("bind failed: " + errno_message());
         }
@@ -275,7 +267,7 @@ obj:pub socket {
 }
 
 
-def:pub socketpair() -> tuple[(socket, socket)] {
+def:pub socketpair -> tuple[(socket, socket)] {
     pr = sock_pair();
     a = socket(family=1, socktype=1, proto=0, fileno=pr[0]);
     b = socket(family=1, socktype=1, proto=0, fileno=pr[1]);
@@ -373,9 +365,7 @@ obj:pub SockFile {
         return len(data);
     }
 
-    def flush {
-    }
-
+    def flush {}
     def close {
         if not self.closed {
             self.closed = True;

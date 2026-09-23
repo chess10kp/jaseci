@@ -1,53 +1,3 @@
-"""Pure-Jac port of CPython 3.14's ``urllib.request`` (issue #6978).
-
-The opener/handler architecture is ported faithfully -- ``Request``,
-``OpenerDirector``, ``BaseHandler`` and the concrete handlers
-(``ProxyHandler``, ``UnknownHandler``, ``AbstractHTTPHandler`` /
-``HTTPHandler`` / ``HTTPSHandler``, ``HTTPDefaultErrorHandler``,
-``HTTPRedirectHandler``, ``HTTPErrorProcessor``, ``HTTPCookieProcessor``,
-``FileHandler``, ``FTPHandler``, ``DataHandler``, plus the password
-managers and Basic-auth handlers), the module-level ``urlopen`` /
-``install_opener`` / ``build_opener`` / ``urlretrieve`` / ``urlcleanup``
-API, and the proxy / path utility functions.
-
-Native scope notes:
-
-- CPython's ``OpenerDirector.add_handler`` discovers protocols by scanning
-  ``dir(handler)`` for ``<proto>_<kind>`` methods, and ``_call_chain``
-  dispatches through ``getattr``. There is no getattr natively, so each
-  handler declares its protocol tables explicitly (``open_kinds`` /
-  ``req_kinds`` / ``resp_kinds`` / ``error_codes`` /
-  ``serves_error_default``) and ``add_handler`` distributes the handler
-  into the same ``handle_open`` / ``handle_error`` / ``process_request`` /
-  ``process_response`` dicts CPython builds. Dispatch goes through the
-  ``open_for`` / ``request_for`` / ``response_for`` / ``error_for``
-  adapter methods each handler overrides -- same chain order, same
-  None-means-keep-looking semantics.
-- Handler results are ``any`` (``None`` = not handled) since handlers
-  return ``addinfourl``-ish objects of several shapes.
-- ``do_open`` performs the HTTP(S) exchange over the bundled ``socket`` +
-  ``ssl`` floors directly (no ``http.client``), parsing status line and
-  headers into an ``addinfourl``-derived ``_HTTPResp`` that also carries
-  ``msg`` (reason) and ``body_length``.
-- ``Request.full_url`` is a computed getter (base + optional fragment);
-  assigning goes through ``set_full_url`` (unwrap + splittag + _parse).
-- ``Request.data`` is a plain ``any`` field; assigning via ``set_data``
-  drops a stale ``Content-length`` header like CPython's data setter.
-- ``FTPHandler.ftp_open`` raises ``URLError`` -- there is no bundled
-  ftplib. ``CacheFTPHandler`` exists for API parity but is equally
-  non-functional.
-- ``HTTPCookieProcessor`` calls ``add_cookie_header`` /
-  ``extract_cookies`` on whatever ``cookiejar`` object it is given (an
-  ``any`` field -- calls demote to the bridge, which works for sv
-  ``http.cookiejar.CookieJar`` objects).
-- ``urlretrieve`` writes the whole body in one shot via a small
-  ``_file_native`` write helper (no incremental reporthook I/O shape
-  change, but reporthook still fires per 8K block counted over the body).
-- Digest auth and macOS/Windows proxy discovery are out of scope
-  (documented); ``getproxies`` / ``proxy_bypass`` are the
-  environment-variable implementations.
-"""
-
 import os;
 import from urllib.parse {
     splittype,
@@ -77,8 +27,6 @@ import from base64 { b64encode, b64decode }
 import from _file_native { read_file_bytes, write_file_bytes }
 
 
-"""Ordered header set standing in for ``email.message.Message`` where the
-response wrappers need ``get`` / ``contains`` / ``items`` / ``get_all``."""
 obj:pub Headers {
     has:pub names: list[str] = [],
         values: list[str] = [];
@@ -135,7 +83,6 @@ obj:pub Headers {
 }
 
 
-"""Parse a raw header block (no status line) into a ``Headers``."""
 def _parse_headers(text: str) -> Headers {
     h = Headers();
     for line in text.split("\r\n") {
@@ -148,7 +95,6 @@ def _parse_headers(text: str) -> Headers {
 }
 
 
-"""Return request-host (RFC 2965): netloc lowercased, port stripped."""
 def:pub request_host(request: Request) -> str {
     url = request.full_url;
     parts = urlsplit(url);
@@ -159,7 +105,7 @@ def:pub request_host(request: Request) -> str {
             host = v;
         }
     }
-    # strip a trailing :port
+
     colon = host.rfind(":");
     if colon != -1 {
         tail = host[colon + 1:];
@@ -217,7 +163,6 @@ obj:pub Request {
         }
     }
 
-    """``full_url`` -- base URL plus ``#fragment`` when present."""
     has:pub full_url: str { getter; }
 
     def set_full_url(url: str) {
@@ -237,7 +182,7 @@ obj:pub Request {
     def set_data(data: any) {
         if data != None or self.data != None {
             self.data = data;
-            # issue 16464: new data invalidates a stale Content-length
+
             if self.has_header("Content-length") {
                 self.remove_header("Content-length");
             }
@@ -300,8 +245,7 @@ obj:pub Request {
     }
 
     def has_header(header_name: str) -> bool {
-        return header_name in self.headers
-            or header_name in self.unredirected_hdrs;
+        return header_name in self.headers or header_name in self.unredirected_hdrs;
     }
 
     def get_header(header_name: str, failobj: any = None) -> any {
@@ -345,8 +289,6 @@ impl Request.full_url.getter -> str {
 }
 
 
-"""Sorted-insert a handler into a per-protocol list (bisect.insort by
-``handler_order``; ties keep insertion order like CPython)."""
 def _insort(hs: list[BaseHandler], h: BaseHandler) {
     i = 0;
     while i < len(hs) {
@@ -373,28 +315,20 @@ obj:pub BaseHandler {
         self.parent = parent;
     }
 
-    def close {
-    }
-
-    """``<proto>_open`` dispatch: return a response or ``None``."""
+    def close {}
     def open_for(kind: str, req: Request) -> any {
         return None;
     }
 
-    """``<proto>_request`` dispatch: return the (possibly new) request."""
     def request_for(kind: str, req: Request) -> Request {
         return req;
     }
 
-    """``<proto>_response`` dispatch: return the (possibly new) response."""
     def response_for(kind: str, req: Request, response: any) -> any {
         return response;
     }
 
-    """``http_error_<code>`` dispatch: return a response or ``None``."""
-    def error_for(
-        code: int, req: Request, fp: any, msg: str, hdrs: any
-    ) -> any {
+    def error_for(code: int, req: Request, fp: any, msg: str, hdrs: any) -> any {
         return None;
     }
 
@@ -415,7 +349,7 @@ obj:pub OpenerDirector {
         process_request: dict[str, list[BaseHandler]] = {},
         process_response: dict[str, list[BaseHandler]] = {};
 
-    def init() {
+    def init {
         self.addheaders = [("User-agent", "Jac-urllib/0.37")];
     }
 
@@ -459,9 +393,7 @@ obj:pub OpenerDirector {
         }
     }
 
-    def close {
-    }
-
+    def close {}
     def _call_open(kind: str, req: Request) -> any {
         if kind not in self.handle_open {
             return None;
@@ -487,9 +419,7 @@ obj:pub OpenerDirector {
         return self._call_open("unknown", req);
     }
 
-    def open(
-        fullurl: any, data: any = None, timeout: any = None
-    ) -> any {
+    def open(fullurl: any, data: any = None, timeout: any = None) -> any {
         req: Request;
         if isinstance(fullurl, str) {
             u: str = fullurl;
@@ -503,7 +433,6 @@ obj:pub OpenerDirector {
         req.timeout = timeout;
         protocol = req.type;
 
-        # pre-process request
         if protocol in self.process_request {
             for processor in self.process_request[protocol] {
                 req = processor.request_for(protocol, req);
@@ -511,7 +440,6 @@ obj:pub OpenerDirector {
         }
         response = self._open(req, data);
 
-        # post-process response
         if protocol in self.process_response {
             for processor in self.process_response[protocol] {
                 response = processor.response_for(protocol, req, response);
@@ -547,12 +475,8 @@ obj:pub OpenerDirector {
 
 def:pub build_opener(handlers: list[BaseHandler] = []) -> OpenerDirector {
     opener = OpenerDirector();
-    # CPython default_classes order; a handler passed by the user that is a
-    # subclass of a default removes that default. (HTTPHandler covers http,
-    # HTTPSHandler covers https since the bundled ssl floor exists.)
-    skip_flags = [
-        False, False, False, False, False, False, False, False, False, False
-    ];
+
+    skip_flags = [False, False, False, False, False, False, False, False, False, False];
     for h in handlers {
         if isinstance(h, ProxyHandler) {
             skip_flags[0] = True;
@@ -623,9 +547,7 @@ def:pub build_opener(handlers: list[BaseHandler] = []) -> OpenerDirector {
 
 
 obj:pub HTTPErrorProcessor(BaseHandler) {
-    """Process HTTP error responses."""
-
-    def init() {
+    def init {
         self.handler_order = 1000;
         self.resp_kinds = ["http", "https"];
     }
@@ -640,9 +562,7 @@ obj:pub HTTPErrorProcessor(BaseHandler) {
         msg = response.msg;
         hdrs = response.info();
         if code < 200 or code >= 300 {
-            response = self.parent.error(
-                "http", request, response, code, msg, hdrs
-            );
+            response = self.parent.error("http", request, response, code, msg, hdrs);
         }
         return response;
     }
@@ -654,7 +574,7 @@ obj:pub HTTPErrorProcessor(BaseHandler) {
 
 
 obj:pub HTTPDefaultErrorHandler(BaseHandler) {
-    def init() {
+    def init {
         self.serves_error_default = True;
     }
 
@@ -671,13 +591,11 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
         max_redirections: int = 10,
         inf_msg: str = "The HTTP server returned a redirect error that would lead to an infinite loop.\nThe last 30x error message was:\n";
 
-    def init() {
+    def init {
         self.error_codes = [301, 302, 303, 307, 308];
     }
 
-    def error_for(
-        code: int, req: Request, fp: any, msg: str, hdrs: any
-    ) -> any {
+    def error_for(code: int, req: Request, fp: any, msg: str, hdrs: any) -> any {
         return self.http_error_302(req, fp, code, msg, hdrs);
     }
 
@@ -708,13 +626,7 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
         if m == "HEAD" {
             nm = "HEAD";
         }
-        return Request(
-            newurl2,
-            None,
-            newheaders,
-            req.origin_req_host,
-            True
-        );
+        return Request(newurl2, None, newheaders, req.origin_req_host, True);
     }
 
     def http_error_302(
@@ -745,16 +657,19 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
             );
         }
         if len(parts.path) == 0 and len(parts.netloc) > 0 {
-            newurl = urlunparse([
-                parts.scheme, parts.netloc, "/",
-                parts.params, parts.query, parts.fragment
-            ]);
+            newurl = urlunparse(
+                [
+                    parts.scheme,
+                    parts.netloc,
+                    "/",
+                    parts.params,
+                    parts.query,
+                    parts.fragment
+                ]
+            );
         }
-        # percent-encode like http_error_302 (iso-8859-1, safe=punctuation)
-        newurl = quote(
-            newurl,
-            safe="!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-        );
+
+        newurl = quote(newurl, safe="!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~");
         newurl = urljoin(req.full_url, newurl);
 
         new = self.redirect_request(req, fp, code, msg, headers, newurl);
@@ -762,7 +677,6 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
             return None;
         }
 
-        # loop detection
         visited: dict[str, int];
         if req.redirect_dict != None {
             rd: dict[str, int] = req.redirect_dict;
@@ -778,9 +692,7 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
             count = visited[newurl];
         }
         if count >= self.max_repeats or len(visited) >= self.max_redirections {
-            raise HTTPError(
-                req.full_url, code, self.inf_msg + msg, headers, fp
-            );
+            raise HTTPError(req.full_url, code, self.inf_msg + msg, headers, fp);
         }
         visited[newurl] = count + 1;
 
@@ -791,8 +703,9 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
 }
 
 
-"""Return (scheme, user, password, hostport) for a proxy URL/authority."""
-def _parse_proxy(proxy: str) -> tuple[((str | None), (str | None), (str | None), (str | None))] {
+def _parse_proxy(
+    proxy: str
+) -> tuple[((str | None), (str | None), (str | None), (str | None))] {
     st = splittype(proxy);
     scheme = st[0];
     r_scheme = st[1];
@@ -895,9 +808,7 @@ obj:pub ProxyHandler(BaseHandler) {
 obj:pub HTTPPasswordMgr {
     has:pub passwd: dict[str, list[tuple[(tuple[(str, str)], str, str)]]] = {};
 
-    def add_password(
-        realm: str, uri: any, user: str, passwd: str
-    ) {
+    def add_password(realm: str, uri: any, user: str, passwd: str) {
         uris: list[str] = [];
         if isinstance(uri, str) {
             u: str = uri;
@@ -908,9 +819,7 @@ obj:pub HTTPPasswordMgr {
         if realm not in self.passwd {
             self.passwd[realm] = [];
         }
-        # flat (reduced_uri, user, passwd) rows stand in for CPython's
-        # dict keyed by a tuple of reduced URIs -- lookup semantics are
-        # the same, and dicts keyed by tuples don't lower natively.
+
         for default_port in [True, False] {
             for u in uris {
                 self.passwd[realm].append(
@@ -938,9 +847,7 @@ obj:pub HTTPPasswordMgr {
         return (None, None);
     }
 
-    def reduce_uri(
-        uri: str, default_port: bool = True
-    ) -> tuple[(str, str)] {
+    def reduce_uri(uri: str, default_port: bool = True) -> tuple[(str, str)] {
         parts = urlsplit(uri);
         scheme = parts.scheme;
         authority = parts.netloc;
@@ -949,7 +856,6 @@ obj:pub HTTPPasswordMgr {
             path = "/";
         }
         if len(authority) > 0 {
-            # URI -- strip userinfo and default port
             hp = splitport(authority);
             host = hp[0];
             port = hp[1];
@@ -966,7 +872,6 @@ obj:pub HTTPPasswordMgr {
                 authority = host.lower();
             }
         } else {
-            # authority-only: scheme guessed from the port
             authority = parts.path;
             if "@" in authority {
                 authority = authority[authority.rfind("@") + 1:];
@@ -990,9 +895,7 @@ obj:pub HTTPPasswordMgr {
         return (scheme, authority + path);
     }
 
-    def is_suburi(
-        base: tuple[(str, str)], t_uri: tuple[(str, str)]
-    ) -> bool {
+    def is_suburi(base: tuple[(str, str)], t_uri: tuple[(str, str)]) -> bool {
         if base == t_uri {
             return True;
         }
@@ -1032,8 +935,6 @@ obj:pub HTTPPasswordMgrWithDefaultRealm(HTTPPasswordMgr) {
 obj:pub HTTPPasswordMgrWithPriorAuth(HTTPPasswordMgrWithDefaultRealm) {
     has:pub passwd_authed: dict[str, list[tuple[(tuple[(str, str)], str, str)]]] = {};
 
-    """CPython extends ``add_password`` with ``is_authenticated``; a second
-    name keeps the signature clash out of the native lowering."""
     def add_password_authed(
         realm: str, uri: any, user: str, passwd: str, is_authenticated: bool
     ) {
@@ -1121,7 +1022,6 @@ obj:pub AbstractBasicAuthHandler {
         max_retries: int = 5;
 
     def parse_realm(header: str) -> tuple[(str, str)] {
-        # find 'realm="..."'
         i = header.find("realm=\"");
         if i == -1 {
             return ("", "");
@@ -1155,19 +1055,13 @@ obj:pub AbstractBasicAuthHandler {
         return self.retry_http_basic_auth(hostport, req, realm);
     }
 
-    """Overridden by the concrete handlers below (they differ only in the
-    header name written); the base just declares the signature."""
-    def retry_http_basic_auth(
-        host: str, req: Request, realm: str
-    ) -> any {
+    def retry_http_basic_auth(host: str, req: Request, realm: str) -> any {
         return None;
     }
 }
 
 
 obj:pub HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
-    """Basic authentication: answers 401 challenges."""
-
     def init(password_mgr: any = None) {
         self.error_codes = [401];
         if password_mgr == None {
@@ -1177,20 +1071,14 @@ obj:pub HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
         }
     }
 
-    def error_for(
-        code: int, req: Request, fp: any, msg: str, hdrs: any
-    ) -> any {
+    def error_for(code: int, req: Request, fp: any, msg: str, hdrs: any) -> any {
         if code != 401 {
             return None;
         }
-        return self.http_error_auth_reqed(
-            "www-authenticate", req.host, req, hdrs
-        );
+        return self.http_error_auth_reqed("www-authenticate", req.host, req, hdrs);
     }
 
-    def retry_http_basic_auth(
-        host: str, req: Request, realm: str
-    ) -> any {
+    def retry_http_basic_auth(host: str, req: Request, realm: str) -> any {
         pair = self.passwd.find_user_password(realm, req.full_url);
         user = pair[0];
         pw = pair[1];
@@ -1209,8 +1097,6 @@ obj:pub HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
 
 
 obj:pub ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
-    """Basic authentication for proxies: answers 407 challenges."""
-
     def init(password_mgr: any = None) {
         self.error_codes = [407];
         if password_mgr == None {
@@ -1220,20 +1106,14 @@ obj:pub ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
         }
     }
 
-    def error_for(
-        code: int, req: Request, fp: any, msg: str, hdrs: any
-    ) -> any {
+    def error_for(code: int, req: Request, fp: any, msg: str, hdrs: any) -> any {
         if code != 407 {
             return None;
         }
-        return self.http_error_auth_reqed(
-            "proxy-authenticate", req.host, req, hdrs
-        );
+        return self.http_error_auth_reqed("proxy-authenticate", req.host, req, hdrs);
     }
 
-    def retry_http_basic_auth(
-        host: str, req: Request, realm: str
-    ) -> any {
+    def retry_http_basic_auth(host: str, req: Request, realm: str) -> any {
         pair = self.passwd.find_user_password(realm, req.full_url);
         user = pair[0];
         pw = pair[1];
@@ -1251,24 +1131,18 @@ obj:pub ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
 }
 
 
-"""Minimal response object: an ``addinfourl`` with the CPython HTTPResponse
-extras ``msg`` (reason) and ``body_length`` the earlier bundled surface
-exposed."""
 obj:pub HTTPResp(addinfourl) {
     has:pub msg: str = "",
         body_length: int = 0;
 }
 
 
-"""Raw HTTP(S) exchange over the bundled socket+ssl floors: builds the
-request text, sends it, drains the response, parses status line + headers
-into an ``HTTPResp``."""
 def _do_open(req: Request, use_tls: bool) -> HTTPResp {
     host = req.host;
     if len(host) == 0 {
         raise URLError("no host given");
     }
-    # host may carry :port
+
     hp = splitport(host);
     hostname = hp[0];
     port = 443 if use_tls else 80;
@@ -1334,12 +1208,13 @@ def _do_open(req: Request, use_tls: bool) -> HTTPResp {
         sock.close();
     }
 
-    # split header/body
     n = len(raw);
     sep = -1;
     i = 0;
     while i + 3 < n {
-        if raw[i] == 13 and raw[i + 1] == 10 and raw[i + 2] == 13
+        if raw[i] == 13
+            and raw[i + 1] == 10
+            and raw[i + 2] == 13
             and raw[i + 3] == 10 {
             sep = i;
             break;
@@ -1377,9 +1252,7 @@ def _do_open(req: Request, use_tls: bool) -> HTTPResp {
         }
         j += 1;
     }
-    r = HTTPResp(
-        fp=BytesIO(body), headers=hdrs, url=req.get_full_url(), code=status
-    );
+    r = HTTPResp(fp=BytesIO(body), headers=hdrs, url=req.get_full_url(), code=status);
     r.msg = reason;
     r.body_length = len(body);
     return r;
@@ -1409,18 +1282,14 @@ obj:pub AbstractHTTPHandler(BaseHandler) {
                 d = request.data;
                 if isinstance(d, bytes) {
                     db: bytes = d;
-                    request.add_unredirected_header(
-                        "Content-length", str(len(db))
-                    );
+                    request.add_unredirected_header("Content-length", str(len(db)));
                 } elif isinstance(d, str) {
                     ds: str = d;
                     request.add_unredirected_header(
                         "Content-length", str(len(ds.encode()))
                     );
                 } else {
-                    request.add_unredirected_header(
-                        "Transfer-encoding", "chunked"
-                    );
+                    request.add_unredirected_header("Transfer-encoding", "chunked");
                 }
             }
         }
@@ -1448,7 +1317,7 @@ obj:pub AbstractHTTPHandler(BaseHandler) {
 
 
 obj:pub HTTPHandler(AbstractHTTPHandler) {
-    def init() {
+    def init {
         self.open_kinds = ["http"];
         self.req_kinds = ["http"];
     }
@@ -1527,7 +1396,7 @@ obj:pub HTTPCookieProcessor(BaseHandler) {
 
 
 obj:pub UnknownHandler(BaseHandler) {
-    def init() {
+    def init {
         self.open_kinds = ["unknown"];
     }
 
@@ -1596,7 +1465,7 @@ def:pub parse_http_list(s: str) -> list[str] {
 
 
 obj:pub FileHandler(BaseHandler) {
-    def init() {
+    def init {
         self.open_kinds = ["file"];
     }
 
@@ -1621,7 +1490,7 @@ obj:pub FileHandler(BaseHandler) {
 
 
 obj:pub FTPHandler(BaseHandler) {
-    def init() {
+    def init {
         self.open_kinds = ["ftp"];
     }
 
@@ -1653,7 +1522,7 @@ obj:pub CacheFTPHandler(FTPHandler) {
 
 
 obj:pub DataHandler(BaseHandler) {
-    def init() {
+    def init {
         self.open_kinds = ["data"];
     }
 
@@ -1675,9 +1544,7 @@ obj:pub DataHandler(BaseHandler) {
         datastr = second[1];
         for ch in mediatype {
             if ch < " " or ch == "\x7f" {
-                raise ValueError(
-                    "Control characters not allowed in data: mediatype"
-                );
+                raise ValueError("Control characters not allowed in data: mediatype");
             }
         }
         data = unquote_to_bytes(datastr);
@@ -1774,10 +1641,10 @@ def:pub urlretrieve(
     if size >= 0 and read_total < size {
         raise ContentTooShortError(
             "retrieval incomplete: got only "
-            + str(read_total)
-            + " out of "
-            + str(size)
-            + " bytes",
+                + str(read_total)
+                + " out of "
+                + str(size)
+                + " bytes",
             result
         );
     }
@@ -1785,12 +1652,11 @@ def:pub urlretrieve(
 }
 
 
-def:pub urlcleanup() {
+def:pub urlcleanup {
     for temp_file in _url_tempfiles {
         try {
             os.unlink(temp_file);
-        } except OSError {
-        }
+        } except OSError {}
     }
     _url_tempfiles = [];
     if _opener != None {
@@ -1846,7 +1712,6 @@ def:pub pathname2url(pathname: str, add_scheme: bool = False) -> str {
     tail = pathname;
     if pathname.startswith("/") {
         if pathname.startswith("//") {
-            # explicit empty authority guards multi-slash paths
             slash = "//" + pathname[:1];
             tail = pathname[1:];
         } else {
@@ -1858,7 +1723,7 @@ def:pub pathname2url(pathname: str, add_scheme: bool = False) -> str {
 }
 
 
-def:pub localhost() -> str {
+def:pub localhost -> str {
     addrs = resolve_all("localhost", "0");
     if len(addrs) > 0 {
         return "127.0.0.1";
@@ -1867,17 +1732,17 @@ def:pub localhost() -> str {
 }
 
 
-def:pub thishost() -> str {
+def:pub thishost -> str {
     return localhost();
 }
 
 
-def:pub noheaders() -> Headers {
+def:pub noheaders -> Headers {
     return Headers();
 }
 
 
-def:pub getproxies_environment() -> dict[str, str] {
+def:pub getproxies_environment -> dict[str, str] {
     proxies: dict[str, str] = {};
     environment: list[tuple[(str, str, str)]] = [];
     for name in os.environ.keys() {
@@ -1911,9 +1776,7 @@ def:pub getproxies_environment() -> dict[str, str] {
 }
 
 
-def:pub proxy_bypass_environment(
-    host: str, proxies: any = None
-) -> bool {
+def:pub proxy_bypass_environment(host: str, proxies: any = None) -> bool {
     p: dict[str, str];
     if proxies == None {
         p = getproxies_environment();
@@ -1948,7 +1811,7 @@ def:pub proxy_bypass_environment(
 }
 
 
-def:pub getproxies() -> dict[str, str] {
+def:pub getproxies -> dict[str, str] {
     return getproxies_environment();
 }
 

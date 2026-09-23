@@ -83,24 +83,21 @@ import from socketserver {
 # na lane handlers: instance-based (`Echo()`), so they need an explicit
 # no-arg `init` -- the request is delivered later via `run`/`begin`.
 obj _StreamEchoNa(StreamRequestHandler) {
-    def init() {
-    }
+    def init {}
     def handle {
         self.wfile.write(b"pong");
     }
 }
 
 obj _DatagramEchoNa(DatagramRequestHandler) {
-    def init() {
-    }
+    def init {}
     def handle {
         self.wfile.write(b"pong");
     }
 }
 
 obj _ShutdownEchoNa(StreamRequestHandler) {
-    def init() {
-    }
+    def init {}
     def handle {
         self.wfile.write(b"pong");
         # na divergence: shutdown() just sets a flag (no inter-thread wait),

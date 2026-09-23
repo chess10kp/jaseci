@@ -1,12 +1,6 @@
-"""Raw libc FFI layer for the bundled ``select`` module (Linux).
-
-``fd_set`` (1024 bits = 128 bytes), ``struct pollfd`` (8 bytes) and
-``struct epoll_event`` (12 bytes, packed) are exchanged as ``bytes`` buffers
-whose data pointer the FFI layer hands to libc; ``0`` passed for a ``bytes``
-parameter marshals as NULL (used for the infinite-timeout case).
-"""
-
-import from c { def __select(nfds: i32, r: bytes, w: bytes, e: bytes, tv: bytes) -> i32;  }
+import from c {
+    def __select(nfds: i32, r: bytes, w: bytes, e: bytes, tv: bytes) -> i32;
+}
 import from c { def poll(fds: bytes, nfds: u64, timeout: i32) -> i32;  }
 import from c { def epoll_create1(flags: i32) -> i32;  }
 import from c { def epoll_ctl(epfd: i32, op: i32, fd: i32, ev: bytes) -> i32;  }
@@ -23,8 +17,6 @@ def:pub raise_errno(what: str) {
     raise OSError(what + " failed: " + errno_message());
 }
 
-
-# ---- fd_set (128 bytes, FD_SETSIZE bits) ----
 
 def:pub fdset_build(fds: list[int]) -> bytes {
     ba = bytearray(FD_SETSIZE // 8);
@@ -53,7 +45,9 @@ def:pub timeval_build(timeout: float) -> bytes {
 }
 
 
-def:pub sel_select_tv(nfds: int, rbuf: bytes, wbuf: bytes, ebuf: bytes, tvbuf: bytes) -> int {
+def:pub sel_select_tv(
+    nfds: int, rbuf: bytes, wbuf: bytes, ebuf: bytes, tvbuf: bytes
+) -> int {
     clear_errno();
     return __select(i32(nfds), rbuf, wbuf, ebuf, tvbuf);
 }
@@ -64,8 +58,6 @@ def:pub sel_select_inf(nfds: int, rbuf: bytes, wbuf: bytes, ebuf: bytes) -> int 
     return __select(i32(nfds), rbuf, wbuf, ebuf, 0);
 }
 
-
-# ---- struct pollfd: i32 fd @0, i16 events @4, i16 revents @6 ----
 
 def:pub pollfd_pack(fds: list[int], events: list[int]) -> bytes {
     out = b"";
@@ -89,8 +81,6 @@ def:pub pollfd_revents(buf: bytes, i: int) -> int {
 }
 
 
-# ---- epoll ----
-
 def:pub epoll_create(flags: int) -> int {
     clear_errno();
     return epoll_create1(i32(flags));
@@ -108,7 +98,9 @@ def:pub epoll_ctrl(epfd: int, op: int, fd: int, evbuf: bytes) -> int {
 }
 
 
-def:pub epoll_wait_call(epfd: int, evbuf: bytes, maxevents: int, timeout_ms: int) -> int {
+def:pub epoll_wait_call(
+    epfd: int, evbuf: bytes, maxevents: int, timeout_ms: int
+) -> int {
     clear_errno();
     return epoll_wait(i32(epfd), evbuf, i32(maxevents), i32(timeout_ms));
 }

@@ -1,36 +1,3 @@
-"""Pure-Jac port of CPython 3.14's ``socketserver`` module (issue #6978).
-
-``BaseServer`` / ``TCPServer`` / ``UDPServer`` / ``UnixStreamServer`` /
-``UnixDatagramServer``, the ``Threading*`` / ``Forking*`` mixin servers,
-``BaseRequestHandler`` / ``StreamRequestHandler`` / ``DatagramRequestHandler``.
-``serve_forever`` and ``handle_request`` drive the bundled ``select`` module
-against ``self.socket.fileno()``.
-
-SCOPE divergences (native backend limits, all documented):
-
-- No native threads: ``Threading*`` servers run ``process_request`` inline
-  (sequential, not concurrent); ``daemon_threads`` / ``block_on_close`` are
-  kept for API parity and ``server_close`` has nothing to join.
-- ``shutdown()`` only sets the flag; CPython additionally blocks on an
-  ``Event`` that requires a second thread. Same-thread use (a handler calling
-  ``self.server.shutdown()`` inside ``handle``) exits the loop identically.
-- Addresses are normalized to ``(host, port, flowinfo, scopeid)`` 4-tuples
-  (bundled ``socket`` convention): ``server_address``, ``client_address``.
-  ``TCPServer`` / ``UDPServer`` take ``(host, port)`` at construction and
-  ``UnixStreamServer`` / ``UnixDatagramServer`` take a path ``str`` like
-  CPython; a leading ``\x00`` denotes an abstract Linux socket.
-- Bare ``except:`` clauses in CPython become ``except Exception`` here (Jac
-  has no catch-all without a type).
-- ``handle_error`` prints one line rather than a full traceback.
-- ``StreamRequestHandler.timeout`` / ``settimeout`` and ``wbufsize``-buffered
-  writers are folded into the socket ``SockFile`` (writes are unbuffered
-  ``sendall``, matching ``wbufsize == 0``).
-- ``ForkingMixIn.timeout = 300`` is not applied (class-var field
-  redeclaration is a native gap); ``active_children`` is a ``list`` rather
-  than a ``set``.
-- ``__enter__`` / ``__exit__`` are provided as ``enter`` / ``exit`` methods.
-"""
-
 import from _socketserver_native { proc_fork, proc_waitpid, proc_exit }
 import from socket {
     socket as Socket,
@@ -80,9 +47,7 @@ obj:pub BaseServer {
         self.handle_request_noblock();
     }
 
-    def handle_request_noblock {
-    }
-
+    def handle_request_noblock {}
     def serve_forever(poll_interval: float = 0.5) {
         self._is_shut_down = False;
         try {
@@ -106,28 +71,20 @@ obj:pub BaseServer {
         self._shutdown_request = True;
     }
 
-    def service_actions {
-    }
-
-    def handle_timeout {
-    }
-
+    def service_actions {}
+    def handle_timeout {}
     def verify_request(
         request: Socket, client_address: tuple[(str, int, int, int)]
     ) -> bool {
         return True;
     }
 
-    def process_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def process_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         self.finish_request(request, client_address);
         self.shutdown_request(request);
     }
 
-    def finish_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def finish_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         ok = self.RequestHandlerClass.run(request, client_address, self);
     }
 
@@ -135,24 +92,14 @@ obj:pub BaseServer {
         self.close_request(request);
     }
 
-    def close_request(request: Socket) {
-    }
-
-    def handle_error(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def close_request(request: Socket) {}
+    def handle_error(request: Socket, client_address: tuple[(str, int, int, int)]) {
         sys.stderr.write("Exception occurred during processing of request\n");
     }
 
-    def server_close {
-    }
-
-    def server_bind {
-    }
-
-    def server_activate {
-    }
-
+    def server_close {}
+    def server_bind {}
+    def server_activate {}
     def enter -> BaseServer {
         return self;
     }
@@ -170,9 +117,7 @@ obj:pub TCPServer(BaseServer) {
         bind_and_activate: bool
     ) {
         self.server_setup(server_address, handler_class);
-        self.socket = Socket(
-            family=self.address_family, socktype=self.socket_type
-        );
+        self.socket = Socket(family=self.address_family, socktype=self.socket_type);
         if bind_and_activate {
             try {
                 self.server_bind();
@@ -270,9 +215,7 @@ obj:pub TCPServer(BaseServer) {
         }
     }
 
-    def process_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def process_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         self.finish_request(request, client_address);
         self.shutdown_request(request);
     }
@@ -280,8 +223,7 @@ obj:pub TCPServer(BaseServer) {
     def shutdown_request(request: Socket) {
         try {
             request.shutdown(SHUT_WR);
-        } except OSError {
-        }
+        } except OSError {}
         self.close_request(request);
     }
 
@@ -313,9 +255,7 @@ obj:pub UDPServer(TCPServer) {
     ) {
         self.socket_type = 2;
         self.server_setup(server_address, handler_class);
-        self.socket = Socket(
-            family=self.address_family, socktype=self.socket_type
-        );
+        self.socket = Socket(family=self.address_family, socktype=self.socket_type);
         if bind_and_activate {
             try {
                 self.server_bind();
@@ -327,9 +267,7 @@ obj:pub UDPServer(TCPServer) {
         }
     }
 
-    def server_activate {
-    }
-
+    def server_activate {}
     def handle_request {
         r = _select([self.socket.fileno()], [], [], self.timeout);
         if len(r[0]) == 0 {
@@ -358,9 +296,7 @@ obj:pub UDPServer(TCPServer) {
         }
     }
 
-    def get_request -> tuple[(
-        tuple[(bytes, Socket)], tuple[(str, int, int, int)]
-    )] {
+    def get_request -> tuple[(tuple[(bytes, Socket)], tuple[(str, int, int, int)])] {
         pr = self.socket.recvfrom(self.max_packet_size);
         return ((pr[0], self.socket), pr[1]);
     }
@@ -388,23 +324,20 @@ obj:pub UDPServer(TCPServer) {
     }
 
     def verify_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) -> bool {
         return True;
     }
 
     def process_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         self.finish_request(request, client_address);
         self.shutdown_request(request);
     }
 
     def finish_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         ok = self.RequestHandlerClass.run(request, client_address, self);
     }
@@ -413,12 +346,9 @@ obj:pub UDPServer(TCPServer) {
         self.close_request(request);
     }
 
-    def close_request(request: tuple[(bytes, Socket)]) {
-    }
-
+    def close_request(request: tuple[(bytes, Socket)]) {}
     def handle_error(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         sys.stderr.write("Exception occurred during processing of request\n");
     }
@@ -432,9 +362,7 @@ obj:pub UnixStreamServer(TCPServer) {
         bind_and_activate: bool = True
     ) {
         self.address_family = 1;
-        self.boot(
-            (server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate
-        );
+        self.boot((server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate);
     }
 }
 
@@ -447,9 +375,7 @@ obj:pub UnixDatagramServer(UDPServer) {
     ) {
         self.address_family = 1;
         self.socket_type = 2;
-        self.boot(
-            (server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate
-        );
+        self.boot((server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate);
     }
 }
 
@@ -473,9 +399,7 @@ obj:pub ThreadingTCPServer(ThreadingMixIn, TCPServer) {
         }
     }
 
-    def process_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def process_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         self.process_request_thread(request, client_address);
     }
 
@@ -487,8 +411,7 @@ obj:pub ThreadingTCPServer(ThreadingMixIn, TCPServer) {
 
 obj:pub ThreadingUDPServer(ThreadingMixIn, UDPServer) {
     def process_request_thread(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         try {
             self.finish_request(request, client_address);
@@ -500,8 +423,7 @@ obj:pub ThreadingUDPServer(ThreadingMixIn, UDPServer) {
     }
 
     def process_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         self.process_request_thread(request, client_address);
     }
@@ -519,9 +441,7 @@ obj:pub ThreadingUnixStreamServer(ThreadingMixIn, UnixStreamServer) {
         bind_and_activate: bool = True
     ) {
         self.address_family = 1;
-        self.boot(
-            (server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate
-        );
+        self.boot((server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate);
     }
 
     def process_request_thread(
@@ -536,9 +456,7 @@ obj:pub ThreadingUnixStreamServer(ThreadingMixIn, UnixStreamServer) {
         }
     }
 
-    def process_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def process_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         self.process_request_thread(request, client_address);
     }
 
@@ -556,14 +474,11 @@ obj:pub ThreadingUnixDatagramServer(ThreadingMixIn, UnixDatagramServer) {
     ) {
         self.address_family = 1;
         self.socket_type = 2;
-        self.boot(
-            (server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate
-        );
+        self.boot((server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate);
     }
 
     def process_request_thread(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         try {
             self.finish_request(request, client_address);
@@ -575,8 +490,7 @@ obj:pub ThreadingUnixDatagramServer(ThreadingMixIn, UnixDatagramServer) {
     }
 
     def process_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         self.process_request_thread(request, client_address);
     }
@@ -649,9 +563,7 @@ obj:pub ForkingTCPServer(ForkingMixIn, TCPServer) {
         self.collect_children();
     }
 
-    def process_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def process_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         pid = proc_fork();
         if pid > 0 {
             self.active_children.append(pid);
@@ -703,8 +615,7 @@ obj:pub ForkingUDPServer(ForkingMixIn, UDPServer) {
     }
 
     def process_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         pid = proc_fork();
         if pid > 0 {
@@ -741,9 +652,7 @@ obj:pub ForkingUnixStreamServer(ForkingMixIn, UnixStreamServer) {
     ) {
         self.fork_init();
         self.address_family = 1;
-        self.boot(
-            (server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate
-        );
+        self.boot((server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate);
     }
 
     def service_actions {
@@ -754,9 +663,7 @@ obj:pub ForkingUnixStreamServer(ForkingMixIn, UnixStreamServer) {
         self.collect_children();
     }
 
-    def process_request(
-        request: Socket, client_address: tuple[(str, int, int, int)]
-    ) {
+    def process_request(request: Socket, client_address: tuple[(str, int, int, int)]) {
         pid = proc_fork();
         if pid > 0 {
             self.active_children.append(pid);
@@ -793,9 +700,7 @@ obj:pub ForkingUnixDatagramServer(ForkingMixIn, UnixDatagramServer) {
         self.fork_init();
         self.address_family = 1;
         self.socket_type = 2;
-        self.boot(
-            (server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate
-        );
+        self.boot((server_address, 0, 0, 0), RequestHandlerClass, bind_and_activate);
     }
 
     def service_actions {
@@ -807,8 +712,7 @@ obj:pub ForkingUnixDatagramServer(ForkingMixIn, UnixDatagramServer) {
     }
 
     def process_request(
-        request: tuple[(bytes, Socket)],
-        client_address: tuple[(str, int, int, int)]
+        request: tuple[(bytes, Socket)], client_address: tuple[(str, int, int, int)]
     ) {
         pid = proc_fork();
         if pid > 0 {
@@ -843,17 +747,14 @@ obj:pub BaseRequestHandler {
         request: any;
 
     def run(
-        request: any,
-        client_address: tuple[(str, int, int, int)], server: BaseServer
+        request: any, client_address: tuple[(str, int, int, int)], server: BaseServer
     ) -> bool {
         self.request = request;
         self.begin(client_address, server);
         return True;
     }
 
-    def begin(
-        client_address: tuple[(str, int, int, int)], server: BaseServer
-    ) {
+    def begin(client_address: tuple[(str, int, int, int)], server: BaseServer) {
         self.client_address = client_address;
         self.server = server;
         self.setup();
@@ -864,14 +765,9 @@ obj:pub BaseRequestHandler {
         }
     }
 
-    def setup {
-    }
-
-    def handle {
-    }
-
-    def finish {
-    }
+    def setup {}
+    def handle {}
+    def finish {}
 }
 
 
@@ -885,9 +781,7 @@ obj:pub StreamRequestHandler(BaseRequestHandler) {
         timeout: (int | float | None) = None;
 
     def init(
-        request: Socket,
-        client_address: tuple[(str, int, int, int)],
-        server: BaseServer
+        request: Socket, client_address: tuple[(str, int, int, int)], server: BaseServer
     ) {
         self.request = request;
         self.begin(client_address, server);
@@ -907,8 +801,7 @@ obj:pub StreamRequestHandler(BaseRequestHandler) {
         if not self.wfile.closed {
             try {
                 self.wfile.flush();
-            } except OSError {
-            }
+            } except OSError {}
         }
         self.wfile.close();
         self.rfile.close();

@@ -1,22 +1,3 @@
-"""urllib.robotparser — robots.txt parser (RFC 9309), native Jac port.
-
-Mirrors CPython's ``urllib.robotparser`` API: ``RobotFileParser`` plus the
-``RuleLine`` / ``Entry`` helpers and ``RequestRate``.
-
-Native-scope divergences:
-
-- CPython compiles ``*`` patterns with ``re``; there is no bundled ``re``,
-  so wildcard rules are matched by an equivalent manual scan (lazy ``.*?``
-  between segments, greedy trailing ``.*`` for prefix rules, suffix anchor
-  for ``$`` rules). Match-length semantics are preserved.
-- ``translate_pattern`` is omitted (it exists only to build that regex).
-- ``RequestRate`` is a plain object with ``requests`` / ``seconds`` fields,
-  not a ``collections.namedtuple``; index/unpack access is unsupported.
-- ``read()`` reads ``err.code`` / ``err.close()`` through the caught
-  ``HTTPError`` binding; cross-module caught-exception field access is a
-  known backend gap, so 401/403/4xx marking may be unreliable natively.
-"""
-
 import from c { def time(t: i64) -> i64;  }
 import from urllib.parse { urlsplit, unquote, quote }
 import from urllib.error { HTTPError }
@@ -36,7 +17,6 @@ obj:pub RequestRate {
 
 
 def _collapse_stars(path: str) -> str {
-    # re.sub(r'[*]{2,}', '*', path)
     out = "";
     prev = False;
     for i in range(len(path)) {
@@ -56,7 +36,6 @@ def _collapse_stars(path: str) -> str {
 
 
 def _collapse_dollar(path: str) -> str {
-    # re.sub(r'[$][$*]+', '$', path)
     out = "";
     i = 0;
     n = len(path);
@@ -87,8 +66,6 @@ def normalize(path: str) -> str {
 
 
 def _norm_runs(s: str, keep: str) -> str {
-    # re.sub on the runs of characters NOT in ``keep``: normalize each run,
-    # pass kept characters through untouched.
     out = "";
     run = "";
     for i in range(len(s)) {
@@ -133,10 +110,6 @@ def normalize_pattern(path: str) -> str {
 
 
 def _star_match_end(segments: list[str], s: str, fullm: bool) -> int {
-    # Equivalent of ``translate_pattern`` + ``re.match``/``fullmatch``:
-    # segment 0 must be a prefix, middle segments are found lazily in order,
-    # and the last segment follows a greedy ``.*`` (its last occurrence for a
-    # prefix match; end-anchored for a full match). Returns ``m.end()`` or -1.
     pos = 0;
     first = segments[0];
     if not s.startswith(first) {
@@ -155,7 +128,6 @@ def _star_match_end(segments: list[str], s: str, fullm: bool) -> int {
     }
     last = segments[len(segments) - 1];
     if len(last) == 0 {
-        # trailing ``*``: ``.*`` consumes to the end of the string
         if fullm and len(s) < pos {
             return -1;
         }
@@ -170,7 +142,7 @@ def _star_match_end(segments: list[str], s: str, fullm: bool) -> int {
         }
         return len(s);
     }
-    # greedy ``.*`` backtracks to the last occurrence of ``last``
+
     k = s.rfind(last);
     if k < pos {
         return -1;
@@ -180,7 +152,6 @@ def _star_match_end(segments: list[str], s: str, fullm: bool) -> int {
 
 
 obj:pub RuleLine {
-    """A single ``Allow:`` / ``Disallow:`` rule line."""
     has:pub path: str = "",
         allowance: bool = False,
         fullmatch: bool = False,
@@ -191,7 +162,6 @@ obj:pub RuleLine {
         al = allowance;
         p = path;
         if len(p) == 0 and not al {
-            # an empty value means allow all
             al = True;
         }
         p = _collapse_stars(p);
@@ -211,8 +181,6 @@ obj:pub RuleLine {
     }
 
     def applies_to(filename: str) -> int {
-        # If the filename matches the rule, return the matching length plus 1.
-        # If it does not match, return 0.
         if self.has_star {
             e = _star_match_end(self.segments, filename, self.fullmatch);
             if e >= 0 {
@@ -233,14 +201,17 @@ obj:pub RuleLine {
     }
 
     def __str__ -> str {
-        return (("Allow" if self.allowance else "Disallow") + ": " + self.path
-            + ("$" if self.fullmatch else ""));
+        return (
+            ("Allow" if self.allowance else "Disallow")
+            + ": "
+            + self.path
+            + ("$" if self.fullmatch else "")
+        );
     }
 }
 
 
 obj:pub Entry {
-    """One or more user-agents plus zero or more rule lines."""
     has:pub useragents: list[str] = [],
         rulelines: list[RuleLine] = [],
         delay: (int | None) = None,
@@ -260,9 +231,7 @@ obj:pub Entry {
         }
         if self.req_rate != None {
             rr: RequestRate = self.req_rate;
-            ret.append(
-                "Request-rate: " + str(rr.requests) + "/" + str(rr.seconds)
-            );
+            ret.append("Request-rate: " + str(rr.requests) + "/" + str(rr.seconds));
         }
         if len(self.rulelines) > 0 {
             for rl in self.rulelines {
@@ -275,12 +244,11 @@ obj:pub Entry {
     }
 
     def applies_to(useragent: (str | None)) -> bool {
-        # check if this entry applies to the specified agent
         if useragent == None {
             return "*" in self.useragents;
         }
         ua: str = useragent;
-        # split the name token and make it lower case
+
         ua = ua.split("/")[0].lower();
         for agent in self.useragents {
             if agent != "*" {
@@ -294,9 +262,6 @@ obj:pub Entry {
     }
 
     def allowance(filename: str) -> bool {
-        # Preconditions:
-        # - our agent applies to this entry
-        # - filename is URL encoded
         best_match = -1;
         allow = True;
         for line in self.rulelines {
@@ -366,7 +331,6 @@ def _splitlines(s: str) -> list[str] {
 
 
 obj:pub RobotFileParser {
-    """Reads, parses and answers questions about a single robots.txt file."""
     has:pub entries: list[Entry] = [],
         groups: dict[str, Entry] = {},
         sitemaps: list[str] = [],
@@ -383,17 +347,14 @@ obj:pub RobotFileParser {
     }
 
     def mtime -> float {
-        # Returns the time the robots.txt file was last fetched.
         return self.last_checked;
     }
 
     def modified {
-        # Sets the last-fetched time to now.
         self.last_checked = float(time(0));
     }
 
     def set_url(url: str) {
-        # Sets the URL referring to a robots.txt file.
         self.url = url;
         sp = urlsplit(url);
         self.host = sp.netloc;
@@ -401,7 +362,6 @@ obj:pub RobotFileParser {
     }
 
     def read {
-        # Reads the robots.txt URL and feeds it to the parser.
         f: (addinfourl | None) = None;
         try {
             r = urlopen(self.url);
@@ -446,21 +406,11 @@ obj:pub RobotFileParser {
     }
 
     def parse(lines: list[str]) {
-        # Parse the input lines from a robots.txt file.
-#
-        # We allow that a user-agent: line is not preceded by
-        # one or more blank lines.
-        #
-        # states:
-        #   0: start state
-        #   1: saw user-agent line
-        #   2: saw an allow or disallow line
         state = 0;
         ent = Entry();
 
         self.modified();
         for raw_line in lines {
-            # remove optional comment and strip line
             line = raw_line;
             i = line.find("#");
             if i >= 0 {
@@ -486,22 +436,17 @@ obj:pub RobotFileParser {
                         state = 2;
                         try {
                             ent.rulelines.append(RuleLine(val, False));
-                        } except ValueError {
-                        }
+                        } except ValueError {}
                     }
                 } elif key == "allow" {
                     if state != 0 {
                         state = 2;
                         try {
                             ent.rulelines.append(RuleLine(val, True));
-                        } except ValueError {
-                        }
+                        } except ValueError {}
                     }
                 } elif key == "crawl-delay" {
                     if state != 0 {
-                        # before trying to convert to int we need to make
-                        # sure that robots.txt has valid syntax otherwise
-                        # it will crash
                         if val.isdigit() {
                             ent.delay = int(val);
                         }
@@ -510,7 +455,7 @@ obj:pub RobotFileParser {
                 } elif key == "request-rate" {
                     if state != 0 {
                         numbers = val.split("/");
-                        # check if all values are sane
+
                         if len(numbers) == 2
                             and numbers[0].strip().isdigit()
                             and numbers[1].strip().isdigit() {
@@ -521,9 +466,6 @@ obj:pub RobotFileParser {
                         state = 2;
                     }
                 } elif key == "sitemap" {
-                    # This directive is independent of the user-agent line,
-                    # so it doesn't matter where you place it in your file.
-                    # Therefore we do not change the state of the parser.
                     self.sitemaps.append(val);
                 }
             }
@@ -553,17 +495,13 @@ obj:pub RobotFileParser {
     }
 
     def can_fetch(useragent: str, url: str) -> bool {
-        # using the parsed robots.txt decide if useragent can fetch url
         if self.disallow_all {
             return False;
         }
         if self.allow_all {
             return True;
         }
-        # Until the robots.txt file has been read or found not
-        # to exist, we must assume that no url is allowable.
-        # This prevents false positives when a user erroneously
-        # calls can_fetch() before calling read().
+
         if self.last_checked == 0 {
             return False;
         }
@@ -582,7 +520,6 @@ obj:pub RobotFileParser {
             u = "/";
         }
         if u == "/robots.txt" {
-            # The /robots.txt URI is implicitly allowed.
             return True;
         }
         ent = self._find_entry(useragent);

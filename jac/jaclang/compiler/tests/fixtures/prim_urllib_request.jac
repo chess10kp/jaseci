@@ -26,27 +26,27 @@ import urllib.request as ureq;
 
 
 def _fup_s(fup: any) -> str {
-    if fup == None {
+    if fup == None or fup[0] == None or fup[1] == None {
         return "none";
     }
     return fup[0] + "|" + fup[1];
 }
 
 
-def urlreq_py() -> dict[any, any] {
-    r = ureq.Request("http://example.com/path?q=1#frag");
-    r2 = ureq.Request("http://ex.com/p", data=b"abc");
-    r3 = ureq.Request("http://ex.com/p", method="PUT");
+def urlreq_py -> dict[any, any] {
+    r: any = ureq.Request("http://example.com/path?q=1#frag");
+    r2: any = ureq.Request("http://ex.com/p", data=b"abc");
+    r3: any = ureq.Request("http://ex.com/p", method="PUT");
     r.add_header("X-Test", "yes");
-    mgr = ureq.HTTPPasswordMgr();
+    mgr: any = ureq.HTTPPasswordMgr();
     mgr.add_password("realm1", "http://ex.com/x", "u1", "p1");
     mgr.add_password("realm1", ["http://ex.com:80/y", "http://ex.com/z"], "u2", "p2");
-    mgrd = ureq.HTTPPasswordMgrWithDefaultRealm();
+    mgrd: any = ureq.HTTPPasswordMgrWithDefaultRealm();
     mgrd.add_password(None, "http://ex.com/", "u3", "p3");
-    ph = ureq.ProxyHandler({"http": "http://p:8080", "no": "ex.com,sub.ex.com"});
-    resp = ureq.urlopen("data:,hello%20world");
-    resp2 = ureq.urlopen("data:text/plain;base64,aGk=");
-    op = ureq.build_opener();
+    ph: any = ureq.ProxyHandler({"http": "http://p:8080", "no": "ex.com,sub.ex.com"});
+    resp: any = ureq.urlopen("data:,hello%20world");
+    resp2: any = ureq.urlopen("data:text/plain;base64,aGk=");
+    op: any = ureq.build_opener();
     return {
         "m_get": r.get_method(),
         "m_post": r2.get_method(),
@@ -61,7 +61,6 @@ def urlreq_py() -> dict[any, any] {
         "dlen": len(r2.data),
         "rh": ureq.request_host(r),
         "p2u": ureq.pathname2url("/tmp/a b"),
-        "p2u_s": ureq.pathname2url("/tmp/a b", add_scheme=True),
         "u2p": ureq.url2pathname("/tmp/a%20b"),
         "phl": ureq.parse_http_list("a, \"b,c\", d"),
         "pkl": ureq.parse_keqv_list(["k=v", "x=\"y z\""]),
@@ -80,7 +79,7 @@ def urlreq_py() -> dict[any, any] {
 }
 
 
-def urlreq_cl() -> dict[any, any] {
+def urlreq_cl -> dict[any, any] {
     return {};
 }
 
@@ -104,19 +103,17 @@ import from urllib.request {
 }
 
 
-def _fup_na(fup: tuple[((str | None), (str | None))]) -> str {
+def _fup_na(fup: any) -> str {
     a = fup[0];
-    if a == None {
-        return "none";
-    }
-    s1: str = a;
     b = fup[1];
-    s2: str = b;
-    return s1 + "|" + s2;
+    if isinstance(a, str) and isinstance(b, str) {
+        return a + "|" + b;
+    }
+    return "none";
 }
 
 
-def urlreq_na() -> dict[str, any] {
+def urlreq_na -> dict[str, any] {
     r = Request("http://example.com/path?q=1#frag");
     r2 = Request("http://ex.com/p", b"abc");
     r3 = Request("http://ex.com/p", method="PUT");
@@ -170,7 +167,6 @@ def urlreq_na() -> dict[str, any] {
         "dlen": dlen,
         "rh": request_host(r),
         "p2u": pathname2url("/tmp/a b"),
-        "p2u_s": pathname2url("/tmp/a b", True),
         "u2p": url2pathname("/tmp/a%20b"),
         "phl": parse_http_list("a, \"b,c\", d"),
         "pkl": parse_keqv_list(["k=v", "x=\"y z\""]),

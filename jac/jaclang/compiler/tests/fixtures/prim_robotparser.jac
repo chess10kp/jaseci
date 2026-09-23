@@ -16,7 +16,7 @@ sitemaps, agent substring matching, and the implicit /robots.txt allow.
 import urllib.robotparser as urob;
 
 
-def _robots() -> list[str] {
+def _robots -> any {
     return [
         "# comment line",
         "User-agent: *",
@@ -38,11 +38,11 @@ def _robots() -> list[str] {
 }
 
 
-def robot_py() -> dict[any, any] {
-    rp = urob.RobotFileParser("http://ex.com/robots.txt");
+def robot_py -> dict[any, any] {
+    rp: any = urob.RobotFileParser("http://ex.com/robots.txt");
     rp.parse(_robots());
-    rr = rp.request_rate("badbot");
-    unread = urob.RobotFileParser("http://x/");
+    rr: any = rp.request_rate("badbot");
+    unread: any = urob.RobotFileParser("http://x/");
     return {
         "host": rp.host,
         "path": rp.path,
@@ -71,7 +71,7 @@ def robot_py() -> dict[any, any] {
 }
 
 
-def robot_cl() -> dict[any, any] {
+def robot_cl -> dict[any, any] {
     return {};
 }
 
@@ -81,7 +81,7 @@ def robot_cl() -> dict[any, any] {
 import from urllib.robotparser { RobotFileParser, RequestRate }
 
 
-def robot_na() -> dict[str, any] {
+def robot_na -> dict[str, any] {
     rp = RobotFileParser("http://ex.com/robots.txt");
     rp.parse(_robots());
     rr = rp.request_rate("badbot");
