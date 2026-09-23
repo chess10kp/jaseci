@@ -40,6 +40,7 @@ import from jaclang.compiler.frontend.unitree {
     Literal,
     MatchAs,
     ModuleCode,
+    ImportRule,
     ModuleItem,
     ModulePath,
     MultiString,
@@ -65,7 +66,8 @@ import from jaclang.compiler.frontend.unitree {
     WhileStmt,
     WithStmt,
     YieldExpr,
-    find_python_scope_node_of
+    find_python_scope_node_of,
+    WireItem
 }
 import from jaclang.compiler.passes.context { CompileContext }
 
@@ -96,7 +98,9 @@ import from jaclang.compiler.types.operations {
     AUG_TO_BINARY_MAP,
     BINARY_OPERATOR_MAP,
     BITWISE_OPERATORS,
+    COMPLEX_ARITH_OPS,
     SHIFT_OPERATORS,
+    get_complex_arith_result_type,
     get_numeric_promotion_type,
     get_pow_result_type
 }
