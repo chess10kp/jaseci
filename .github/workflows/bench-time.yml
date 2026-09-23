@@ -1,9 +1,9 @@
 name: bench-time
 
 # Throwaway perf comparison: bundled na_stdlib time (FFI) vs the old native
-# intercept on main. Two lanes build the binary from their own tree and run
-# the same pin-to-one-core bench loop. Triggered by pushing a bench/* branch;
-# never lands on main.
+# intercept on main, and vs a bare `import from c` FFI call. Lanes build the
+# binary from their own tree and run the same pin-to-one-core bench loop.
+# Triggered by pushing a bench/* branch; never lands on main.
 
 on:
   push:
@@ -20,9 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: main-intercept
-            repository: jaseci-labs/jaseci
-            ref: main
+          - label: branch-ffi
+            repository: chess10kp/jaseci
+            ref: bench/na-time
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -32,18 +32,28 @@ jobs:
           ref: ${{ matrix.ref }}
           submodules: true
 
+      - name: Restore cached jac binary
+        id: bincache
+        uses: actions/cache/restore@v4
+        with:
+          path: jac/zig-out/bin/jac
+          key: bench-jac-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/build.zig', 'jac/build.zig.zon', 'jac/jaclang/**', 'jac/bootstrap/**', 'jac/native/**') }}
+
       - uses: mlugg/setup-zig@v2
+        if: steps.bincache.outputs.cache-hit != 'true'
         with:
           version: 0.16.0
           use-cache: false
 
       - name: Restore LLVM tree
+        if: steps.bincache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: jac/.llvm-build
           key: llvm-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
 
       - name: Build jac
+        if: steps.bincache.outputs.cache-hit != 'true'
         working-directory: jac
         env:
           JACPYTHON: "1"
@@ -54,10 +64,27 @@ jobs:
           zig build fetch-typeshed --summary all
           zig build -Dtarget=x86_64-linux-gnu.2.17 --summary all
 
+      - name: Save jac binary
+        if: steps.bincache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: jac/zig-out/bin/jac
+          key: bench-jac-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/build.zig', 'jac/build.zig.zon', 'jac/jaclang/**', 'jac/bootstrap/**', 'jac/native/**') }}
+
       - name: Write bench
         run: |
           cat > bench.jac <<'JAC'
           import time;
+          import from c { def clock_gettime(clk: i32, ts: int) -> i32; }
+
+          # Same work the bundled module does, minus the wrapper calls and
+          # errno check: entry-block alloca + extern call + raw loads.
+          def raw_clk_ns -> int {
+              ts: int = __alloca(16);
+              clock_gettime(i32(1), ts);
+              return __mem_load_i64(ts) * 1000000000 + __mem_load_i64(ts + 8);
+          }
+
           with entry {
               N: int = 500000;
               acc: int = 0;
@@ -71,7 +98,7 @@ jobs:
               i = 0;
               while i < 2000 {
                   acc += time.monotonic_ns() % 65536;
-                  acc += time.time_ns() % 65536;
+                  acc += raw_clk_ns() % 65536;
                   i += 1;
               }
 
@@ -90,34 +117,34 @@ jobs:
               while r < 3 {
                   i = 0;
                   t0 = time.monotonic_ns();
-                  while i < N { acc += time.time_ns() % 65536; i += 1; }
-                  dt = time.monotonic_ns() - t0;
-                  if best < 0 or dt < best { best = dt; }
-                  r += 1;
-              }
-              print("time_ns", best / N, "acc:", acc);
-
-              r = 0; best = -1;
-              while r < 3 {
-                  i = 0;
-                  t0 = time.monotonic_ns();
                   while i < N { acc += time.monotonic_ns() % 65536; i += 1; }
                   dt = time.monotonic_ns() - t0;
                   if best < 0 or dt < best { best = dt; }
                   r += 1;
               }
-              print("monotonic_ns", best / N, "acc:", acc);
+              print("bundled_monotonic_ns", best / N, "acc:", acc);
 
               r = 0; best = -1;
               while r < 3 {
                   i = 0;
                   t0 = time.monotonic_ns();
-                  while i < N { acc += int(time.time() * 1000000.0) % 65536; i += 1; }
+                  while i < N { acc += raw_clk_ns() % 65536; i += 1; }
                   dt = time.monotonic_ns() - t0;
                   if best < 0 or dt < best { best = dt; }
                   r += 1;
               }
-              print("time_f", best / N, "acc:", acc);
+              print("raw_ffi_clock_gettime", best / N, "acc:", acc);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += time.time_ns() % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("bundled_time_ns", best / N, "acc:", acc);
 
               r = 0; best = -1;
               while r < 3 {
@@ -128,18 +155,7 @@ jobs:
                   if best < 0 or dt < best { best = dt; }
                   r += 1;
               }
-              print("monotonic_f", best / N, "acc:", acc);
-
-              r = 0; best = -1;
-              while r < 3 {
-                  i = 0;
-                  t0 = time.monotonic_ns();
-                  while i < N { acc += time.perf_counter_ns() % 65536; i += 1; }
-                  dt = time.monotonic_ns() - t0;
-                  if best < 0 or dt < best { best = dt; }
-                  r += 1;
-              }
-              print("perf_counter_ns", best / N, "acc:", acc);
+              print("bundled_monotonic_f", best / N, "acc:", acc);
 
               r = 0; best = -1;
               while r < 3 {
@@ -150,7 +166,7 @@ jobs:
                   if best < 0 or dt < best { best = dt; }
                   r += 1;
               }
-              print("sleep_0", best / 20000, "acc:", acc);
+              print("bundled_sleep_0", best / 20000, "acc:", acc);
           }
           JAC
 
@@ -160,8 +176,4 @@ jobs:
           BIN="$GITHUB_WORKSPACE/jac/zig-out/bin/jac"
           cd "$RUNNER_TEMP"
           cp "$GITHUB_WORKSPACE/bench.jac" .
-          # The old intercept emits its timespec alloca at the call site, so
-          # every loop iteration burns 16B of stack (jaseci-labs/jac#9487).
-          # Lift the limit so the lane can actually finish and print numbers.
-          ulimit -s unlimited || ulimit -s 1048576 || true
           JAC_NO_DEV_SOURCE=1 taskset -c 2 "$BIN" run -b native bench.jac
