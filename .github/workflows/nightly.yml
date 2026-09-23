@@ -107,7 +107,7 @@ jobs:
 
   notes-app-cef-smoke:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
       with:
@@ -207,7 +207,7 @@ jobs:
   k8s-real-e2e:
     name: microservice e2e (k8s, ${{ matrix.base }})
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 3 * * *' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false

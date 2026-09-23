@@ -38,7 +38,7 @@ jobs:
       github.repository == 'jaseci-labs/jac' &&
       github.event_name == 'workflow_dispatch' &&
       inputs.action == 'create-pr'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       # Run the release scripts with the published compiler. The root jac.toml
@@ -118,7 +118,7 @@ jobs:
           startsWith(github.event.pull_request.head.ref, 'release/')
         )
       )
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
@@ -181,7 +181,7 @@ jobs:
   # Human approval gate (release-approval environment required reviewers).
   approve:
     needs: resolve
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     environment: release-approval
     timeout-minutes: 60
     steps:
@@ -207,7 +207,7 @@ jobs:
   # Idempotent tag + Release so a recovery re-run converges.
   tag-and-release:
     needs: [resolve, approve]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
@@ -294,7 +294,7 @@ jobs:
   # publish emits no release.published, so no re-trigger.
   publish:
     needs: [resolve, tag-and-release, build-binaries]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: write
@@ -331,7 +331,7 @@ jobs:
   summary:
     needs: [resolve, tag-and-release, build-binaries, publish]
     if: always() && needs.resolve.result == 'success'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Release summary
@@ -363,7 +363,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       inputs.action == 'create-github-release'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:

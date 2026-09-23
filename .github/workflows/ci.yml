@@ -121,7 +121,7 @@ jobs:
 
   # The kit lane builds this checkout and publishes it for every test lane.
   build-kit:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
@@ -269,7 +269,7 @@ jobs:
   jac-check:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       # Reroute lane: see the jac check step below.
       JAC_NO_DEV_SOURCE: ""
@@ -483,7 +483,7 @@ jobs:
     name: Contribution Checks
     needs: changes
     if: ${{ github.event_name != 'push' || needs.changes.outputs.docs == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
@@ -538,7 +538,7 @@ jobs:
   test-compiler:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       # Per-leg, not per-step: jac-kit reads this to decide whether to seed the
       # precompile bundle and pin the runtime cache, so a step-level override
@@ -624,7 +624,7 @@ jobs:
   test-runtime:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: "1"
     steps:
@@ -676,7 +676,7 @@ jobs:
   test-in-package-sealed:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true' || needs.changes.outputs.byllm == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: "1"
     steps:
@@ -729,7 +729,7 @@ jobs:
   test-client:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: "1"
     steps:
@@ -769,7 +769,7 @@ jobs:
   test-packages-and-docs:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.byllm == 'true' || needs.changes.outputs.docs == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: ""
     steps:
@@ -801,7 +801,7 @@ jobs:
   test-scale:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: ""
     strategy:
@@ -862,7 +862,7 @@ jobs:
        needs.changes.outputs.core == 'true' ||
        needs.changes.outputs.scale == 'true') &&
       !contains(github.event.pull_request.labels.*.name, 'skip-k8s')
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: "1"
       # The opt-in flag test_deploy_k8s gates on: this is the lane with a
@@ -972,7 +972,7 @@ jobs:
   test-launcher-jac:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.native == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       # Reroute lane, stated rather than inherited: the in-package suites under
       # jac/jaclang/compiler/tests resolve their fixtures from jaclang.__file__,
@@ -1028,7 +1028,7 @@ jobs:
   test-jac-pack-smoke:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true' || needs.changes.outputs.byllm == 'true' || needs.changes.outputs.pack_smoke == 'true' || needs.changes.outputs.site_journey == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     # actions: read lets the performance report list main's runs and download
     # their pack-smoke-performance artifacts for the wall-time comparison.
     permissions:
@@ -1501,7 +1501,7 @@ jobs:
   test-jac-pack-eject:
     needs: [changes, build-kit]
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.core == 'true' || needs.changes.outputs.scale == 'true' || needs.changes.outputs.byllm == 'true' || needs.changes.outputs.site_journey == 'true' }}
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     env:
       JAC_NO_DEV_SOURCE: "1"
     steps:

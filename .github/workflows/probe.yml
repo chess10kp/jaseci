@@ -1,0 +1,33 @@
+name: probe
+on:
+  push:
+    branches: [ci-fork/na-socket]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download kit artifacts via REST
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sL -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/actions/artifacts/10771048968/zip \
+            -o /tmp/kit.zip
+          curl -sL -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/${{ github.repository }}/actions/artifacts/10771820029/zip \
+            -o /tmp/pre.zip
+          mkdir -p jac jac/jaclang/_precompiled
+          cd jac && unzip -oq /tmp/kit.zip && cd ..
+          cd jac/jaclang/_precompiled && unzip -oq /tmp/pre.zip && cd ../../..
+      - name: Run probes
+        run: |
+          chmod +x jac/zig-out/bin/jac
+          rm -f jac/jaclang/_precompiled/MANIFEST.json
+          python3 scripts/probe/loopback.py 8123 &
+          sleep 1
+          cd jac
+          for p in urlopen urlopen2 urlopen3 dataopen env; do
+            echo "=== probe: $p ==="
+            ./zig-out/bin/jac run -b native ../scripts/probe/probe_$p.jac 2>&1 || echo "PROBE $p FAILED: $?"
+          done
