@@ -1,14 +1,10 @@
 import from c { def socket(domain: i32, socktype: i32, protocol: i32) -> i32;  }
-import from c {
-    def syscall(num: i64, a: i64, b: i64, c: i64, d: bytes) -> i64;
-}
+import from c { def syscall(num: i64, a: i64, b: i64, c: i64, d: bytes) -> i64;  }
 import from c { def connect(fd: i32, addr: bytes, addrlen: i32) -> i32;  }
 import from c { def bind(fd: i32, addr: bytes, addrlen: i32) -> i32;  }
 import from c { def listen(fd: i32, backlog: i32) -> i32;  }
 import from c { def accept(fd: i32, addr: bytes, addrlen: bytes) -> i32;  }
-import from c {
-    def getsockname(fd: i32, addr: bytes, addrlen: bytes) -> i32;
-}
+import from c { def getsockname(fd: i32, addr: bytes, addrlen: bytes) -> i32;  }
 import from c {
     def setsockopt(
         fd: i32, level: i32, optname: i32, optval: bytes, optlen: i32
@@ -85,14 +81,12 @@ def:pub sock_open(family: int, socktype: int, proto: int) -> int {
 }
 
 
-def:pub sock_pair() -> tuple[(int, int)] {
+def:pub sock_pair -> tuple[(int, int)] {
     sv = b"\x00" * 8;
     if syscall(53, 1, 1, 0, sv) < 0 {
         raise OSError("socketpair failed: " + errno_message());
     }
-    return (
-        int.from_bytes(sv[0:4], "little"), int.from_bytes(sv[4:8], "little")
-    );
+    return (int.from_bytes(sv[0:4], "little"), int.from_bytes(sv[4:8], "little"));
 }
 
 
@@ -157,9 +151,7 @@ def:pub sa_inet(host: str, port: int) -> bytes {
 }
 
 
-def:pub sa_inet6(
-    host: str, port: int, flowinfo: int, scopeid: int
-) -> bytes {
+def:pub sa_inet6(host: str, port: int, flowinfo: int, scopeid: int) -> bytes {
     ab = b"\x00" * 16;
     if len(host) > 0 and inet_pton(10, host, ab) != 1 {
         r: tuple[(list[bytes], int)] = resolve_all(host, str(port));
@@ -172,9 +164,11 @@ def:pub sa_inet6(
         }
         raise OSError("no AF_INET6 address for " + host);
     }
-    return (10).to_bytes(2, "little") + port.to_bytes(2, "big") + flowinfo.to_bytes(
-        4, "big"
-    ) + ab + scopeid.to_bytes(4, "little");
+    return (10).to_bytes(2, "little")
+        + port.to_bytes(2, "big")
+        + flowinfo.to_bytes(4, "big")
+        + ab
+        + scopeid.to_bytes(4, "little");
 }
 
 
