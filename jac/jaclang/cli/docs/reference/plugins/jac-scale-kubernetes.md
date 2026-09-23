@@ -57,6 +57,10 @@ Sealing is **mandatory**: if the app cannot be sealed into a valid image, the de
 
 If a module in your project cannot be sealed (for example, a file that fails to compile), the deploy aborts with the seal error. Fix the offending module, or park its tree in `.jacignore` if it is not part of the served app, and redeploy.
 
+**Fat bundles.** By default the `.jab` also carries the app's Python dependency closure as wheels under `_vendor/wheels/`, resolved by the seal binary (the same jac version pods run) so pods install their dependencies offline at boot with no PyPI access. The wheels are resolved for the **pod platform**, not the deploy host: CPython of the pod binary, the node architecture (`x86_64` or `aarch64`, see `JAC_NODE_ARCH`), and Linux with glibc 2.36 or newer, which is what the official pod images provide. pip is asked for every tag such a pod accepts, `manylinux2014_<arch>` and each `manylinux_2_17` through `manylinux_2_36` PEP 600 tag, so compiled wheels (`cryptography`, `grpcio`, `bcrypt`, `watchdog`) resolve the same way they would on the pod itself. A dependency that publishes no wheel at all is built on the deploy host with `pip wheel`; the result ships only when it fits the pod (a pure-Python `none-any` wheel always does, a bare Linux compiled wheel only when the host is Linux on the same architecture and its detected glibc is no newer than the pod floor; unknown libc versions and musl hosts are rejected).
+
+`[scale] fat_bundle` in `jac.toml` controls the outcome when a dependency still has no usable wheel: unset, the deploy logs a warning naming the packages and ships a thin bundle whose pods install from PyPI at boot; `fat_bundle = true` makes that a deploy failure; `fat_bundle = false` skips vendoring entirely.
+
 ---
 
 ### Naming & Namespace
@@ -772,12 +776,20 @@ Status values:
 
 | Value | Meaning |
 |-------|---------|
-| `Running` | All pods ready |
-| `Degraded` | Some pods ready, others not |
-| `Pending` | Pods are starting up (no pods ready yet) |
-| `Restarting` | One or more pods are crash-looping |
+| `Active` | Every desired replica runs the current template and is available |
+| `Activating` | Replicas are starting, or a rollout is still in progress |
+| `Inactive` | Scaled to zero on purpose: the replica floor is 0 (`idle_replicas = 0` under KEDA, or `http_activation`), so this is the healthy resting state, not an error |
+| `Deactivating` | Scaling down; surplus replicas are still draining |
+| `Degraded` | Something is wrong: the rollout passed its progress deadline, pods are crash-looping, or the workload sits at zero replicas below its floor |
 | `Not Deployed` | Component was never provisioned |
 | `Unknown` | Component state could not be determined |
+
+The same verdict backs `ScaleClient.resource_status`, the fleet-ready gate at the end of `jac scale deploy`, and the Ops Console's `/admin/ops/deploy` endpoint, so all four agree about a workload. Scaling intent is read from the `jac-scale.replica-floor` annotation that `jac scale deploy` stamps on each Deployment; a Deployment applied before this annotation existed is treated as having a floor of 1 until it is redeployed.
+
+A Deployment whose replicas an autoscaler owns is redeployed with `spec.replicas` left out of the update, so the count the HPA, ScaledObject or HTTP interceptor set survives. Two consequences follow:
+
+- A service already idled to zero stays at zero through a redeploy, so `jac scale deploy` finishes without ever starting the new revision. The deploy log names those services: the image is unverified until the first request wakes one. Deploy a warm service, or set `idle_replicas` above zero, when a deploy has to prove the new build boots.
+- `idle_replicas` is a fleet-wide setting and the gateway is exempt from it, for the reason it is already exempt from `http_activation`: it is the ingress entry point, and nothing wakes it once it sleeps. Put `http_activation` on the services that should sleep instead.
 
 ---
 
@@ -1461,7 +1473,7 @@ reachable at call time).
 | `preview(spec)` | the manifest bundle, nothing applied (microservice target only, like `--dry-run`) |
 | `destroy(app_name, namespace, component="")` | removes the deployment; never prompts |
 | `status(app_name, namespace)` | full status dict (components, pod counts, URLs) |
-| `resource_status(app_name, namespace)` | `ResourceStatusInfo{status, replicas, ready_replicas}` |
+| `resource_status(app_name, namespace)` | `ResourceStatusInfo{status, replicas, ready_replicas, available_replicas, updated_replicas, replica_floor, reason, message}`; `status` is one of `active`, `activating`, `inactive`, `deactivating`, `degraded`, `unknown` (see [Deployment Status](#deployment-status)) |
 | `service_url(app_name, namespace)` | externally reachable URL or `None` |
 | `scale(app_name, namespace, replicas)` | resizes the app deployment |
 

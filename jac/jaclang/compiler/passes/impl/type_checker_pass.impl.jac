@@ -22,7 +22,7 @@ impl TypeCheckPass.exit_name with Name exit {
             return;
         }
 
-        if isinstance(here.parent, ModulePath) {
+        if isinstance(here.parent, (ModulePath, ImportRule, WireItem)) {
             return;
         }
         if isinstance(here.parent, JsxElementName) {
@@ -815,6 +815,13 @@ impl TypeCheckPass.exit_assignment with Assignment exit {
                                 }
                                 if promoted is not None {
                                     result = promoted;
+                                } elif base_op in COMPLEX_ARITH_OPS {
+                                    complex_result = get_complex_arith_result_type(
+                                        left_type, right_type
+                                    );
+                                    if complex_result is not None {
+                                        result = complex_result;
+                                    }
                                 }
                             }
                             if result is None {
