@@ -60,13 +60,13 @@ def _aint(v: any) -> int {
 
 def tty_na -> dict[str, any] {
     (mfd, sfd) = _pty_pair_na();
-    orig = termios.tcgetattr(sfd);
-    tty.setcbreak(sfd);
-    after = termios.tcgetattr(sfd);
+    orig = tcgetattr(sfd);
+    setcbreak(sfd);
+    after = tcgetattr(sfd);
     lflag: int = _aint(after[3]);
     icanon_off: int = 1 if (lflag & ICANON) == 0 else 0;
     echo_off: int = 1 if (lflag & ECHO) == 0 else 0;
-    termios.tcsetattr(sfd, TCSADRAIN, orig);
+    tcsetattr(sfd, TCSADRAIN, orig);
     close(i32(sfd));
     close(i32(mfd));
     return {"icanon_off": icanon_off, "echo_off": echo_off};

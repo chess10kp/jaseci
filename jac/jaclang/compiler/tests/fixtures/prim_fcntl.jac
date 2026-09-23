@@ -9,6 +9,7 @@ a bytes literal lives in .rodata and cannot be written.
 
 import os;
 import fcntl;
+import from fcntl { ioctl }
 import from termios { TIOCGWINSZ }
 import from c { def pipe(fds: bytes) -> i32;  def close(fd: i32) -> i32;  }
 
@@ -92,7 +93,7 @@ def fcntl_na -> dict[str, any] {
     ws_bytes: int = 0;
     try {
         buf: bytes = b"\x00" * 8;
-        buf = fcntl.ioctl(0, TIOCGWINSZ, buf);
+        buf = ioctl(0, TIOCGWINSZ, buf);
         ws_ok = 1;
         ws_bytes = len(buf);
         ws_rows = _i16_le(buf, 0);

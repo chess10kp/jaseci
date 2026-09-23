@@ -69,14 +69,14 @@ def _aint(v: any) -> int {
 
 def termios_na -> dict[str, any] {
     (mfd, sfd) = _pty_pair_na();
-    attrs = termios.tcgetattr(sfd);
+    attrs = tcgetattr(sfd);
     alen: int = len(attrs);
     cca = attrs[6];
     cclen: int = len(cca) if isinstance(cca, list) else 0;
     cc_is_bytes: int = 1 if isinstance(cca[0], bytes) else 0;
     saved_iflag: int = _aint(attrs[0]);
-    termios.tcsetattr(sfd, TCSADRAIN, attrs);
-    attrs2 = termios.tcgetattr(sfd);
+    tcsetattr(sfd, TCSADRAIN, attrs);
+    attrs2 = tcgetattr(sfd);
     iflag_match: int = 1 if _aint(attrs2[0]) == saved_iflag else 0;
     close(i32(sfd));
     close(i32(mfd));
