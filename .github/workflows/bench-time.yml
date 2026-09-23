@@ -1,0 +1,166 @@
+name: bench-time
+
+# Throwaway perf comparison: bundled na_stdlib time (FFI) vs the old native
+# intercept on main. Two lanes build the binary from their own tree and run
+# the same pin-to-one-core bench loop. Triggered by pushing a bench/* branch;
+# never lands on main.
+
+on:
+  push:
+    branches: ["bench/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: bench (${{ matrix.label }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: branch-ffi
+            repository: chess10kp/jaseci
+            ref: bench/na-time
+          - label: main-intercept
+            repository: jaseci-labs/jaseci
+            ref: main
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          submodules: true
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+          use-cache: false
+
+      - name: Restore LLVM tree
+        uses: actions/cache/restore@v4
+        with:
+          path: jac/.llvm-build
+          key: llvm-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jac/bootstrap/pins.json') }}
+
+      - name: Build jac
+        working-directory: jac
+        env:
+          JACPYTHON: "1"
+        run: |
+          set -euxo pipefail
+          zig build fetch-llvm --summary all
+          zig build jacllvm --summary all
+          zig build fetch-typeshed --summary all
+          zig build -Dtarget=x86_64-linux-gnu.2.17 --summary all
+
+      - name: Write bench
+        run: |
+          cat > bench.jac <<'JAC'
+          import time;
+          with entry {
+              N: int = 500000;
+              acc: int = 0;
+              i: int = 0;
+              r: int = 0;
+              best: int = -1;
+              dt: int = 0;
+              t0: int = 0;
+
+              # warm up
+              i = 0;
+              while i < 2000 {
+                  acc += time.monotonic_ns() % 65536;
+                  acc += time.time_ns() % 65536;
+                  i += 1;
+              }
+
+              r = 0;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += i % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("bare_loop", best / N);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += time.time_ns() % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("time_ns", best / N, "acc:", acc);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += time.monotonic_ns() % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("monotonic_ns", best / N, "acc:", acc);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += int(time.time() * 1000000.0) % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("time_f", best / N, "acc:", acc);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += int(time.monotonic() * 1000000.0) % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("monotonic_f", best / N, "acc:", acc);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < N { acc += time.perf_counter_ns() % 65536; i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("perf_counter_ns", best / N, "acc:", acc);
+
+              r = 0; best = -1;
+              while r < 3 {
+                  i = 0;
+                  t0 = time.monotonic_ns();
+                  while i < 20000 { time.sleep(0.0); i += 1; }
+                  dt = time.monotonic_ns() - t0;
+                  if best < 0 or dt < best { best = dt; }
+                  r += 1;
+              }
+              print("sleep_0", best / 20000, "acc:", acc);
+          }
+          JAC
+
+      - name: Run bench (sealed binary, pinned to one core)
+        run: |
+          set -euxo pipefail
+          BIN="$GITHUB_WORKSPACE/jac/zig-out/bin/jac"
+          cd "$RUNNER_TEMP"
+          cp "$GITHUB_WORKSPACE/bench.jac" .
+          JAC_NO_DEV_SOURCE=1 taskset -c 2 "$BIN" run -b native bench.jac
