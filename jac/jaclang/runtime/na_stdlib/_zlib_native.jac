@@ -14,9 +14,6 @@ import from z { def inflateEnd(strm: bytes) -> i32;  }
 import from z { def zlibVersion -> int;  }
 import from c { def memchr(s: bytes, c: i32, n: u64) -> int;  }
 import from c { def memcpy(dst: bytes, src: int, n: u64) -> int;  }
-import from c { def malloc(n: u64) -> int;  }
-import from c { def realloc(p: int, n: u64) -> int;  }
-import from c { def free(p: int) -> None;  }
 
 glob _ZS_NEXT_IN: int = 0,
      _ZS_AVAIL_IN: int = 8,
@@ -152,11 +149,8 @@ def:pub z_inflate_all(
     if cap < 1 {
         cap = 1;
     }
-    buf: int = malloc(u64(cap));
+    buf: bytes = b"\x00" * cap;
     status: int = Z_OK;
-    if buf == 0 {
-        status = Z_MEM_ERROR;
-    }
     total: int = 0;
     while status == Z_OK {
         if total == cap {
@@ -164,23 +158,27 @@ def:pub z_inflate_all(
                 status = Z_BUF_ERROR;
                 break;
             }
+            fed: int = _inflate_total_in(strm);
             newcap: int = cap * 2;
+            if fed > 0 {
+                pred: int = (total * src_len) // fed + total // 4 + 4096;
+                if pred > newcap {
+                    newcap = pred;
+                }
+            }
             if newcap > ceiling {
                 newcap = ceiling;
             }
-            nbuf: int = realloc(buf, u64(newcap));
-            if nbuf == 0 {
-                status = Z_MEM_ERROR;
-                break;
-            }
+            nbuf: bytes = b"\x00" * newcap;
+            memcpy(nbuf, _payload_addr(buf), u64(total));
             buf = nbuf;
             cap = newcap;
         }
-        _inflate_set_out(strm, buf + total, cap - total);
+        _inflate_set_out(strm, _payload_addr(buf) + total, cap - total);
         status = _inflate(strm);
         total = _inflate_total_out(strm);
         if status == Z_BUF_ERROR {
-            fed: int = _inflate_total_in(strm);
+            fed = _inflate_total_in(strm);
             if fed < src_len {
                 _inflate_refeed_in(strm, src_len - fed);
                 status = Z_OK;
@@ -191,12 +189,9 @@ def:pub z_inflate_all(
     }
     data = b"";
     if status == Z_STREAM_END {
-        out = b"\x00" * total;
-        memcpy(out, buf, u64(total));
-        data = out;
+        data = buf if total == cap else buf[0:total];
     }
     consumed: int = _inflate_total_in(strm);
-    free(buf);
     _inflate_end(strm);
     return ZInflateResult(status=status, consumed=consumed, data=data);
 }
