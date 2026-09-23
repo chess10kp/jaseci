@@ -39,10 +39,10 @@ def _robots() -> list[str] {
 
 
 def robot_py() -> dict[any, any] {
-    rp = urob.RobotFileParser("http://ex.com/robots.txt");
+    rp: any = urob.RobotFileParser("http://ex.com/robots.txt");
     rp.parse(_robots());
-    rr = rp.request_rate("badbot");
-    unread = urob.RobotFileParser("http://x/");
+    rr: any = rp.request_rate("badbot");
+    unread: any = urob.RobotFileParser("http://x/");
     return {
         "host": rp.host,
         "path": rp.path,
