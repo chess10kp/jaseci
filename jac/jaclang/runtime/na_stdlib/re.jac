@@ -1280,7 +1280,7 @@ obj _Re {
 
 
 obj _St {
-    has s: str = "",
+    has bv: bytes = b"",
         n: int = 0,
         slots: list[int] = [],
         marks: list[int] = [],
@@ -1292,7 +1292,7 @@ obj _St {
 def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
     pc: int = pc0;
     pos: int = pos0;
-    s: str = st.s;
+    bv: bytes = st.bv;
     n: int = st.n;
     prog: list[_Ins] = re.prog;
     while True {
@@ -1300,7 +1300,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
         op: int = ins.op;
         if op == _OP_CHAR {
             if pos < n {
-                c0: int = ord(s[pos]);
+                c0: int = bv[pos];
                 if c0 == ins.a or ((st.flags & 2) != 0 and _swap(c0) == ins.a) {
                     pos += 1;
                     pc += 1;
@@ -1310,7 +1310,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
             return -1;
         }
         if op == _OP_ANY {
-            if pos < n and ((st.flags & 16) != 0 or ord(s[pos]) != 10) {
+            if pos < n and ((st.flags & 16) != 0 or bv[pos] != 10) {
                 pos += 1;
                 pc += 1;
                 continue;
@@ -1320,7 +1320,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
         if op == _OP_CLASS {
             if pos < n {
                 cl: _Cls = re.classes[ins.a];
-                c1: int = ord(s[pos]);
+                c1: int = bv[pos];
                 hit: bool = _in_pairs(cl.pairs, c1);
                 if not hit and (st.flags & 2) != 0 {
                     hit = _in_pairs(cl.pairs, _swap(c1));
@@ -1379,21 +1379,21 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
             return -1;
         }
         if op == _OP_BEGLINE {
-            if pos == 0 or ord(s[pos - 1]) == 10 {
+            if pos == 0 or bv[pos - 1] == 10 {
                 pc += 1;
                 continue;
             }
             return -1;
         }
         if op == _OP_END {
-            if pos == n or (pos == n - 1 and ord(s[pos]) == 10) {
+            if pos == n or (pos == n - 1 and bv[pos] == 10) {
                 pc += 1;
                 continue;
             }
             return -1;
         }
         if op == _OP_ENDLINE {
-            if pos == n or (pos < n and ord(s[pos]) == 10) {
+            if pos == n or (pos < n and bv[pos] == 10) {
                 pc += 1;
                 continue;
             }
@@ -1407,8 +1407,8 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
             return -1;
         }
         if op == _OP_WB {
-            lft: bool = pos > 0 and _isword(ord(s[pos - 1]));
-            rgt: bool = pos < n and _isword(ord(s[pos]));
+            lft: bool = pos > 0 and _isword(bv[pos - 1]);
+            rgt: bool = pos < n and _isword(bv[pos]);
             if (lft != rgt) == (ins.a == 0) {
                 pc += 1;
                 continue;
@@ -1429,8 +1429,8 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
             k2: int = 0;
             ok: bool = True;
             while k2 < ln {
-                ca: int = ord(s[lo + k2]);
-                cb: int = ord(s[pos + k2]);
+                ca: int = bv[lo + k2];
+                cb: int = bv[pos + k2];
                 if ca != cb and ((st.flags & 2) == 0 or _swap(ca) != cb) {
                     ok = False;
                     break;
@@ -1495,7 +1495,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
 
 def _new_st(s: str, n: int, re: _Re) -> _St {
     st: _St = _St();
-    st.s = s;
+    st.bv = s.encode();
     st.n = n;
     st.flags = re.flags;
     st.slots = [];
@@ -1635,21 +1635,29 @@ obj:pub Pattern {
         self.groupindex = self._re.names;
     }
 
-    def _search_from(string: str, start: int, endpos: int) -> (Match | None) {
-        st: _St = _new_st(string, endpos, self._re);
+    def _scan_from(st: _St, start: int) -> int {
         p: int = start;
-        while p <= endpos {
+        while p <= st.n {
             _reset_slots(st);
             st.flags = self._re.flags;
             r: int = _run(self._re, st, 0, p);
             if r >= 0 {
                 st.slots[0] = p;
                 st.slots[1] = r;
-                return Match(self._re, string, start, endpos, st.slots);
+                return r;
             }
             p += 1;
         }
-        return None;
+        return -1;
+    }
+
+    def _search_from(string: str, start: int, endpos: int) -> (Match | None) {
+        st: _St = _new_st(string, endpos, self._re);
+        r: int = self._scan_from(st, start);
+        if r < 0 {
+            return None;
+        }
+        return Match(self._re, string, start, endpos, st.slots);
     }
 
     def search(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
@@ -1696,20 +1704,19 @@ obj:pub Pattern {
         pos = b[0];
         endpos = b[1];
         out: list[Match] = [];
+        st: _St = _new_st(string, endpos, self._re);
         p: int = pos;
         while p <= endpos {
-            m: (Match | None) = self._search_from(string, p, endpos);
-            if m is None {
+            r: int = self._scan_from(st, p);
+            if r < 0 {
                 break;
             }
-            m2: Match = m;
-            m2.pos = pos;
+            m2: Match = Match(self._re, string, pos, endpos, st.slots[:]);
             out.append(m2);
-            e: int = m2._slots[1];
-            if e > p {
-                p = e;
+            if r > p {
+                p = r;
             } else {
-                p = e + 1;
+                p = r + 1;
             }
         }
         return out;
@@ -1721,23 +1728,33 @@ obj:pub Pattern {
                 "findall: patterns with more than one group are not supported on native"
             );
         }
-        ms: list[Match] = self.finditer(string, pos, endpos);
+        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        pos = b[0];
+        endpos = b[1];
         out: list[str] = [];
-        i: int = 0;
-        while i < len(ms) {
-            m: Match = ms[i];
+        st: _St = _new_st(string, endpos, self._re);
+        p: int = pos;
+        while p <= endpos {
+            r: int = self._scan_from(st, p);
+            if r < 0 {
+                break;
+            }
             if self._re.ngroups == 0 {
-                out.append(m.string[m._slots[0]:m._slots[1]]);
+                out.append(string[st.slots[0]:r]);
             } else {
-                lo: int = m._slots[2];
-                hi: int = m._slots[3];
+                lo: int = st.slots[2];
+                hi: int = st.slots[3];
                 if lo < 0 or hi < lo {
                     out.append("");
                 } else {
-                    out.append(m.string[lo:hi]);
+                    out.append(string[lo:hi]);
                 }
             }
-            i += 1;
+            if r > p {
+                p = r;
+            } else {
+                p = r + 1;
+            }
         }
         return out;
     }

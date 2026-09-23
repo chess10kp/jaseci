@@ -19,17 +19,14 @@ def:pub capwords(s: str, sep: (str | None) = None) -> str {
         parts = s.split(sepv);
         joiner = sepv;
     }
-    out: str = "";
+    out: list[str] = [];
     i: int = 0;
     n: int = len(parts);
     while i < n {
-        if i > 0 {
-            out += joiner;
-        }
-        out += parts[i].capitalize();
+        out.append(parts[i].capitalize());
         i += 1;
     }
-    return out;
+    return joiner.join(out);
 }
 
 
@@ -85,13 +82,18 @@ def _invalid(template: str, i: int) {
 
 def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str {
     out: str = "";
+    bv: bytes = template.encode();
     i: int = 0;
     n: int = len(template);
     while i < n {
-        c: int = ord(template[i]);
+        c: int = bv[i];
         if c != 36 {
-            out += template[i];
-            i += 1;
+            j0: int = i;
+            while j0 < n and bv[j0] != 36 {
+                j0 += 1;
+            }
+            out += template[i:j0];
+            i = j0;
             continue;
         }
         if i + 1 >= n {
@@ -102,7 +104,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
             }
             _invalid(template, i);
         }
-        nx: int = ord(template[i + 1]);
+        nx: int = bv[i + 1];
         if nx == 36 {
             out += "$";
             i += 2;
@@ -113,10 +115,10 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
         raw: str = "";
         if nx == 123 {
             j: int = i + 2;
-            while j < n and _is_id_char(ord(template[j])) {
+            while j < n and _is_id_char(bv[j]) {
                 j += 1;
             }
-            if j > i + 2 and j < n and ord(template[j]) == 125 {
+            if j > i + 2 and j < n and bv[j] == 125 {
                 name = template[i + 2:j];
                 consumed = j + 1 - i;
                 raw = template[i:j + 1];
@@ -129,7 +131,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
             }
         } elif _is_id_start(nx) {
             j = i + 1;
-            while j < n and _is_id_char(ord(template[j])) {
+            while j < n and _is_id_char(bv[j]) {
                 j += 1;
             }
             name = template[i + 1:j];
@@ -197,10 +199,11 @@ obj:pub Template {
     def get_identifiers -> list[str] {
         ids: list[str] = [];
         template: str = self.template;
+        bv: bytes = template.encode();
         i: int = 0;
         n: int = len(template);
         while i < n {
-            c: int = ord(template[i]);
+            c: int = bv[i];
             if c != 36 {
                 i += 1;
                 continue;
@@ -209,7 +212,7 @@ obj:pub Template {
                 i += 1;
                 continue;
             }
-            nx: int = ord(template[i + 1]);
+            nx: int = bv[i + 1];
             if nx == 36 {
                 i += 2;
                 continue;
@@ -218,16 +221,16 @@ obj:pub Template {
             consumed: int = 0;
             if nx == 123 {
                 j: int = i + 2;
-                while j < n and _is_id_char(ord(template[j])) {
+                while j < n and _is_id_char(bv[j]) {
                     j += 1;
                 }
-                if j > i + 2 and j < n and ord(template[j]) == 125 {
+                if j > i + 2 and j < n and bv[j] == 125 {
                     name = template[i + 2:j];
                     consumed = j + 1 - i;
                 }
             } elif _is_id_start(nx) {
                 j = i + 1;
-                while j < n and _is_id_char(ord(template[j])) {
+                while j < n and _is_id_char(bv[j]) {
                     j += 1;
                 }
                 name = template[i + 1:j];
