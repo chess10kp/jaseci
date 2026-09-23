@@ -23,7 +23,7 @@ def:pub posix_compile(pat: str, icase: bool) -> bytes {
 
 def:pub posix_exec(preg: bytes, s: str, nmatch: int) -> bytes {
     pm: bytes = b"\x00" * (8 * nmatch);
-    if regexec(preg, s, nmatch, pm, 0) != 0 {
+    if regexec(preg, s, u64(nmatch), pm, 0) != 0 {
         return b"";
     }
     return pm;
