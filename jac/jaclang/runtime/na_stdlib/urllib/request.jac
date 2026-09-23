@@ -554,15 +554,24 @@ obj:pub HTTPErrorProcessor(BaseHandler) {
 
     def http_response(request: Request, response: any) -> any {
         code = -1;
-        c = response.code;
-        if isinstance(c, int) {
-            ci: int = c;
-            code = ci;
+        msg = "";
+        hdrs: any = None;
+        if isinstance(response, HTTPResp) {
+            hr: HTTPResp = response;
+            c = hr.code;
+            if c != None {
+                ci: int = c;
+                code = ci;
+            }
+            msg = hr.msg;
+            hdrs = hr.info();
         }
-        msg = response.msg;
-        hdrs = response.info();
         if code < 200 or code >= 300 {
-            response = self.parent.error("http", request, response, code, msg, hdrs);
+            par = self.parent;
+            if isinstance(par, OpenerDirector) {
+                od: OpenerDirector = par;
+                response = od.error("http", request, response, code, msg, hdrs);
+            }
         }
         return response;
     }
@@ -633,11 +642,16 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
         req: Request, fp: any, code: int, msg: str, headers: any
     ) -> any {
         newurl = "";
-        loc = headers.get("location", None);
-        uri = headers.get("uri", None);
-        if loc != None {
+        loc: any = None;
+        uri: any = None;
+        if isinstance(headers, Headers) {
+            hh: Headers = headers;
+            loc = hh.get("location", None);
+            uri = hh.get("uri", None);
+        }
+        if isinstance(loc, str) {
             newurl = loc;
-        } elif uri != None {
+        } elif isinstance(uri, str) {
             newurl = uri;
         } else {
             return None;
@@ -698,7 +712,12 @@ obj:pub HTTPRedirectHandler(BaseHandler) {
 
         fp.read();
         fp.close();
-        return self.parent.open(new_req, None, req.timeout);
+        par = self.parent;
+        if isinstance(par, OpenerDirector) {
+            od: OpenerDirector = par;
+            return od.open(new_req, None, req.timeout);
+        }
+        return None;
     }
 }
 
@@ -800,7 +819,12 @@ obj:pub ProxyHandler(BaseHandler) {
         if orig_type == ptype or orig_type == "https" {
             return None;
         }
-        return self.parent.open(req, None, req.timeout);
+        par = self.parent;
+        if isinstance(par, OpenerDirector) {
+            od: OpenerDirector = par;
+            return od.open(req, None, req.timeout);
+        }
+        return None;
     }
 }
 
@@ -1040,7 +1064,16 @@ obj:pub AbstractBasicAuthHandler {
     ) -> any {
         authreq_l = authreq.lower();
         hostport = req.host;
-        pr = self.parse_realm(headers.get(authreq, ""));
+        aval: any = "";
+        if isinstance(headers, Headers) {
+            hh: Headers = headers;
+            aval = hh.get(authreq, "");
+        }
+        ahdr = "";
+        if isinstance(aval, str) {
+            ahdr = aval;
+        }
+        pr = self.parse_realm(ahdr);
         scheme = pr[0];
         realm = pr[1];
         if len(scheme) == 0 {
@@ -1079,17 +1112,25 @@ obj:pub HTTPBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
     }
 
     def retry_http_basic_auth(host: str, req: Request, realm: str) -> any {
-        pair = self.passwd.find_user_password(realm, req.full_url);
-        user = pair[0];
-        pw = pair[1];
-        if user != None and pw != None {
-            u: str = user;
-            p: str = pw;
-            raw = u + ":" + p;
-            auth = "Basic " + b64encode(raw.encode()).decode();
-            req.add_header("Authorization", auth);
-            req.add_unredirected_header("Authorization", auth);
-            return self.parent.open(req, None, req.timeout);
+        pm = self.passwd;
+        if isinstance(pm, HTTPPasswordMgr) {
+            pmm: HTTPPasswordMgr = pm;
+            pair = pmm.find_user_password(realm, req.full_url);
+            user = pair[0];
+            pw = pair[1];
+            if user != None and pw != None {
+                u: str = user;
+                p: str = pw;
+                raw = u + ":" + p;
+                auth = "Basic " + b64encode(raw.encode()).decode();
+                req.add_header("Authorization", auth);
+                req.add_unredirected_header("Authorization", auth);
+                par = self.parent;
+                if isinstance(par, OpenerDirector) {
+                    od: OpenerDirector = par;
+                    return od.open(req, None, req.timeout);
+                }
+            }
         }
         return None;
     }
@@ -1114,17 +1155,25 @@ obj:pub ProxyBasicAuthHandler(AbstractBasicAuthHandler, BaseHandler) {
     }
 
     def retry_http_basic_auth(host: str, req: Request, realm: str) -> any {
-        pair = self.passwd.find_user_password(realm, req.full_url);
-        user = pair[0];
-        pw = pair[1];
-        if user != None and pw != None {
-            u: str = user;
-            p: str = pw;
-            raw = u + ":" + p;
-            auth = "Basic " + b64encode(raw.encode()).decode();
-            req.add_header("Proxy-authorization", auth);
-            req.add_unredirected_header("Proxy-authorization", auth);
-            return self.parent.open(req, None, req.timeout);
+        pm = self.passwd;
+        if isinstance(pm, HTTPPasswordMgr) {
+            pmm: HTTPPasswordMgr = pm;
+            pair = pmm.find_user_password(realm, req.full_url);
+            user = pair[0];
+            pw = pair[1];
+            if user != None and pw != None {
+                u: str = user;
+                p: str = pw;
+                raw = u + ":" + p;
+                auth = "Basic " + b64encode(raw.encode()).decode();
+                req.add_header("Proxy-authorization", auth);
+                req.add_unredirected_header("Proxy-authorization", auth);
+                par = self.parent;
+                if isinstance(par, OpenerDirector) {
+                    od: OpenerDirector = par;
+                    return od.open(req, None, req.timeout);
+                }
+            }
         }
         return None;
     }
@@ -1305,10 +1354,14 @@ obj:pub AbstractHTTPHandler(BaseHandler) {
         if not request.has_header("Host") {
             request.add_unredirected_header("Host", sel_host);
         }
-        for (name, value) in self.parent.addheaders {
-            cap = name.capitalize();
-            if not request.has_header(cap) {
-                request.add_unredirected_header(cap, value);
+        par = self.parent;
+        if isinstance(par, OpenerDirector) {
+            od: OpenerDirector = par;
+            for (name, value) in od.addheaders {
+                cap = name.capitalize();
+                if not request.has_header(cap) {
+                    request.add_unredirected_header(cap, value);
+                }
             }
         }
         return request;
@@ -1717,10 +1770,6 @@ def:pub pathname2url(pathname: str, add_scheme: bool = False) -> str {
 
 
 def:pub localhost -> str {
-    addrs = resolve_all("localhost", "0");
-    if len(addrs) > 0 {
-        return "127.0.0.1";
-    }
     return "127.0.0.1";
 }
 
