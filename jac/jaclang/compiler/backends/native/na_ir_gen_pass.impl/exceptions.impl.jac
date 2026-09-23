@@ -20,7 +20,12 @@ impl NaIRGenPass._declare_exception_runtime -> None {
     i8p = ir.IntType(8).as_pointer();
     i32 = ir.IntType(32);
 
-    setjmp_fn = self._get_or_declare_extern("setjmp", i32, [i8p]);
+    # _setjmp, not setjmp: glibc's setjmp is __sigsetjmp(env, 1), which makes
+    # __sigjmp_save issue a real rt_sigprocmask query per exception frame
+    # (~1k+ syscalls per compile). The compiler never changes its signal mask,
+    # so savemask=0 is semantically identical and saves the syscall. longjmp
+    # (= siglongjmp) reads __mask_was_saved==0 and skips the restore.
+    setjmp_fn = self._get_or_declare_extern("setjmp", i32, [i8p], symbol="_setjmp");
     setjmp_fn.attributes.add("returns_twice");
 
     longjmp_fn = self._get_or_declare_extern("longjmp", ir.VoidType(), [i8p, i32]);
