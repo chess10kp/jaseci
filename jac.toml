@@ -89,6 +89,10 @@ exclude = [
     "tests",
     "checker_*.jac",
     "*_err.jac",
+    # CI probe scripts exercise the native-only na_stdlib API surface (e.g.
+    # BaseHandler.request_for); `jac check` resolves urllib.request to the
+    # CPython stubs, where those names do not exist.
+    "scripts/probe/*",
 
     # Everything below is a module that does not currently pass `jac check`.
     # Adding to this list is a debt, not a policy: the goal is to empty it.

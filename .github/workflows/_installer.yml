@@ -80,7 +80,10 @@ jobs:
         id: asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPTIONAL: ${{ matrix.optional || false }}
+          # Forks do not ship release assets, so the live-release probe can
+          # never find one there; the missing-asset gate only has teeth on the
+          # canonical repo that actually publishes them.
+          OPTIONAL: ${{ matrix.optional || github.repository_owner != 'jaseci-labs' || false }}
         run: |
           set -euo pipefail
           if gh release view --repo "$GITHUB_REPOSITORY" \

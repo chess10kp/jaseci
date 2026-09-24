@@ -33,4 +33,4 @@ jobs:
             ./zig-out/bin/jac run -b native ../scripts/probe/probe_$p.jac 2>&1 || echo "PROBE $p FAILED: $?"
           done
           echo "=== markers ==="
-          ls /tmp/dbg_* 2>/dev/null; for f in /tmp/dbg_*; do [ -f "$f" ] && echo "$f: $(cat $f)"; done
+          for f in /tmp/dbg_*; do if [ -f "$f" ]; then echo "$f: $(cat "$f")"; fi; done
