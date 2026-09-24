@@ -432,25 +432,19 @@ obj:pub OpenerDirector {
         }
         req.timeout = timeout;
         protocol = req.type;
-        write_file_bytes("/tmp/dbg_proto", protocol.encode());
 
         if protocol in self.process_request {
             for processor in self.process_request[protocol] {
-                write_file_bytes("/tmp/dbg_reqfor", b"1");
                 req = processor.request_for(protocol, req);
             }
         }
-        write_file_bytes("/tmp/dbg_preopen", b"1");
         response = self._open(req, data);
-        write_file_bytes("/tmp/dbg_postopen", b"1");
 
         if protocol in self.process_response {
             for processor in self.process_response[protocol] {
-                write_file_bytes("/tmp/dbg_respfor", b"1");
                 response = processor.response_for(protocol, req, response);
             }
         }
-        write_file_bytes("/tmp/dbg_done", b"1");
         return response;
     }
 
@@ -458,7 +452,6 @@ obj:pub OpenerDirector {
         proto: str, req: Request, fp: any, code: int, msg: str, hdrs: any
     ) -> any {
         if proto == "http" or proto == "https" {
-            write_file_bytes("/tmp/dbg_err_in", str(code).encode());
             if code in self.handle_error {
                 for h in self.handle_error[code] {
                     result = h.error_for(code, req, fp, msg, hdrs);
@@ -468,7 +461,6 @@ obj:pub OpenerDirector {
                 }
             }
             for h in self.handle_error_default {
-                write_file_bytes("/tmp/dbg_err_def", b"1");
                 result = h.http_error_default(req, fp, code, msg, hdrs);
                 if result != None {
                     return result;
@@ -565,29 +557,22 @@ obj:pub HTTPErrorProcessor(BaseHandler) {
         msg = "";
         hdrs: any = None;
         if isinstance(response, HTTPResp) {
-            write_file_bytes("/tmp/dbg_hr_is", b"1");
             hr: HTTPResp = response;
             c = hr.code;
             if c != None {
                 ci: int = c;
                 code = ci;
-            } else {
-                write_file_bytes("/tmp/dbg_hr_cnull", b"1");
             }
             msg = hr.msg;
             hdrs = hr.info();
         }
-        write_file_bytes("/tmp/dbg_hr_code", str(code).encode());
         if code < 200 or code >= 300 {
-            write_file_bytes("/tmp/dbg_hr_err", b"1");
             par = self.parent;
             if isinstance(par, OpenerDirector) {
                 od: OpenerDirector = par;
                 response = od.error("http", request, response, code, msg, hdrs);
             }
-            write_file_bytes("/tmp/dbg_hr_errdone", b"1");
         }
-        write_file_bytes("/tmp/dbg_hr_ret", b"1");
         return response;
     }
 
@@ -605,10 +590,7 @@ obj:pub HTTPDefaultErrorHandler(BaseHandler) {
     def http_error_default(
         req: Request, fp: any, code: int, msg: str, hdrs: any
     ) -> any {
-        write_file_bytes("/tmp/dbg_deh_ctor", b"1");
-        e = HTTPError(req.full_url, code, msg, hdrs, fp);
-        write_file_bytes("/tmp/dbg_deh_raise", b"1");
-        raise e;
+        raise HTTPError(req.full_url, code, msg, hdrs, fp);
     }
 }
 
@@ -1319,8 +1301,11 @@ def _do_open(req: Request, use_tls: bool) -> HTTPResp {
         }
         j += 1;
     }
-    r = HTTPResp(fp=BytesIO(body), headers=hdrs, url=req.get_full_url(), code=status);
-    write_file_bytes("/tmp/dbg_ctor_code", str(status).encode());
+    bio = BytesIO(body);
+    r = HTTPResp(fp=bio, headers=hdrs, url=req.get_full_url(), code=status);
+    r.fp = bio;
+    r.headers = hdrs;
+    r.url = req.get_full_url();
     r.code = status;
     r.msg = reason;
     r.body_length = len(body);
