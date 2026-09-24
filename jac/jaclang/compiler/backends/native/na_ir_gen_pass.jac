@@ -361,6 +361,7 @@ walker NaIRGenPass {
         str_unwrap_fn: (ir.Function | None) = None,
         str_materialize_fn: (ir.Function | None) = None,
         _str_desc_ty: (ir.IdentifiedStructType | None) = None,
+        _last_inplace_handled: bool = False,
         rc_roots_buf_gv: object = None,
         rc_roots_cap_gv: object = None,
         rc_roots_count_gv: object = None,
@@ -664,6 +665,10 @@ walker NaIRGenPass {
     ) -> (ir.Value | None);
 
     def _emit_intrinsic_buffer_data(
+        nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
+    ) -> (ir.Value | None);
+
+    def _emit_intrinsic_ref_addr(
         nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
     ) -> (ir.Value | None);
 
@@ -2381,7 +2386,16 @@ walker NaIRGenPass {
         left: ir.Value,
         right: ir.Value,
         unsigned: bool = False,
-        checked: bool = False
+        checked: bool = False,
+        inplace_slot: (ir.Value | None) = None
+    ) -> (ir.Value | None);
+
+    def _str_concat_fresh(
+        left: ir.Value, right: ir.Value, len1: ir.Value, len2: ir.Value, total: ir.Value
+    ) -> ir.Value;
+
+    def _emit_str_concat_inplace(
+        left: ir.Value, right: ir.Value, slot: ir.Value
     ) -> (ir.Value | None);
 
     def _unify_int_widths(

@@ -1287,7 +1287,8 @@ impl NaIRGenPass._codegen_intrinsic(
         IntrinsicDispatch.ATOMIC_XCHG: self._emit_intrinsic_atomic_xchg,
         IntrinsicDispatch.CALL_DTOR: self._emit_intrinsic_call_dtor,
         IntrinsicDispatch.REGION_TLS: self._emit_intrinsic_region_tls,
-        IntrinsicDispatch.BUFFER_DATA: self._emit_intrinsic_buffer_data
+        IntrinsicDispatch.BUFFER_DATA: self._emit_intrinsic_buffer_data,
+        IntrinsicDispatch.REF_ADDR: self._emit_intrinsic_ref_addr
     };
     handler = _emitters.get(intr.dispatch);
     if handler is None {
@@ -1450,6 +1451,23 @@ impl NaIRGenPass._emit_intrinsic_buffer_data(
         return None;
     }
     return self.builder.ptrtoint(src[0], ir.IntType(64), name="buf.data.i64");
+}
+
+impl NaIRGenPass._emit_intrinsic_ref_addr(
+    nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
+) -> (ir.Value | None) {
+    arg_val = self._intrinsic_operand(nd, intr, args[0], intr.param_specs[0]);
+    if arg_val is None {
+        return None;
+    }
+    if self._opt_ptr_payload_of(arg_val.type) is not None {
+        arg_val = self.builder.extract_value(arg_val, 1, name="ref.opt");
+    }
+    if not isinstance(arg_val.type, ir.PointerType) {
+        self._emit_intrinsic_misuse(nd, intr, "operand is not a reference value");
+        return None;
+    }
+    return self.builder.ptrtoint(arg_val, ir.IntType(64), name="ref.addr");
 }
 
 impl NaIRGenPass._emit_intrinsic_atomic_xchg(

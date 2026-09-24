@@ -7,7 +7,8 @@ enum IntrinsicDispatch {
     ATOMIC_XCHG = "atomic_xchg",
     CALL_DTOR = "call_dtor",
     REGION_TLS = "region_tls",
-    BUFFER_DATA = "buffer_data"
+    BUFFER_DATA = "buffer_data",
+    REF_ADDR = "ref_addr"
 }
 
 obj IntrinsicEntry {
@@ -155,6 +156,12 @@ glob INTRINSIC_REGISTRY = IntrinsicRegistry(
                  param_specs=["ref"],
                  result_spec="i64",
                  dispatch=IntrinsicDispatch.BUFFER_DATA
+             ),
+             "__ref_addr": IntrinsicEntry(
+                 name="__ref_addr",
+                 param_specs=["ref"],
+                 result_spec="i64",
+                 dispatch=IntrinsicDispatch.REF_ADDR
              ),
              "__atomic_xchg_i64": IntrinsicEntry(
                  name="__atomic_xchg_i64",
