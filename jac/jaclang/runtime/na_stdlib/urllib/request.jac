@@ -1301,7 +1301,12 @@ def _do_open(req: Request, use_tls: bool) -> HTTPResp {
         }
         j += 1;
     }
-    r = HTTPResp(fp=BytesIO(body), headers=hdrs, url=req.get_full_url(), code=status);
+    bio = BytesIO(body);
+    r = HTTPResp(fp=bio, headers=hdrs, url=req.get_full_url(), code=status);
+    r.fp = bio;
+    r.headers = hdrs;
+    r.url = req.get_full_url();
+    r.code = status;
     r.msg = reason;
     r.body_length = len(body);
     return r;
