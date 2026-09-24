@@ -1,4 +1,5 @@
-import from _repr_native { repr_str, sorted_str_keys }
+import from _repr { repr_str, sorted_str_keys }
+import from _utf8 { cpslice_str }
 
 
 def _fill(s: str, limit: int) -> str {
@@ -75,7 +76,7 @@ obj:pub Repr {
         }
         if isinstance(x, str) {
             sv: str = x;
-            r: str = repr_str(sv[0:self.maxstring]);
+            r: str = repr_str(cpslice_str(sv.encode(), 0, self.maxstring));
             return _fill(r, self.maxstring);
         }
         if isinstance(x, list) {

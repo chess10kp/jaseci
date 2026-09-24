@@ -2842,6 +2842,7 @@ impl NaIRGenPass._emit_str_concat_inplace(
     _rdiff = self.builder.sub(
         self.builder.ptrtoint(rdata, i64, name="ip.r.i"), _left_i, name="ip.rd"
     );
+
     noalias = self.builder.icmp_unsigned(">", _rdiff, total, name="ip.noalias");
     need = self.builder.add(total, ir.Constant(i64, 1), name="ip.need");
     base = self.builder.gep(left, [ir.Constant(i64, HDR_ALLOC_ID_OFF)], name="ip.base");

@@ -15,52 +15,92 @@ glob:pub I: int = 2,
      T: int = 1,
      TEMPLATE: int = 1;
 
-glob _K_SEQ: int = 1,
-     _K_ALT: int = 2,
-     _K_CHAR: int = 3,
-     _K_ANY: int = 4,
-     _K_CLASS: int = 5,
-     _K_AT: int = 6,
-     _K_GROUP: int = 7,
-     _K_REP: int = 8,
-     _K_BACKREF: int = 9,
-     _K_LOOK: int = 10,
-     _K_FLAGS: int = 11;
+enum _K: int {
+    SEQ = 1,
+    ALT = 2,
+    CHAR = 3,
+    ANY = 4,
+    CLASS = 5,
+    AT = 6,
+    GROUP = 7,
+    REP = 8,
+    BACKREF = 9,
+    LOOK = 10,
+    FLAGS = 11
+}
 
-glob _AT_BOS: int = 1,
-     _AT_BEG: int = 2,
-     _AT_BEGLINE: int = 3,
-     _AT_EOS: int = 4,
-     _AT_END: int = 5,
-     _AT_ENDLINE: int = 6,
-     _AT_WB: int = 7,
-     _AT_WNB: int = 8;
 
-glob _OP_CHAR: int = 1,
-     _OP_ANY: int = 2,
-     _OP_CLASS: int = 3,
-     _OP_SPLIT: int = 4,
-     _OP_JMP: int = 5,
-     _OP_MARK: int = 6,
-     _OP_JMPNZ: int = 7,
-     _OP_SAVE: int = 8,
-     _OP_MATCH: int = 9,
-     _OP_BOS: int = 10,
-     _OP_BEGLINE: int = 11,
-     _OP_END: int = 12,
-     _OP_ENDLINE: int = 13,
-     _OP_EOS: int = 14,
-     _OP_WB: int = 15,
-     _OP_BACKREF: int = 16,
-     _OP_FPUSH: int = 17,
-     _OP_FPOP: int = 18,
-     _OP_LOOK: int = 19;
+enum _AT: int {
+    BOS = 1,
+    BEG = 2,
+    BEGLINE = 3,
+    EOS = 4,
+    END = 5,
+    ENDLINE = 6,
+    WB = 7,
+    WNB = 8
+}
+
+
+enum _OP: int {
+    CHAR = 1,
+    ANY = 2,
+    CLASS = 3,
+    SPLIT = 4,
+    JMP = 5,
+    MARK = 6,
+    JMPNZ = 7,
+    SAVE = 8,
+    MATCH = 9,
+    BOS = 10,
+    BEGLINE = 11,
+    END = 12,
+    ENDLINE = 13,
+    EOS = 14,
+    WB = 15,
+    BACKREF = 16,
+    FPUSH = 17,
+    FPOP = 18,
+    LOOK = 19
+}
+
+
+glob _BT_SPLIT: int = 1,
+     _BT_SAVE: int = 2,
+     _BT_MARK: int = 3,
+     _BT_FPUSH: int = 4,
+     _BT_FPOP: int = 5;
 
 glob _MAXCP: int = 1114111;
 
 glob _ESCAPE_SPECIAL: str = "()[]{}?*+-|^$\\.&~# \t\n\r\x0b\x0c";
 
-import from _re_posix_native { posix_compile, posix_exec, pm_i32 }
+glob _DIGIT_PRS: list[int] = [48, 57],
+     _NDIGIT_PRS: list[int] = [0, 47, 58, 1114111],
+     _SPACE_PRS: list[int] = [9, 13, 32, 32],
+     _NSPACE_PRS: list[int] = [0, 8, 14, 31, 33, 1114111],
+     _WORD_PRS: list[int] = [48, 57, 65, 90, 95, 95, 97, 122],
+     _NWORD_PRS: list[int] = [0, 47, 58, 64, 91, 94, 96, 96, 123, 1114111];
+
+import from _re_posix_native {
+    posix_probe,
+    posix_compile,
+    posix_exec,
+    posix_free,
+    pm_off
+}
+
+import from _utf8 { utf8_cps, cp_off, cp_len, cps_str, cpslice_str, is_ascii }
+
+
+obj _PS {
+    has gen: int = 0,
+        pregs: list[bytes] = [];
+}
+
+
+glob _PMW: int = posix_probe(),
+     _PSX: _PS = _PS();
 
 
 def _isdig(c: int) -> bool {
@@ -106,33 +146,12 @@ def _hexv(c: int) -> int {
 }
 
 
-def _digit_pairs -> list[int] {
-    return [48, 57];
-}
-
-
-def _ndigit_pairs -> list[int] {
-    return [0, 47, 58, _MAXCP];
-}
-
-
-def _space_pairs -> list[int] {
-    return [9, 13, 32, 32];
-}
-
-
-def _nspace_pairs -> list[int] {
-    return [0, 8, 14, 31, 33, _MAXCP];
-}
-
-
-def _word_pairs -> list[int] {
-    return [48, 57, 65, 90, 95, 95, 97, 122];
-}
-
-
-def _nword_pairs -> list[int] {
-    return [0, 47, 58, 64, 91, 94, 96, 96, 123, _MAXCP];
+def _push_prs(dst: list[int], src: list[int]) {
+    k: int = 0;
+    while k < len(src) {
+        dst.append(src[k]);
+        k += 1;
+    }
 }
 
 
@@ -150,17 +169,78 @@ def _in_pairs(pairs: list[int], c: int) -> bool {
 
 
 def _name_index(names: dict[str, int], nm: str) -> int {
-    for k in names {
-        if k == nm {
-            return names[k];
-        }
+    if nm in names {
+        return names[nm];
     }
     return -1;
 }
 
 
+def _num_esc(cps: list[int], i: int, e: int, bp: int) -> tuple[(int, int)] {
+    n: int = len(cps);
+    if e == 120 {
+        if i + 1 >= n {
+            raise ValueError("bad escape \\x at position " + str(bp));
+        }
+        h1: int = _hexv(cps[i]);
+        h2: int = _hexv(cps[i + 1]);
+        if h1 < 0 or h2 < 0 {
+            raise ValueError("bad escape \\x at position " + str(bp));
+        }
+        return (h1 * 16 + h2, i + 2);
+    }
+    if e == 117 {
+        if i + 3 >= n {
+            raise ValueError("bad escape \\u at position " + str(bp));
+        }
+        v: int = 0;
+        k: int = 0;
+        while k < 4 {
+            hv: int = _hexv(cps[i + k]);
+            if hv < 0 {
+                raise ValueError("bad escape \\u at position " + str(bp));
+            }
+            v = v * 16 + hv;
+            k += 1;
+        }
+        return (v, i + 4);
+    }
+    if e == 85 {
+        if i + 7 >= n {
+            raise ValueError("bad escape \\U at position " + str(bp));
+        }
+        v = 0;
+        k = 0;
+        while k < 8 {
+            hv = _hexv(cps[i + k]);
+            if hv < 0 {
+                raise ValueError("bad escape \\U at position " + str(bp));
+            }
+            v = v * 16 + hv;
+            k += 1;
+        }
+        return (v, i + 8);
+    }
+    v = e - 48;
+    cnt: int = 1;
+    while cnt < 3 and i < n {
+        d: int = cps[i];
+        if d < 48 or d > 55 {
+            break;
+        }
+        v = v * 8 + (d - 48);
+        i += 1;
+        cnt += 1;
+    }
+    return (v & _MAXCP, i);
+}
+
+
 def _bounds(n: int, pos: int, endpos: int) -> tuple[(int, int)] {
-    if endpos < 0 or endpos > n {
+    if endpos < 0 {
+        endpos = 0;
+    }
+    if endpos > n {
         endpos = n;
     }
     if pos < 0 {
@@ -174,8 +254,9 @@ def _bounds(n: int, pos: int, endpos: int) -> tuple[(int, int)] {
 
 
 obj _Node {
-    has kind: int = 0,
+    has kind: _K = _K.SEQ,
         ch: int = 0,
+        at: _AT = _AT.BOS,
         lo: int = 0,
         hi: int = -1,
         neg: bool = False,
@@ -187,7 +268,7 @@ obj _Node {
 
 
 obj _Ins {
-    has op: int = 0,
+    has op: _OP = _OP.CHAR,
         a: int = 0,
         b: int = 0;
 }
@@ -200,7 +281,7 @@ obj _Cls {
 
 
 obj _P {
-    has src: str = "",
+    has cps: list[int] = [],
         n: int = 0,
         i: int = 0,
         flags: int = 0,
@@ -221,13 +302,13 @@ obj _P {
             return;
         }
         while self.i < self.n {
-            c: int = ord(self.src[self.i]);
+            c: int = self.cps[self.i];
             if c == 32 or (c >= 9 and c <= 13) {
                 self.i += 1;
                 continue;
             }
             if c == 35 {
-                while self.i < self.n and ord(self.src[self.i]) != 10 {
+                while self.i < self.n and self.cps[self.i] != 10 {
                     self.i += 1;
                 }
                 continue;
@@ -237,23 +318,23 @@ obj _P {
     }
 
     def _is_repeat_spec(pos: int) -> bool {
-        if pos >= self.n or ord(self.src[pos]) != 123 {
+        if pos >= self.n or self.cps[pos] != 123 {
             return False;
         }
         j: int = pos + 1;
         digs: int = 0;
-        while j < self.n and _isdig(ord(self.src[j])) {
+        while j < self.n and _isdig(self.cps[j]) {
             j += 1;
             digs += 1;
         }
-        if j < self.n and ord(self.src[j]) == 44 {
+        if j < self.n and self.cps[j] == 44 {
             j += 1;
-            while j < self.n and _isdig(ord(self.src[j])) {
+            while j < self.n and _isdig(self.cps[j]) {
                 j += 1;
                 digs += 1;
             }
         }
-        if j >= self.n or ord(self.src[j]) != 125 {
+        if j >= self.n or self.cps[j] != 125 {
             return False;
         }
         return digs > 0 or j > pos + 2;
@@ -264,18 +345,18 @@ obj _P {
         lo: int = 0;
         hi: int = -1;
         have_lo: bool = False;
-        while j < self.n and _isdig(ord(self.src[j])) {
-            lo = lo * 10 + (ord(self.src[j]) - 48);
+        while j < self.n and _isdig(self.cps[j]) {
+            lo = lo * 10 + (self.cps[j] - 48);
             j += 1;
             have_lo = True;
         }
-        if j < self.n and ord(self.src[j]) == 44 {
+        if j < self.n and self.cps[j] == 44 {
             j += 1;
             hi = -1;
-            if j < self.n and _isdig(ord(self.src[j])) {
+            if j < self.n and _isdig(self.cps[j]) {
                 hi = 0;
-                while j < self.n and _isdig(ord(self.src[j])) {
-                    hi = hi * 10 + (ord(self.src[j]) - 48);
+                while j < self.n and _isdig(self.cps[j]) {
+                    hi = hi * 10 + (self.cps[j] - 48);
                     j += 1;
                 }
             }
@@ -290,7 +371,7 @@ obj _P {
     }
 
     def _atom -> (_Node | None) {
-        c: int = ord(self.src[self.i]);
+        c: int = self.cps[self.i];
         if c == 40 {
             return self._group();
         }
@@ -300,21 +381,21 @@ obj _P {
         if c == 46 {
             self.i += 1;
             nd: _Node = _Node();
-            nd.kind = _K_ANY;
+            nd.kind = _K.ANY;
             return nd;
         }
         if c == 94 {
             self.i += 1;
             nd = _Node();
-            nd.kind = _K_AT;
-            nd.ch = _AT_BEGLINE if (self.flags & 8) != 0 else _AT_BEG;
+            nd.kind = _K.AT;
+            nd.at = _AT.BEGLINE if (self.flags & 8) != 0 else _AT.BEG;
             return nd;
         }
         if c == 36 {
             self.i += 1;
             nd = _Node();
-            nd.kind = _K_AT;
-            nd.ch = _AT_ENDLINE if (self.flags & 8) != 0 else _AT_END;
+            nd.kind = _K.AT;
+            nd.at = _AT.ENDLINE if (self.flags & 8) != 0 else _AT.END;
             return nd;
         }
         if c == 42 or c == 43 or c == 63 {
@@ -328,7 +409,7 @@ obj _P {
         }
         self.i += 1;
         nd = _Node();
-        nd.kind = _K_CHAR;
+        nd.kind = _K.CHAR;
         nd.ch = c;
         return nd;
     }
@@ -342,7 +423,7 @@ obj _P {
         if self.i >= self.n {
             return atom;
         }
-        c: int = ord(self.src[self.i]);
+        c: int = self.cps[self.i];
         if c != 42 and c != 43 and c != 63 and c != 123 {
             return atom;
         }
@@ -366,7 +447,7 @@ obj _P {
         }
         greedy: bool = True;
         if self.i < self.n {
-            nc: int = ord(self.src[self.i]);
+            nc: int = self.cps[self.i];
             if nc == 63 {
                 greedy = False;
                 self.i += 1;
@@ -375,7 +456,7 @@ obj _P {
             }
         }
         if self.i < self.n {
-            nc = ord(self.src[self.i]);
+            nc = self.cps[self.i];
             if nc == 42 or nc == 43 or nc == 63 {
                 self._err("multiple repeat", self.i);
             }
@@ -384,7 +465,7 @@ obj _P {
             }
         }
         nd: _Node = _Node();
-        nd.kind = _K_REP;
+        nd.kind = _K.REP;
         nd.lo = lo;
         nd.hi = hi;
         nd.greedy = greedy;
@@ -400,7 +481,7 @@ obj _P {
             if self.i >= self.n {
                 break;
             }
-            c: int = ord(self.src[self.i]);
+            c: int = self.cps[self.i];
             if c == 124 or c == 41 {
                 break;
             }
@@ -417,30 +498,30 @@ obj _P {
             return kids[0];
         }
         nd: _Node = _Node();
-        nd.kind = _K_SEQ;
+        nd.kind = _K.SEQ;
         nd.kids = kids;
         return nd;
     }
 
     def _alt -> _Node {
         first: _Node = self._seq();
-        if self.i >= self.n or ord(self.src[self.i]) != 124 {
+        if self.i >= self.n or self.cps[self.i] != 124 {
             return first;
         }
         kids: list[_Node] = [];
         kids.append(first);
-        while self.i < self.n and ord(self.src[self.i]) == 124 {
+        while self.i < self.n and self.cps[self.i] == 124 {
             self.i += 1;
             kids.append(self._seq());
         }
         nd: _Node = _Node();
-        nd.kind = _K_ALT;
+        nd.kind = _K.ALT;
         nd.kids = kids;
         return nd;
     }
 
     def _expect_close(open_pos: int) {
-        if self.i >= self.n or ord(self.src[self.i]) != 41 {
+        if self.i >= self.n or self.cps[self.i] != 41 {
             self._err("missing ), unterminated subpattern", open_pos);
         }
         self.i += 1;
@@ -477,7 +558,7 @@ obj _P {
         if self.i >= self.n {
             self._err("missing ), unterminated subpattern", p0);
         }
-        if ord(self.src[self.i]) != 63 {
+        if self.cps[self.i] != 63 {
             self.ngroups += 1;
             g: int = self.ngroups;
             self.opengroups.append(g);
@@ -487,7 +568,7 @@ obj _P {
             self.opengroups.pop();
             self._expect_close(p0);
             nd: _Node = _Node();
-            nd.kind = _K_GROUP;
+            nd.kind = _K.GROUP;
             nd.lo = g;
             nd.kids.append(body);
             return nd;
@@ -496,7 +577,7 @@ obj _P {
         if self.i >= self.n {
             self._err("missing ), unterminated subpattern", p0);
         }
-        c2: int = ord(self.src[self.i]);
+        c2: int = self.cps[self.i];
         if c2 == 58 {
             self.i += 1;
             self.depth += 1;
@@ -506,7 +587,7 @@ obj _P {
             return body;
         }
         if c2 == 35 {
-            while self.i < self.n and ord(self.src[self.i]) != 41 {
+            while self.i < self.n and self.cps[self.i] != 41 {
                 self.i += 1;
             }
             self._expect_close(p0);
@@ -520,23 +601,23 @@ obj _P {
             self.depth -= 1;
             self._expect_close(p0);
             nd = _Node();
-            nd.kind = _K_LOOK;
+            nd.kind = _K.LOOK;
             nd.lo = 1 if neg else 0;
             nd.kids.append(body);
             return nd;
         }
         if c2 == 80 {
             self.i += 1;
-            if self.i < self.n and ord(self.src[self.i]) == 60 {
+            if self.i < self.n and self.cps[self.i] == 60 {
                 self.i += 1;
                 nstart: int = self.i;
-                while self.i < self.n and ord(self.src[self.i]) != 62 {
+                while self.i < self.n and self.cps[self.i] != 62 {
                     self.i += 1;
                 }
                 if self.i >= self.n {
                     self._err("missing ), unterminated subpattern", p0);
                 }
-                nm: str = self.src[nstart:self.i];
+                nm: str = cps_str(self.cps, nstart, self.i);
                 if len(nm) == 0 {
                     self._err("missing group name", self.i);
                 }
@@ -575,29 +656,29 @@ obj _P {
                 self.opengroups.pop();
                 self._expect_close(p0);
                 nd = _Node();
-                nd.kind = _K_GROUP;
+                nd.kind = _K.GROUP;
                 nd.lo = g;
                 nd.name = nm;
                 nd.kids.append(body);
                 return nd;
             }
-            if self.i < self.n and ord(self.src[self.i]) == 61 {
+            if self.i < self.n and self.cps[self.i] == 61 {
                 self.i += 1;
                 ns2: int = self.i;
-                while self.i < self.n and ord(self.src[self.i]) != 41 {
+                while self.i < self.n and self.cps[self.i] != 41 {
                     self.i += 1;
                 }
                 if self.i >= self.n {
                     self._err("missing ), unterminated subpattern", p0);
                 }
-                nm2: str = self.src[ns2:self.i];
+                nm2: str = cps_str(self.cps, ns2, self.i);
                 self.i += 1;
                 gnum2: int = _name_index(self.names, nm2);
                 if gnum2 < 0 {
                     self._err("unknown group name '" + nm2 + "'", ns2);
                 }
                 nd = _Node();
-                nd.kind = _K_BACKREF;
+                nd.kind = _K.BACKREF;
                 nd.lo = gnum2;
                 return nd;
             }
@@ -605,11 +686,11 @@ obj _P {
         }
         if c2 == 60 {
             if self.i + 1 < self.n {
-                c3: int = ord(self.src[self.i + 1]);
+                c3: int = self.cps[self.i + 1];
                 if c3 == 61 or c3 == 33 {
                     self._err("lookbehind not supported on native", self.i);
                 }
-                self._err("unknown extension ?<" + self.src[self.i + 1], p0 + 1);
+                self._err("unknown extension ?<" + chr(self.cps[self.i + 1]), p0 + 1);
             }
             self._err("unknown extension ?<", p0 + 1);
         }
@@ -617,7 +698,7 @@ obj _P {
             self._err("unknown extension ?(", p0 + 1);
         }
         if c2 == 35 {
-            while self.i < self.n and ord(self.src[self.i]) != 41 {
+            while self.i < self.n and self.cps[self.i] != 41 {
                 self.i += 1;
             }
             if self.i >= self.n {
@@ -631,17 +712,17 @@ obj _P {
             newf: int = self.flags;
             j: int = self.i;
             while j < self.n {
-                fch: int = self._flagval(ord(self.src[j]));
+                fch: int = self._flagval(self.cps[j]);
                 if fch == 0 {
                     break;
                 }
                 newf = newf | fch;
                 j += 1;
             }
-            if j < self.n and ord(self.src[j]) == 45 {
+            if j < self.n and self.cps[j] == 45 {
                 j += 1;
                 while j < self.n {
-                    fch = self._flagval(ord(self.src[j]));
+                    fch = self._flagval(self.cps[j]);
                     if fch == 0 {
                         break;
                     }
@@ -651,7 +732,7 @@ obj _P {
                     j += 1;
                 }
             }
-            if j < self.n and ord(self.src[j]) == 41 {
+            if j < self.n and self.cps[j] == 41 {
                 self.i = j + 1;
                 if self.depth > 0 or self.top_items > 0 {
                     self._err("global flags not at the start of the expression", p0);
@@ -659,7 +740,7 @@ obj _P {
                 self.flags = newf;
                 return None;
             }
-            if j < self.n and ord(self.src[j]) == 58 {
+            if j < self.n and self.cps[j] == 58 {
                 self.i = j + 1;
                 saved: int = self.flags;
                 self.flags = newf;
@@ -669,79 +750,49 @@ obj _P {
                 self._expect_close(p0);
                 self.flags = saved;
                 nd = _Node();
-                nd.kind = _K_FLAGS;
+                nd.kind = _K.FLAGS;
                 nd.lo = newf;
                 nd.kids.append(body);
                 return nd;
             }
             self._err("missing -, : or )", j);
         }
-        self._err("unknown extension ?" + self.src[self.i], p0 + 1);
+        self._err("unknown extension ?" + chr(self.cps[self.i]), p0 + 1);
         return None;
     }
 
     def _class_item(pairs: list[int]) -> int {
-        c: int = ord(self.src[self.i]);
+        c: int = self.cps[self.i];
         if c == 92 {
             bp: int = self.i;
             self.i += 1;
             if self.i >= self.n {
                 self._err("bad escape (end of pattern)", bp);
             }
-            e: int = ord(self.src[self.i]);
+            e: int = self.cps[self.i];
             self.i += 1;
             if e == 100 {
-                pp: list[int] = _digit_pairs();
-                k: int = 0;
-                while k < len(pp) {
-                    pairs.append(pp[k]);
-                    k += 1;
-                }
+                _push_prs(pairs, _DIGIT_PRS);
                 return -1;
             }
             if e == 68 {
-                pp = _ndigit_pairs();
-                k = 0;
-                while k < len(pp) {
-                    pairs.append(pp[k]);
-                    k += 1;
-                }
+                _push_prs(pairs, _NDIGIT_PRS);
                 return -1;
             }
             if e == 115 {
-                pp = _space_pairs();
-                k = 0;
-                while k < len(pp) {
-                    pairs.append(pp[k]);
-                    k += 1;
-                }
+                _push_prs(pairs, _SPACE_PRS);
                 return -1;
             }
             if e == 83 {
-                pp = _nspace_pairs();
-                k = 0;
-                while k < len(pp) {
-                    pairs.append(pp[k]);
-                    k += 1;
-                }
+                _push_prs(pairs, _NSPACE_PRS);
                 return -1;
             }
             if e == 119 {
-                pp = _word_pairs();
-                k = 0;
-                while k < len(pp) {
-                    pairs.append(pp[k]);
-                    k += 1;
-                }
+                _push_prs(pairs, _WORD_PRS);
                 return -1;
             }
             if e == 87 {
-                pp = _nword_pairs();
-                k = 0;
-                while k < len(pp) {
-                    pairs.append(pp[k]);
-                    k += 1;
-                }
+                _push_prs(pairs, _NWORD_PRS);
                 return -1;
             }
             if e == 98 {
@@ -765,54 +816,16 @@ obj _P {
             if e == 97 {
                 return 7;
             }
-            if e >= 48 and e <= 55 {
-                v: int = e - 48;
-                cnt: int = 1;
-                while cnt < 3 and self.i < self.n {
-                    d: int = ord(self.src[self.i]);
-                    if d < 48 or d > 55 {
-                        break;
-                    }
-                    v = v * 8 + (d - 48);
-                    self.i += 1;
-                    cnt += 1;
-                }
-                return v & _MAXCP;
+            if (e >= 48 and e <= 55) or e == 120 or e == 117 or e == 85 {
+                r: tuple[(int, int)] = _num_esc(self.cps, self.i, e, bp);
+                self.i = r[1];
+                return r[0];
             }
             if e == 56 or e == 57 {
-                self._err("bad escape \\" + self.src[self.i - 1], bp);
-            }
-            if e == 120 {
-                if self.i + 1 >= self.n {
-                    self._err("bad escape \\x", bp);
-                }
-                h1: int = _hexv(ord(self.src[self.i]));
-                h2: int = _hexv(ord(self.src[self.i + 1]));
-                if h1 < 0 or h2 < 0 {
-                    self._err("bad escape \\x", bp);
-                }
-                self.i += 2;
-                return h1 * 16 + h2;
-            }
-            if e == 117 {
-                if self.i + 3 >= self.n {
-                    self._err("bad escape \\u", bp);
-                }
-                v = 0;
-                k = 0;
-                while k < 4 {
-                    hv: int = _hexv(ord(self.src[self.i + k]));
-                    if hv < 0 {
-                        self._err("bad escape \\u", bp);
-                    }
-                    v = v * 16 + hv;
-                    k += 1;
-                }
-                self.i += 4;
-                return v;
+                self._err("bad escape \\" + chr(self.cps[self.i - 1]), bp);
             }
             if _isalpha(e) {
-                self._err("bad escape \\" + self.src[self.i - 1], bp);
+                self._err("bad escape \\" + chr(self.cps[self.i - 1]), bp);
             }
             return e;
         }
@@ -824,10 +837,10 @@ obj _P {
         p0: int = self.i;
         self.i += 1;
         nd: _Node = _Node();
-        nd.kind = _K_CLASS;
+        nd.kind = _K.CLASS;
         pairs: list[int] = [];
         first: bool = True;
-        if self.i < self.n and ord(self.src[self.i]) == 94 {
+        if self.i < self.n and self.cps[self.i] == 94 {
             nd.neg = True;
             self.i += 1;
         }
@@ -835,7 +848,7 @@ obj _P {
             if self.i >= self.n {
                 self._err("unterminated character set", p0);
             }
-            if ord(self.src[self.i]) == 93 and not first {
+            if self.cps[self.i] == 93 and not first {
                 self.i += 1;
                 break;
             }
@@ -845,8 +858,8 @@ obj _P {
             if lo < 0 {
                 continue;
             }
-            if self.i < self.n and ord(self.src[self.i]) == 45 {
-                if self.i + 1 < self.n and ord(self.src[self.i + 1]) != 93 {
+            if self.i < self.n and self.cps[self.i] == 45 {
+                if self.i + 1 < self.n and self.cps[self.i + 1] != 93 {
                     self.i += 1;
                     hi: int = self._class_item(pairs);
                     if hi < 0 {
@@ -885,79 +898,70 @@ obj _P {
         if self.i >= self.n {
             self._err("bad escape (end of pattern)", bp);
         }
-        e: int = ord(self.src[self.i]);
+        e: int = self.cps[self.i];
         self.i += 1;
         nd: _Node = _Node();
         if e == 65 {
-            nd.kind = _K_AT;
-            nd.ch = _AT_BOS;
+            nd.kind = _K.AT;
+            nd.at = _AT.BOS;
             return nd;
         }
         if e == 90 {
-            nd.kind = _K_AT;
-            nd.ch = _AT_EOS;
+            nd.kind = _K.AT;
+            nd.at = _AT.EOS;
             return nd;
         }
         if e == 98 {
-            nd.kind = _K_AT;
-            nd.ch = _AT_WB;
+            nd.kind = _K.AT;
+            nd.at = _AT.WB;
             return nd;
         }
         if e == 66 {
-            nd.kind = _K_AT;
-            nd.ch = _AT_WNB;
+            nd.kind = _K.AT;
+            nd.at = _AT.WNB;
             return nd;
         }
         if e == 100 {
-            nd.kind = _K_CLASS;
-            nd.pairs = _digit_pairs();
+            nd.kind = _K.CLASS;
+            nd.pairs = _DIGIT_PRS[:];
             return nd;
         }
         if e == 68 {
-            nd.kind = _K_CLASS;
-            nd.pairs = _ndigit_pairs();
+            nd.kind = _K.CLASS;
+            nd.pairs = _NDIGIT_PRS[:];
             return nd;
         }
         if e == 115 {
-            nd.kind = _K_CLASS;
-            nd.pairs = _space_pairs();
+            nd.kind = _K.CLASS;
+            nd.pairs = _SPACE_PRS[:];
             return nd;
         }
         if e == 83 {
-            nd.kind = _K_CLASS;
-            nd.pairs = _nspace_pairs();
+            nd.kind = _K.CLASS;
+            nd.pairs = _NSPACE_PRS[:];
             return nd;
         }
         if e == 119 {
-            nd.kind = _K_CLASS;
-            nd.pairs = _word_pairs();
+            nd.kind = _K.CLASS;
+            nd.pairs = _WORD_PRS[:];
             return nd;
         }
         if e == 87 {
-            nd.kind = _K_CLASS;
-            nd.pairs = _nword_pairs();
+            nd.kind = _K.CLASS;
+            nd.pairs = _NWORD_PRS[:];
             return nd;
         }
         if e >= 48 and e <= 57 {
             if e == 48 {
-                v: int = 0;
-                cnt: int = 0;
-                while cnt < 2 and self.i < self.n {
-                    d: int = ord(self.src[self.i]);
-                    if d < 48 or d > 55 {
-                        break;
-                    }
-                    v = v * 8 + (d - 48);
-                    self.i += 1;
-                    cnt += 1;
-                }
-                nd.kind = _K_CHAR;
-                nd.ch = v;
+                r: tuple[(int, int)] = _num_esc(self.cps, self.i, e, bp);
+                self.i = r[1];
+                nd.kind = _K.CHAR;
+                nd.ch = r[0];
                 return nd;
             }
             num: int = e - 48;
-            while self.i < self.n and _isdig(ord(self.src[self.i])) {
-                num = num * 10 + (ord(self.src[self.i]) - 48);
+            while self.i < self.n and _isdig(self.cps[self.i]) {
+                num = num * 10 + (self.cps[self.i] - 48);
                 self.i += 1;
             }
             og: int = 0;
@@ -969,109 +973,64 @@ obj _P {
             }
             self.pending.append(num);
             self.pendingpos.append(bp);
-            nd.kind = _K_BACKREF;
+            nd.kind = _K.BACKREF;
             nd.lo = num;
             return nd;
         }
-        if e == 120 {
-            if self.i + 1 >= self.n {
-                self._err("bad escape \\x", bp);
-            }
-            h1: int = _hexv(ord(self.src[self.i]));
-            h2: int = _hexv(ord(self.src[self.i + 1]));
-            if h1 < 0 or h2 < 0 {
-                self._err("bad escape \\x", bp);
-            }
-            self.i += 2;
-            nd.kind = _K_CHAR;
-            nd.ch = h1 * 16 + h2;
-            return nd;
-        }
-        if e == 117 {
-            if self.i + 3 >= self.n {
-                self._err("bad escape \\u", bp);
-            }
-            v = 0;
-            k: int = 0;
-            while k < 4 {
-                hv: int = _hexv(ord(self.src[self.i + k]));
-                if hv < 0 {
-                    self._err("bad escape \\u", bp);
-                }
-                v = v * 16 + hv;
-                k += 1;
-            }
-            self.i += 4;
-            nd.kind = _K_CHAR;
-            nd.ch = v;
-            return nd;
-        }
-        if e == 85 {
-            if self.i + 7 >= self.n {
-                self._err("bad escape \\U", bp);
-            }
-            v = 0;
-            k = 0;
-            while k < 8 {
-                hv = _hexv(ord(self.src[self.i + k]));
-                if hv < 0 {
-                    self._err("bad escape \\U", bp);
-                }
-                v = v * 16 + hv;
-                k += 1;
-            }
-            self.i += 8;
-            nd.kind = _K_CHAR;
-            nd.ch = v;
+        if e == 120 or e == 117 or e == 85 {
+            r = _num_esc(self.cps, self.i, e, bp);
+            self.i = r[1];
+            nd.kind = _K.CHAR;
+            nd.ch = r[0];
             return nd;
         }
         if e == 78 {
-            if self.i < self.n and ord(self.src[self.i]) == 123 {
+            if self.i < self.n and self.cps[self.i] == 123 {
                 j: int = self.i + 1;
-                while j < self.n and ord(self.src[j]) != 125 {
+                while j < self.n and self.cps[j] != 125 {
                     j += 1;
                 }
                 if j < self.n {
-                    nm: str = self.src[self.i + 1:j];
+                    nm: str = cps_str(self.cps, self.i + 1, j);
                     self._err("undefined character name '" + nm + "'", bp);
                 }
             }
             self._err("bad escape \\N", bp);
         }
         if e == 110 {
-            nd.kind = _K_CHAR;
+            nd.kind = _K.CHAR;
             nd.ch = 10;
             return nd;
         }
         if e == 114 {
-            nd.kind = _K_CHAR;
+            nd.kind = _K.CHAR;
             nd.ch = 13;
             return nd;
         }
         if e == 116 {
-            nd.kind = _K_CHAR;
+            nd.kind = _K.CHAR;
             nd.ch = 9;
             return nd;
         }
         if e == 102 {
-            nd.kind = _K_CHAR;
+            nd.kind = _K.CHAR;
             nd.ch = 12;
             return nd;
         }
         if e == 118 {
-            nd.kind = _K_CHAR;
+            nd.kind = _K.CHAR;
             nd.ch = 11;
             return nd;
         }
         if e == 97 {
-            nd.kind = _K_CHAR;
+            nd.kind = _K.CHAR;
             nd.ch = 7;
             return nd;
         }
         if _isalpha(e) {
-            self._err("bad escape \\" + self.src[self.i - 1], bp);
+            self._err("bad escape \\" + chr(self.cps[self.i - 1]), bp);
         }
-        nd.kind = _K_CHAR;
+        nd.kind = _K.CHAR;
         nd.ch = e;
         return nd;
     }
@@ -1103,7 +1062,7 @@ obj _C {
 }
 
 
-def _emit(c: _C, op: int, a: int, b: int) -> int {
+def _emit(c: _C, op: _OP, a: int, b: int) -> int {
     ins: _Ins = _Ins();
     ins.op = op;
     ins.a = a;
@@ -1114,8 +1073,8 @@ def _emit(c: _C, op: int, a: int, b: int) -> int {
 
 
 def _compile_node(nd: _Node, c: _C) {
-    kind: int = nd.kind;
-    if kind == _K_SEQ {
+    kind: _K = nd.kind;
+    if kind == _K.SEQ {
         i: int = 0;
         while i < len(nd.kids) {
             _compile_node(nd.kids[i], c);
@@ -1123,16 +1082,16 @@ def _compile_node(nd: _Node, c: _C) {
         }
         return;
     }
-    if kind == _K_ALT {
+    if kind == _K.ALT {
         splits: list[int] = [];
         jmps: list[int] = [];
         last: int = len(nd.kids) - 1;
         j: int = 0;
         while j < last {
-            si: int = _emit(c, _OP_SPLIT, len(c.prog) + 1, 0);
+            si: int = _emit(c, _OP.SPLIT, len(c.prog) + 1, 0);
             splits.append(si);
             _compile_node(nd.kids[j], c);
-            ji: int = _emit(c, _OP_JMP, 0, 0);
+            ji: int = _emit(c, _OP.JMP, 0, 0);
             jmps.append(ji);
             j += 1;
         }
@@ -1157,49 +1116,49 @@ def _compile_node(nd: _Node, c: _C) {
         }
         return;
     }
-    if kind == _K_CHAR {
-        _emit(c, _OP_CHAR, nd.ch, 0);
+    if kind == _K.CHAR {
+        _emit(c, _OP.CHAR, nd.ch, 0);
         return;
     }
-    if kind == _K_ANY {
-        _emit(c, _OP_ANY, 0, 0);
+    if kind == _K.ANY {
+        _emit(c, _OP.ANY, 0, 0);
         return;
     }
-    if kind == _K_CLASS {
+    if kind == _K.CLASS {
         cl: _Cls = _Cls();
         cl.pairs = nd.pairs;
         cl.neg = nd.neg;
         c.classes.append(cl);
-        _emit(c, _OP_CLASS, len(c.classes) - 1, 0);
+        _emit(c, _OP.CLASS, len(c.classes) - 1, 0);
         return;
     }
-    if kind == _K_AT {
-        op: int = _OP_BOS;
-        if nd.ch == _AT_BEGLINE {
-            op = _OP_BEGLINE;
-        } elif nd.ch == _AT_END {
-            op = _OP_END;
-        } elif nd.ch == _AT_ENDLINE {
-            op = _OP_ENDLINE;
-        } elif nd.ch == _AT_EOS {
-            op = _OP_EOS;
-        } elif nd.ch == _AT_WB {
-            _emit(c, _OP_WB, 0, 0);
+    if kind == _K.AT {
+        op: _OP = _OP.BOS;
+        if nd.at == _AT.BEGLINE {
+            op = _OP.BEGLINE;
+        } elif nd.at == _AT.END {
+            op = _OP.END;
+        } elif nd.at == _AT.ENDLINE {
+            op = _OP.ENDLINE;
+        } elif nd.at == _AT.EOS {
+            op = _OP.EOS;
+        } elif nd.at == _AT.WB {
+            _emit(c, _OP.WB, 0, 0);
             return;
-        } elif nd.ch == _AT_WNB {
-            _emit(c, _OP_WB, 1, 0);
+        } elif nd.at == _AT.WNB {
+            _emit(c, _OP.WB, 1, 0);
             return;
         }
         _emit(c, op, 0, 0);
         return;
     }
-    if kind == _K_GROUP {
-        _emit(c, _OP_SAVE, nd.lo * 2, 0);
+    if kind == _K.GROUP {
+        _emit(c, _OP.SAVE, nd.lo * 2, 0);
         _compile_node(nd.kids[0], c);
-        _emit(c, _OP_SAVE, nd.lo * 2 + 1, 0);
+        _emit(c, _OP.SAVE, nd.lo * 2 + 1, 0);
         return;
     }
-    if kind == _K_REP {
+    if kind == _K.REP {
         kid: _Node = nd.kids[0];
         m: int = 0;
         while m < nd.lo {
@@ -1210,15 +1169,15 @@ def _compile_node(nd: _Node, c: _C) {
             lpos: int = len(c.prog);
             si: int = 0;
             if nd.greedy {
-                si = _emit(c, _OP_SPLIT, lpos + 1, 0);
+                si = _emit(c, _OP.SPLIT, lpos + 1, 0);
             } else {
-                si = _emit(c, _OP_SPLIT, 0, lpos + 1);
+                si = _emit(c, _OP.SPLIT, 0, lpos + 1);
             }
             mark: int = c.nmarks;
             c.nmarks += 1;
-            _emit(c, _OP_MARK, mark, 0);
+            _emit(c, _OP.MARK, mark, 0);
             _compile_node(kid, c);
-            _emit(c, _OP_JMPNZ, mark, lpos);
+            _emit(c, _OP.JMPNZ, mark, lpos);
             epos: int = len(c.prog);
             tins: _Ins = c.prog[si];
             if nd.greedy {
@@ -1233,9 +1192,9 @@ def _compile_node(nd: _Node, c: _C) {
         while j < nd.hi {
             si2: int = 0;
             if nd.greedy {
-                si2 = _emit(c, _OP_SPLIT, len(c.prog) + 1, 0);
+                si2 = _emit(c, _OP.SPLIT, len(c.prog) + 1, 0);
             } else {
-                si2 = _emit(c, _OP_SPLIT, 0, len(c.prog) + 1);
+                si2 = _emit(c, _OP.SPLIT, 0, len(c.prog) + 1);
             }
             splits.append(si2);
             _compile_node(kid, c);
@@ -1254,25 +1213,25 @@ def _compile_node(nd: _Node, c: _C) {
         }
         return;
     }
-    if kind == _K_BACKREF {
-        _emit(c, _OP_BACKREF, nd.lo, 0);
+    if kind == _K.BACKREF {
+        _emit(c, _OP.BACKREF, nd.lo, 0);
         return;
     }
-    if kind == _K_LOOK {
-        li: int = _emit(c, _OP_LOOK, 0, nd.lo);
-        ji: int = _emit(c, _OP_JMP, 0, 0);
+    if kind == _K.LOOK {
+        li: int = _emit(c, _OP.LOOK, 0, nd.lo);
+        ji: int = _emit(c, _OP.JMP, 0, 0);
         lins: _Ins = c.prog[li];
         lins.a = len(c.prog);
         _compile_node(nd.kids[0], c);
-        _emit(c, _OP_MATCH, 0, 0);
+        _emit(c, _OP.MATCH, 0, 0);
         jins: _Ins = c.prog[ji];
         jins.a = len(c.prog);
         return;
     }
-    if kind == _K_FLAGS {
-        _emit(c, _OP_FPUSH, nd.lo, 0);
+    if kind == _K.FLAGS {
+        _emit(c, _OP.FPUSH, nd.lo, 0);
         _compile_node(nd.kids[0], c);
-        _emit(c, _OP_FPOP, 0, 0);
+        _emit(c, _OP.FPOP, 0, 0);
         return;
     }
 }
@@ -1290,7 +1249,7 @@ obj _Re {
 
 
 obj _St {
-    has bv: bytes = b"",
+    has cps: list[int] = [],
         n: int = 0,
         slots: list[int] = [],
         marks: list[int] = [],
@@ -1299,38 +1258,42 @@ obj _St {
 }
 
 
+def _bt3(stk: list[int], tag: int, x: int, y: int) {
+    stk.append(tag);
+    stk.append(x);
+    stk.append(y);
+}
+
+
 def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
     pc: int = pc0;
     pos: int = pos0;
-    bv: bytes = st.bv;
+    cps: list[int] = st.cps;
     n: int = st.n;
     prog: list[_Ins] = re.prog;
+    stk: list[int] = [];
     while True {
         ins: _Ins = prog[pc];
-        op: int = ins.op;
-        if op == _OP_CHAR {
+        op: _OP = ins.op;
+        if op == _OP.CHAR {
             if pos < n {
-                c0: int = bv[pos];
+                c0: int = cps[pos];
                 if c0 == ins.a or ((st.flags & 2) != 0 and _swap(c0) == ins.a) {
                     pos += 1;
                     pc += 1;
                     continue;
                 }
             }
-            return -1;
-        }
-        if op == _OP_ANY {
-            if pos < n and ((st.flags & 16) != 0 or bv[pos] != 10) {
+        } elif op == _OP.ANY {
+            if pos < n and ((st.flags & 16) != 0 or cps[pos] != 10) {
                 pos += 1;
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_CLASS {
+        } elif op == _OP.CLASS {
             if pos < n {
                 cl: _Cls = re.classes[ins.a];
-                c1: int = bv[pos];
+                c1: int = cps[pos];
                 hit: bool = _in_pairs(cl.pairs, c1);
                 if not hit and (st.flags & 2) != 0 {
                     hit = _in_pairs(cl.pairs, _swap(c1));
@@ -1341,171 +1304,161 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
                     continue;
                 }
             }
-            return -1;
-        }
-        if op == _OP_SPLIT {
-            r: int = _run(re, st, ins.a, pos);
-            if r >= 0 {
-                return r;
-            }
-            pc = ins.b;
-            continue;
-        }
-        if op == _OP_JMP {
+        } elif op == _OP.SPLIT {
+            _bt3(stk, _BT_SPLIT, ins.b, pos);
             pc = ins.a;
             continue;
-        }
-        if op == _OP_MARK {
+        } elif op == _OP.JMP {
+            pc = ins.a;
+            continue;
+        } elif op == _OP.MARK {
+            _bt3(stk, _BT_MARK, ins.a, st.marks[ins.a]);
             st.marks[ins.a] = pos;
             pc += 1;
             continue;
-        }
-        if op == _OP_JMPNZ {
+        } elif op == _OP.JMPNZ {
             if st.marks[ins.a] != pos {
                 pc = ins.b;
             } else {
                 pc += 1;
             }
             continue;
-        }
-        if op == _OP_SAVE {
-            old: int = st.slots[ins.a];
+        } elif op == _OP.SAVE {
+            _bt3(stk, _BT_SAVE, ins.a, st.slots[ins.a]);
             st.slots[ins.a] = pos;
-            r2: int = _run(re, st, pc + 1, pos);
-            if r2 < 0 {
-                st.slots[ins.a] = old;
-                return -1;
-            }
-            return r2;
-        }
-        if op == _OP_MATCH {
+            pc += 1;
+            continue;
+        } elif op == _OP.MATCH {
             return pos;
-        }
-        if op == _OP_BOS {
+        } elif op == _OP.BOS {
             if pos == 0 {
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_BEGLINE {
-            if pos == 0 or bv[pos - 1] == 10 {
+        } elif op == _OP.BEGLINE {
+            if pos == 0 or cps[pos - 1] == 10 {
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_END {
-            if pos == n or (pos == n - 1 and bv[pos] == 10) {
+        } elif op == _OP.END {
+            if pos == n or (pos == n - 1 and cps[pos] == 10) {
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_ENDLINE {
-            if pos == n or (pos < n and bv[pos] == 10) {
+        } elif op == _OP.ENDLINE {
+            if pos == n or (pos < n and cps[pos] == 10) {
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_EOS {
+        } elif op == _OP.EOS {
             if pos == n {
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_WB {
-            lft: bool = pos > 0 and _isword(bv[pos - 1]);
-            rgt: bool = pos < n and _isword(bv[pos]);
+        } elif op == _OP.WB {
+            lft: bool = pos > 0 and _isword(cps[pos - 1]);
+            rgt: bool = pos < n and _isword(cps[pos]);
             if (lft != rgt) == (ins.a == 0) {
                 pc += 1;
                 continue;
             }
-            return -1;
-        }
-        if op == _OP_BACKREF {
+        } elif op == _OP.BACKREF {
             g: int = ins.a * 2;
             lo: int = st.slots[g];
             hi: int = st.slots[g + 1];
-            if lo < 0 or hi < lo {
-                return -1;
-            }
-            ln: int = hi - lo;
-            if pos + ln > n {
-                return -1;
-            }
-            k2: int = 0;
-            ok: bool = True;
-            while k2 < ln {
-                ca: int = bv[lo + k2];
-                cb: int = bv[pos + k2];
-                if ca != cb and ((st.flags & 2) == 0 or _swap(ca) != cb) {
-                    ok = False;
-                    break;
+            if lo >= 0 and hi >= lo {
+                ln: int = hi - lo;
+                if pos + ln <= n {
+                    k2: int = 0;
+                    ok: bool = True;
+                    while k2 < ln {
+                        ca: int = cps[lo + k2];
+                        cb: int = cps[pos + k2];
+                        if ca != cb and ((st.flags & 2) == 0 or _swap(ca) != cb) {
+                            ok = False;
+                            break;
+                        }
+                        k2 += 1;
+                    }
+                    if ok {
+                        pos += ln;
+                        pc += 1;
+                        continue;
+                    }
                 }
-                k2 += 1;
             }
-            if not ok {
-                return -1;
-            }
-            pos += ln;
-            pc += 1;
-            continue;
-        }
-        if op == _OP_FPUSH {
+        } elif op == _OP.FPUSH {
+            _bt3(stk, _BT_FPUSH, st.flags, 0);
             st.fstack.append(st.flags);
             st.flags = ins.a;
-            r3: int = _run(re, st, pc + 1, pos);
-            if r3 < 0 {
-                st.flags = st.fstack.pop();
-                return -1;
-            }
-            return r3;
-        }
-        if op == _OP_FPOP {
+            pc += 1;
+            continue;
+        } elif op == _OP.FPOP {
             if len(st.fstack) > 0 {
+                _bt3(stk, _BT_FPOP, st.fstack[len(st.fstack) - 1], st.flags);
                 st.flags = st.fstack.pop();
             }
             pc += 1;
             continue;
-        }
-        if op == _OP_LOOK {
+        } elif op == _OP.LOOK {
             if ins.b == 0 {
                 r4: int = _run(re, st, ins.a, pos);
-                if r4 < 0 {
-                    return -1;
+                if r4 >= 0 {
+                    pc += 1;
+                    continue;
                 }
-                pc += 1;
+            } else {
+                saved: list[int] = st.slots[:];
+                r5: int = _run(re, st, ins.a, pos);
+                st.slots = saved;
+                if r5 < 0 {
+                    pc += 1;
+                    continue;
+                }
+            }
+        }
+        retry: bool = False;
+        while len(stk) > 0 {
+            y: int = stk.pop();
+            x: int = stk.pop();
+            tag: int = stk.pop();
+            if tag == _BT_SPLIT {
+                pc = x;
+                pos = y;
+                retry = True;
+                break;
+            }
+            if tag == _BT_SAVE {
+                st.slots[x] = y;
                 continue;
             }
-            saved: list[int] = [];
-            si: int = 0;
-            while si < len(st.slots) {
-                saved.append(st.slots[si]);
-                si += 1;
+            if tag == _BT_MARK {
+                st.marks[x] = y;
+                continue;
             }
-            r5: int = _run(re, st, ins.a, pos);
-            j2: int = 0;
-            while j2 < len(st.slots) {
-                st.slots[j2] = saved[j2];
-                j2 += 1;
+            if tag == _BT_FPUSH {
+                st.fstack.pop();
+                st.flags = x;
+                continue;
             }
-            if r5 >= 0 {
-                return -1;
+            if tag == _BT_FPOP {
+                if x >= 0 {
+                    st.fstack.append(x);
+                }
+                st.flags = y;
+                continue;
             }
-            pc += 1;
-            continue;
         }
-        return -1;
+        if not retry {
+            return -1;
+        }
     }
 }
 
 
-def _new_st(s: str, n: int, re: _Re) -> _St {
+def _new_st(cps: list[int], n: int, re: _Re) -> _St {
     st: _St = _St();
-    st.bv = s.encode();
+    st.cps = cps;
     st.n = n;
     st.flags = re.flags;
     st.slots = [];
@@ -1531,25 +1484,39 @@ def _reset_slots(st: _St) {
         st.slots[i] = -1;
         i += 1;
     }
+    st.fstack = [];
 }
 
 
 obj:pub Match {
     has _re: _Re,
         string: str = "",
+        _bv: bytes = b"",
         pos: int = 0,
         endpos: int = 0,
         _slots: list[int] = [];
 
-    def init(_re: _Re, string: str, pos: int, endpos: int, slots: list[int]) {
+    def init(
+        _re: _Re, string: str, bv: bytes, pos: int, endpos: int, slots: list[int]
+    ) {
         self._re = _re;
         self.string = string;
+        self._bv = bv;
         self.pos = pos;
         self.endpos = endpos;
         self._slots = slots;
     }
 
-    def _gnum(i: any) -> int {
+    def _gtext(num: int) -> str {
+        lo: int = self._slots[num * 2];
+        hi: int = self._slots[num * 2 + 1];
+        if lo < 0 or hi < lo {
+            return "";
+        }
+        return cpslice_str(self._bv, lo, hi);
+    }
+
+    def _gnum(i: (int | str)) -> int {
         if isinstance(i, int) {
             iv: int = i;
             if iv < 0 or iv > self._re.ngroups {
@@ -1557,25 +1524,22 @@ obj:pub Match {
             }
             return iv;
         }
-        if isinstance(i, str) {
-            sv: str = i;
-            gn: int = _name_index(self._re.names, sv);
-            if gn >= 0 {
-                return gn;
-            }
-            raise IndexError("no such group");
+        sv: str = i;
+        gn: int = _name_index(self._re.names, sv);
+        if gn >= 0 {
+            return gn;
         }
         raise IndexError("no such group");
     }
 
-    def group(i: any = 0) -> any {
+    def group(i: (int | str) = 0) -> any {
         g: int = self._gnum(i);
         lo: int = self._slots[g * 2];
         hi: int = self._slots[g * 2 + 1];
         if lo < 0 or hi < lo {
             return None;
         }
-        return self.string[lo:hi];
+        return self._gtext(g);
     }
 
     def groups(`default: any = None) -> list[any] {
@@ -1587,7 +1551,7 @@ obj:pub Match {
             if lo < 0 or hi < lo {
                 out.append(`default);
             } else {
-                out.append(self.string[lo:hi]);
+                out.append(self._gtext(g));
             }
             g += 1;
         }
@@ -1603,23 +1567,23 @@ obj:pub Match {
             if lo < 0 or hi < lo {
                 out[nm] = `default;
             } else {
-                out[nm] = self.string[lo:hi];
+                out[nm] = self._gtext(g);
             }
         }
         return out;
     }
 
-    def start(i: any = 0) -> int {
+    def start(i: (int | str) = 0) -> int {
         g: int = self._gnum(i);
         return self._slots[g * 2];
     }
 
-    def end(i: any = 0) -> int {
+    def end(i: (int | str) = 0) -> int {
         g: int = self._gnum(i);
         return self._slots[g * 2 + 1];
     }
 
-    def span(i: any = 0) -> tuple[(int, int)] {
+    def span(i: (int | str) = 0) -> tuple[(int, int)] {
         g: int = self._gnum(i);
         return (self._slots[g * 2], self._slots[g * 2 + 1]);
     }
@@ -1630,13 +1594,31 @@ obj:pub Match {
 }
 
 
+def _push_str(out: list[int], s: str) {
+    k: int = 0;
+    while k < len(s) {
+        out.append(ord(s[k]));
+        k += 1;
+    }
+}
+
+
+def _push_range(out: list[int], pb: bytes, a: int, b: int) {
+    k: int = a;
+    while k < b {
+        out.append(pb[k]);
+        k += 1;
+    }
+}
+
+
 def _posix_translate(pat: str, flags: int) -> (str | None) {
     if flags & (TEMPLATE | LOCALE | MULTILINE | DOTALL | VERBOSE) {
         return None;
     }
     pb: bytes = pat.encode();
     n: int = len(pb);
-    out: str = "";
+    out: list[int] = [];
     i: int = 0;
     inclass: bool = False;
     class_first: bool = False;
@@ -1650,7 +1632,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             if c == 93 and not class_first {
                 inclass = False;
             }
-            out += pat[i:i + 1];
+            out.append(c);
             class_first = False;
             i += 1;
             continue;
@@ -1661,30 +1643,30 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             }
             e: int = pb[i + 1];
             if e == 100 {
-                out += "[0-9]";
+                _push_str(out, "[0-9]");
             } elif e == 68 {
-                out += "[^0-9]";
+                _push_str(out, "[^0-9]");
             } elif e == 119 or e == 87 or e == 115 or e == 83 {
-                out += pat[i:i + 2];
+                _push_range(out, pb, i, i + 2);
             } elif e == 110 {
-                out += "\n";
+                out.append(10);
             } elif e == 116 {
-                out += "\t";
+                out.append(9);
             } elif e == 114 {
-                out += "\r";
+                out.append(13);
             } elif e == 102 {
-                out += "\x0c";
+                out.append(12);
             } elif e == 118 {
-                out += "\x0b";
+                out.append(11);
             } elif e == 97 {
-                out += "\x07";
+                out.append(7);
             } elif (e >= 33 and e <= 47)
                 or (e >= 58 and e <= 64)
                 or (e >= 91 and e <= 96)
                 or (e >= 123 and e <= 126) {
-                out += "[";
-                out += pat[i + 1:i + 2];
-                out += "]";
+                out.append(91);
+                out.append(e);
+                out.append(93);
             } else {
                 return None;
             }
@@ -1696,7 +1678,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             return None;
         }
         if c == 46 {
-            out += "[^\n]";
+            _push_str(out, "[^\n]");
             i += 1;
             prev_quant = False;
             continue;
@@ -1705,7 +1687,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             if i + 1 < n and pb[i + 1] == 63 {
                 return None;
             }
-            out += "(";
+            out.append(40);
             i += 1;
             prev_quant = False;
             continue;
@@ -1725,8 +1707,8 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
                 if not ok or k >= n or k == j + 1 {
                     return None;
                 }
-                out += "{0";
-                out += pat[j:k + 1];
+                _push_str(out, "{0");
+                _push_range(out, pb, j, k + 1);
                 i = k + 1;
                 prev_quant = True;
                 continue;
@@ -1754,7 +1736,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             if not ok2 or k2 >= n or ndig == 0 {
                 return None;
             }
-            out += pat[i:k2 + 1];
+            _push_range(out, pb, i, k2 + 1);
             i = k2 + 1;
             prev_quant = True;
             continue;
@@ -1763,7 +1745,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             if prev_quant {
                 return None;
             }
-            out += pat[i:i + 1];
+            out.append(c);
             i += 1;
             prev_quant = True;
             continue;
@@ -1771,23 +1753,23 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
         if c == 91 {
             inclass = True;
             class_first = True;
-            out += "[";
+            out.append(91);
             i += 1;
             if i < n and pb[i] == 94 {
-                out += "^";
+                out.append(94);
                 i += 1;
             }
             prev_quant = False;
             continue;
         }
-        out += pat[i:i + 1];
+        out.append(c);
         i += 1;
         prev_quant = False;
     }
     if inclass {
         return None;
     }
-    return out;
+    return bytes(out).decode();
 }
 
 
@@ -1798,6 +1780,7 @@ obj:pub Pattern {
         groups: int = 0,
         groupindex: dict[str, int] = {},
         _preg: bytes = b"",
+        _pgen: int = -1,
         _posix: bool = False;
 
     def init(pattern: str, flags: int = 0) {
@@ -1806,28 +1789,36 @@ obj:pub Pattern {
         self._re = _compile_re(pattern, flags);
         self.groups = self._re.ngroups;
         self.groupindex = self._re.names;
-        ep: (str | None) = _posix_translate(pattern, flags);
-        if ep is not None {
-            preg: bytes = posix_compile(ep, (flags & IGNORECASE) != 0);
-            if len(preg) > 0 {
-                self._preg = preg;
-                self._posix = True;
+        if _PMW > 0 {
+            ep: (str | None) = _posix_translate(pattern, flags);
+            if ep is not None {
+                preg: bytes = posix_compile(ep, (flags & IGNORECASE) != 0);
+                if len(preg) > 0 {
+                    _PSX.pregs.append(preg);
+                    self._preg = preg;
+                    self._pgen = _PSX.gen;
+                    self._posix = True;
+                }
             }
         }
     }
 
-    def _pm_slots(pm: bytes, base: int) -> list[int] {
+    def _use_posix(bv: bytes) -> bool {
+        return self._posix and self._pgen == _PSX.gen and is_ascii(bv);
+    }
+
+    def _pm_slots(pm: bytes, bv: bytes, base: int) -> list[int] {
         slots: list[int] = [];
         g: int = 0;
         while g <= self.groups {
-            so: int = pm_i32(pm, g * 2);
-            eo: int = pm_i32(pm, g * 2 + 1);
+            so: int = pm_off(pm, _PMW, g * 2);
+            eo: int = pm_off(pm, _PMW, g * 2 + 1);
             if so < 0 or eo < so {
                 slots.append(-1);
                 slots.append(-1);
             } else {
-                slots.append(base + so);
-                slots.append(base + eo);
+                slots.append(cp_len(bv, base + so));
+                slots.append(cp_len(bv, base + eo));
             }
             g += 1;
         }
@@ -1850,54 +1841,66 @@ obj:pub Pattern {
         return -1;
     }
 
-    def _search_from(string: str, start: int, endpos: int) -> (Match | None) {
-        if self._posix {
-            pm: bytes = posix_exec(self._preg, string[start:endpos], self.groups + 1);
+    def _search_from(
+        string: str, bv: bytes, start: int, endpos: int
+    ) -> (Match | None) {
+        if self._use_posix(bv) {
+            bp: int = cp_off(bv, start);
+            pm: bytes = posix_exec(
+                self._preg, bv[bp:cp_off(bv, endpos)].decode(), self.groups + 1, _PMW
+            );
             if len(pm) == 0 {
                 return None;
             }
-            return Match(self._re, string, start, endpos, self._pm_slots(pm, start));
+            return Match(
+                self._re, string, bv, start, endpos, self._pm_slots(pm, bv, bp)
+            );
         }
-        st: _St = _new_st(string, endpos, self._re);
+        st: _St = _new_st(utf8_cps(bv), endpos, self._re);
         r: int = self._scan_from(st, start);
         if r < 0 {
             return None;
         }
-        return Match(self._re, string, start, endpos, st.slots);
+        return Match(self._re, string, bv, start, endpos, st.slots);
     }
 
     def search(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
-        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        bv: bytes = string.encode();
+        b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
         endpos = b[1];
         if pos > endpos {
             return None;
         }
-        return self._search_from(string, pos, endpos);
+        return self._search_from(string, bv, pos, endpos);
     }
 
     def `match(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
-        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        bv: bytes = string.encode();
+        b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
         endpos = b[1];
         if pos > endpos {
             return None;
         }
-        if self._posix {
-            pm: bytes = posix_exec(self._preg, string[pos:endpos], self.groups + 1);
-            if len(pm) == 0 or pm_i32(pm, 0) != 0 {
+        if self._use_posix(bv) {
+            bp: int = cp_off(bv, pos);
+            pm: bytes = posix_exec(
+                self._preg, bv[bp:cp_off(bv, endpos)].decode(), self.groups + 1, _PMW
+            );
+            if len(pm) == 0 or pm_off(pm, _PMW, 0) != 0 {
                 return None;
             }
-            return Match(self._re, string, pos, endpos, self._pm_slots(pm, pos));
+            return Match(self._re, string, bv, pos, endpos, self._pm_slots(pm, bv, bp));
         }
-        st: _St = _new_st(string, endpos, self._re);
+        st: _St = _new_st(utf8_cps(bv), endpos, self._re);
         r: int = _run(self._re, st, 0, pos);
         if r < 0 {
             return None;
         }
         st.slots[0] = pos;
         st.slots[1] = r;
-        return Match(self._re, string, pos, endpos, st.slots);
+        return Match(self._re, string, bv, pos, endpos, st.slots);
     }
 
     def fullmatch(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
@@ -1913,20 +1916,26 @@ obj:pub Pattern {
     }
 
     def finditer(string: str, pos: int = 0, endpos: int = -1) -> list[Match] {
-        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        bv: bytes = string.encode();
+        b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
         endpos = b[1];
         out: list[Match] = [];
-        if self._posix {
-            p: int = pos;
-            while p <= endpos {
-                pm: bytes = posix_exec(self._preg, string[p:endpos], self.groups + 1);
+        if self._use_posix(bv) {
+            p: int = cp_off(bv, pos);
+            be: int = cp_off(bv, endpos);
+            while p <= be {
+                pm: bytes = posix_exec(
+                    self._preg, bv[p:be].decode(), self.groups + 1, _PMW
+                );
                 if len(pm) == 0 {
                     break;
                 }
-                m2: Match = Match(self._re, string, pos, endpos, self._pm_slots(pm, p));
+                m2: Match = Match(
+                    self._re, string, bv, pos, endpos, self._pm_slots(pm, bv, p)
+                );
                 out.append(m2);
-                nxt: int = p + pm_i32(pm, 1);
+                nxt: int = p + pm_off(pm, _PMW, 1);
                 if nxt > p {
                     p = nxt;
                 } else {
@@ -1935,14 +1944,14 @@ obj:pub Pattern {
             }
             return out;
         }
-        st: _St = _new_st(string, endpos, self._re);
-        p: int = pos;
+        st: _St = _new_st(utf8_cps(bv), endpos, self._re);
+        p = pos;
         while p <= endpos {
             r: int = self._scan_from(st, p);
             if r < 0 {
                 break;
             }
-            m2: Match = Match(self._re, string, pos, endpos, st.slots[:]);
+            m2 = Match(self._re, string, bv, pos, endpos, st.slots[:]);
             out.append(m2);
             if r > p {
                 p = r;
@@ -1959,30 +1968,35 @@ obj:pub Pattern {
                 "findall: patterns with more than one group are not supported on native"
             );
         }
-        b: tuple[(int, int)] = _bounds(len(string), pos, endpos);
+        bv: bytes = string.encode();
+        b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
         endpos = b[1];
         out: list[str] = [];
-        if self._posix {
-            p: int = pos;
-            while p <= endpos {
-                pm: bytes = posix_exec(self._preg, string[p:endpos], self.groups + 1);
+        if self._use_posix(bv) {
+            p: int = cp_off(bv, pos);
+            be: int = cp_off(bv, endpos);
+            while p <= be {
+                pm: bytes = posix_exec(
+                    self._preg, bv[p:be].decode(), self.groups + 1, _PMW
+                );
                 if len(pm) == 0 {
                     break;
                 }
-                slots: list[int] = self._pm_slots(pm, p);
                 if self._re.ngroups == 0 {
-                    out.append(string[slots[0]:slots[1]]);
+                    out.append(
+                        bv[p + pm_off(pm, _PMW, 0):p + pm_off(pm, _PMW, 1)].decode()
+                    );
                 } else {
-                    lo: int = slots[2];
-                    hi: int = slots[3];
+                    lo: int = pm_off(pm, _PMW, 2);
+                    hi: int = pm_off(pm, _PMW, 3);
                     if lo < 0 or hi < lo {
                         out.append("");
                     } else {
-                        out.append(string[lo:hi]);
+                        out.append(bv[p + lo:p + hi].decode());
                     }
                 }
-                nxt: int = p + pm_i32(pm, 1);
+                nxt: int = p + pm_off(pm, _PMW, 1);
                 if nxt > p {
                     p = nxt;
                 } else {
@@ -1991,22 +2005,22 @@ obj:pub Pattern {
             }
             return out;
         }
-        st: _St = _new_st(string, endpos, self._re);
-        p: int = pos;
+        st: _St = _new_st(utf8_cps(bv), endpos, self._re);
+        p = pos;
         while p <= endpos {
             r: int = self._scan_from(st, p);
             if r < 0 {
                 break;
             }
             if self._re.ngroups == 0 {
-                out.append(string[st.slots[0]:r]);
+                out.append(cpslice_str(bv, st.slots[0], r));
             } else {
-                lo: int = st.slots[2];
-                hi: int = st.slots[3];
+                lo = st.slots[2];
+                hi = st.slots[3];
                 if lo < 0 or hi < lo {
                     out.append("");
                 } else {
-                    out.append(string[lo:hi]);
+                    out.append(cpslice_str(bv, lo, hi));
                 }
             }
             if r > p {
@@ -2019,72 +2033,142 @@ obj:pub Pattern {
     }
 
     def split(string: str, maxsplit: int = 0) -> list[any] {
-        n: int = len(string);
+        bv: bytes = string.encode();
+        n: int = cp_len(bv, len(bv));
         out: list[any] = [];
         last: int = 0;
         count: int = 0;
-        p: int = 0;
+        if self._use_posix(bv) {
+            p: int = 0;
+            nb: int = len(bv);
+            while p <= nb {
+                pm: bytes = posix_exec(
+                    self._preg, bv[p:nb].decode(), self.groups + 1, _PMW
+                );
+                if len(pm) == 0 {
+                    break;
+                }
+                if maxsplit > 0 and count >= maxsplit {
+                    break;
+                }
+                m0: int = p + pm_off(pm, _PMW, 0);
+                m1: int = p + pm_off(pm, _PMW, 1);
+                out.append(bv[last:m0].decode());
+                g: int = 1;
+                while g <= self._re.ngroups {
+                    lo: int = pm_off(pm, _PMW, g * 2);
+                    hi: int = pm_off(pm, _PMW, g * 2 + 1);
+                    if lo < 0 or hi < lo {
+                        out.append(None);
+                    } else {
+                        out.append(bv[p + lo:p + hi].decode());
+                    }
+                    g += 1;
+                }
+                last = m1;
+                count += 1;
+                if m1 > p {
+                    p = m1;
+                } else {
+                    p = m1 + 1;
+                }
+            }
+            out.append(bv[last:nb].decode());
+            return out;
+        }
+        st: _St = _new_st(utf8_cps(bv), n, self._re);
+        p = 0;
         while p <= n {
-            m: (Match | None) = self._search_from(string, p, n);
-            if m is None {
+            r: int = self._scan_from(st, p);
+            if r < 0 {
                 break;
             }
-            m2: Match = m;
             if maxsplit > 0 and count >= maxsplit {
                 break;
             }
-            out.append(string[last:m2._slots[0]]);
-            g: int = 1;
+            out.append(cpslice_str(bv, last, st.slots[0]));
+            g = 1;
             while g <= self._re.ngroups {
-                lo: int = m2._slots[g * 2];
-                hi: int = m2._slots[g * 2 + 1];
+                lo = st.slots[g * 2];
+                hi = st.slots[g * 2 + 1];
                 if lo < 0 or hi < lo {
                     out.append(None);
                 } else {
-                    out.append(string[lo:hi]);
+                    out.append(cpslice_str(bv, lo, hi));
                 }
                 g += 1;
             }
-            last = m2._slots[1];
+            last = r;
             count += 1;
-            e: int = m2._slots[1];
-            if e > p {
-                p = e;
+            if r > p {
+                p = r;
             } else {
-                p = e + 1;
+                p = r + 1;
             }
         }
-        out.append(string[last:n]);
+        out.append(cpslice_str(bv, last, n));
         return out;
     }
 
     def _subn(repl: str, string: str, count: int) -> tuple[(str, int)] {
-        n: int = len(string);
+        bv: bytes = string.encode();
+        n: int = cp_len(bv, len(bv));
         out: str = "";
         last: int = 0;
         nsub: int = 0;
-        p: int = 0;
+        if self._use_posix(bv) {
+            p: int = 0;
+            nb: int = len(bv);
+            while p <= nb {
+                if count != 0 and nsub >= count {
+                    break;
+                }
+                pm: bytes = posix_exec(
+                    self._preg, bv[p:nb].decode(), self.groups + 1, _PMW
+                );
+                if len(pm) == 0 {
+                    break;
+                }
+                m2: Match = Match(
+                    self._re, string, bv, 0, n, self._pm_slots(pm, bv, p)
+                );
+                m0: int = p + pm_off(pm, _PMW, 0);
+                m1: int = p + pm_off(pm, _PMW, 1);
+                out += bv[last:m0].decode();
+                out += _expand_repl(repl, m2, self._re);
+                nsub += 1;
+                last = m1;
+                if m1 > p {
+                    p = m1;
+                } else {
+                    p = m1 + 1;
+                }
+            }
+            out += bv[last:nb].decode();
+            return (out, nsub);
+        }
+        st: _St = _new_st(utf8_cps(bv), n, self._re);
+        p = 0;
         while p <= n {
             if count != 0 and nsub >= count {
                 break;
             }
-            m: (Match | None) = self._search_from(string, p, n);
-            if m is None {
+            r: int = self._scan_from(st, p);
+            if r < 0 {
                 break;
             }
-            m2: Match = m;
-            out += string[last:m2._slots[0]];
+            m2: Match = Match(self._re, string, bv, p, n, st.slots[:]);
+            out += cpslice_str(bv, last, st.slots[0]);
             out += _expand_repl(repl, m2, self._re);
             nsub += 1;
-            last = m2._slots[1];
-            e: int = m2._slots[1];
-            if e > p {
-                p = e;
+            last = r;
+            if r > p {
+                p = r;
             } else {
-                p = e + 1;
+                p = r + 1;
             }
         }
-        out += string[last:n];
+        out += cpslice_str(bv, last, n);
         return (out, nsub);
     }
 
@@ -2101,13 +2185,13 @@ obj:pub Pattern {
 
 def _compile_re(pattern: str, flags: int) -> _Re {
     p: _P = _P();
-    p.src = pattern;
-    p.n = len(pattern);
+    p.cps = utf8_cps(pattern.encode());
+    p.n = len(p.cps);
     p.flags = flags;
     tree: _Node = p._parse();
     c: _C = _C();
     _compile_node(tree, c);
-    _emit(c, _OP_MATCH, 0, 0);
+    _emit(c, _OP.MATCH, 0, 0);
     re: _Re = _Re();
     re.prog = c.prog;
     re.classes = c.classes;
@@ -2121,13 +2205,14 @@ def _compile_re(pattern: str, flags: int) -> _Re {
 
 
 def _expand_repl(template: str, m: Match, re: _Re) -> str {
+    tps: list[int] = utf8_cps(template.encode());
     out: str = "";
     i: int = 0;
-    n: int = len(template);
+    n: int = len(tps);
     while i < n {
-        c: int = ord(template[i]);
+        c: int = tps[i];
         if c != 92 {
-            out += template[i];
+            out += chr(c);
             i += 1;
             continue;
         }
@@ -2136,21 +2221,21 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
         if i >= n {
             raise ValueError("bad escape (end of pattern) at position " + str(bp));
         }
-        e: int = ord(template[i]);
+        e: int = tps[i];
         i += 1;
         if e == 103 {
-            if i >= n or ord(template[i]) != 60 {
+            if i >= n or tps[i] != 60 {
                 raise ValueError("missing < at position " + str(i));
             }
             i += 1;
             j: int = i;
-            while j < n and ord(template[j]) != 62 {
+            while j < n and tps[j] != 62 {
                 j += 1;
             }
             if j >= n {
                 raise ValueError("missing unterminated name at position " + str(i));
             }
-            nm: str = template[i:j];
+            nm: str = cps_str(tps, i, j);
             i = j + 1;
             num: int = -1;
             if len(nm) > 0 {
@@ -2174,65 +2259,38 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
             if num < 0 {
                 num = _name_index(re.names, nm);
                 if num < 0 {
-                    raise ValueError(
-                        "unknown group name '"
-                            + nm
-                            + "' at position "
-                            + str(j - len(nm))
-                    );
+                    raise ValueError("unknown group name '" + nm + "'");
                 }
+            }
+            if num > re.ngroups {
+                raise ValueError(
+                    "invalid group reference " + str(num) + " at position " + str(j)
+                );
+            }
+            out += m._gtext(num);
+            continue;
+        }
+        if e >= 49 and e <= 57 {
+            num = e - 48;
+            if i < n and _isdig(tps[i]) {
+                num = num * 10 + (tps[i] - 48);
+                i += 1;
             }
             if num > re.ngroups {
                 raise ValueError(
                     "invalid group reference "
                         + str(num)
                         + " at position "
-                        + str(j - len(nm))
+                        + str(bp + 1)
                 );
             }
-            out += _gtext(m, num);
+            out += m._gtext(num);
             continue;
         }
-        if e >= 49 and e <= 57 {
-            num = e - 48;
-            if i < n and _isdig(ord(template[i])) {
-                num = num * 10 + (ord(template[i]) - 48);
-                i += 1;
-            }
-            if num > re.ngroups {
-                raise ValueError(
-                    "invalid group reference " + str(num) + " at position " + str(bp)
-                );
-            }
-            out += _gtext(m, num);
-            continue;
-        }
-        if e == 48 {
-            v: int = 0;
-            cnt: int = 0;
-            while cnt < 3 and i < n {
-                d: int = ord(template[i]);
-                if d < 48 or d > 55 {
-                    break;
-                }
-                v = v * 8 + (d - 48);
-                i += 1;
-                cnt += 1;
-            }
-            out += chr(v);
-            continue;
-        }
-        if e == 120 {
-            if i + 1 >= n {
-                raise ValueError("bad escape \\x at position " + str(bp));
-            }
-            h1: int = _hexv(ord(template[i]));
-            h2: int = _hexv(ord(template[i + 1]));
-            if h1 < 0 or h2 < 0 {
-                raise ValueError("bad escape \\x at position " + str(bp));
-            }
-            i += 2;
-            out += chr(h1 * 16 + h2);
+        if e == 48 or e == 120 {
+            r: tuple[(int, int)] = _num_esc(tps, i, e, bp);
+            i = r[1];
+            out += chr(r[0]);
             continue;
         }
         if e == 110 {
@@ -2260,23 +2318,11 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
             continue;
         }
         if _isalpha(e) {
-            raise ValueError(
-                "bad escape \\" + template[bp + 1] + " at position " + str(bp)
-            );
+            raise ValueError("bad escape \\" + chr(e) + " at position " + str(bp));
         }
-        out += template[bp + 1];
+        out += chr(e);
     }
     return out;
-}
-
-
-def _gtext(m: Match, num: int) -> str {
-    lo: int = m._slots[num * 2];
-    hi: int = m._slots[num * 2 + 1];
-    if lo < 0 or hi < lo {
-        return "";
-    }
-    return m.string[lo:hi];
 }
 
 
@@ -2355,4 +2401,9 @@ def:pub escape(pattern: str) -> str {
 }
 
 
-def:pub purge {}
+def:pub purge {
+    while len(_PSX.pregs) > 0 {
+        posix_free(_PSX.pregs.pop());
+    }
+    _PSX.gen += 1;
+}

@@ -202,8 +202,10 @@ native layout records the emitted name separately from its source-level key.
   not interchangeable); `Formatter`/brace-style templates not provided.
 - **`re.jac`** (#6978 Phase 3) -- a pure-Jac regex engine: explicit parser
   (`_P`) producing a `_Node` AST, an instruction compiler, and a
-  backtracking VM (`_run`). Covers literals, character classes and ranges
-  (incl. negation and class escapes `\d`/`\w`/`\s`), anchors (`^`/`$`/`\A`/
+  backtracking VM (`_run`) driven by an explicit heap-allocated
+  retry/undo stack, so match depth is bounded by heap, not the C stack.
+  Covers literals, character classes and ranges (incl. negation and class
+  escapes `\d`/`\w`/`\s`), anchors (`^`/`$`/`\A`/
   `\Z`/`\b`/`\B`), greedy and lazy `*`/`+`/`?`/`{m,n}` repeats, alternation,
   numbered and `(?P<n>)` named groups, backrefs (`\N`, `(?P=n)`), lookahead
   (`(?=...)`/`(?!...)`), inline/global flags (`i`/`m`/`s`/`x`/`a`/`u`),
@@ -216,6 +218,23 @@ native layout records the emitted name separately from its source-level key.
   message text and position suffix ("... at position N"), covering
   unterminated groups/classes, bad ranges, multiple/nothing-to-repeat,
   unknown/duplicate/open group references, and non-leading global flags.
+  Patterns and subjects are decoded once into codepoint arrays
+  (`_utf8.jac`), so matching is codepoint-indexed independent of the native
+  `str` indexing model, and `Match` slices decode back through the encoded
+  bytes -- non-ASCII literals like `é` match whole characters, while the
+  character-class semantics stay ASCII (`\w`/`\d`/`\s`, IGNORECASE fold).
+  **POSIX fast path**: patterns `_posix_translate` can express as POSIX ERE
+  (no alternation, anchors, `?(` constructs, lazy quantifiers, or
+  backslashes it cannot desugar) are additionally compiled through libc
+  `regcomp`/`regexec` via `_re_posix_native.jac` (Mechanism F) and used for
+  matching on ASCII subjects only; anything else runs the Jac VM. The
+  `regmatch_t` stride is detected at import by a compile+exec probe
+  (`posix_probe`) so both 32-bit `regoff_t` (glibc) and 64-bit
+  (BSD/macOS/musl) layouts read correctly; an unknown layout disables the
+  fast path rather than misreading. Because `regex_t` owns heap state that
+  the Jac GC cannot see, every successfully compiled program is registered
+  in `_PSX.pregs` and `purge()` calls `regfree` on all of them and bumps a
+  generation counter so previously compiled `Pattern`s fall back to the VM.
   SCOPE/divergences: ASCII semantics only (`\w`/`\d`/`\s` and IGNORECASE
   fold ASCII; no unicode categories or full casefold); no lookbehind,
   conditional `(?(id)y|n)`, atomic `(?>...)`, possessive quantifiers, `\N{}`,
