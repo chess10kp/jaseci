@@ -110,7 +110,11 @@ def:pub alarm(seconds: int) -> int {
     if seconds < 0 {
         raise ValueError("alarm() arg must be positive");
     }
-    return sig_alarm(seconds);
+    old = sig_alarm(seconds);
+    if old == -1 {
+        raise_errno_error(last_errno());
+    }
+    return old;
 }
 
 def:pub pause {

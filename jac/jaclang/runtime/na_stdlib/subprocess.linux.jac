@@ -88,14 +88,17 @@ obj:pub CompletedProcess {
     }
 }
 
-def _to_bytes(data: any) -> bytes {
+def _to_bytes(data: any, text: bool) -> bytes {
     if isinstance(data, bytes) {
         return data;
     }
     if isinstance(data, bytearray) {
         return bytes(data);
     }
-    return str(data).encode();
+    if isinstance(data, str) and text {
+        return data.encode();
+    }
+    raise TypeError("a bytes-like object is required");
 }
 
 def _decode_status(st: int) -> int {
@@ -135,6 +138,24 @@ obj:pub Popen {
             signal(SIGPIPE, SIG_IGN);
             _sigpipe_ignored = True;
         }
+        argv: list[str] = [];
+        if self.shell {
+            argv = ["/bin/sh", "-c"];
+            if isinstance(self.args, str) {
+                argv.append(self.args);
+            } else {
+                for a in self.args {
+                    argv.append(a);
+                }
+            }
+        } elif isinstance(self.args, str) {
+            argv = [self.args];
+        } else {
+            argv = self.args;
+        }
+        if len(argv) == 0 {
+            raise IndexError("list index out of range");
+        }
         r_in: list[int] = [0, -1, -1];
         r_out: list[int] = [0, -1, -1];
         r_err: list[int] = [0, -1, -1];
@@ -160,24 +181,6 @@ obj:pub Popen {
         in_pipe = [r_in[1], r_in[2]];
         out_pipe = [r_out[1], r_out[2]];
         err_pipe = [r_err[1], r_err[2]];
-        argv: list[str] = [];
-        if self.shell {
-            argv = ["/bin/sh", "-c"];
-            if isinstance(self.args, str) {
-                argv.append(self.args);
-            } else {
-                for a in self.args {
-                    argv.append(a);
-                }
-            }
-        } elif isinstance(self.args, str) {
-            argv = [self.args];
-        } else {
-            argv = self.args;
-        }
-        if len(argv) == 0 {
-            raise IndexError("list index out of range");
-        }
         fa = sp_fa_new();
         fa_rc = self._fa_stdio(fa, in_pipe, out_pipe, err_pipe);
         if fa_rc == 0 and self.cwd is not None {
@@ -363,7 +366,7 @@ obj:pub Popen {
         err_acc = bytearray();
         in_data: bytes = b"";
         if input is not None and self._stdin_w >= 0 {
-            in_data = _to_bytes(input);
+            in_data = _to_bytes(input, self.text);
         }
         in_off = 0;
         if self._stdin_w >= 0 and in_off >= len(in_data) {

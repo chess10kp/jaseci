@@ -50,11 +50,14 @@ def:pub sig_alarm(seconds: int) -> int {
     __mem_store_i64(new_it + 8, 0);
     __mem_store_i64(new_it + 16, seconds);
     __mem_store_i64(new_it + 24, 0);
-    setitimer(i32(_ITIMER_REAL), new_it, old_it);
+    rc = setitimer(i32(_ITIMER_REAL), new_it, old_it);
     old_sec = __mem_load_i64(old_it + 16);
     old_usec = __mem_load_i64(old_it + 24);
     free(new_it);
     free(old_it);
+    if rc != 0 {
+        return -1;
+    }
     return int(old_sec + (1 if old_usec > 0 else 0));
 }
 
