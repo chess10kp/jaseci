@@ -13,33 +13,36 @@ def:pub capwords(s: str, sep: (str | None) = None) -> str {
     if sep is None {
         bv: bytes = s.encode();
         n: int = len(bv);
-        out: bytearray = bytearray();
-        inword: bool = False;
-        first: bool = True;
+        src: int = __bytes_data(bv);
+        inword: int = 0;
+        first: int = 1;
+        j: int = 0;
         i: int = 0;
         while i < n {
-            c: int = bv[i];
+            c: int = __mem_load_i8(src + i);
             if c == 32 or (c >= 9 and c <= 13) {
-                inword = False;
+                inword = 0;
                 i += 1;
                 continue;
             }
             if not inword {
-                inword = True;
+                inword = 1;
                 if not first {
-                    out.append(32);
+                    __mem_store_i8(src + j, 32);
+                    j += 1;
                 }
-                first = False;
+                first = 0;
                 if c >= 97 and c <= 122 {
                     c -= 32;
                 }
             } elif c >= 65 and c <= 90 {
                 c += 32;
             }
-            out.append(c);
+            __mem_store_i8(src + j, c);
+            j += 1;
             i += 1;
         }
-        return bytes(out).decode();
+        return bv[0:j].decode();
     }
     sepv: str = sep;
     parts: list[str] = s.split(sepv);
@@ -111,13 +114,14 @@ def _invalid(template: str, i: int) {
 def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str {
     out: str = "";
     bv: bytes = template.encode();
+    src: int = __bytes_data(bv);
     i: int = 0;
     n: int = len(template);
     while i < n {
-        c: int = bv[i];
+        c: int = __mem_load_i8(src + i);
         if c != 36 {
             j0: int = i;
-            while j0 < n and bv[j0] != 36 {
+            while j0 < n and __mem_load_i8(src + j0) != 36 {
                 j0 += 1;
             }
             out += template[i:j0];
@@ -132,7 +136,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
             }
             _invalid(template, i);
         }
-        nx: int = bv[i + 1];
+        nx: int = __mem_load_i8(src + i + 1);
         if nx == 36 {
             out += "$";
             i += 2;
@@ -143,10 +147,10 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
         raw: str = "";
         if nx == 123 {
             j: int = i + 2;
-            while j < n and _is_id_char(bv[j]) {
+            while j < n and _is_id_char(__mem_load_i8(src + j)) {
                 j += 1;
             }
-            if j > i + 2 and j < n and bv[j] == 125 {
+            if j > i + 2 and j < n and __mem_load_i8(src + j) == 125 {
                 name = template[i + 2:j];
                 consumed = j + 1 - i;
                 raw = template[i:j + 1];
@@ -159,7 +163,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
             }
         } elif _is_id_start(nx) {
             j = i + 1;
-            while j < n and _is_id_char(bv[j]) {
+            while j < n and _is_id_char(__mem_load_i8(src + j)) {
                 j += 1;
             }
             name = template[i + 1:j];
@@ -228,10 +232,11 @@ obj:pub Template {
         ids: list[str] = [];
         template: str = self.template;
         bv: bytes = template.encode();
+        src: int = __bytes_data(bv);
         i: int = 0;
         n: int = len(template);
         while i < n {
-            c: int = bv[i];
+            c: int = __mem_load_i8(src + i);
             if c != 36 {
                 i += 1;
                 continue;
@@ -240,7 +245,7 @@ obj:pub Template {
                 i += 1;
                 continue;
             }
-            nx: int = bv[i + 1];
+            nx: int = __mem_load_i8(src + i + 1);
             if nx == 36 {
                 i += 2;
                 continue;
@@ -249,16 +254,16 @@ obj:pub Template {
             consumed: int = 0;
             if nx == 123 {
                 j: int = i + 2;
-                while j < n and _is_id_char(bv[j]) {
+                while j < n and _is_id_char(__mem_load_i8(src + j)) {
                     j += 1;
                 }
-                if j > i + 2 and j < n and bv[j] == 125 {
+                if j > i + 2 and j < n and __mem_load_i8(src + j) == 125 {
                     name = template[i + 2:j];
                     consumed = j + 1 - i;
                 }
             } elif _is_id_start(nx) {
                 j = i + 1;
-                while j < n and _is_id_char(bv[j]) {
+                while j < n and _is_id_char(__mem_load_i8(src + j)) {
                     j += 1;
                 }
                 name = template[i + 1:j];
