@@ -36,6 +36,10 @@ impl NaIRGenPass._arch_alias_target(nd: (uni.UniNode | None)) -> (str | None) {
     if not isinstance(nd, uni.NameAtom) {
         return None;
     }
+    _arch_key = self._arch_ref_key(nd);
+    if _arch_key is not None {
+        return _arch_key;
+    }
     sym = nd.sym;
     if sym is None {
         return None;
@@ -63,7 +67,7 @@ impl NaIRGenPass._erased_generic_ctor(nd: uni.FuncCall) -> (str | None) {
         return None;
     }
     if self._ct_ctor_slots(_tgt) {
-        return self._get_name(_tgt.target);
+        return self._arch_ref_key(_tgt.target) or self._get_name(_tgt.target);
     }
     _base_tk = self._type_key_of(_tgt.target);
     if _base_tk is None or not _base_tk.startswith("type[") {
@@ -1171,7 +1175,7 @@ impl NaIRGenPass._emit_new(nd: uni.FuncCall) -> (ir.Value | None) {
         );
         return None;
     }
-    cls_name = self._get_name(params_l[0]);
+    cls_name = self._arch_ref_key(params_l[0]) or self._get_name(params_l[0]);
     if cls_name is None or cls_name not in self.struct_types {
         cls_name = self._struct_name_of(nd);
     }
@@ -1288,7 +1292,8 @@ impl NaIRGenPass._codegen_intrinsic(
         IntrinsicDispatch.CALL_DTOR: self._emit_intrinsic_call_dtor,
         IntrinsicDispatch.REGION_TLS: self._emit_intrinsic_region_tls,
         IntrinsicDispatch.BUFFER_DATA: self._emit_intrinsic_buffer_data,
-        IntrinsicDispatch.REF_ADDR: self._emit_intrinsic_ref_addr
+        IntrinsicDispatch.REF_ADDR: self._emit_intrinsic_ref_addr,
+        IntrinsicDispatch.ALLOCA: self._emit_intrinsic_alloca
     };
     handler = _emitters.get(intr.dispatch);
     if handler is None {
@@ -1515,6 +1520,27 @@ impl NaIRGenPass._emit_intrinsic_region_tls(
     }
     result = self.builder.call(self.extern_funcs[intr.name], operands);
     return None if intr.result_spec == "none" else result;
+}
+
+impl NaIRGenPass._emit_intrinsic_alloca(
+    nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
+) -> (ir.Value | None) {
+    n = self._intrinsic_operand(nd, intr, args[0], intr.param_specs[0]);
+    if n is None {
+        return None;
+    }
+    i8 = ir.IntType(8);
+    func = self.builder.function;
+    entry_block = func.entry_basic_block;
+    cur_block = self.builder.block;
+    if entry_block.instructions {
+        self.builder.position_before(entry_block.instructions[0]);
+    } else {
+        self.builder.position_at_start(entry_block);
+    }
+    slot = self.builder.alloca(i8, size=n, name="alloca.buf");
+    self.builder.position_at_end(cur_block);
+    return self.builder.ptrtoint(slot, ir.IntType(64), name="alloca.i64");
 }
 
 impl NaIRGenPass._codegen_synthetic_call(
@@ -2296,12 +2322,12 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         }
     }
 
-    if func_name in self.struct_types {
-        return self._codegen_instantiation(nd, type_name_override=func_name);
-    }
-    _alias_arch = self._arch_alias_target(nd.target);
+    _alias_arch = self._arch_alias_target(nd.target) or self._arch_ref_key(nd.target);
     if _alias_arch is not None and _alias_arch in self.struct_types {
         return self._codegen_instantiation(nd, type_name_override=_alias_arch);
+    }
+    if func_name in self.struct_types {
+        return self._codegen_instantiation(nd, type_name_override=func_name);
     }
     _skipped_key = f"{_mod_qual}.{func_name}" if _mod_qual is not None else func_name;
     if (
