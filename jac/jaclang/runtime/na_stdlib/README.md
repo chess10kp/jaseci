@@ -307,7 +307,10 @@ native layout records the emitted name separately from its source-level key.
   (reporthook still fires per 8 KiB block); `HTTPCookieProcessor` calls an
   arbitrary cookiejar through the bridge. The HTTP exchange is implemented
   directly over `socket`/`ssl`, parsing status + headers into an
-  `addinfourl`-derived response.
+  `addinfourl`-derived response. SCOPE (backend bug worked around, not
+  fixed): fields set by an *inherited* `init` do not stick on the subclass
+  instance natively (`HTTPResp(fp=..., code=...)` read back as defaults),
+  so `_do_open` re-assigns every field explicitly after construction.
 
 - **`urllib/robotparser.jac`** (#6978) -- a pure-Jac port of CPython 3.14's
   `urllib.robotparser` (RFC 9309): `RobotFileParser` (`set_url` / `read` /

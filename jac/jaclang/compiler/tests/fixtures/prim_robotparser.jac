@@ -40,6 +40,8 @@ def robot_py -> dict[any, any] {
     );
     rr: any = rp.request_rate("badbot");
     unread: any = urob.RobotFileParser("http://x/");
+    sms_py: any = rp.site_maps();
+    smu_py: any = unread.site_maps();
     return {
         "host": rp.host,
         "path": rp.path,
@@ -57,8 +59,8 @@ def robot_py -> dict[any, any] {
         "delay_bot": rp.crawl_delay("bot"),
         "rr_bad": str(rr.requests) + "/" + str(rr.seconds),
         "rr_bot": rp.request_rate("bot"),
-        "sitemaps": "|".join(rp.site_maps()),
-        "sm_unread": "|".join(unread.site_maps()),
+        "sitemaps": "|".join(sms_py) if sms_py != None else "",
+        "sm_unread": "|".join(smu_py) if smu_py != None else "",
         "str_has_ua": 1 if "User-agent: badbot" in str(rp) else 0,
         "str_has_rr": 1 if "Request-rate: 3/10" in str(rp) else 0,
         "unread_cf": unread.can_fetch("b", "http://x/p"),
@@ -107,6 +109,18 @@ def robot_na -> dict[str, any] {
         rr_bad = str(rrq.requests) + "/" + str(rrq.seconds);
     }
     unread = RobotFileParser("http://x/");
+    sms = rp.site_maps();
+    sm_j = "";
+    if isinstance(sms, list) {
+        sl: list[str] = sms;
+        sm_j = "|".join(sl);
+    }
+    smu = unread.site_maps();
+    smu_j = "";
+    if isinstance(smu, list) {
+        sul: list[str] = smu;
+        smu_j = "|".join(sul);
+    }
     return {
         "host": rp.host,
         "path": rp.path,
@@ -124,8 +138,8 @@ def robot_na -> dict[str, any] {
         "delay_bot": rp.crawl_delay("bot"),
         "rr_bad": rr_bad,
         "rr_bot": rp.request_rate("bot"),
-        "sitemaps": "|".join(rp.site_maps()),
-        "sm_unread": "|".join(unread.site_maps()),
+        "sitemaps": sm_j,
+        "sm_unread": smu_j,
         "str_has_ua": 1 if "User-agent: badbot" in str(rp) else 0,
         "str_has_rr": 1 if "Request-rate: 3/10" in str(rp) else 0,
         "unread_cf": unread.can_fetch("b", "http://x/p"),
