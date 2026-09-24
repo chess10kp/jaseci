@@ -1,6 +1,6 @@
 import from c { def socket(domain: i32, socktype: i32, protocol: i32) -> i32;  }
 import from c { def syscall(num: i64, a: i64, b: i64, c: i64, d: bytes) -> i64;  }
-import from c { def connect(fd: i32, addr: bytes, addrlen: i32) -> i32;  }
+import from c { def __connect(fd: i32, addr: bytes, addrlen: i32) -> i32;  }
 import from c { def bind(fd: i32, addr: bytes, addrlen: i32) -> i32;  }
 import from c { def listen(fd: i32, backlog: i32) -> i32;  }
 import from c { def accept(fd: i32, addr: bytes, addrlen: bytes) -> i32;  }
@@ -91,7 +91,7 @@ def:pub sock_pair -> tuple[(int, int)] {
 
 
 def:pub sock_connect(fd: int, sa: bytes) -> int {
-    return connect(i32(fd), sa, i32(len(sa)));
+    return __connect(i32(fd), sa, i32(len(sa)));
 }
 
 

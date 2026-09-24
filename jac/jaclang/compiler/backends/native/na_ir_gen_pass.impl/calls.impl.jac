@@ -404,15 +404,9 @@ impl NaIRGenPass._codegen_bound_args(
         _chk += len(callee_sig.kwonlyargs or []);
         if _has_pack and callee_sig.kwargs is not None {
             _dt_ok = False;
-            if _chk < len(func.args)
-                and isinstance(func.args[_chk].type, ir.PointerType) {
-                for (_dk, _dt) in self.dict_types.items() {
-                    if _dk.startswith("ptr:")
-                        and _dt.as_pointer() == func.args[_chk].type {
-                        _dt_ok = True;
-                        break;
-                    }
-                }
+            if _chk < len(func.args) {
+                _dk = self._dict_key_of_ptr(func.args[_chk].type);
+                _dt_ok = _dk is not None and _dk.startswith("ptr:");
             }
             if not _dt_ok {
                 if _sig_is_callees {
@@ -835,15 +829,7 @@ impl NaIRGenPass._codegen_kwargs_dict(
     order: (list[str | uni.Expr] | None) = None,
     bind_records: (list[dict[str, any]] | None) = None
 ) -> (ir.Value | None) {
-    dict_key: (str | None) = None;
-    if expected is not None and isinstance(expected, ir.PointerType) {
-        for (dk, dt) in self.dict_types.items() {
-            if dt.as_pointer() == expected {
-                dict_key = dk;
-                break;
-            }
-        }
-    }
+    dict_key = self._dict_key_of_ptr(expected) if expected is not None else None;
     if dict_key is not None and not dict_key.startswith("ptr:") {
         dict_key = None;
     }
@@ -1290,7 +1276,8 @@ impl NaIRGenPass._codegen_intrinsic(
         IntrinsicDispatch.MEM_STORE: self._emit_intrinsic_mem_store,
         IntrinsicDispatch.ATOMIC_XCHG: self._emit_intrinsic_atomic_xchg,
         IntrinsicDispatch.CALL_DTOR: self._emit_intrinsic_call_dtor,
-        IntrinsicDispatch.REGION_TLS: self._emit_intrinsic_region_tls
+        IntrinsicDispatch.REGION_TLS: self._emit_intrinsic_region_tls,
+        IntrinsicDispatch.ALLOCA: self._emit_intrinsic_alloca
     };
     handler = _emitters.get(intr.dispatch);
     if handler is None {
@@ -1456,6 +1443,27 @@ impl NaIRGenPass._emit_intrinsic_region_tls(
     }
     result = self.builder.call(self.extern_funcs[intr.name], operands);
     return None if intr.result_spec == "none" else result;
+}
+
+impl NaIRGenPass._emit_intrinsic_alloca(
+    nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
+) -> (ir.Value | None) {
+    n = self._intrinsic_operand(nd, intr, args[0], intr.param_specs[0]);
+    if n is None {
+        return None;
+    }
+    i8 = ir.IntType(8);
+    func = self.builder.function;
+    entry_block = func.entry_basic_block;
+    cur_block = self.builder.block;
+    if entry_block.instructions {
+        self.builder.position_before(entry_block.instructions[0]);
+    } else {
+        self.builder.position_at_start(entry_block);
+    }
+    slot = self.builder.alloca(i8, size=n, name="alloca.buf");
+    self.builder.position_at_end(cur_block);
+    return self.builder.ptrtoint(slot, ir.IntType(64), name="alloca.i64");
 }
 
 impl NaIRGenPass._codegen_synthetic_call(
