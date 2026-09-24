@@ -1,3 +1,4 @@
+import from jaclang.compiler.c_interop { c_call_borrows_args, reads_foreign_storage }
 import from jaclang.compiler.frontend.diagnostics {
     E1301,
     E1316,
@@ -29,7 +30,9 @@ glob _MOVE_EXEMPT_CALLS: tuple[str, ...] = (
          "ord",
          "hex",
          "oct",
-         "bin"
+         "bin",
+         "bytes",
+         "bytearray"
      ),
      _NONRETAINING_METHOD_CALLS: tuple[str, ...] = (
          "find",
@@ -123,6 +126,7 @@ impl OwnershipCheckPass._run_impl(ir_in: Module) -> Module {
     self._process_partition_sugar();
     self._nogc_setup();
     self._emit_place_intrinsic_diagnostics();
+    self._emit_c_view_diagnostics();
     if not self.owned_decl
         and not self.borrow_meta
         and not self.imm_decl
@@ -652,6 +656,9 @@ impl OwnershipCheckPass._call_consumes_args(call: FuncCall) -> bool {
     if isinstance(call.target, Name) and call.target.sym_name in _MOVE_EXEMPT_CALLS {
         return False;
     }
+    if c_call_borrows_args(call) {
+        return False;
+    }
     if isinstance(call.target, AtomTrailer) {
         if isinstance(call.target.right, Name)
             and call.target.right.value in _NONRETAINING_METHOD_CALLS {
@@ -788,9 +795,31 @@ impl OwnershipCheckPass._handled_by_enclosing_try(
         if isinstance(cur, TryStmt) and child in list(cur.body) {
             for handler in cur.excepts {
                 ex = handler.ex_type;
-                caught = ex.sym_name if isinstance(ex, Name) else None;
-                if caught in (exc, "Exception", "BaseException") {
+                if ex is None {
                     return True;
+                }
+                members = list(ex.values) if isinstance(ex, TupleVal) else [ex];
+                for member in members {
+                    caught: str | None = None;
+                    if isinstance(member, Name) {
+                        caught = member.sym_name;
+                    } elif isinstance(member, AtomTrailer)
+                        and isinstance(member.right, Name) {
+                        caught = member.right.sym_name;
+                    }
+                    import from jaclang.compiler.types.types { ClassType }
+                    if isinstance(member, Expr)
+                        and isinstance(member.type, ClassType) {
+                        caught = member.type.shared.class_name;
+                    }
+                    if caught in (exc, "Exception", "BaseException") {
+                        return True;
+                    }
+                    import from jaclang.compiler.type_registry { JAC_TYPE_REGISTRY }
+                    if caught is not None
+                        and exc in JAC_TYPE_REGISTRY.exception_descendants(caught) {
+                        return True;
+                    }
                 }
             }
         }
@@ -1144,6 +1173,9 @@ impl OwnershipCheckPass._owned_field_of(expr: Expr | None) -> (Name | None) {
         return None;
     }
     if self._expr_scalar_typed(expr) or self._nogc_str_elem_ok(expr) {
+        return None;
+    }
+    if reads_foreign_storage(expr) {
         return None;
     }
     if self._own_field_target(expr) or self.nogc_prov is not None {

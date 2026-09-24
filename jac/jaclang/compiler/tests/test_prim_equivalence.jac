@@ -110,7 +110,17 @@ glob STR_NA_GAPS: list[any] = [
              "prim_complex.jac",
              "complex_ops_py",
              "complex_ops_cl",
-             "complex_ops_na"
+             "complex_ops_na",
+             ["na"]
+         ),
+         ("cmath", "prim_cmath.jac", "cmath_py", "cmath_cl", "cmath_na", ["na"]),
+         (
+             "complex mixed scalar ops",
+             "prim_complex_mixed.jac",
+             "cmixed_py",
+             "cmixed_cl",
+             "cmixed_na",
+             ["na"]
          ),
          ("str", "prim_str.jac", "str_py", "str_cl", "str_na", ["na"], STR_NA_GAPS),
          (
@@ -126,7 +136,9 @@ glob STR_NA_GAPS: list[any] = [
              "prim_bytes.jac",
              "bytes_search_py",
              "bytes_search_cl",
-             "bytes_search_na"
+             "bytes_search_na",
+             ["na"],
+             ["hex", "from_hex"]
          ),
          (
              "bytes modify",
@@ -148,6 +160,14 @@ glob STR_NA_GAPS: list[any] = [
              "bytes_test_py",
              "bytes_test_cl",
              "bytes_test_na"
+         ),
+         (
+             "bytes constructors",
+             "prim_bytearray.jac",
+             "bytes_ctor_py",
+             "bytes_ctor_cl",
+             "bytes_ctor_na",
+             ["na"]
          ),
          (
              "bytearray core",

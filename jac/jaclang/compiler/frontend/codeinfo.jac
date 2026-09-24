@@ -1,4 +1,5 @@
 import hashlib;
+import from jaclang.runtime.surface { SurfaceEntry }
 import from collections.abc { Sequence }
 import from contextvars { ContextVar }
 import from jaclang.compiler.frontend.constant {
@@ -172,6 +173,92 @@ def native_library_function_symbol(mod_path: str, name: str) -> str {
     return f"__jac_lib_{native_safe_sym(module_name)}_{name}";
 }
 
+glob NATIVE_RESERVED_C_SYMBOLS: frozenset[str] = frozenset(
+         [
+             f"{base}{suffix}"
+             for base in (
+                 "acos asin atan atan2 cos sin tan acosh asinh atanh cosh sinh tanh exp exp2 "
+                 "exp10 expm1 frexp ilogb ldexp log log10 log1p log2 logb modf scalbn scalbln "
+                 "cbrt fabs hypot pow sqrt erf erfc lgamma tgamma ceil floor nearbyint rint "
+                 "lrint llrint round lround llround trunc fmod remainder remquo copysign nan "
+                 "nextafter nexttoward fdim fmax fmin fma sincos "
+             ).split() for suffix in ("", "f", "l")
+         ]
+             + (
+                 "isalnum isalpha isblank iscntrl isdigit isgraph islower isprint ispunct "
+                 "isspace isupper isxdigit tolower toupper "
+                 "feclearexcept fegetexceptflag feraiseexcept fesetexceptflag fetestexcept "
+                 "fegetround fesetround fegetenv feholdexcept fesetenv feupdateenv "
+                 "setlocale localeconv setjmp longjmp _setjmp _longjmp sigsetjmp siglongjmp "
+                 "signal raise kill "
+                 "remove rename renameat tmpfile tmpnam fclose fflush fopen freopen fdopen "
+                 "fileno setbuf setvbuf "
+                 "fprintf fscanf printf scanf snprintf sprintf sscanf dprintf vfprintf "
+                 "vfscanf vprintf vscanf vsnprintf vsprintf vsscanf "
+                 "fgetc fgets fputc fputs getc getchar putc putchar puts ungetc fread fwrite "
+                 "fgetpos fseek fseeko fsetpos ftell ftello rewind clearerr feof ferror "
+                 "perror getline getdelim popen pclose "
+                 "stdin stdout stderr __stdinp __stdoutp __stderrp "
+                 "atof atoi atol atoll strtod strtof strtold strtol strtoll strtoul strtoull "
+                 "rand srand "
+                 "aligned_alloc calloc free malloc realloc posix_memalign malloc_size "
+                 "malloc_usable_size "
+                 "abort atexit at_quick_exit exit _exit _Exit quick_exit getenv setenv "
+                 "unsetenv putenv system realpath mkstemp bsearch qsort "
+                 "abs labs llabs div ldiv lldiv mblen mbtowc wctomb mbstowcs wcstombs "
+                 "memcpy memmove memset memcmp memchr memmem memccpy strcpy strncpy stpcpy "
+                 "stpncpy strcat strncat strcmp strncmp strcasecmp strncasecmp strcoll "
+                 "strxfrm "
+                 "strchr strrchr strcspn strpbrk strspn strstr strtok strtok_r strerror "
+                 "strerror_r strlen strnlen strdup strndup bcmp bcopy bzero "
+                 "clock difftime mktime time timespec_get asctime ctime gmtime gmtime_r "
+                 "localtime localtime_r strftime clock_gettime nanosleep sleep usleep "
+                 "open openat creat close read pread write lseek stat fstat lstat access "
+                 "chmod chdir getcwd mkdir rmdir link symlink readlink unlink utime "
+                 "opendir readdir closedir getpid getpwuid_r getpwnam_r errno __error "
+                 "__errno_location environ _NSGetExecutablePath "
+                 "pthread_create pthread_join pthread_key_create pthread_getspecific "
+                 "pthread_setspecific "
+                 "socket connect send recv shutdown getaddrinfo freeaddrinfo gai_strerror "
+                 "dlopen dlsym dlclose dlerror "
+                 "main _start __libc_start_main __getmainargs mainCRTStartup "
+                 "compress2 uncompress uncompress2 compressBound crc32_z adler32_z "
+                 "BZ2_bzBuffToBuffCompress BZ2_bzBuffToBuffDecompress "
+                 "ZSTD_isError ZSTD_getErrorName ZSTD_compressBound ZSTD_freeCCtx "
+                 "ZSTD_CCtx_setParameter ZSTD_compress2 ZSTD_freeDCtx ZSTD_DCtx_setParameter "
+                 "ZSTD_decompressStream_simpleArgs ZSTD_getFrameContentSize "
+                 "ZSTD_getDictID_fromFrame "
+                 "RAND_bytes EVP_MD_CTX_free EVP_DigestInit_ex EVP_DigestUpdate "
+                 "EVP_DigestFinal_ex HMAC_CTX_free HMAC_Init_ex HMAC_Update HMAC_Final "
+                 "SSL_CTX_new SSL_CTX_set_verify SSL_CTX_load_verify_locations "
+                 "SSL_CTX_set_default_verify_paths SSL_CTX_free SSL_new SSL_set_fd SSL_ctrl "
+                 "SSL_set1_host SSL_connect SSL_get_verify_result SSL_get_error SSL_read "
+                 "SSL_write SSL_shutdown SSL_free X509_verify_cert_error_string "
+                 "ERR_reason_error_string "
+                 "Py_DecRef PyBool_FromLong PyBytes_AsString PyDict_New PyDict_SetItemString "
+                 "PyErr_Print PyFloat_AsDouble PyFloat_FromDouble PyGILState_Ensure "
+                 "PyGILState_Release PyImport_ImportModule PyLong_AsLongLong "
+                 "PyLong_FromLongLong PyObject_Call PyObject_GetAttrString PyObject_IsTrue "
+                 "PyObject_SetAttrString PyTuple_New PyTuple_SetItem PyUnicode_AsUTF8String "
+                 "PyUnicode_FromString "
+                 "__mt_genrand_u32 __mt_getrandbits __mt_init_by_array __mt_randbelow "
+                 "GC_malloc "
+             ).split()
+     );
+
+def native_def_symbol(mod_path: str, name: str) -> str {
+    if mod_path {
+        library_symbol = native_library_function_symbol(mod_path, name);
+        if library_symbol != name {
+            return library_symbol;
+        }
+    }
+    if name in NATIVE_RESERVED_C_SYMBOLS {
+        return f"__jac_def_{name}";
+    }
+    return name;
+}
+
 def module_dotted_name(mod_path: str, mod_name: str = "") -> str {
     import os;
     path = mod_path.replace("\\", "/");
@@ -250,7 +337,6 @@ glob NATIVE_STDLIB_EXTENSIONS: dict[str, str] = {"os": "_os_native"};
 
 glob NATIVE_SUPPORTED_STDLIB: set[str] = {
          "sys",
-         "math",
          "time",
          "os",
          "random",
@@ -354,6 +440,26 @@ def native_stdlib_root -> (str | None) {
         os.path.dirname(jaclang.__file__), "runtime", "na_stdlib"
     );
     return stdlib_dir if os.path.isdir(stdlib_dir) else None;
+}
+
+def bundled_native_module_names -> list[str] {
+    import os;
+    stdlib_root = native_stdlib_root();
+    if stdlib_root is None {
+        return [];
+    }
+    names: set[str] = set();
+    for item in os.listdir(stdlib_root) {
+        if item.startswith("_") or item.startswith(".") {
+            continue;
+        }
+        if os.path.isdir(os.path.join(stdlib_root, item)) {
+            names.add(item);
+        } elif item.endswith(".jac") {
+            names.add(item.split(".")[0]);
+        }
+    }
+    return sorted(names);
 }
 
 def is_native_by_location(file_path: str) -> bool {
@@ -498,8 +604,25 @@ def native_target_os -> str {
     return "linux";
 }
 
+def native_target_arch -> str {
+    import platform;
+    _t = effective_native_target();
+    machine = (_t.split("-")[0] if _t else platform.machine()).lower();
+    if machine in ("arm64", "aarch64") or machine.startswith("arm64") {
+        return "aarch64";
+    }
+    if machine in ("x86_64", "amd64", "x64") {
+        return "x86_64";
+    }
+    return machine;
+}
+
 def _native_variant_path(base_no_ext: str) -> (str | None) {
     import os;
+    _archv = f"{base_no_ext}.{native_target_arch()}.jac";
+    if os.path.exists(_archv) {
+        return _archv;
+    }
     _osv = os.path.join(f"{base_no_ext}.{native_target_os()}.jac");
     if os.path.exists(_osv) {
         return _osv;
@@ -733,64 +856,6 @@ obj BoundaryTypeInfo {
         nested_types: list[str] = [];
 }
 
-obj SurfaceEntry {
-    has name: str,
-        kind: str,
-        exposure: str = "private",
-        placement: str = "server",
-        module: str = "",
-        src: str = "";
-
-    def is_exposed -> bool {
-        return self.exposure != "private";
-    }
-
-    def requires_auth -> bool {
-        return self.exposure != "public";
-    }
-
-    def is_served -> bool {
-        return self.is_exposed() and self.placement != "client";
-    }
-
-    def to_dict -> dict[str, str] {
-        return {
-            "kind": self.kind,
-            "exposure": self.exposure,
-            "placement": self.placement,
-            "module": self.module,
-            "src": self.src
-        };
-    }
-
-    static def from_dict(name: str, rec: dict[str, any]) -> SurfaceEntry {
-        return SurfaceEntry(
-            name=str(name),
-            kind=str(rec.get("kind") or ""),
-            exposure=str(rec.get("exposure") or "private"),
-            placement=str(rec.get("placement") or "server"),
-            module=str(rec.get("module") or ""),
-            src=str(rec.get("src") or "")
-        );
-    }
-
-    static def from_node(decl: any, module: any = None) -> (SurfaceEntry | None) {
-        kind = getattr(decl, "surface_kind", "") or "";
-        name = getattr(decl, "sym_name", "") or "";
-        if not kind or not name {
-            return None;
-        }
-        loc = module.loc if module is not None else None;
-        mod_path = getattr(loc, "mod_path", "") if loc is not None else "";
-        return SurfaceEntry(
-            name=str(name),
-            kind=str(kind),
-            exposure=str(decl.exposure.value),
-            placement=str(decl.placement_name),
-            module=str(mod_path or "")
-        );
-    }
-}
 
 obj InteropBinding {
     has name: str,

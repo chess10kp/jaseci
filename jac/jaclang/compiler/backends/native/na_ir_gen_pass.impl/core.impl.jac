@@ -78,9 +78,11 @@ impl NaIRGenPass.postinit -> None {
         "JacComplex"
     );
     self.complex_struct_type.set_body(ir.DoubleType(), ir.DoubleType());
+    self.type_map["complex"] = self.complex_struct_type.as_pointer();
 
     self._range_struct_type = self.llvm_module.context.get_identified_type("JacRange");
     self.range_struct_type.set_body(ir.IntType(64), ir.IntType(64), ir.IntType(64));
+    self.type_map["range"] = self.range_struct_type.as_pointer();
 
     self._slice_struct_type = self.llvm_module.context.get_identified_type("JacSlice");
     self.slice_struct_type.set_body(ir.IntType(64), ir.IntType(64), ir.IntType(64));
@@ -390,7 +392,7 @@ impl NaIRGenPass._export_native_layout -> None {
         if ".__jacp_" in str(func.name) {
             continue;
         }
-        if fname in self._clib_symbol_lib {
+        if fname in self._clib_symbol_lib and self.clib_extern_fns.get(fname) is func {
             continue;
         }
         param_types = [self._llvm_type_str(a) for a in func.function_type.args];
@@ -1194,7 +1196,12 @@ impl NaIRGenPass._register_imported_globals(
                 }
                 var_type = self._resolve_jac_type(assign.type_tag.tag);
             }
-            global_var = ir.GlobalVariable(self.llvm_module, var_type, name=var_name);
+            import from jaclang.compiler.frontend.codeinfo { native_def_symbol }
+            global_var = ir.GlobalVariable(
+                self.llvm_module,
+                var_type,
+                name=native_def_symbol(source_path, var_name)
+            );
             global_var.linkage = "external";
             self.global_vars[var_name] = global_var;
             self.global_var_types[var_name] = var_type;
@@ -1223,12 +1230,12 @@ impl NaIRGenPass._forward_declare_imported_ability(
     private = nd.access is not None and nd.access.tag.name == Tok.KW_PRIV;
 
     if name in self.func_symtab and not private {
-        import from jaclang.compiler.frontend.codeinfo {
-            native_library_function_symbol
+        if declaring_module is None {
+            return;
         }
-        if declaring_module is None
-            or native_library_function_symbol(declaring_module.source.file_path, name)
-                == name {
+        import from jaclang.compiler.frontend.codeinfo { native_def_symbol }
+        _symbol = native_def_symbol(declaring_module.source.file_path, name);
+        if _symbol == name or _symbol in self.llvm_module.globals {
             return;
         }
     }
@@ -1246,6 +1253,11 @@ impl NaIRGenPass._forward_declare_imported_ability(
             );
         if _fd_demoted {
             self._native_skipped_methods.add(name);
+            if declaring_module is not None {
+                self._native_skipped_import_origin.setdefault(name, set()).add(
+                    os.path.realpath(declaring_module.source.file_path)
+                );
+            }
             return;
         }
     }
@@ -1254,6 +1266,8 @@ impl NaIRGenPass._forward_declare_imported_ability(
     self._record_linked_decl(self.func_symtab.get(name), nd);
     if previous is not None {
         self.func_symtab[name] = previous;
+    } elif private {
+        self.func_symtab.pop(name, None);
     }
 }
 
@@ -1319,7 +1333,7 @@ impl NaIRGenPass._imported_function_demotions(
                 }
             } except Exception {}
         }
-        if not bool(_opts_src.aot_mode)
+        if not (bool(_opts_src.aot_mode) or self._jit_link_unit(real_path, _opts_src))
             or real_path in self.prog.scratch.na_dep_inflight
             or not _fd_os.path.isfile(real_path) {
             return None;
@@ -1352,6 +1366,29 @@ impl NaIRGenPass._imported_function_demotions(
         native_demoted_ir_symbols
     }
     return set(native_demoted_ir_symbols(str(`entry.gen.llvm_ir)));
+}
+
+impl NaIRGenPass._jit_link_unit(real_path: str, options: any) -> bool {
+    import os as _jl_os;
+    if bool(options.aot_mode) or bool(options.skip_native_engine) {
+        return False;
+    }
+    if (_jl_os.sep + "jaclang" + _jl_os.sep) in real_path
+        and (_jl_os.sep + "na_stdlib" + _jl_os.sep) not in real_path {
+        return False;
+    }
+    manifest = self.module.gen.interop_manifest if self.module?.gen else None;
+    if manifest is None {
+        return False;
+    }
+    for _jl_src in manifest.native_transitive_sources {
+        if _jl_src
+            and _jl_os.path.isabs(_jl_src)
+            and _jl_os.path.realpath(_jl_src) == real_path {
+            return True;
+        }
+    }
+    return False;
 }
 
 impl NaIRGenPass._process_clib_imports(module: uni.Module) -> None {
@@ -1581,6 +1618,12 @@ impl NaIRGenPass._primitive_method_names(type_name: str) -> set[str] {
     return _names;
 }
 
+impl NaIRGenPass._primitive_method_takes_kwargs(
+    type_name: str, method_name: str
+) -> bool {
+    return (type_name, method_name) in {("list", "sort"), ("str", "splitlines")};
+}
+
 impl NaIRGenPass._dispatch_primitive_method(
     type_name: str,
     method_name: str,
@@ -1600,7 +1643,7 @@ impl NaIRGenPass._dispatch_primitive_method(
     if _emit_fn is None {
         return None;
     }
-    if kwargs and method_name not in ("sort", ) {
+    if kwargs and not self._primitive_method_takes_kwargs(type_name, method_name) {
         self.ctx.emit(
             E5092,
             node_override=kw_node,

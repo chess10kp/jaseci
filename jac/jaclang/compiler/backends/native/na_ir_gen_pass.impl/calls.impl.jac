@@ -1190,6 +1190,31 @@ impl NaIRGenPass._emit_new(nd: uni.FuncCall) -> (ir.Value | None) {
     );
 }
 
+impl NaIRGenPass._skip_is_other_module(
+    nd: uni.FuncCall, func_name: str, mod_qual: (str | None)
+) -> bool {
+    origins = self._native_skipped_import_origin.get(func_name);
+    if origins is None {
+        return False;
+    }
+    callee_path: (str | None) = None;
+    declaration = self._callee_ability_of(nd);
+    if declaration is not None and isinstance(declaration.parent_scope, uni.Module) {
+        callee_path = os.path.realpath(declaration.parent_scope.source.file_path);
+    } elif mod_qual is not None {
+        import from jaclang.compiler.frontend.codeinfo { resolve_native_module }
+        (_, source) = resolve_native_module(mod_qual, os.path.dirname(nd.loc.mod_path));
+        if source is not None {
+            callee_path = os.path.realpath(source);
+        }
+    }
+    if callee_path is None {
+        return False;
+    }
+    own_path = os.path.realpath(self.module.loc.mod_path) if self.module?.loc else None;
+    return callee_path != own_path and callee_path not in origins;
+}
+
 impl NaIRGenPass._native_module_call_target(
     nd: uni.FuncCall
 ) -> tuple[str, str] | None {
@@ -1217,6 +1242,10 @@ impl NaIRGenPass._native_module_call_target(
     if (mod_name == "os.path" and method_name in NATIVE_OSPATH_FUNCS)
         or (mod_name == "os" and method_name in NATIVE_OS_FUNCS) {
         return None;
+    }
+
+    if mod_name == "os.path" and "os" in self._native_module_imports {
+        return (mod_name, method_name);
     }
 
     if mod_name in self._native_module_imports {
@@ -1464,6 +1493,11 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
     _identity_arg = erased_identity_call_arg(nd);
     if _identity_arg is not None {
         return self._codegen_expr(_identity_arg);
+    }
+
+    (_c_handled, _c_val) = self._codegen_c_interop_call(nd);
+    if _c_handled {
+        return _c_val;
     }
 
     if is_field_marker(nd) {
@@ -1770,39 +1804,13 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
                 imag_val = self._codegen_expr(params_l[1]);
                 if real_val is not None and imag_val is not None {
                     f64 = ir.DoubleType();
-                    i64 = ir.IntType(64);
                     real_f = self._coerce_type(real_val, f64)
                         if not isinstance(real_val.type, ir.DoubleType)
                         else real_val;
                     imag_f = self._coerce_type(imag_val, f64)
                         if not isinstance(imag_val.type, ir.DoubleType)
                         else imag_val;
-                    ctype = self.complex_struct_type;
-                    raw = self.builder.call(
-                        self.rc_alloc_fn, [ir.Constant(i64, 16)], name="complex.raw"
-                    );
-                    ptr = self.builder.bitcast(
-                        raw, ctype.as_pointer(), name="complex.ptr"
-                    );
-                    rp = self.builder.gep(
-                        ptr,
-                        [
-                            ir.Constant(ir.IntType(32), 0),
-                            ir.Constant(ir.IntType(32), 0)
-                        ],
-                        name="complex.re.ptr"
-                    );
-                    ip = self.builder.gep(
-                        ptr,
-                        [
-                            ir.Constant(ir.IntType(32), 0),
-                            ir.Constant(ir.IntType(32), 1)
-                        ],
-                        name="complex.im.ptr"
-                    );
-                    self.builder.store(real_f, rp);
-                    self.builder.store(imag_f, ip);
-                    return ptr;
+                    return self._emit_complex_value(real_f, imag_f);
                 }
             }
         }
@@ -1900,7 +1908,18 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         }
 
         if func_name
-            in ("abs", "min", "max", "pow", "divmod", "sum", "any", "all", "format") {
+            in (
+                "abs",
+                "min",
+                "max",
+                "pow",
+                "divmod",
+                "sum",
+                "any",
+                "all",
+                "format",
+                "round"
+            ) {
             params_l: list[uni.Expr | uni.KWPair] = list(nd.params or []);
             arg_vals: list[ir.Value] = [];
             arg_nodes: list[uni.UniNode] = [];
@@ -1933,9 +1952,9 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
             }
         }
 
-        if func_name == "bytearray" and not (nd.params or []) {
+        if func_name in ("bytes", "bytearray") and not (nd.params or []) {
             _ba_empty = self._dispatch_builtin(
-                "bytearray", [], kwargs=self._split_call_kwargs(nd), kw_node=nd
+                func_name, [], kwargs=self._split_call_kwargs(nd), kw_node=nd
             );
             if _ba_empty is not None {
                 return _ba_empty;
@@ -1960,7 +1979,6 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
                 "hex",
                 "oct",
                 "bin",
-                "round",
                 "float",
                 "bool",
                 "sorted",
@@ -2223,7 +2241,9 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         return self._codegen_instantiation(nd, type_name_override=_alias_arch);
     }
     if (
-        func_name in self._native_skipped_methods and func_name not in self.generic_fns
+        func_name in self._native_skipped_methods
+        and func_name not in self.generic_fns
+        and not self._skip_is_other_module(nd, func_name, _mod_qual)
     ) {
         self.ctx.emit(
             E5092,
@@ -2255,6 +2275,12 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
                 func = declared_function;
             }
         }
+    }
+    if func is not None
+        and declaration is not None
+        and func is self.clib_extern_fns.get(func_name)
+        and ModuleFacts.unwrap_body(declaration) {
+        func = None;
     }
     if _mod_qual is not None {
         import from jaclang.compiler.frontend.codeinfo { resolve_native_module }
@@ -2323,7 +2349,19 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
                 );
             }
             ret_ir_type = self._resolve_jac_type(sig.return_type);
-            func = self._get_or_declare_extern(func_name, ret_ir_type, param_ir_types);
+            _extern_sym = func_name;
+            if binding.source_context.value == "native" {
+                import from jaclang.compiler.frontend.codeinfo { native_def_symbol }
+                _src_mod = _src_ab.find_parent_of_type(uni.Module)
+                    if _src_ab is not None
+                    else None;
+                _extern_sym = native_def_symbol(
+                    _src_mod.source.file_path if _src_mod is not None else "", func_name
+                );
+            }
+            func = self._get_or_declare_extern(
+                _extern_sym, ret_ir_type, param_ir_types
+            );
         }
     }
     if func is None and func_name in self.generic_fns {
@@ -2356,13 +2394,18 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         return None;
     }
 
-    args: list[ir.Value] = self._codegen_bound_args(nd, func, self_offset=0);
-
-    if func_name in self.clib_fn_abi {
-        return self._codegen_clib_call(func, func_name, args);
+    _is_foreign = self.clib_extern_fns.get(func_name) is func;
+    if _is_foreign and func_name in self.clib_fn_abi {
+        _copybacks: list[tuple[ir.Value, ir.Value, any]] = [];
+        _clib_args = self._codegen_clib_args(nd, func_name, _copybacks);
+        if _clib_args is None {
+            _clib_args = self._codegen_bound_args(nd, func, self_offset=0);
+        }
+        return self._codegen_clib_call(func, func_name, _clib_args, _copybacks);
     }
 
-    _is_foreign = func_name in self.clib_extern_names;
+    args: list[ir.Value] = self._codegen_bound_args(nd, func, self_offset=0);
+
     coerced: list[ir.Value] = [];
 
     _clib_str_args: set = set();
@@ -2443,7 +2486,7 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
         return None;
     }
     call_result: ir.Value = self.builder.call(func, coerced, name=f"call.{func_name}");
-    if func_name in self.clib_extern_names {
+    if _is_foreign {
         _declared = self.clib_declared_sigs.get(func_name);
         _declared_ret = _declared[0] if _declared is not None else None;
         if (
@@ -2466,7 +2509,7 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
     self._release_owned_args(release_args, op="call_arg");
     self._emit_err_check(self._callee_ability_of(nd) or self._linked_callee_decl(func));
 
-    if func_name in self.clib_extern_names {
+    if _is_foreign {
         foreign_decl = self._foreign_fns().get(func_name);
         result_name = foreign_decl["ret"] if foreign_decl is not None else None;
         if isinstance(result_name, str) and result_name in self.clib_struct_names {

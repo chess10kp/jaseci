@@ -718,7 +718,7 @@ impl JacCompiler._deserialize_interop_table(
         );
         manifest.bindings[name] = binding;
     }
-    import from jaclang.compiler.frontend.codeinfo { SurfaceEntry }
+    import from jaclang.runtime.surface { SurfaceEntry }
     manifest.surface.update(
         {
             str(name): SurfaceEntry.from_dict(str(name), dict(rec))
@@ -850,6 +850,8 @@ impl JacCompiler.parse_str(
                 source_str, file_path, target_program, annex_sources(file_path)
             );
         }
+        import from jaclang.compiler.driver.wiring { dedupe_generated_imports }
+        dedupe_generated_imports(mod);
         if (codespace == 'client') {
             _coerce_client_module(mod);
         } elif (codespace == 'native') {
