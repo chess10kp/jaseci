@@ -51,7 +51,7 @@ impl NaIRGenPass._osp_edge_tag(
         return None;
     }
     tag = self.builder.load(
-        self._field_slot_ptr(desc, "tag", "EdgeTypeDesc"), name="edge.tag"
+        self._field_slot_ptr(desc, "tag", "OspEdgeTypeDesc"), name="edge.tag"
     );
     if descriptor is None {
         self._emit_rc_release_simple(desc, op="edge_type");
@@ -63,7 +63,7 @@ impl NaIRGenPass._osp_edge_descriptor(
     expr: uni.UniNode, nd: uni.UniNode
 ) -> (ir.Value | None) {
     if self._osp_edge_class_name(expr) is None {
-        self.ctx.emit(
+        self.emit(
             E5092, node_override=nd, kind="edge type", name="non-class expression"
         );
         return None;
@@ -71,7 +71,7 @@ impl NaIRGenPass._osp_edge_descriptor(
     lookup = self.func_symtab.get("osp_edge_type");
     value = self._codegen_expr(expr);
     if lookup is None or value is None {
-        self.ctx.emit(
+        self.emit(
             E5092,
             node_override=nd,
             kind="edge type",

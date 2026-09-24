@@ -505,6 +505,23 @@ impl Module.absorb_annex_body(stmts: Sequence[UniNode]) -> None {
     self.add_kids_right(stmts, pos_update=False, parent_update=True, role=BodyRole);
 }
 
+impl Module.record_comptime_dependency(path: str, body: bool = False) -> None {
+    import os;
+    if not path {
+        return;
+    }
+    resolved = os.path.realpath(path);
+    if self.loc and os.path.realpath(self.loc.mod_path) == resolved {
+        return;
+    }
+    if resolved not in self.ct_file_deps {
+        self.ct_file_deps.append(resolved);
+    }
+    if body and resolved not in self.ct_body_deps {
+        self.ct_body_deps.append(resolved);
+    }
+}
+
 impl Module.declares_codespace(ctx: CodeContext, path_hint: str = '') -> bool {
     if ctx != CodeContext.SERVER and self.decided_codespace == ctx.value {
         return True;
@@ -1520,6 +1537,48 @@ impl PyInlineCode.postinit -> None {
     CodeBlockStmt.postinit(self);
 }
 
+
+impl Import.prune_items(doomed: set[int]) -> bool {
+    self._role_set(
+        ItemsRole,
+        [
+            item
+            for item in self.items
+            if id(item) not in doomed
+        ]
+    );
+    if not self.items {
+        return True;
+    }
+    kids = [self->:Kid:->];
+    commas = [
+        k
+        for k in kids
+        if isinstance(k, Token) and k.name == Tok.COMMA
+    ];
+    no_commas = [
+        k
+        for k in kids
+        if id(k) not in doomed and not (isinstance(k, Token) and k.name == Tok.COMMA)
+    ];
+    result: list[UniNode] = [];
+    ci = 0;
+    for (i, kid) in enumerate(no_commas) {
+        result.append(kid);
+        if (
+            i + 1 < len(no_commas)
+            and isinstance(kid, (ModuleItem, ModulePath))
+            and isinstance(no_commas[i + 1], (ModuleItem, ModulePath))
+            and ci < len(commas)
+        ) {
+            result.append(commas[ci]);
+            ci += 1;
+        }
+    }
+    self.set_kids(nodes=result);
+    self._invalidate_sub_node_tab();
+    return False;
+}
 
 impl Import.postinit -> None {
     self.jac_detected = None;
