@@ -96,7 +96,8 @@ glob RAW_MEM_IMPORTS = "import from c { def malloc(n: int) -> int; def free(p: i
          IntrinsicDispatch.MEM_STORE: "mem.p",
          IntrinsicDispatch.ATOMIC_XCHG: "atomicrmw xchg",
          IntrinsicDispatch.CALL_DTOR: "dtor.fn",
-         IntrinsicDispatch.BUFFER_DATA: "buf.data.i64"
+         IntrinsicDispatch.BUFFER_DATA: "buf.data.i64",
+         IntrinsicDispatch.REF_ADDR: "ref.addr"
      };
 
 """Probe source per dispatch kind; a new dispatch kind must add one here."""
@@ -148,6 +149,12 @@ def _probe_source(intr: any) -> str {
             + "("
             + arg
             + "); " "return x + 7 if p != 0 else 0; }\n"
+        );
+    }
+    if intr.dispatch == IntrinsicDispatch.REF_ADDR {
+        return (
+            "def probe(x: int) -> int { l = [x, 2]; "
+            "return x + 7 if __ref_addr(l) != 0 else 0; }\n"
         );
     }
     if intr.dispatch == IntrinsicDispatch.REGION_TLS {
