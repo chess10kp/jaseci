@@ -90,6 +90,7 @@ import from _re_posix_native {
     pm_off
 }
 
+import from _ascii { is_digit, is_word, is_alpha, is_space, swapcase, hexv }
 import from _utf8 { utf8_cps, cp_off, cp_len, cps_str, cpslice_str, is_ascii }
 
 
@@ -101,49 +102,6 @@ obj _PS {
 
 glob _PMW: int = posix_probe(),
      _PSX: _PS = _PS();
-
-
-def _isdig(c: int) -> bool {
-    return c >= 48 and c <= 57;
-}
-
-
-def _isword(c: int) -> bool {
-    return (c >= 48 and c <= 57)
-        or (c >= 65 and c <= 90)
-        or (c >= 97 and c <= 122)
-        or c == 95;
-}
-
-
-def _isalpha(c: int) -> bool {
-    return (c >= 65 and c <= 90) or (c >= 97 and c <= 122);
-}
-
-
-def _swap(c: int) -> int {
-    if c >= 65 and c <= 90 {
-        return c + 32;
-    }
-    if c >= 97 and c <= 122 {
-        return c - 32;
-    }
-    return c;
-}
-
-
-def _hexv(c: int) -> int {
-    if c >= 48 and c <= 57 {
-        return c - 48;
-    }
-    if c >= 65 and c <= 70 {
-        return c - 55;
-    }
-    if c >= 97 and c <= 102 {
-        return c - 87;
-    }
-    return -1;
-}
 
 
 def _push_prs(dst: list[int], src: list[int]) {
@@ -182,8 +140,8 @@ def _num_esc(cps: list[int], i: int, e: int, bp: int) -> tuple[(int, int)] {
         if i + 1 >= n {
             raise ValueError("bad escape \\x at position " + str(bp));
         }
-        h1: int = _hexv(cps[i]);
-        h2: int = _hexv(cps[i + 1]);
+        h1: int = hexv(cps[i]);
+        h2: int = hexv(cps[i + 1]);
         if h1 < 0 or h2 < 0 {
             raise ValueError("bad escape \\x at position " + str(bp));
         }
@@ -196,7 +154,7 @@ def _num_esc(cps: list[int], i: int, e: int, bp: int) -> tuple[(int, int)] {
         v: int = 0;
         k: int = 0;
         while k < 4 {
-            hv: int = _hexv(cps[i + k]);
+            hv: int = hexv(cps[i + k]);
             if hv < 0 {
                 raise ValueError("bad escape \\u at position " + str(bp));
             }
@@ -212,7 +170,7 @@ def _num_esc(cps: list[int], i: int, e: int, bp: int) -> tuple[(int, int)] {
         v = 0;
         k = 0;
         while k < 8 {
-            hv = _hexv(cps[i + k]);
+            hv = hexv(cps[i + k]);
             if hv < 0 {
                 raise ValueError("bad escape \\U at position " + str(bp));
             }
@@ -303,7 +261,7 @@ obj _P {
         }
         while self.i < self.n {
             c: int = self.cps[self.i];
-            if c == 32 or (c >= 9 and c <= 13) {
+            if is_space(c) {
                 self.i += 1;
                 continue;
             }
@@ -323,13 +281,13 @@ obj _P {
         }
         j: int = pos + 1;
         digs: int = 0;
-        while j < self.n and _isdig(self.cps[j]) {
+        while j < self.n and is_digit(self.cps[j]) {
             j += 1;
             digs += 1;
         }
         if j < self.n and self.cps[j] == 44 {
             j += 1;
-            while j < self.n and _isdig(self.cps[j]) {
+            while j < self.n and is_digit(self.cps[j]) {
                 j += 1;
                 digs += 1;
             }
@@ -345,7 +303,7 @@ obj _P {
         lo: int = 0;
         hi: int = -1;
         have_lo: bool = False;
-        while j < self.n and _isdig(self.cps[j]) {
+        while j < self.n and is_digit(self.cps[j]) {
             lo = lo * 10 + (self.cps[j] - 48);
             j += 1;
             have_lo = True;
@@ -353,9 +311,9 @@ obj _P {
         if j < self.n and self.cps[j] == 44 {
             j += 1;
             hi = -1;
-            if j < self.n and _isdig(self.cps[j]) {
+            if j < self.n and is_digit(self.cps[j]) {
                 hi = 0;
-                while j < self.n and _isdig(self.cps[j]) {
+                while j < self.n and is_digit(self.cps[j]) {
                     hi = hi * 10 + (self.cps[j] - 48);
                     j += 1;
                 }
@@ -625,7 +583,7 @@ obj _P {
                 k: int = 0;
                 while k < len(nm) {
                     cc: int = ord(nm[k]);
-                    if not _isword(cc) or (k == 0 and _isdig(cc)) {
+                    if not is_word(cc) or (k == 0 and is_digit(cc)) {
                         ok = False;
                     }
                     k += 1;
@@ -824,7 +782,7 @@ obj _P {
             if e == 56 or e == 57 {
                 self._err("bad escape \\" + chr(self.cps[self.i - 1]), bp);
             }
-            if _isalpha(e) {
+            if is_alpha(e) {
                 self._err("bad escape \\" + chr(self.cps[self.i - 1]), bp);
             }
             return e;
@@ -960,7 +918,7 @@ obj _P {
                 return nd;
             }
             num: int = e - 48;
-            while self.i < self.n and _isdig(self.cps[self.i]) {
+            while self.i < self.n and is_digit(self.cps[self.i]) {
                 num = num * 10 + (self.cps[self.i] - 48);
                 self.i += 1;
             }
@@ -1027,7 +985,7 @@ obj _P {
             nd.ch = 7;
             return nd;
         }
-        if _isalpha(e) {
+        if is_alpha(e) {
             self._err("bad escape \\" + chr(self.cps[self.i - 1]), bp);
         }
         nd.kind = _K.CHAR;
@@ -1278,7 +1236,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
         if op == _OP.CHAR {
             if pos < n {
                 c0: int = cps[pos];
-                if c0 == ins.a or ((st.flags & 2) != 0 and _swap(c0) == ins.a) {
+                if c0 == ins.a or ((st.flags & 2) != 0 and swapcase(c0) == ins.a) {
                     pos += 1;
                     pc += 1;
                     continue;
@@ -1296,7 +1254,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
                 c1: int = cps[pos];
                 hit: bool = _in_pairs(cl.pairs, c1);
                 if not hit and (st.flags & 2) != 0 {
-                    hit = _in_pairs(cl.pairs, _swap(c1));
+                    hit = _in_pairs(cl.pairs, swapcase(c1));
                 }
                 if hit != cl.neg {
                     pos += 1;
@@ -1356,8 +1314,8 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
                 continue;
             }
         } elif op == _OP.WB {
-            lft: bool = pos > 0 and _isword(cps[pos - 1]);
-            rgt: bool = pos < n and _isword(cps[pos]);
+            lft: bool = pos > 0 and is_word(cps[pos - 1]);
+            rgt: bool = pos < n and is_word(cps[pos]);
             if (lft != rgt) == (ins.a == 0) {
                 pc += 1;
                 continue;
@@ -1374,7 +1332,7 @@ def _run(re: _Re, st: _St, pc0: int, pos0: int) -> int {
                     while k2 < ln {
                         ca: int = cps[lo + k2];
                         cb: int = cps[pos + k2];
-                        if ca != cb and ((st.flags & 2) == 0 or _swap(ca) != cb) {
+                        if ca != cb and ((st.flags & 2) == 0 or swapcase(ca) != cb) {
                             ok = False;
                             break;
                         }
@@ -1698,7 +1656,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
                 k: int = j + 1;
                 ok: bool = True;
                 while k < n and pb[k] != 125 {
-                    if not _isdig(pb[k]) {
+                    if not is_digit(pb[k]) {
                         ok = False;
                         break;
                     }
@@ -1719,7 +1677,7 @@ def _posix_translate(pat: str, flags: int) -> (str | None) {
             ok2: bool = True;
             while k2 < n and pb[k2] != 125 {
                 ch2: int = pb[k2];
-                if _isdig(ch2) {
+                if is_digit(ch2) {
                     ndig += 1;
                 } elif ch2 == 44 {
                     ncomma += 1;
@@ -2242,7 +2200,7 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
                 alldig: bool = True;
                 k: int = 0;
                 while k < len(nm) {
-                    if not _isdig(ord(nm[k])) {
+                    if not is_digit(ord(nm[k])) {
                         alldig = False;
                     }
                     k += 1;
@@ -2272,7 +2230,7 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
         }
         if e >= 49 and e <= 57 {
             num = e - 48;
-            if i < n and _isdig(tps[i]) {
+            if i < n and is_digit(tps[i]) {
                 num = num * 10 + (tps[i] - 48);
                 i += 1;
             }
@@ -2317,7 +2275,7 @@ def _expand_repl(template: str, m: Match, re: _Re) -> str {
             out += "\x07";
             continue;
         }
-        if _isalpha(e) {
+        if is_alpha(e) {
             raise ValueError("bad escape \\" + chr(e) + " at position " + str(bp));
         }
         out += chr(e);

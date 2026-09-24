@@ -1,3 +1,5 @@
+import from _ascii { is_id_start, is_word }
+
 glob:pub whitespace: str = " \t\n\r\x0b\x0c",
      ascii_lowercase: str = "abcdefghijklmnopqrstuvwxyz",
      ascii_uppercase: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -61,16 +63,6 @@ def:pub capwords(s: str, sep: (str | None) = None) -> str {
 }
 
 
-def _is_id_start(c: int) -> bool {
-    return c == 95 or (c >= 65 and c <= 90) or (c >= 97 and c <= 122);
-}
-
-
-def _is_id_char(c: int) -> bool {
-    return _is_id_start(c) or (c >= 48 and c <= 57);
-}
-
-
 def _strval(v: any) -> str {
     if isinstance(v, str) {
         s: str = v;
@@ -124,7 +116,7 @@ def _ph(bv: bytes, i: int, n: int) -> tuple[(str, int, str)] {
     nx: int = bv[i + 1];
     if nx == 123 {
         j: int = i + 2;
-        while j < n and _is_id_char(bv[j]) {
+        while j < n and is_word(bv[j]) {
             j += 1;
         }
         if j > i + 2 and j < n and bv[j] == 125 {
@@ -132,9 +124,9 @@ def _ph(bv: bytes, i: int, n: int) -> tuple[(str, int, str)] {
         }
         return ("", 0, "");
     }
-    if _is_id_start(nx) {
+    if is_id_start(nx) {
         j = i + 1;
-        while j < n and _is_id_char(bv[j]) {
+        while j < n and is_word(bv[j]) {
             j += 1;
         }
         return (bv[i + 1:j].decode(), j - i, bv[i:j].decode());

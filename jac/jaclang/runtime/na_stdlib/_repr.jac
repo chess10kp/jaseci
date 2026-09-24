@@ -50,7 +50,7 @@ def:pub repr_str(s: str) -> str {
 }
 
 
-def _str_gt(a: str, b: str) -> bool {
+def:pub str_gt(a: str, b: str) -> bool {
     m: int = len(a);
     if len(b) < m {
         m = len(b);
@@ -73,7 +73,7 @@ def:pub sorted_str_keys(keys: list[str]) -> list[str] {
     n: int = len(keys);
     while i < n {
         j: int = i;
-        while j > 0 and _str_gt(keys[j - 1], keys[j]) {
+        while j > 0 and str_gt(keys[j - 1], keys[j]) {
             tmp: str = keys[j - 1];
             keys[j - 1] = keys[j];
             keys[j] = tmp;
