@@ -223,6 +223,17 @@ def _jpairs3_na(out: dict[str, any], tag: str, vals: any) {
     out[tag] = s;
 }
 
+def _gb_py(it: any) -> list[any] {
+    # CPython's groupby yields lazy groupers that invalidate when the next
+    # group starts; materialize each eagerly while it is still valid.
+    rows: list[any] = [];
+    for t in it {
+        rows.append([t[0], list(t[1])]);
+    }
+    return rows;
+}
+
+
 def _jgrouped_py(out: dict[str, any], tag: str, vals: any) {
     s = "";
     for t in vals {
@@ -363,9 +374,9 @@ def core_py -> dict[str, any] {
     _jints_py(d, "tw", list(takewhile(lt3_py, [1, 3, 2, 4, 0])));
     _jints_py(d, "ff", list(filterfalse(lt3_py, [1, 3, 2, 4, 0])));
     _jints_py(d, "ff_none", list(filterfalse(None, [0, 1, 0, 2])));
-    _jgrouped_py(d, "groupby", list(groupby("AAABBC")));
-    _jgrouped_py(d, "groupby_key", list(groupby([2, 4, 6, 3, 9], key=parity_py)));
-    _jgrouped_py(d, "groupby_empty", list(groupby([])));
+    _jgrouped_py(d, "groupby", _gb_py(groupby("AAABBC")));
+    _jgrouped_py(d, "groupby_key", _gb_py(groupby([2, 4, 6, 3, 9], key=parity_py)));
+    _jgrouped_py(d, "groupby_empty", _gb_py(groupby([])));
     _jints_py(d, "islice_sn", list(islice([0, 1, 2, 3, 4, 5, 6], 2, None)));
     _jints_py(d, "islice_ab", list(islice([0, 1, 2, 3, 4, 5, 6], 2, 6)));
     _jints_py(d, "islice_step", list(islice([0, 1, 2, 3, 4, 5, 6], 0, None, 2)));
@@ -394,7 +405,10 @@ def core_na -> dict[str, any] {
     _jints_na(d, "acc_func", _collect_na(accumulate([5, 3, 2], accsub_na)));
     _jints_na(d, "acc_empty", _collect_na(accumulate([])));
     _jints_na(d, "acc_init_empty", _collect_na(accumulate([], initial=42)));
-    _jints_na(d, "chain", _collect_na(chain([1, 2], [3], [4, 5])));
+    ch_a: list[any] = [1, 2];
+    ch_b: list[any] = [3];
+    ch_c: list[any] = [4, 5];
+    _jints_na(d, "chain", _collect_na(chain(ch_a, ch_b, ch_c)));
     d["chain_none"] = len(_collect_na(chain()));
     _jints_na(
         d, "compress", _collect_na(compress([1, 2, 3, 4, 5, 6], [1, 0, 1, 1, 0, 1]))
@@ -463,12 +477,15 @@ def comb_py -> dict[str, any] {
 def comb_na -> dict[str, any] {
     d: dict[str, any] = {};
     _jints_na(d, "starmap", _collect_na(starmap(mypow_na, [[2, 3], [3, 2]])));
-    _jpairs2_na(d, "prod2", _collect_na(product([1, 2], [3, 4])));
+    pr_a: list[any] = [1, 2];
+    pr_b: list[any] = [3, 4];
+    pr_e: list[any] = [];
+    _jpairs2_na(d, "prod2", _collect_na(product(pr_a, pr_b)));
     d["prod0"] = len(_collect_na(product()));
-    d["prod_empty"] = len(_collect_na(product([])));
+    d["prod_empty"] = len(_collect_na(product(pr_e)));
     _jpairs2_na(d, "prod_rep", _collect_na(product("AB", repeat=2)));
-    d["prod_rep0_len"] = len(_collect_na(product([1, 2], repeat=0)));
-    d["prod_rep3_len"] = len(_collect_na(product([1, 2], repeat=3)));
+    d["prod_rep0_len"] = len(_collect_na(product(pr_a, repeat=0)));
+    d["prod_rep3_len"] = len(_collect_na(product(pr_a, repeat=3)));
     _jpairs3_na(d, "perm3", _collect_na(permutations("ABC")));
     _jpairs2_na(d, "perm_r2", _collect_na(permutations("ABC", 2)));
     d["perm_r0"] = len(_collect_na(permutations("ABC", 0)));
@@ -481,9 +498,13 @@ def comb_na -> dict[str, any] {
     _jpairs3_na(d, "cwr", _collect_na(combinations_with_replacement("AB", 3)));
     d["cwr_r0"] = len(_collect_na(combinations_with_replacement("AB", 0)));
     d["cwr_empty"] = len(_collect_na(combinations_with_replacement([], 2)));
-    _jpairs2_na(d, "zl", _collect_na(zip_longest([1, 2], [10, 20, 30, 40])));
+    zl_a: list[any] = [1, 2];
+    zl_b: list[any] = [10, 20, 30, 40];
+    zl_e: list[any] = [];
+    zl_o: list[any] = [1, 2];
+    _jpairs2_na(d, "zl", _collect_na(zip_longest(zl_a, zl_b)));
     _jpairs2_na(d, "zl_fill", _collect_na(zip_longest("AB", "1234", fillvalue="-")));
-    _jpairs2_na(d, "zl_oneside", _collect_na(zip_longest([], [1, 2])));
+    _jpairs2_na(d, "zl_oneside", _collect_na(zip_longest(zl_e, zl_o)));
     _jbatches_na(d, "batched", _collect_na(batched([1, 2, 3, 4, 5], 2)));
     d["batched_lens"] = len(_collect_na(batched([1, 2, 3, 4, 5], 2)));
     t2 = tee([1, 2, 3]);
@@ -520,7 +541,8 @@ def iter_err_na -> dict[str, any] {
     _err_na(d, "islice_neg", lambda() -> any { islice([1], -1); });
     _err_na(d, "islice_step0", lambda() -> any { islice([1], 0, 5, 0); });
     _err_na(d, "islice_float", lambda() -> any { islice([1], 1.5); });
-    _err_na(d, "prod_neg", lambda() -> any { product([1], repeat=-1); });
+    pr_neg: list[any] = [1];
+    _err_na(d, "prod_neg", lambda() -> any { product(pr_neg, repeat=-1); });
     _err_na(d, "perm_neg", lambda() -> any { permutations("AB", -1); });
     _err_na(d, "comb_neg", lambda() -> any { combinations("AB", -1); });
     _err_na(d, "cwr_neg", lambda() -> any { combinations_with_replacement("AB", -1); });

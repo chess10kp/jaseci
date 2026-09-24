@@ -168,7 +168,24 @@ def _accumulate_default[C: Iterable](src: C, initial: any) -> Iterator[any] {
     }
     for v in src {
         if started {
-            total = _add_default(total, v);
+            if isinstance(total, int) and isinstance(v, int) {
+                ti: int = total;
+                vi: int = v;
+                total = ti + vi;
+            } elif isinstance(total, float) {
+                tf: float = total;
+                if isinstance(v, float) {
+                    vf: float = v;
+                    total = tf + vf;
+                } elif isinstance(v, int) {
+                    vi2: int = v;
+                    total = tf + float(vi2);
+                } else {
+                    total = _add_default(total, v);
+                }
+            } else {
+                total = _add_default(total, v);
+            }
         } else {
             total = v;
             started = True;
@@ -198,8 +215,20 @@ def _accumulate_func[C: Iterable](
 
 def:pub chain(*iterables: any) -> Iterator[any] {
     for it in iterables {
-        for v in _tolist_any(it) {
-            yield v;
+        if isinstance(it, str) {
+            sv: str = it;
+            for v in sv {
+                yield v;
+            }
+        } else {
+            if not isinstance(it, list) {
+                raise TypeError(
+                    "itertools: variadic arguments must be lists or str on the native pathway"
+                );
+            }
+            for v in it {
+                yield v;
+            }
         }
     }
 }
@@ -210,8 +239,20 @@ def:pub chain_from_iterable[C: Iterable](iterable: C) -> Iterator[any] {
 
 def _chain_fi_gen[C: Iterable](src: C) -> Iterator[any] {
     for it in src {
-        for v in _tolist_any(it) {
-            yield v;
+        if isinstance(it, str) {
+            sv: str = it;
+            for v in sv {
+                yield v;
+            }
+        } else {
+            if not isinstance(it, list) {
+                raise TypeError(
+                    "itertools: variadic arguments must be lists or str on the native pathway"
+                );
+            }
+            for v in it {
+                yield v;
+            }
         }
     }
 }
@@ -377,15 +418,11 @@ def:pub islice[C: Iterable](iterable: C, *args: any) -> Iterator[any] {
     if nargs > 3 {
         raise TypeError("islice expected at most 4 arguments, got " + str(nargs + 1));
     }
-    xs: list[any] = [];
-    for a in args {
-        xs.append(a);
-    }
     start: int = 0;
     stop: int = 0;
     has_stop: bool = False;
     step: int = 1;
-    a0 = xs[0];
+    a0 = args[0];
     if nargs == 1 {
         if isinstance(a0, int) {
             sv: int = a0;
@@ -419,7 +456,7 @@ def:pub islice[C: Iterable](iterable: C, *args: any) -> Iterator[any] {
                 );
             }
         }
-        a1 = xs[1];
+        a1 = args[1];
         if isinstance(a1, int) {
             sv1: int = a1;
             if sv1 < 0 {
@@ -437,7 +474,7 @@ def:pub islice[C: Iterable](iterable: C, *args: any) -> Iterator[any] {
             }
         }
         if nargs == 3 {
-            a2 = xs[2];
+            a2 = args[2];
             if isinstance(a2, int) {
                 sv2: int = a2;
                 if sv2 <= 0 {
@@ -507,13 +544,12 @@ def _starmap_gen[C: Iterable](
     func: Callable[[any, any], any], src: C
 ) -> Iterator[any] {
     for args in src {
-        xs = _tolist(args);
-        if len(xs) != 2 {
+        if len(args) != 2 {
             raise TypeError(
                 "starmap(): argument rows must have exactly 2 elements on the native pathway"
             );
         }
-        yield func(xs[0], xs[1]);
+        yield func(args[0], args[1]);
     }
 }
 
