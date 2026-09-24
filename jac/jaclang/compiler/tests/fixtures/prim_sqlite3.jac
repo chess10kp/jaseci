@@ -148,21 +148,27 @@ def sqlite3_py -> dict[any, any] {
     try {
         cur.execute("select 1; select 2");
         out["tail_two"] = "none";
-    } except Exception as e4 {
-        out["tail_two"] = type(e4).__name__ + ": " + str(e4);
+    } except sqlite3.ProgrammingError as e4 {
+        out["tail_two"] = "ProgrammingError: " + str(e4);
+    } except Exception as e4x {
+        out["tail_two"] = "WRONG-TYPE: " + str(e4x);
     }
     try {
         cur.execute("select 1; selct 2");
         out["tail_synt"] = "none";
-    } except Exception as e5 {
-        out["tail_synt"] = type(e5).__name__ + ": " + str(e5);
+    } except sqlite3.ProgrammingError as e5 {
+        out["tail_synt"] = "ProgrammingError: " + str(e5);
+    } except Exception as e5x {
+        out["tail_synt"] = "WRONG-TYPE: " + str(e5x);
     }
     out["tail_ws"] = _rcell(cur.execute("select 7;   ").fetchall(), 0, 0);
     try {
         cur.execute("select :a", [9]);
         out["seq_named"] = "none";
-    } except Exception as e6 {
-        out["seq_named"] = type(e6).__name__ + ": " + str(e6);
+    } except sqlite3.ProgrammingError as e6 {
+        out["seq_named"] = "ProgrammingError: " + str(e6);
+    } except Exception as e6x {
+        out["seq_named"] = "WRONG-TYPE: " + str(e6x);
     }
     try {
         sqlite3.connect(":memory:", isolation_level="BOGUS");
@@ -196,8 +202,10 @@ def sqlite3_py -> dict[any, any] {
     try {
         cur.execute("select ?", [{}]);
         out["bind_dict"] = "none";
-    } except Exception as e10 {
-        out["bind_dict"] = type(e10).__name__ + ": " + str(e10);
+    } except sqlite3.ProgrammingError as e10 {
+        out["bind_dict"] = "ProgrammingError: " + str(e10);
+    } except Exception as e10x {
+        out["bind_dict"] = "WRONG-TYPE: " + str(e10x);
     }
     cur.execute("create table u(x unique)");
     cur.execute("insert into u values(1)");
@@ -404,21 +412,27 @@ def _params_na(out: dict[str, any]) {
     try {
         cur.execute("select 1; select 2");
         out["tail_two"] = "none";
-    } except Exception as e4 {
-        out["tail_two"] = type(e4).__name__ + ": " + str(e4);
+    } except sqlite3.ProgrammingError as e4 {
+        out["tail_two"] = "ProgrammingError: " + str(e4);
+    } except Exception as e4x {
+        out["tail_two"] = "WRONG-TYPE: " + str(e4x);
     }
     try {
         cur.execute("select 1; selct 2");
         out["tail_synt"] = "none";
-    } except Exception as e5 {
-        out["tail_synt"] = type(e5).__name__ + ": " + str(e5);
+    } except sqlite3.ProgrammingError as e5 {
+        out["tail_synt"] = "ProgrammingError: " + str(e5);
+    } except Exception as e5x {
+        out["tail_synt"] = "WRONG-TYPE: " + str(e5x);
     }
     out["tail_ws"] = _rcell_na(cur.execute("select 7;   ").fetchall(), 0, 0);
     try {
         cur.execute("select :a", [9]);
         out["seq_named"] = "none";
-    } except Exception as e6 {
-        out["seq_named"] = type(e6).__name__ + ": " + str(e6);
+    } except sqlite3.ProgrammingError as e6 {
+        out["seq_named"] = "ProgrammingError: " + str(e6);
+    } except Exception as e6x {
+        out["seq_named"] = "WRONG-TYPE: " + str(e6x);
     }
     con.close();
 }
@@ -482,8 +496,10 @@ def _script_err_na(out: dict[str, any]) {
     try {
         cur.execute("select ?", [{}]);
         out["bind_dict"] = "none";
-    } except Exception as e10 {
-        out["bind_dict"] = type(e10).__name__ + ": " + str(e10);
+    } except sqlite3.ProgrammingError as e10 {
+        out["bind_dict"] = "ProgrammingError: " + str(e10);
+    } except Exception as e10x {
+        out["bind_dict"] = "WRONG-TYPE: " + str(e10x);
     }
     cur.execute("create table u(x unique)");
     cur.execute("insert into u values(1)");
