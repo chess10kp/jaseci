@@ -9,7 +9,6 @@ import from c {
         nfds: i32, readfds: int, writefds: int, exceptfds: int, timeout: int
     ) -> i32;
 }
-import from c { def sigdescr_np(signum: i32) -> str;  }
 import from c { def sigprocmask(how: i32, set: bytes, oldset: bytes) -> i32;  }
 import from c { def sigemptyset(set: bytes) -> i32;  }
 import from c { def sigaddset(set: bytes, signum: i32) -> i32;  }
@@ -61,10 +60,6 @@ def:pub sig_alarm(seconds: int) -> int {
 
 def:pub sig_pause {
     select(i32(0), 0, 0, 0, 0);
-}
-
-def:pub sig_describe(signum: int) -> str {
-    return sigdescr_np(i32(signum));
 }
 
 def:pub sig_mask(how: int, signums: list[int], nsig: int) -> tuple[(int, list[int])] {

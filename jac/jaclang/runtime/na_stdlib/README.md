@@ -438,8 +438,7 @@ native layout records the emitted name separately from its source-level key.
   wasm.
 
 - **`signal.linux.jac`** (Mechanism F) + **`_signal_native.linux.jac`** (libc
-  FFI floor: `bsd_signal`, `kill`, `setitimer` (as `alarm`), `sigdescr_np`,
-  `sigprocmask`) --
+  FFI floor: `bsd_signal`, `kill`, `setitimer` (as `alarm`), `sigprocmask`) --
   the Linux-numbered constant set plus `signal`/`getsignal`/`raise_signal`/
   `alarm`/`pause`/`strsignal`/`valid_signals`/`pthread_sigmask`/
   `default_int_handler`. User handlers dispatch through a C-ABI trampoline
@@ -451,8 +450,11 @@ native layout records the emitted name separately from its source-level key.
   public `def:pub` names in the flat symbol table -- `alarm` is spelled
   `setitimer(ITIMER_REAL, ...)` and `pause` is spelled `select(0, NULL,
   NULL, NULL, NULL)`, which sleeps until a signal interrupts it.
+  `strsignal` answers from a baked-in table of glibc's description strings
+  rather than a libc call, so it is byte-identical under musl where
+  `sigdescr_np` does not exist.
   SCOPE/divergences:
-  Linux only (signal numbers and `sigdescr_np` are glibc/Linux-specific, so
+  Linux only (signal numbers are glibc/Linux-specific, so
   the module carries the `.linux.` suffix and other platforms get a clean
   "not provided" rather than a link error); `valid_signals` and
   `pthread_sigmask` return a `list` where CPython returns a `set`;

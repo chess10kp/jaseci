@@ -157,7 +157,7 @@ glob NATIVE_RESERVED_C_SYMBOLS: frozenset[str] = frozenset(
                  "fegetround fesetround fegetenv feholdexcept fesetenv feupdateenv "
                  "setlocale localeconv setjmp longjmp _setjmp _longjmp sigsetjmp siglongjmp "
                  "signal raise kill bsd_signal sigemptyset sigaddset sigismember "
-                 "sigprocmask sigdescr_np setitimer select "
+                 "sigprocmask setitimer select "
                  "remove rename renameat tmpfile tmpnam fclose fflush fopen freopen fdopen "
                  "fileno setbuf setvbuf "
                  "fprintf fscanf printf scanf snprintf sprintf sscanf dprintf vfprintf "

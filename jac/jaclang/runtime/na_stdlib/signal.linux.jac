@@ -4,7 +4,6 @@ import from _signal_native {
     sig_kill_self,
     sig_alarm,
     sig_pause,
-    sig_describe,
     sig_mask
 }
 import from _errno_native { last_errno, raise_errno_error }
@@ -118,6 +117,20 @@ def:pub pause {
     sig_pause();
 }
 
+glob _SIG_DESCR: list[str] = [
+         "",
+         "Hangup", "Interrupt", "Quit", "Illegal instruction",
+         "Trace/breakpoint trap", "Aborted", "Bus error",
+         "Floating point exception", "Killed", "User defined signal 1",
+         "Segmentation fault", "User defined signal 2", "Broken pipe",
+         "Alarm clock", "Terminated", "Stack fault", "Child exited",
+         "Continued", "Stopped (signal)", "Stopped", "Stopped (tty input)",
+         "Stopped (tty output)", "Urgent I/O condition",
+         "CPU time limit exceeded", "File size limit exceeded",
+         "Virtual timer expired", "Profiling timer expired", "Window changed",
+         "I/O possible", "Power failure", "Bad system call"
+     ];
+
 def:pub strsignal(signum: int) -> (str | None) {
     _check_signum(signum);
     if signum >= SIGRTMIN and signum <= SIGRTMAX {
@@ -126,7 +139,7 @@ def:pub strsignal(signum: int) -> (str | None) {
     if signum == 32 or signum == 33 {
         return None;
     }
-    return sig_describe(signum);
+    return _SIG_DESCR[signum];
 }
 
 def:pub valid_signals -> list[int] {
