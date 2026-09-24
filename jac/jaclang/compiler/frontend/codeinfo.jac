@@ -243,6 +243,19 @@ glob NATIVE_RESERVED_C_SYMBOLS: frozenset[str] = frozenset(
                  "PyUnicode_FromString "
                  "__mt_genrand_u32 __mt_getrandbits __mt_init_by_array __mt_randbelow "
                  "GC_malloc "
+                 "__connect "
+                 "sqlite3_open sqlite3_open_v2 sqlite3_close sqlite3_prepare_v2 "
+                 "sqlite3_step sqlite3_reset sqlite3_finalize sqlite3_clear_bindings "
+                 "sqlite3_column_count sqlite3_column_type sqlite3_column_int64 "
+                 "sqlite3_column_double sqlite3_column_blob sqlite3_column_text "
+                 "sqlite3_column_bytes sqlite3_column_name sqlite3_errmsg "
+                 "sqlite3_errcode sqlite3_extended_errcode sqlite3_exec "
+                 "sqlite3_changes64 sqlite3_total_changes64 sqlite3_last_insert_rowid "
+                 "sqlite3_get_autocommit sqlite3_busy_timeout sqlite3_libversion "
+                 "sqlite3_complete sqlite3_bind_parameter_count "
+                 "sqlite3_bind_parameter_name sqlite3_bind_null sqlite3_bind_int64 "
+                 "sqlite3_bind_double sqlite3_bind_text sqlite3_bind_blob "
+                 "sqlite3_stmt_readonly sqlite3_free "
              ).split()
      );
 

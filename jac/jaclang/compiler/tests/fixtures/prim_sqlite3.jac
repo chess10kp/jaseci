@@ -398,6 +398,7 @@ def _params_na(out: dict[str, any]) {
     out["dollar_p"] = _cell_na(cur.execute("select $a", p_dollar).fetchone(), 0);
     out["qnum1"] = _cell_na(cur.execute("select ?2,?1", [10, 20]).fetchone(), 0);
     out["qnum2"] = _cell_na(cur.execute("select ?2,?1", [10, 20]).fetchone(), 1);
+    cur.execute("create table t(a)");
     cur.execute("delete from t where a=999");
     out["del0_rc"] = cur.rowcount;
     try {
