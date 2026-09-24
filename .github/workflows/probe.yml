@@ -11,15 +11,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sL -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/${{ github.repository }}/actions/artifacts/10771048968/zip \
-            -o /tmp/kit.zip
-          curl -sL -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/${{ github.repository }}/actions/artifacts/10771820029/zip \
-            -o /tmp/pre.zip
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/runs?status=success&per_page=20" \
+            --jq '[.workflow_runs[] | select(.name == "CI")][0].id // empty')
+          [ -n "$RUN_ID" ] || { echo "::error::no successful CI run to pull the kit from"; exit 1; }
+          for art in jac-kit jac-precompiled; do
+            URL=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts?per_page=100" \
+              --jq "[.artifacts[] | select(.name == \"$art\" and (.expired | not))][0].archive_download_url // empty")
+            [ -n "$URL" ] || { echo "::error::$art artifact missing or expired on run $RUN_ID"; exit 1; }
+            curl -sfL -H "Authorization: Bearer $GH_TOKEN" "$URL" -o "/tmp/$art.zip"
+          done
           mkdir -p jac jac/jaclang/_precompiled
-          cd jac && unzip -oq /tmp/kit.zip && cd ..
-          cd jac/jaclang/_precompiled && unzip -oq /tmp/pre.zip && cd ../../..
+          cd jac && unzip -oq /tmp/jac-kit.zip && cd ..
+          cd jac/jaclang/_precompiled && unzip -oq /tmp/jac-precompiled.zip && cd ../../..
       - name: Run probes
         run: |
           chmod +x jac/zig-out/bin/jac
