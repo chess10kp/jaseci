@@ -629,7 +629,6 @@ class LoadInstr(Instruction) {
         loaded = typ if typ is not None else _loaded_type(ptr);
         super.init(parent, loaded, "load", [ptr], name);
         self.align = None;
-        self.volatile = False;
     }
 
     def descr(self: LoadInstr, buf: list[str]) {
@@ -640,9 +639,8 @@ class LoadInstr(Instruction) {
         } else {
             align = '';
         }
-        vol = 'volatile ' if self.volatile else '';
         buf.append(
-            f"load {vol}{self.type}, {val.type} {val.get_reference()}{align}"
+            f"load {self.type}, {val.type} {val.get_reference()}{align}"
             f"{self._stringify_metadata(leading_comma=True)}\n"
         );
     }

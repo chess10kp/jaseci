@@ -95,19 +95,51 @@ def _strval(v: any) -> str {
 
 
 def _invalid(template: str, i: int) {
+    bv: bytes = template.encode();
     lineno: int = 1;
-    colno: int = i + 1;
+    lastnl: int = -1;
     j: int = 0;
     while j < i {
-        if ord(template[j]) == 10 {
+        if bv[j] == 10 {
             lineno += 1;
-            colno = i - j;
+            lastnl = j;
         }
         j += 1;
+    }
+    colno: int = 0;
+    k: int = lastnl + 1;
+    while k < i {
+        if (bv[k] & 192) != 128 {
+            colno += 1;
+        }
+        k += 1;
     }
     raise ValueError(
         "Invalid placeholder in string: line " + str(lineno) + ", col " + str(colno)
     );
+}
+
+
+def _ph(bv: bytes, i: int, n: int) -> tuple[(str, int, str)] {
+    nx: int = bv[i + 1];
+    if nx == 123 {
+        j: int = i + 2;
+        while j < n and _is_id_char(bv[j]) {
+            j += 1;
+        }
+        if j > i + 2 and j < n and bv[j] == 125 {
+            return (bv[i + 2:j].decode(), j + 1 - i, bv[i:j + 1].decode());
+        }
+        return ("", 0, "");
+    }
+    if _is_id_start(nx) {
+        j = i + 1;
+        while j < n and _is_id_char(bv[j]) {
+            j += 1;
+        }
+        return (bv[i + 1:j].decode(), j - i, bv[i:j].decode());
+    }
+    return ("", 0, "");
 }
 
 
@@ -116,7 +148,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
     bv: bytes = template.encode();
     src: int = __bytes_data(bv);
     i: int = 0;
-    n: int = len(template);
+    n: int = len(bv);
     while i < n {
         c: int = __mem_load_i8(src + i);
         if c != 36 {
@@ -124,7 +156,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
             while j0 < n and __mem_load_i8(src + j0) != 36 {
                 j0 += 1;
             }
-            out += template[i:j0];
+            out += bv[i:j0].decode();
             i = j0;
             continue;
         }
@@ -142,50 +174,25 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
             i += 2;
             continue;
         }
-        name: str = "";
-        consumed: int = 0;
-        raw: str = "";
-        if nx == 123 {
-            j: int = i + 2;
-            while j < n and _is_id_char(__mem_load_i8(src + j)) {
-                j += 1;
-            }
-            if j > i + 2 and j < n and __mem_load_i8(src + j) == 125 {
-                name = template[i + 2:j];
-                consumed = j + 1 - i;
-                raw = template[i:j + 1];
-            } elif safe {
+        ph: tuple[(str, int, str)] = _ph(bv, i, n);
+        name: str = ph[0];
+        consumed: int = ph[1];
+        raw: str = ph[2];
+        if consumed == 0 {
+            if safe {
                 out += "$";
                 i += 1;
                 continue;
-            } else {
-                _invalid(template, i);
             }
-        } elif _is_id_start(nx) {
-            j = i + 1;
-            while j < n and _is_id_char(__mem_load_i8(src + j)) {
-                j += 1;
-            }
-            name = template[i + 1:j];
-            consumed = j - i;
-            raw = template[i:j];
-        } elif safe {
-            out += "$";
-            i += 1;
-            continue;
-        } else {
             _invalid(template, i);
         }
         hit: bool = False;
         val: any = None;
         if isinstance(mapping, dict) {
             m2: dict[str, any] = mapping;
-            for k in m2 {
-                if k == name {
-                    hit = True;
-                    val = m2[k];
-                    break;
-                }
+            if name in m2 {
+                hit = True;
+                val = m2[name];
             }
         }
         if hit {
@@ -204,8 +211,7 @@ def _expand(template: str, mapping: (dict[str, any] | None), safe: bool) -> str 
 
 
 obj:pub Template {
-    has template: str = "",
-        delimiter: str = "$";
+    has template: str = "";
 
     def init(template: str) {
         self.template = template;
@@ -230,11 +236,10 @@ obj:pub Template {
 
     def get_identifiers -> list[str] {
         ids: list[str] = [];
-        template: str = self.template;
-        bv: bytes = template.encode();
+        bv: bytes = self.template.encode();
         src: int = __bytes_data(bv);
         i: int = 0;
-        n: int = len(template);
+        n: int = len(bv);
         while i < n {
             c: int = __mem_load_i8(src + i);
             if c != 36 {
@@ -245,34 +250,16 @@ obj:pub Template {
                 i += 1;
                 continue;
             }
-            nx: int = __mem_load_i8(src + i + 1);
-            if nx == 36 {
+            if __mem_load_i8(src + i + 1) == 36 {
                 i += 2;
                 continue;
             }
-            name: str = "";
-            consumed: int = 0;
-            if nx == 123 {
-                j: int = i + 2;
-                while j < n and _is_id_char(__mem_load_i8(src + j)) {
-                    j += 1;
-                }
-                if j > i + 2 and j < n and __mem_load_i8(src + j) == 125 {
-                    name = template[i + 2:j];
-                    consumed = j + 1 - i;
-                }
-            } elif _is_id_start(nx) {
-                j = i + 1;
-                while j < n and _is_id_char(__mem_load_i8(src + j)) {
-                    j += 1;
-                }
-                name = template[i + 1:j];
-                consumed = j - i;
-            }
-            if consumed == 0 {
+            ph: tuple[(str, int, str)] = _ph(bv, i, n);
+            if ph[1] == 0 {
                 i += 1;
                 continue;
             }
+            name: str = ph[0];
             seen: bool = False;
             k: int = 0;
             while k < len(ids) {
@@ -285,7 +272,7 @@ obj:pub Template {
             if not seen {
                 ids.append(name);
             }
-            i += consumed;
+            i += ph[1];
         }
         return ids;
     }

@@ -162,7 +162,55 @@ def re_py -> dict[any, any] {
     if mcmp is not None {
         cmp = mcmp.group(0);
     }
+    eneg = re.compile("a").search("aaa", 0, -1);
+    en1: str = "matched";
+    if eneg is None {
+        en1 = "none";
+    }
+    eempty = re.compile("").search("abc", 0, -1);
+    ems: int = -1;
+    eme: int = -1;
+    if eempty is not None {
+        ems = eempty.start();
+        eme = eempty.end();
+    }
+    oc = re.sub("x", "\\0123", "x");
+    unc = re.search(".", "\u00e9x");
+    ug: str = "none";
+    us: int = -1;
+    if unc is not None {
+        ug = unc.group(0);
+        us = unc.end();
+    }
+    unc2 = re.search("x", "\u00e9x");
+    u2s: int = -1;
+    if unc2 is not None {
+        u2s = unc2.start();
+    }
+    mqp = re.match("(a*)(a*)", "aa");
+    qg1: str = "none";
+    qg2: str = "none";
+    if mqp is not None {
+        qg1 = mqp.group(1);
+        qg2 = mqp.group(2);
+    }
+    mopen = re.match("a{,3}", "aa");
+    mo: int = -1;
+    if mopen is not None {
+        mo = mopen.end();
+    }
+
     return {
+        "en1": en1,
+        "ems": ems,
+        "eme": eme,
+        "oc": oc,
+        "ug": ug,
+        "us": us,
+        "u2s": u2s,
+        "qg1": qg1,
+        "qg2": qg2,
+        "mo": mo,
         "g1": g1,
         "g2": g2,
         "g0s0": g0s0,
@@ -372,7 +420,55 @@ def re_na -> dict[str, any] {
     if mcmp is not None {
         cmp = mcmp.group(0);
     }
+    eneg = re.compile("a").search("aaa", 0, -1);
+    en1: str = "matched";
+    if eneg is None {
+        en1 = "none";
+    }
+    eempty = re.compile("").search("abc", 0, -1);
+    ems: int = -1;
+    eme: int = -1;
+    if eempty is not None {
+        ems = eempty.start();
+        eme = eempty.end();
+    }
+    oc = re.sub("x", "\\0123", "x");
+    unc = re.search(".", "\u00e9x");
+    ug: str = "none";
+    us: int = -1;
+    if unc is not None {
+        ug = unc.group(0);
+        us = unc.end();
+    }
+    unc2 = re.search("x", "\u00e9x");
+    u2s: int = -1;
+    if unc2 is not None {
+        u2s = unc2.start();
+    }
+    mqp = re.match("(a*)(a*)", "aa");
+    qg1: str = "none";
+    qg2: str = "none";
+    if mqp is not None {
+        qg1 = mqp.group(1);
+        qg2 = mqp.group(2);
+    }
+    mopen = re.match("a{,3}", "aa");
+    mo: int = -1;
+    if mopen is not None {
+        mo = mopen.end();
+    }
+
     return {
+        "en1": en1,
+        "ems": ems,
+        "eme": eme,
+        "oc": oc,
+        "ug": ug,
+        "us": us,
+        "u2s": u2s,
+        "qg1": qg1,
+        "qg2": qg2,
+        "mo": mo,
         "g1": g1,
         "g2": g2,
         "g0s0": g0s0,

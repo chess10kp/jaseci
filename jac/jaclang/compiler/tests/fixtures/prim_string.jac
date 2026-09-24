@@ -35,7 +35,12 @@ def string_py -> dict[any, any] {
     m1: dict[str, any] = {"name": "W", "x": "1"};
     m3: dict[str, any] = {"b": "z"};
     me: dict[str, any] = {};
+    mu: dict[str, any] = {"w": "w\u00f6rld"};
+
     return {
+        "cap4": capwords("h\u00e9llo w\u00f6rld"),
+        "subu": Template("h\u00e9llo $w").substitute(mu),
+        "idu": len(Template("\u00e9 $a \u00e9b").get_identifiers()),
         "digs": digits,
         "hexn": len(hexdigits),
         "wsn": len(whitespace),
@@ -85,7 +90,12 @@ def string_na -> dict[str, any] {
     m1: dict[str, any] = {"name": "W", "x": "1"};
     m3: dict[str, any] = {"b": "z"};
     me: dict[str, any] = {};
+    mu: dict[str, any] = {"w": "w\u00f6rld"};
+
     return {
+        "cap4": capwords("h\u00e9llo w\u00f6rld"),
+        "subu": Template("h\u00e9llo $w").substitute(mu),
+        "idu": len(Template("\u00e9 $a \u00e9b").get_identifiers()),
         "digs": digits,
         "hexn": len(hexdigits),
         "wsn": len(whitespace),

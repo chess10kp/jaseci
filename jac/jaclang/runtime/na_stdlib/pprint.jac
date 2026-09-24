@@ -1,4 +1,4 @@
-import from _repr_native { repr_str, sorted_str_keys }
+import from _repr { repr_str, sorted_str_keys }
 
 
 def _format(value: any) -> str {

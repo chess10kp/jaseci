@@ -33,6 +33,7 @@ def reprlib_py -> dict[any, any] {
     d3: dict[str, any] = {};
     ml: list[any] = [1, 2, 3, 4];
     return {
+        "su": repr("h\u00e9llo"),
         "i": repr(42),
         "b": repr(True),
         "f": repr(1.5),
@@ -75,6 +76,7 @@ def reprlib_na -> dict[str, any] {
     d3: dict[str, any] = {};
     ml: list[any] = [1, 2, 3, 4];
     return {
+        "su": repr("h\u00e9llo"),
         "i": repr(42),
         "b": repr(True),
         "f": repr(1.5),
