@@ -28,6 +28,7 @@ import from jaclang.compiler.frontend.codeinfo {
     JACSTR_DESC_FIELDS,
     RC_SENTINEL,
     str_len_tag,
+    STR_ASCII_TAG_BIT,
     STR_LEN_TAG_BIT,
     STR_LEN_TAG_SHIFT
 }
@@ -362,6 +363,7 @@ walker NaIRGenPass {
         str_import_fn: (ir.Function | None) = None,
         str_unwrap_fn: (ir.Function | None) = None,
         str_materialize_fn: (ir.Function | None) = None,
+        str_isascii_fn: (ir.Function | None) = None,
         utf8_cplen_fn: (ir.Function | None) = None,
         utf8_cp_off_fn: (ir.Function | None) = None,
         utf8_cp_len_at_fn: (ir.Function | None) = None,
@@ -1940,6 +1942,10 @@ walker NaIRGenPass {
         b: ir.IRBuilder, ptr: ir.Value, name: str = "s.rlen"
     ) -> ir.Value;
 
+    def _call_str_isascii(
+        b: ir.IRBuilder, ptr: ir.Value, nbytes: ir.Value, name: str = "s.isascii"
+    ) -> ir.Value;
+
     def _emit_utf8_helpers -> None;
     def _call_utf8_cplen(
         b: ir.IRBuilder, ptr: ir.Value, nbytes: ir.Value, name: str = "u8.cplen"
@@ -1964,6 +1970,7 @@ walker NaIRGenPass {
     def _call_utf8_advance(
         b: ir.IRBuilder,
         ptr: ir.Value,
+        nbytes: ir.Value,
         off: ir.Value,
         delta: ir.Value,
         name: str = "u8.adv"
