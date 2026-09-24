@@ -7,15 +7,10 @@ impl NaIRGenPass._peer_dict_key -> (str | None) {
     the phi would erase both branches to `i8*`.
     """;
     _pt = self._peer_container_ty;
-    if _pt is None or not isinstance(_pt, ir.PointerType) {
+    if _pt is None {
         return None;
     }
-    for (_spec, _dt) in self.dict_types.items() {
-        if _dt.as_pointer() == _pt {
-            return _spec;
-        }
-    }
-    return None;
+    return self._dict_key_of_ptr(_pt);
 }
 
 impl NaIRGenPass._unwrap_opt_container(val: ir.Value) -> ir.Value {
