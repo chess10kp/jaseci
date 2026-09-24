@@ -16,7 +16,7 @@ impl NaIRGenPass._emit_struct_call(name: str, nd: uni.FuncCall) -> (ir.Value | N
         }
     }
     if fmt is None {
-        self.ctx.emit(
+        self.emit(
             E5092, node_override=nd, kind="struct format", name="non-literal format"
         );
         return None;
@@ -108,7 +108,7 @@ impl NaIRGenPass._emit_struct_call(name: str, nd: uni.FuncCall) -> (ir.Value | N
         i = i + 1;
     }
     if not parse_ok {
-        self.ctx.emit(E5092, node_override=nd, kind="struct format code", name=fmt);
+        self.emit(E5092, node_override=nd, kind="struct format code", name=fmt);
         return None;
     }
     i64 = ir.IntType(64);
@@ -152,7 +152,7 @@ impl NaIRGenPass._emit_struct_pack(
         ]
     );
     if len(params) - 1 != _expected {
-        self.ctx.emit(
+        self.emit(
             E5092,
             node_override=nd,
             kind="struct.pack argument count",
@@ -434,7 +434,7 @@ impl NaIRGenPass._emit_struct_unpack(
     i64 = ir.IntType(64);
     data_val = self._codegen_expr(params[1]);
     if data_val is None {
-        self.ctx.emit(
+        self.emit(
             E5092,
             node_override=nd,
             kind="struct.unpack buffer",
@@ -444,7 +444,7 @@ impl NaIRGenPass._emit_struct_unpack(
     }
     view = self._bytearray_src_of(data_val);
     if view is None {
-        self.ctx.emit(
+        self.emit(
             E5092,
             node_override=nd,
             kind="struct.unpack buffer",
@@ -477,7 +477,7 @@ impl NaIRGenPass._emit_struct_unpack_from(
     i64 = ir.IntType(64);
     data_val = self._codegen_expr(params[1]);
     if data_val is None {
-        self.ctx.emit(
+        self.emit(
             E5092,
             node_override=nd,
             kind="struct.unpack_from buffer",
@@ -487,7 +487,7 @@ impl NaIRGenPass._emit_struct_unpack_from(
     }
     view = self._bytearray_src_of(data_val);
     if view is None {
-        self.ctx.emit(
+        self.emit(
             E5092,
             node_override=nd,
             kind="struct.unpack_from buffer",
@@ -499,7 +499,7 @@ impl NaIRGenPass._emit_struct_unpack_from(
     if len(params) >= 3 {
         _off_raw = self._codegen_expr(params[2]);
         if _off_raw is None {
-            self.ctx.emit(
+            self.emit(
                 E5092,
                 node_override=nd,
                 kind="struct.unpack_from offset",
