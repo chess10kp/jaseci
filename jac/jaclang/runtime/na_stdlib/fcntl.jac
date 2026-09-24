@@ -1,19 +1,3 @@
-"""Native `fcntl` floor (Mechanism F over libc, POSIX host only).
-
-`fcntl.ioctl(fd, request, arg)` and the `F_GETFL` / `F_SETFL` /
-`O_NONBLOCK` corner of `fcntl.fcntl`, which is the surface terminal
-code needs (window-size ioctls + non-blocking flag flips).
-
-- `ioctl(fd, request, arg)` passes `arg`'s raw bytes as the untyped
-  third argument and returns the buffer -- so a winsize request fills
-  the caller's packed struct in place. DIVERGENCE: CPython returns None
-  for an immutable `bytes` arg and mutates only mutable buffers; here
-  any bytes arg is answered with the (possibly updated) bytes.
-- `fcntl(fd, cmd)` / `fcntl(fd, cmd, arg)` map to `fcntl(2)`; the C
-  variadic tail is declared as one extra i64 (see `_fcntl_native.jac`),
-  which is ABI-compatible for every integer/flag command used here.
-  Errors raise ValueError where CPython raises OSError.
-"""
 import from _fcntl_native { do_fcntl, do_ioctl }
 
 glob F_GETFL: int = 3,

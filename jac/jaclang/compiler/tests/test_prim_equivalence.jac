@@ -469,7 +469,14 @@ glob STR_NA_GAPS: list[any] = [
          ("zlib bundled", "prim_zlib.jac", "zlib_py", "zlib_cl", "zlib_na", ["na"]),
          ("gzip bundled", "prim_gzip.jac", "gzip_py", "gzip_cl", "gzip_na", ["na"]),
          ("bz2 bundled", "prim_bz2.jac", "bz2_py", "bz2_cl", "bz2_na", ["na"]),
-         ("fcntl bundled", "prim_fcntl.jac", "fcntl_py", "fcntl_cl", "fcntl_na", ["na"]),
+         (
+             "fcntl bundled",
+             "prim_fcntl.jac",
+             "fcntl_py",
+             "fcntl_cl",
+             "fcntl_na",
+             ["na"]
+         ),
          (
              "termios bundled",
              "prim_termios.jac",
