@@ -139,6 +139,83 @@ def native_safe_sym(src: str) -> str {
     return f"{safe}_{hashlib.sha1(src.encode()).hexdigest()[:8]}";
 }
 
+glob NATIVE_ARCH_SCOPE_SEP: str = "$",
+     _native_arch_scope_memo: dict[str, str] = {},
+     _native_toolchain_roots: list[str] = [];
+
+def native_arch_scope(mod_path: str) -> str {
+    import os;
+    if not mod_path {
+        return "";
+    }
+    memo = _native_arch_scope_memo.get(mod_path);
+    if memo is not None {
+        return memo;
+    }
+    source = os.path.realpath(mod_path);
+    out = "";
+    if not any(
+        source.startswith(toolchain + os.sep) for toolchain in native_toolchain_roots()
+    ) {
+        stem = os.path.basename(source);
+        dot = stem.find(".");
+        if dot > 0 {
+            stem = stem[:dot];
+        }
+        safe = "".join(
+            ch if (ch.isascii() and (ch.isalnum() or ch == "_")) else "_" for ch in stem
+        );
+        ident = native_unit_identity(source);
+        digest = hashlib.sha1(ident.encode()).hexdigest()[:8];
+        out = f"{NATIVE_ARCH_SCOPE_SEP}{safe}_{digest}";
+    }
+    _native_arch_scope_memo[mod_path] = out;
+    return out;
+}
+
+def native_arch_name(mod_path: str, name: str) -> str {
+    if not name {
+        return name;
+    }
+    return f"{name}{native_arch_scope(mod_path)}";
+}
+
+def native_unit_spelling(text: str, mod_path: str) -> str {
+    import re;
+    scope = native_arch_scope(mod_path) if NATIVE_ARCH_SCOPE_SEP in text else "";
+    if not scope {
+        return text;
+    }
+    return re.sub(re.escape(scope) + r"(?!\w)", "", text);
+}
+
+def native_arch_display(native_name: str) -> str {
+    sep = native_name.find(NATIVE_ARCH_SCOPE_SEP);
+    return native_name if sep < 0 else native_name[:sep];
+}
+
+def native_display_text(text: str) -> str {
+    import re;
+    if NATIVE_ARCH_SCOPE_SEP not in text {
+        return text;
+    }
+    return re.sub(r"\$\w*?_[0-9a-f]{8}\b", "", text);
+}
+
+def native_toolchain_roots -> list[str] {
+    import os;
+    if _native_toolchain_roots {
+        return _native_toolchain_roots;
+    }
+    import jaclang;
+    if jaclang?.__file__ {
+        _native_toolchain_roots.append(
+            os.path.realpath(os.path.dirname(jaclang.__file__))
+        );
+    }
+    return _native_toolchain_roots;
+}
+
 glob NATIVE_RESERVED_C_SYMBOLS: frozenset[str] = frozenset(
          [
              f"{base}{suffix}"
@@ -1139,6 +1216,7 @@ obj CodeGenTarget {
         _interop_callbacks: list[any] = [],
         native_layout: (NativeModuleLayout | None) = None,
         osp_model: (OspModel | None) = None,
+        native_osp_model: (OspModel | None) = None,
         component_call_abi: str = "",
         jc_layout: (str | None) = None,
         has_root_access: (bool | None) = None,
