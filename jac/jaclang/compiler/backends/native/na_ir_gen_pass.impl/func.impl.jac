@@ -552,9 +552,11 @@ impl NaIRGenPass._codegen_ability(nd: uni.Ability) -> None {
             and self._ability_is_generator(nd)
         ) {
         _gen_mark = len(self.ctx.errors_had);
+        _gen_raised = False;
         try {
             self._codegen_generator(nd, func);
         } except Exception as _gen_exc {
+            _gen_raised = True;
             if self._na_debug_on() {
                 import sys;
                 import traceback;
@@ -571,7 +573,7 @@ impl NaIRGenPass._codegen_ability(nd: uni.Ability) -> None {
                 f"implementation. Original error: {_gen_exc}"
             );
         }
-        if self._demote_method_if_unlowerable(name, func, _gen_mark) {
+        if _gen_raised and self._demote_method_if_unlowerable(name, func, _gen_mark) {
             self._rename_demoted_symbol(name, func);
         }
         return;
