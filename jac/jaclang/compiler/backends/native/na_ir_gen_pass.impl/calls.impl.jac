@@ -1462,24 +1462,30 @@ impl NaIRGenPass._emit_intrinsic_region_tls(
 impl NaIRGenPass._emit_intrinsic_alloca(
     nd: uni.FuncCall, intr: IntrinsicEntry, args: list[uni.Expr]
 ) -> (ir.Value | None) {
-    """`__alloca(n)` reserves `n` bytes once per function invocation: the
-    alloca is emitted in the entry block, so a call inside a loop reuses one
-    slot instead of churning stack per iteration. The buffer is per-call
-    scratch that must not outlive the invocation (the bundled floors'
-    timespecs); a caller that stashes the pointer or expects fresh storage
-    per iteration gets one aliased slot instead.
+    """`__alloca(n)` reserves `n` bytes of scratch. A constant `n` lowers to an
+    i64-array alloca in the entry block (8-byte ABI alignment for the `__mem_*`
+    i64 accessors), so a call inside a loop reuses one slot instead of churning
+    stack per iteration; a runtime `n` lowers to a call-site dynamic alloca,
+    since an entry-block slot cannot reference a size computed later in the
+    function. Either way the buffer is per-call scratch that must not outlive
+    the invocation (the bundled floors' timespecs).
     """;
     n = self._intrinsic_operand(nd, intr, args[0], intr.param_specs[0]);
     if n is None {
         return None;
     }
     i64 = ir.IntType(64);
-    words = self.builder.sdiv(
-        self.builder.add(n, ir.Constant(i64, 7), name="alloca.pad"),
-        ir.Constant(i64, 8),
-        name="alloca.words"
-    );
-    slot = self._stack_entry_alloca(i64, "alloca.buf", words);
+    if isinstance(n, ir.Constant) {
+        words = ir.Constant(i64, (n.constant + 7) // 8);
+        slot = self._stack_entry_alloca(i64, "alloca.buf", words);
+    } else {
+        words = self.builder.sdiv(
+            self.builder.add(n, ir.Constant(i64, 7), name="alloca.pad"),
+            ir.Constant(i64, 8),
+            name="alloca.words"
+        );
+        slot = self.builder.alloca(i64, size=words, name="alloca.buf");
+    }
     return self.builder.ptrtoint(slot, i64, name="alloca.i64");
 }
 
