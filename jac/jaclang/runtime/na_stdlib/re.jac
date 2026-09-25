@@ -73,6 +73,8 @@ glob _BT_SPLIT: int = 1,
 
 glob _MAXCP: int = 1114111;
 
+glob _MAXPOS: int = 9223372036854775807;
+
 glob _ESCAPE_SPECIAL: str = "()[]{}?*+-|^$\\.&~# \t\n\r\x0b\x0c";
 
 glob _DIGIT_PRS: list[int] = [48, 57],
@@ -202,7 +204,10 @@ def _bounds(n: int, pos: int, endpos: int) -> tuple[(int, int)] {
         endpos = n;
     }
     if pos < 0 {
-        pos = 0;
+        pos += n;
+        if pos < 0 {
+            pos = 0;
+        }
     }
     if pos > n {
         pos = n;
@@ -1822,7 +1827,7 @@ obj:pub Pattern {
         return Match(self._re, string, bv, start, endpos, st.slots);
     }
 
-    def search(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
+    def search(string: str, pos: int = 0, endpos: int = _MAXPOS) -> (Match | None) {
         bv: bytes = string.encode();
         b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
@@ -1833,7 +1838,7 @@ obj:pub Pattern {
         return self._search_from(string, bv, pos, endpos);
     }
 
-    def `match(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
+    def `match(string: str, pos: int = 0, endpos: int = _MAXPOS) -> (Match | None) {
         bv: bytes = string.encode();
         b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
@@ -1861,7 +1866,7 @@ obj:pub Pattern {
         return Match(self._re, string, bv, pos, endpos, st.slots);
     }
 
-    def fullmatch(string: str, pos: int = 0, endpos: int = -1) -> (Match | None) {
+    def fullmatch(string: str, pos: int = 0, endpos: int = _MAXPOS) -> (Match | None) {
         m: (Match | None) = self.match(string, pos, endpos);
         if m is None {
             return None;
@@ -1873,7 +1878,7 @@ obj:pub Pattern {
         return m2;
     }
 
-    def finditer(string: str, pos: int = 0, endpos: int = -1) -> list[Match] {
+    def finditer(string: str, pos: int = 0, endpos: int = _MAXPOS) -> list[Match] {
         bv: bytes = string.encode();
         b: tuple[(int, int)] = _bounds(cp_len(bv, len(bv)), pos, endpos);
         pos = b[0];
@@ -1920,7 +1925,7 @@ obj:pub Pattern {
         return out;
     }
 
-    def findall(string: str, pos: int = 0, endpos: int = -1) -> list[str] {
+    def findall(string: str, pos: int = 0, endpos: int = _MAXPOS) -> list[str] {
         if self._re.ngroups > 1 {
             raise ValueError(
                 "findall: patterns with more than one group are not supported on native"
