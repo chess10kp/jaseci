@@ -16,7 +16,7 @@ def write_native_product(
         validate_native_application
     }
     import from jaclang.compiler.backends.native.shared_emit {
-        prepare_shared_ir,
+        inject_shared_init,
         bind_shared_callbacks,
         emit_shared_library,
         SharedLibOptions
@@ -34,7 +34,7 @@ def write_native_product(
     if emit_source {
         import from jaclang.compiler.backends.native.c_emit { emit_c }
         if shared {
-            (llvm_ir, _) = prepare_shared_ir(llvm_ir, manifest);
+            (llvm_ir, _) = inject_shared_init(llvm_ir, manifest);
         } else {
             llvm_ir = inject_main(llvm_ir);
         }

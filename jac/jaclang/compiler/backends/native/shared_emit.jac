@@ -182,6 +182,7 @@ def inject_shared_init(
             " __jac_shared_init,\n; --- so emit an empty one ---\n"
             "define void @jac_entry() {\nentry:\n  ret void\n}\n"
         );
+        extra_exports.append("jac_entry");
     }
     return (out, extra_exports);
 }
@@ -192,11 +193,28 @@ def jac_entry_defined(llvm_ir_str: str) -> bool {
     return bool(re.search(r'define[^@\n]*@"?jac_entry"?\s*\(', llvm_ir_str));
 }
 
-def argv_globals_defined(llvm_ir_str: str) -> bool {
+def global_defined(llvm_ir_str: str, name: str) -> bool {
     import re;
     return bool(
-        re.search(r'@\"?__jac_argc\"?\s*=\s*(?:hidden\s+)?global', llvm_ir_str)
+        re.search(
+            r'@\"?' + re.escape(name) + r'\"?\s*=\s*(?:hidden\s+)?global', llvm_ir_str
+        )
     );
+}
+
+def argv_globals_defined(llvm_ir_str: str) -> bool {
+    return global_defined(llvm_ir_str, "__jac_argc")
+        and global_defined(llvm_ir_str, "__jac_argv");
+}
+
+def ensure_argv_globals(llvm_ir_str: str) -> str {
+    if not global_defined(llvm_ir_str, "__jac_argc") {
+        llvm_ir_str += "\n@__jac_argc = global i32 0\n";
+    }
+    if not global_defined(llvm_ir_str, "__jac_argv") {
+        llvm_ir_str += "@__jac_argv = global ptr null\n";
+    }
+    return llvm_ir_str;
 }
 
 def aarch64_outline_atomics_ir -> str {
@@ -368,10 +386,6 @@ obj _SharedLinkerSpec {
         floor_is_macos: bool = False;
 }
 
-def prepare_shared_ir(llvm_ir_str: str, manifest: any) -> tuple[str, list[str]] {
-    return inject_shared_init(llvm_ir_str, manifest);
-}
-
 def _shared_linker_spec(is_windows: bool, is_macos: bool) -> _SharedLinkerSpec {
     if is_windows {
         import from jaclang.compiler.backends.native.pe_linker { PeLinker }
@@ -405,15 +419,17 @@ obj _SharedLinkRequest {
         init_funcs: list[str],
         soname: str,
         symbol_lib_map: dict[str, str],
-        archive_members: list[bytes];
+        archive_members: list[bytes],
+        needed_libs: (list[str] | None) = None;
 }
 
 def _link_shared_artifact(spec: _SharedLinkerSpec, req: _SharedLinkRequest) -> bool {
+    needed_libs = req.needed_libs if req.needed_libs is not None else spec.needed_libs;
     if spec.platform == "windows" {
         return spec.linker.link(
             obj_bytes=req.obj_bytes,
             output_path=req.output_path,
-            needed_libs=spec.needed_libs,
+            needed_libs=needed_libs,
             symbol_lib_map=req.symbol_lib_map,
             shared=True,
             export_symbols=req.exports,
@@ -425,7 +441,7 @@ def _link_shared_artifact(spec: _SharedLinkerSpec, req: _SharedLinkRequest) -> b
         return spec.linker.link(
             obj_bytes=req.obj_bytes,
             output_path=req.output_path,
-            needed_libs=spec.needed_libs,
+            needed_libs=needed_libs,
             symbol_lib_map=req.symbol_lib_map,
             shared=True,
             export_symbols=req.exports,
@@ -437,7 +453,7 @@ def _link_shared_artifact(spec: _SharedLinkerSpec, req: _SharedLinkRequest) -> b
     return spec.linker.link(
         obj_bytes=req.obj_bytes,
         output_path=req.output_path,
-        needed_libs=spec.needed_libs,
+        needed_libs=needed_libs,
         crt_objects=[],
         shared=True,
         export_symbols=req.exports,
@@ -457,7 +473,7 @@ def emit_shared_object(
     clib_paths: (list[str] | None) = None
 ) -> SharedObject {
     import jaclang.compiler.backends.native.llvm.binding as llvm;
-    (ir_str, extra_exports) = prepare_shared_ir(llvm_ir_str, manifest);
+    (ir_str, extra_exports) = inject_shared_init(llvm_ir_str, manifest);
     exports: list[str] = [];
     for symbol in list(export_symbols) + extra_exports + ["__jac_shared_init"] {
         if symbol and symbol not in exports {
@@ -572,7 +588,11 @@ def bind_shared_callbacks(
     definitions: list[str] = [];
     callbacks: list[InteropBinding] = [];
     for binding in bindings {
-        function = module.get_function(binding.name);
+        try {
+            function = module.get_function(binding.name);
+        } except NameError {
+            continue;
+        }
         assert isinstance(function, llvm.ValueRef);
         if not function.is_declaration {
             continue;

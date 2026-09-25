@@ -13,7 +13,8 @@ import from jaclang.cli.console { console }
 
 import from jaclang.compiler.backends.native.entry_points {
     finalize_native_ir,
-    validate_native_application
+    validate_native_application,
+    NativeIrOptions
 }
 
 impl native_build(
@@ -36,10 +37,8 @@ impl native_build(
     if not output {
         output = base_stem(filename);
         if shared {
-            _so_ext = ".dll"
-                if ctx.is_windows
-                else (".dylib" if ctx.is_macos else ".so");
-            output = "lib" + output + _so_ext;
+            import from jaclang.server.sealed_serve { shared_lib_ext }
+            output = "lib" + output + shared_lib_ext(ctx.is_windows, ctx.is_macos);
         } elif ctx.is_wasm {
             output = output + ".wasm";
         } elif ctx.is_windows {
@@ -88,12 +87,6 @@ impl native_build(
 def _link_native_artifact(
     ctx: NativeBuildContext, output: str, shared: bool, entry_lib: bool = False
 ) -> int {
-    """Finalize, codegen, and link one native artifact from a prepared compile.
-
-    Holds the per-artifact half of the pipeline (IR finalization, verification,
-    optimization, object emission, linking) so several artifacts can be
-    produced from a single Jac compilation.
-    """;
     ir_module = ctx.ir_module;
     options = ctx.options;
     is_windows = ctx.is_windows;
@@ -145,11 +138,13 @@ def _link_native_artifact(
         triple,
         clib_paths or [],
         ir_module.gen.interop_manifest,
-        shared,
-        is_windows,
-        is_macos,
-        _static_musl,
-        emit_entry_stub=entry_lib
+        NativeIrOptions(
+            shared=shared,
+            is_windows=is_windows,
+            is_macos=is_macos,
+            static_musl=_static_musl,
+            emit_entry_stub=entry_lib
+        )
     );
     _bound_callbacks: list[any] = [];
     if entry_lib {
@@ -160,10 +155,10 @@ def _link_native_artifact(
             llvm_ir_str,
             ctx.ir_module.gen.interop_manifest.callable_native_imports or []
         );
+        ctx.bound_callbacks = _bound_callbacks;
     }
     if shared {
-        _had_entry = _shared_emit.jac_entry_defined(llvm_ir_str);
-        if entry_lib and not _had_entry {
+        if entry_lib and "jac_entry" in _extra_exports {
             console.print(
                 "  No 'with entry { }' block; synthesized an empty jac_entry"
                 " for the entry-lib host protocol."
@@ -182,11 +177,7 @@ def _link_native_artifact(
             }
         }
         if entry_lib {
-            if not _shared_emit.argv_globals_defined(llvm_ir_str) {
-                llvm_ir_str += (
-                    "\n@__jac_argc = global i32 0\n" + "@__jac_argv = global ptr null\n"
-                );
-            }
+            llvm_ir_str = _shared_emit.ensure_argv_globals(llvm_ir_str);
             for _s in ["jac_entry", "__jac_argc", "__jac_argv", "__jac_shared_init"] {
                 if _s not in export_symbols {
                     export_symbols.append(_s);
@@ -275,98 +266,88 @@ def _link_native_artifact(
     assert isinstance(obj_bytes, bytes);
     console.print(f"  Object code emitted ({len(obj_bytes)} bytes).");
 
-    if is_windows {
-        import from jaclang.compiler.backends.native.pe_linker { PeLinker }
-
-        try {
-            success = PeLinker.link(
+    _spec = _shared_emit._shared_linker_spec(is_windows, is_macos);
+    _crt_objects: list[bytes] = [];
+    if _static_musl {
+        _musl = _collect_musl_static(obj_bytes, triple);
+        if _musl is None {
+            console.error(
+                "Static musl runtime not found. Expected a vendored musl "
+                "libc.a under .pbs-build/<arch>/musl/lib (run `zig build "
+                "vendor-musl`) or set JAC_NATIVE_MUSL_DIR."
+            );
+            return 1;
+        }
+        (_musl_members, _crt_objects) = _musl;
+        archive_members = archive_members + _musl_members;
+        console.print(
+            f"  Static-linking musl: {len(_musl_members)} libc member(s) + "
+            f"{len(_crt_objects)} crt object(s)."
+        );
+    }
+    try {
+        if shared {
+            success = _shared_emit._link_shared_artifact(
+                _spec,
+                _shared_emit._SharedLinkRequest(
+                    obj_bytes=obj_bytes,
+                    output_path=output,
+                    exports=export_symbols,
+                    init_funcs=init_funcs,
+                    soname=os.path.basename(output),
+                    symbol_lib_map=symbol_lib_map,
+                    archive_members=archive_members,
+                    needed_libs=needed_libs
+                )
+            );
+        } elif _spec.platform == "windows" {
+            success = _spec.linker.link(
                 obj_bytes=obj_bytes,
                 output_path=output,
                 needed_libs=needed_libs,
                 symbol_lib_map=symbol_lib_map,
-                shared=shared,
+                shared=False,
                 export_symbols=export_symbols,
                 init_funcs=init_funcs,
                 soname=os.path.basename(output)
             );
-        } except Exception as e {
-            console.error(f"PE linking failed: {e}");
-            import traceback;
-            traceback.print_exc();
-            return 1;
-        }
-
-        if not success {
-            console.error("PE linking failed: could not parse object file.");
-            return 1;
-        }
-    } elif is_macos {
-        import from jaclang.compiler.backends.native.macho_linker { MachOLinker }
-        try {
-            success = MachOLinker.link(
+        } elif _spec.platform == "macos" {
+            success = _spec.linker.link(
                 obj_bytes=obj_bytes,
                 output_path=output,
                 needed_libs=needed_libs,
                 symbol_lib_map=symbol_lib_map,
-                shared=shared,
+                shared=False,
                 export_symbols=export_symbols,
                 init_funcs=init_funcs,
                 soname=os.path.basename(output),
                 archive_members=archive_members
             );
-        } except Exception as e {
-            console.error(f"Mach-O linking failed: {e}");
-            import traceback;
-            traceback.print_exc();
-            return 1;
-        }
-        if not success {
-            console.error("Mach-O linking failed: could not parse object file.");
-            return 1;
-        }
-    } else {
-        import from jaclang.compiler.backends.native.elf_linker { ElfLinker }
-        _crt_objects: list[bytes] = [];
-        if _static_musl {
-            _musl = _collect_musl_static(obj_bytes, triple);
-            if _musl is None {
-                console.error(
-                    "Static musl runtime not found. Expected a vendored musl "
-                    "libc.a under .pbs-build/<arch>/musl/lib (run `zig build "
-                    "vendor-musl`) or set JAC_NATIVE_MUSL_DIR."
-                );
-                return 1;
-            }
-            (_musl_members, _crt_objects) = _musl;
-            archive_members = archive_members + _musl_members;
-            console.print(
-                f"  Static-linking musl: {len(_musl_members)} libc member(s) + "
-                f"{len(_crt_objects)} crt object(s)."
-            );
-        }
-        try {
-            success = ElfLinker.link(
+        } else {
+            success = _spec.linker.link(
                 obj_bytes=obj_bytes,
                 output_path=output,
                 needed_libs=needed_libs,
                 crt_objects=_crt_objects,
-                shared=shared,
+                shared=False,
                 export_symbols=export_symbols,
                 init_funcs=init_funcs,
                 soname=os.path.basename(output),
                 archive_members=archive_members,
                 static_link=_static_musl
             );
-        } except Exception as e {
-            console.error(f"ELF linking failed: {e}");
-            import traceback;
-            traceback.print_exc();
-            return 1;
         }
-        if not success {
-            console.error("ELF linking failed: could not parse object file.");
-            return 1;
-        }
+    } except Exception as e {
+        console.error(f"Native linking failed ({_spec.platform}): {e}");
+        import traceback;
+        traceback.print_exc();
+        return 1;
+    }
+    if not success {
+        console.error(
+            f"Native linking failed ({_spec.platform}): could not parse object file."
+        );
+        return 1;
     }
 
     file_size = os.path.getsize(output);
@@ -397,21 +378,16 @@ obj NativeBuildContext {
         is_wasm: bool = False,
         is_windows: bool = False,
         is_macos: bool = False,
-        is_linux_target: bool = False,
         auto_promote: bool = False,
         memory: str = "managed",
         debug: bool = False,
         no_ir_cache: bool = False,
         ir_module: any = None,
-        options: any = None;
+        options: any = None,
+        bound_callbacks: list[any] = [];
 }
 
 def _compile_native_module(ctx: NativeBuildContext) -> bool {
-    """Run the Jac-to-LLVM-IR compilation once, stashing results on ctx.
-
-    The compile is the expensive half of `native_build`; separating it from
-    `_link_native_artifact` lets one compilation serve several artifacts.
-    """;
     import from jaclang.compiler.driver.program { JacProgram }
     import from jaclang.compiler.driver.pipeline_runner { native_application }
 
@@ -660,11 +636,6 @@ def _build_context(
     debug: bool = False,
     no_ir_cache: bool = False
 ) -> (NativeBuildContext | None) {
-    """Resolve config/target and validate inputs for a native build.
-
-    Returns None (after printing diagnostics) when the input is not a
-    native-buildable Jac file or the memory profile is invalid.
-    """;
     import sys;
     import from jaclang.jac0core.ext_registry {
         is_jac,
@@ -734,7 +705,6 @@ def _build_context(
         is_wasm=is_wasm,
         is_windows=is_windows,
         is_macos=is_macos,
-        is_linux_target=is_linux_target,
         auto_promote=is_jac(filename),
         memory=memory,
         debug=debug,
@@ -742,14 +712,7 @@ def _build_context(
     );
 }
 
-impl build_native_entry_lib(filename: str, output: str) -> int {
-    """Build the host-driven entry library for one Jac file.
-
-    Compiles once, binds every na->sv callback through host-fillable
-    ``__jac_bind_*`` slots (so the library carries no unresolved Python
-    symbols), defers ``__jac_shared_init`` to the loading host, and links
-    the ``jac_entry``-exporting shared library to ``output``.
-    """;
+def _build_native_entry_lib(filename: str, output: str) -> int {
     ctx = _build_context(filename);
     if ctx is None {
         return 1;
@@ -760,19 +723,20 @@ impl build_native_entry_lib(filename: str, output: str) -> int {
     return _link_native_artifact(ctx, output, shared=True, entry_lib=True);
 }
 
-impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -> int {
-    """Build the sealed-artifact native pair from a single compilation.
+def _callback_source_path(binding: any, proj_dir: str) -> str {
+    nd = binding.ast_node;
+    if nd is not None {
+        import from jaclang.compiler.frontend.unitree { Module }
+        mod = nd.find_parent_of_type(Module);
+        if mod is not None and mod.loc.mod_path {
+            return os.path.relpath(mod.loc.mod_path, proj_dir);
+        }
+    }
+    return binding.source_module or "";
+}
 
-    The one Jac compile answers the interop question for free: an app whose
-    native closure calls back into Python (``native_imports``) cannot be
-    self-contained, so the standalone executable is dropped, the entry
-    library is bound for host-driven loading, and the decision is recorded
-    in the ``<lib>.interop.json`` sidecar the jab host reads. Otherwise both
-    artifacts are linked: the entry library last, since the sealed bundle
-    still runs via the standalone exe if the lib link fails.
-    """;
+impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -> int {
     import json;
-    import os;
     import from jaclang.server.sealed_serve { interop_record_path }
     import from jaclang.cli.console { console }
 
@@ -791,19 +755,27 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
             "dropping the standalone executable (it cannot be "
             "self-contained) and sealing the host-driven native library only."
         );
+        lib_rc = _link_native_artifact(ctx, lib_output, shared=True, entry_lib=True);
+        if lib_rc != 0 {
+            console.error(
+                "Host-driven native library compilation failed; seal aborted."
+            );
+            return lib_rc;
+        }
+        _proj_dir = os.path.dirname(os.path.abspath(filename));
         _interop_record.parent.mkdir(parents=True, exist_ok=True);
         _interop_record.write_text(
             json.dumps(
                 {
                     "interop": True,
-                    "unresolved": [b.name for b in _mf.callable_native_imports],
+                    "unresolved": [b.name for b in ctx.bound_callbacks],
                     "callbacks": [
                         {
                             "name": b.name,
                             "ret_type": b.ret_type,
                             "param_types": list(b.param_types),
-                            "source_module": b.source_module or ""
-                        } for b in _mf.callable_native_imports
+                            "source_module": _callback_source_path(b, _proj_dir)
+                        } for b in ctx.bound_callbacks
                     ]
                 },
                 sort_keys=True
@@ -820,20 +792,13 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
             console.error("Native compilation failed; seal aborted.");
             return rc;
         }
-    }
-
-    lib_rc = _link_native_artifact(ctx, lib_output, shared=True, entry_lib=True);
-    if lib_rc != 0 {
-        if _mf is not None and _mf.native_imports {
-            console.error(
-                "Host-driven native library compilation failed; seal aborted."
+        lib_rc = _link_native_artifact(ctx, lib_output, shared=True, entry_lib=True);
+        if lib_rc != 0 {
+            console.warning(
+                "In-process native library compilation failed; the sealed bundle "
+                "will run via the standalone binary only."
             );
-            return lib_rc;
         }
-        console.warning(
-            "In-process native library compilation failed; the sealed bundle "
-            "will run via the standalone binary only."
-        );
     }
     return 0;
 }

@@ -16,7 +16,10 @@ property only aarch64 CI could check into one every run checks.
 
 import jaclang.compiler.backends.native.llvm.binding as llvm;
 import from jaclang.compiler.backends.native.shared_emit { init_object_codegen }
-import from jaclang.compiler.backends.native.entry_points { finalize_native_ir }
+import from jaclang.compiler.backends.native.entry_points {
+    finalize_native_ir,
+    NativeIrOptions
+}
 
 glob TRIPLE = "aarch64-unknown-linux-gnu",
      EM_AARCH64 = 183;
@@ -43,10 +46,7 @@ with entry {
         triple=TRIPLE,
         clib_paths=["libz.so"],
         manifest=None,
-        shared=False,
-        is_windows=False,
-        is_macos=False,
-        static_musl=False
+        options=NativeIrOptions()
     );
     mod = llvm.parse_assembly(f'target triple = "{TRIPLE}"\n' + ir);
     mod.verify();

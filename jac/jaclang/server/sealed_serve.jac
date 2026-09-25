@@ -42,15 +42,20 @@ def _image_module_keys(img_root: str) -> set {
 }
 
 
-def native_lib_suffix -> str {
-    import sys;
-    if sys.platform.startswith("win") {
+def shared_lib_ext(is_windows: bool, is_macos: bool) -> str {
+    if is_windows {
         return ".dll";
     }
-    if sys.platform == "darwin" {
+    if is_macos {
         return ".dylib";
     }
     return ".so";
+}
+
+
+def native_lib_suffix -> str {
+    import sys;
+    return shared_lib_ext(sys.platform.startswith("win"), sys.platform == "darwin");
 }
 
 
@@ -60,12 +65,6 @@ def native_lib_name(stem: str) -> str {
 
 
 def interop_record_path(lib_output: str) -> Path {
-    """Sidecar recording seal-time Python interop for a native library.
-
-    Single source of truth for the ``.interop.json`` name: written next
-    to the sealed library at bake time and read back when building the
-    jab manifest.
-    """;
     return Path(str(lib_output) + ".interop.json");
 }
 

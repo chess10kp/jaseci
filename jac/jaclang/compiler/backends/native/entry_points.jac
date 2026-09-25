@@ -33,10 +33,13 @@ def validate_native_application(module: Module, shared: bool, memory: str) -> st
             );
         }
     }
-    if not shared and 'jac_entry' not in llvm_ir {
-        raise ValueError(
-            "No entry point found. The file must have a 'with entry { }' block."
-        );
+    if not shared {
+        import from jaclang.compiler.backends.native.shared_emit { jac_entry_defined }
+        if not jac_entry_defined(llvm_ir) {
+            raise ValueError(
+                "No entry point found. The file must have a 'with entry { }' block."
+            );
+        }
     }
     return llvm_ir;
 }
@@ -98,19 +101,23 @@ def _inject_entry_elf(llvm_ir_str: str) -> str {
 }
 
 def inject_main(llvm_ir_str: str) -> str {
-    has_jac_argc = "__jac_argc" in llvm_ir_str;
-    globals_ir = ""
-        if has_jac_argc
-        else ('@__jac_argc = global i32 0\n' + '@__jac_argv = global ptr null\n\n');
-    initarr_ir = ""
-        if "__jac_init_array" in llvm_ir_str
-        else (
-            '@__jac_init_array = global ptr null\n'
-            + '@__jac_init_count = global i64 0\n\n'
-        );
+    import from jaclang.compiler.backends.native.shared_emit {
+        ensure_argv_globals,
+        global_defined
+    }
+    llvm_ir_str = ensure_argv_globals(llvm_ir_str);
+    initarr_ir = "";
+    if not global_defined(llvm_ir_str, "__jac_init_array") {
+        initarr_ir += '@__jac_init_array = global ptr null\n';
+    }
+    if not global_defined(llvm_ir_str, "__jac_init_count") {
+        initarr_ir += '@__jac_init_count = global i64 0\n';
+    }
+    if initarr_ir {
+        initarr_ir += "\n";
+    }
     ir = (
         '\n; --- native application entry point ---\n'
-        + globals_ir
         + initarr_ir
         + 'define i32 @main(i32 %argc, ptr %argv) {\n'
         + 'entry:\n'
@@ -162,31 +169,35 @@ def _inject_entry_pe(llvm_ir_str: str) -> str {
         + '}\n';
 }
 
+obj NativeIrOptions {
+    has shared: bool = False,
+        is_windows: bool = False,
+        is_macos: bool = False,
+        static_musl: bool = False,
+        emit_entry_stub: bool = False;
+}
+
 def finalize_native_ir(
     llvm_ir_str: str,
     triple: str,
     clib_paths: list[str],
     manifest: any,
-    shared: bool,
-    is_windows: bool,
-    is_macos: bool,
-    static_musl: bool,
-    emit_entry_stub: bool = False
+    options: NativeIrOptions
 ) -> tuple[str, list[str]] {
     import from jaclang.compiler.backends.native.shared_emit {
         aarch64_floor_atomics_ir,
         inject_shared_init
     }
     extra_exports: list[str] = [];
-    if shared {
+    if options.shared {
         (llvm_ir_str, extra_exports) = inject_shared_init(
-            llvm_ir_str, manifest, emit_entry_stub=emit_entry_stub
+            llvm_ir_str, manifest, emit_entry_stub=options.emit_entry_stub
         );
-    } elif is_windows {
+    } elif options.is_windows {
         llvm_ir_str = _inject_entry_pe(llvm_ir_str);
-    } elif is_macos {
+    } elif options.is_macos {
         llvm_ir_str = inject_main(llvm_ir_str);
-    } elif static_musl {
+    } elif options.static_musl {
         llvm_ir_str = inject_main(llvm_ir_str);
     } else {
         llvm_ir_str = _inject_entry_elf(llvm_ir_str);
