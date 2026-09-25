@@ -187,7 +187,8 @@ def _reserved_c_symbols -> frozenset[str] {
         "localtime localtime_r strftime clock_gettime nanosleep sleep usleep "
         "open openat creat close read pread write lseek stat fstat lstat access "
         "chmod chdir getcwd mkdir rmdir link symlink readlink unlink utime "
-        "opendir readdir closedir getpid getpwuid_r getpwnam_r errno __error "
+        "opendir readdir closedir getpid getpwuid_r getpwnam_r getuid uname "
+        "gnu_get_libc_version errno __error "
         "pipe poll waitpid posix_spawnp posix_spawn_file_actions_init "
         "posix_spawn_file_actions_destroy posix_spawn_file_actions_addopen "
         "posix_spawn_file_actions_addclose posix_spawn_file_actions_adddup2 "
@@ -201,6 +202,7 @@ def _reserved_c_symbols -> frozenset[str] {
         "compress2 uncompress uncompress2 compressBound crc32_z adler32_z "
         "BZ2_bzBuffToBuffCompress BZ2_bzBuffToBuffDecompress "
         "ZSTD_isError ZSTD_getErrorName ZSTD_compressBound ZSTD_freeCCtx "
+        "ZSTD_createCCtx ZSTD_createDCtx ZSTD_DStreamOutSize ZSTD_versionNumber "
         "ZSTD_CCtx_setParameter ZSTD_compress2 ZSTD_freeDCtx ZSTD_DCtx_setParameter "
         "ZSTD_decompressStream_simpleArgs ZSTD_getFrameContentSize "
         "ZSTD_getDictID_fromFrame "
@@ -214,7 +216,7 @@ def _reserved_c_symbols -> frozenset[str] {
         "SSL_CTX_set_default_verify_paths SSL_CTX_free SSL_new SSL_set_fd SSL_ctrl "
         "SSL_set1_host SSL_connect SSL_get_verify_result SSL_get_error SSL_read "
         "SSL_write SSL_shutdown SSL_free X509_verify_cert_error_string "
-        "ERR_reason_error_string "
+        "ERR_reason_error_string ERR_get_error ERR_peek_error "
         "Py_DecRef PyBool_FromLong PyBytes_AsString PyDict_New PyDict_SetItemString "
         "PyErr_Print PyFloat_AsDouble PyFloat_FromDouble PyGILState_Ensure "
         "PyGILState_Release PyImport_ImportModule PyLong_AsLongLong "
@@ -375,6 +377,7 @@ def native_display_text(text: str) -> str {
     }
     return "".join(out);
 }
+
 
 def native_def_symbol(name: str) -> str {
     return f"__jac_def_{name}" if name in NATIVE_RESERVED_C_SYMBOLS else name;
