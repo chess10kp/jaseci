@@ -1,8 +1,16 @@
-import from _zlib_native { z_compress2, z_compress_bound, z_crc32 }
-import from _deflate { inflate_growable }
+import from _zlib_native {
+    ZInflateResult,
+    Z_OK,
+    Z_STREAM_END,
+    Z_MEM_ERROR,
+    z_compress2,
+    z_compress_bound,
+    z_crc32,
+    z_inflate_all,
+    z_inflate_bound
+}
 
-glob Z_OK: int = 0,
-     _MASK32: int = 4294967295;
+glob _MASK32: int = 4294967295;
 
 
 def:pub compress(data: bytes, compresslevel: int = 9, mtime: int = 0) -> bytes {
@@ -99,8 +107,7 @@ def:pub decompress(data: bytes) -> bytes {
         }
 
         remaining: int = n - hpos;
-
-        ceiling: int = remaining * 1032 + 1024;
+        ceiling: int = z_inflate_bound(remaining);
         cap: int = int.from_bytes(data[n - 4:n], "little");
         if cap < 64 {
             cap = 64;
@@ -108,18 +115,18 @@ def:pub decompress(data: bytes) -> bytes {
         if cap > ceiling {
             cap = ceiling;
         }
-        inflated = inflate_growable(data[hpos:n], cap, ceiling);
-        if inflated is None {
-            raise ValueError("gzip.decompress: invalid compressed data");
-        }
-        (dest, consumed) = inflated;
-        written: int = len(dest);
 
-        if consumed < 8 {
+        res: ZInflateResult = z_inflate_all(data, hpos, remaining, -15, cap, ceiling);
+        if res.status == Z_MEM_ERROR {
+            raise MemoryError("gzip.decompress: allocation failed");
+        }
+        if res.status != Z_STREAM_END {
             raise ValueError("gzip.decompress: invalid compressed data");
         }
-        body_len: int = consumed - 6;
-        tpos: int = hpos + body_len;
+        member = res.data;
+        written: int = len(member);
+
+        tpos: int = hpos + res.consumed;
         if tpos + 8 > n {
             raise ValueError(
                 "gzip.decompress: compressed data ended before the end-of-stream marker"
@@ -128,15 +135,18 @@ def:pub decompress(data: bytes) -> bytes {
 
         crc_expected: int = int.from_bytes(data[tpos:tpos + 4], "little");
         isize: int = int.from_bytes(data[tpos + 4:tpos + 8], "little");
-        out = dest[0:written];
-        if z_crc32(0, out, written) != crc_expected {
+        if z_crc32(0, member, written) != crc_expected {
             raise ValueError("gzip.decompress: CRC check failed");
         }
         if (written & _MASK32) != isize {
             raise ValueError("gzip.decompress: incorrect length of data produced");
         }
 
-        result = result + out;
+        if len(result) == 0 {
+            result = member;
+        } else {
+            result = result + member;
+        }
         pos = tpos + 8;
     }
     return result;

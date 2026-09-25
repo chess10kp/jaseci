@@ -14,6 +14,7 @@ import from jaclang.server.assembly {
 import from jaclang.project.kinds { RunPlan }
 import type from jaclang.project.config { AppConfig, JacConfig }
 import type from importlib.metadata { EntryPoint }
+import type from jaclang.runtime.native_library { SharedNativeEngine }
 import type from jaclang.compiler.backends.native.llvm.binding.executionengine {
     ExecutionEngine
 }
@@ -221,7 +222,9 @@ def _set_native_argv_in_dll(lib: CDLL, argv: list[str]) -> bool {
     return True;
 }
 
-def _populate_native_argv(engine: ExecutionEngine, argv: list[str]) -> None {
+def _populate_native_argv(
+    engine: ExecutionEngine | SharedNativeEngine, argv: list[str]
+) -> None {
     import ctypes;
 
     argc_addr = int(engine.get_global_value_address("__jac_argc"));
@@ -230,14 +233,16 @@ def _populate_native_argv(engine: ExecutionEngine, argv: list[str]) -> None {
         return;
     }
 
-    native_argv = NativeArgv(argv);
+    argc = len(argv);
+    c_strings = [ctypes.c_char_p(arg.encode("utf-8")) for arg in argv];
+    c_argv = (ctypes.c_char_p * argc)(*c_strings);
 
     argc_ptr = ctypes.cast(argc_addr, ctypes.POINTER(ctypes.c_int32));
-    argc_ptr[0] = native_argv.argc;
+    argc_ptr[0] = argc;
     argv_ptr = ctypes.cast(argv_addr, ctypes.POINTER(ctypes.c_void_p));
-    argv_ptr[0] = ctypes.cast(native_argv.vector, ctypes.c_void_p).value;
+    argv_ptr[0] = ctypes.cast(c_argv, ctypes.c_void_p).value;
 
-    setattr(engine, "_jac_argv_refs", (native_argv.refs, native_argv.vector));
+    setattr(engine, "_jac_argv_refs", (c_strings, c_argv));
 }
 
 def _plan_ui(plan: RunPlan) -> str {
@@ -367,46 +372,45 @@ def _port_is_explicit(port: (int | None), cfg: any) -> bool {
     return not (isinstance(raw, dict) and raw.get("port") == port);
 }
 
-obj _ServeFlags {
-    has port: (int | None),
-        dev: (bool | None),
-        api_port: (int | None),
-        no_client: (bool | None),
-        faux: (bool | None),
-        host: (str | None),
-        platform: (str | None),
-        fleet: bool = False,
-        workers: (str | None) = None;
-}
-
-def _serve_overrides(flags: _ServeFlags, cfg: any) -> dict[str, any] {
+def _serve_overrides(
+    port: (int | None),
+    dev: (bool | None),
+    api_port: (int | None),
+    no_client: (bool | None),
+    faux: (bool | None),
+    host: (str | None),
+    platform: (str | None),
+    fleet: bool,
+    cfg: any,
+    workers: (str | None) = None
+) -> dict[str, any] {
     over: dict[str, any] = {};
-    if _port_is_explicit(flags.port, cfg) {
-        over["port"] = flags.port;
+    if _port_is_explicit(port, cfg) {
+        over["port"] = port;
     }
-    if flags.dev is not None {
-        over["dev"] = flags.dev;
+    if dev is not None {
+        over["dev"] = dev;
     }
-    if flags.api_port is not None {
-        over["api_port"] = flags.api_port;
+    if api_port is not None {
+        over["api_port"] = api_port;
     }
-    if flags.no_client is not None {
-        over["no_client"] = flags.no_client;
+    if no_client is not None {
+        over["no_client"] = no_client;
     }
-    if flags.faux is not None {
-        over["faux"] = flags.faux;
+    if faux is not None {
+        over["faux"] = faux;
     }
-    if flags.host is not None {
-        over["host"] = flags.host;
+    if host is not None {
+        over["host"] = host;
     }
-    if flags.platform is not None {
-        over["platform"] = flags.platform;
+    if platform is not None {
+        over["platform"] = platform;
     }
-    if flags.fleet {
+    if fleet {
         over["fleet"] = True;
     }
-    if flags.workers is not None {
-        over["workers"] = flags.workers;
+    if workers is not None {
+        over["workers"] = workers;
     }
     return over;
 }
@@ -616,7 +620,9 @@ impl run_jab_image(
                         );
                     }
                 }
-                rc = _jab_run_entry_lib(img_root, entry_rel, host_argv, interop=False);
+                rc = _jab_run_entry_lib(
+                    img_root, entry_rel, host_argv, interop=False
+                );
                 if rc is not None {
                     return rc;
                 }
@@ -971,7 +977,7 @@ def _invoke_entrypoint(
     return 0;
 }
 
-impl run(  # jac:ignore[W3030] -- signature mirrors the `jac run` command spec
+impl run(
     target: str = "",
     show: bool = False,
     main: bool = True,
@@ -992,11 +998,10 @@ impl run(  # jac:ignore[W3030] -- signature mirrors the `jac run` command spec
     takeover: (bool | None) = None,
     fleet: bool = False,
     workers: (str | None) = None,
-    args: (list[str] | None) = None,
+    args: list[str] = [],
     backend: str = ""
 ) -> int {
     use_line_buffered_output();
-    args = args or [];
     if backend not in ("", "python", "native") {
         console.error("--backend must be python or native.");
         return 1;
@@ -1039,18 +1044,7 @@ impl run(  # jac:ignore[W3030] -- signature mirrors the `jac run` command spec
     eff = _effective_config(cfg, app);
 
     over = _serve_overrides(
-        _ServeFlags(
-            port=port,
-            dev=dev,
-            api_port=api_port,
-            no_client=no_client,
-            faux=faux,
-            host=host,
-            platform=platform,
-            fleet=fleet,
-            workers=workers
-        ),
-        eff
+        port, dev, api_port, no_client, faux, host, platform, fleet, eff, workers
     );
     entry_flags = _entry_flags_used(entry_name, nd, root_id, debug_mode);
     kind_serves = plan is not None and plan.action == "serve";
@@ -1212,7 +1206,7 @@ def _exec_file(
                 full_path = os.path.abspath(filename);
                 program = Jac.get_program();
                 _run_options = (
-                    _RunOpts(force_codespace='native', force_target_program=True)
+                    _RunOpts(force_codespace='native')
                         if _kind_forced or backend == "native"
                         else None
                 );
@@ -1256,9 +1250,7 @@ def _exec_file(
                     program.compile(
                         file_path=os.path.abspath(filename),
                         options=CompileOptions(
-                            force_codespace="server",
-                            default_codespace="server",
-                            force_target_program=True
+                            force_codespace="server", default_codespace="server",
                         )
                     );
                     if program.errors_had {
@@ -1389,7 +1381,7 @@ def _serve_fleet(
 }
 
 
-impl serve(  # jac:ignore[W3030] -- signature mirrors the `jac serve` command spec
+impl serve(
     filename: str,
     port: int = 0,
     main: bool = True,
@@ -1461,48 +1453,6 @@ impl serve(  # jac:ignore[W3030] -- signature mirrors the `jac serve` command sp
     }
     (base, mod, mach) = _proc_file(filename);
 
-    try {
-        console.print("Preparing application...", style="bold");
-        import from jaclang.compiler.driver.application { prepare_application }
-        import from jaclang.server.assembly { service_apps }
-        project_root = str(cfg.project_root) if cfg and cfg.project_root else base;
-        services = service_apps(cfg, served) if cfg and served else [];
-        prepared = prepare_application(
-            filename,
-            Jac.get_program(),
-            project_root,
-            [svc.entry_path(project_root) for svc in services],
-            not no_client and not faux and (served is None or served.kind == "web-app"),
-            dev
-        );
-        console.print("Initializing application...", style="bold");
-        import from jaclang.runtime.prepared { initialize_application }
-        mod = initialize_application(prepared, cfg, served).__name__;
-        if Jac.get_program().errors_had {
-            for error in Jac.get_program().errors_had {
-                console.error(error.pretty_print());
-            }
-            mach.close();
-            return 1;
-        }
-    } except Exception as e {
-        if Jac.get_program().errors_had {
-            for error in Jac.get_program().errors_had {
-                console.error(error.pretty_print());
-            }
-        } else {
-            import from jaclang.runtime.traceback_render { dump_traceback }
-            console.error(f"Error loading {filename}: {e}");
-            console.error(dump_traceback(e));
-        }
-        mach.close();
-        return 1;
-    }
-
-    try {
-        mach.mem.unit_exit();
-    } except Exception {}
-
     port_pinned = port > 0;
     port = port if port_pinned else 8000;
     if dev and not no_client {
@@ -1516,6 +1466,7 @@ impl serve(  # jac:ignore[W3030] -- signature mirrors the `jac serve` command sp
     }
 
     import from jaclang.server.settings { ServeConfigError, ServeSettings }
+    import from jaclang.server.serving.supervisor { worker_metrics_dir }
     overrides: dict[str, any] = {
         'port': actual_api_port,
         'strict_port': api_port_pinned,
@@ -1535,148 +1486,190 @@ impl serve(  # jac:ignore[W3030] -- signature mirrors the `jac serve` command sp
         mach.close();
         return 1;
     }
-    ServerClass = Jac.get_api_server_class();
-    server = ServerClass(module_name=mod, base_path=base, settings=settings);
-    if prepared.client_compiler is not None or (dev and not no_client) {
-        server.introspector._bundle_builder = Jac.get_client_bundle_builder();
-    }
-    if prepared.client_compiler is not None {
-        server.introspector._bundle_builder._compiler = prepared.client_compiler;
-    }
-    if faux {
+
+    with worker_metrics_dir(settings) {
         try {
-            server.print_endpoint_docs();
-        } except Exception as e {
-            import from jaclang.runtime.traceback_render { dump_traceback }
-            console.error(f"Error generating endpoint documentation: {e}");
-            console.error(dump_traceback(e));
-            mach.close();
-            return 1;
-        }
-        mach.close();
-        return 0;
-    }
-
-    hot_reloader = None;
-
-    vite_holder: list[any] = [];
-    if dev {
-        if not _ensure_watchdog_installed() {
-            mach.close();
-            return 1;
-        }
-        try {
-            import from jaclang.server.hmr { HotReloader }
-            import from jaclang.server.watcher { JacFileWatcher }
-
-            watcher = JacFileWatcher(watch_paths=[base]);
-            client_compiler = None;
-            if not no_client {
-                try {
-                    client_compiler = server.introspector._bundle_builder._get_compiler();
-                } except Exception as e {
-                    console.warning(
-                        f"Client compiler unavailable, HMR uses legacy mode: {e}"
-                    );
+            console.print("Preparing application...", style="bold");
+            import from jaclang.compiler.driver.application { prepare_application }
+            import from jaclang.server.assembly { service_apps }
+            project_root = str(cfg.project_root) if cfg and cfg.project_root else base;
+            services = service_apps(cfg, served) if cfg and served else [];
+            prepared = prepare_application(
+                filename,
+                Jac.get_program(),
+                project_root,
+                [svc.entry_path(project_root) for svc in services],
+                not no_client
+                    and not faux
+                    and (served is None or served.kind == "web-app"),
+                dev
+            );
+            console.print("Initializing application...", style="bold");
+            import from jaclang.runtime.prepared { initialize_application }
+            mod = initialize_application(prepared, cfg, served).__name__;
+            if Jac.get_program().errors_had {
+                for error in Jac.get_program().errors_had {
+                    console.error(error.pretty_print());
                 }
+                mach.close();
+                return 1;
             }
-            hot_reloader = HotReloader(
-                base_path=base,
-                module_name=mod,
-                entry_path=os.path.realpath(filename),
-                watcher=watcher,
-                client_compiler=client_compiler
-            );
-            hot_reloader.start();
-
-            if server?.enable_hmr {
-                server.enable_hmr(hot_reloader);
+        } except Exception as e {
+            if Jac.get_program().errors_had {
+                for error in Jac.get_program().errors_had {
+                    console.error(error.pretty_print());
+                }
+            } else {
+                import from jaclang.runtime.traceback_render { dump_traceback }
+                console.error(f"Error loading {filename}: {e}");
+                console.error(dump_traceback(e));
             }
-        } except ImportError as e {
-            console.error(f"Error: Could not initialize HMR: {e}");
-            console.error(
-                "\nMake sure 'watchdog' is installed by running: jac install --dev"
-            );
             mach.close();
             return 1;
-        } except Exception as e {
-            console.warning(f"HMR initialization failed: {e}");
         }
-    }
-
-    def _announce_ready(actual_port: int) {
-        primary_port = actual_port;
-        if dev and not no_client {
-            free_vite_port = _find_free_port(
-                vite_port, skip_port=actual_port, strict=port_pinned
-            );
-            declared_paths: list[str] = [];
-            claimed_paths: list[str] = [];
-            try {
-                import from jaclang.client.vite_bundler { DEV_PROXY_PREFIXES }
-                declared_paths = server.introspector.declared_api_paths();
-                claimed_paths = server.introspector.client_claimed_paths(
-                    DEV_PROXY_PREFIXES
-                );
-            } except Exception as e {
-                console.warning(f"Could not read declared API paths: {e}");
-            }
-            (started_vite, bound_port) = _start_vite_dev_server(
-                base, free_vite_port, actual_port, declared_paths, claimed_paths
-            );
-            if started_vite {
-                vite_holder.append(started_vite);
-            }
-            primary_port = bound_port;
-        }
-        _print_startup_message(
-            dev=dev,
-            no_client=no_client,
-            primary_port=primary_port,
-            api_port=actual_port,
-            base_path=base
-        );
-    }
-    try {
-        return int(
-            server.start(dev=dev, no_client=no_client, on_ready=_announce_ready)
-        );
-    } except ServeConfigError as e {
-        console.error(str(e));
-        if hot_reloader is not None {
-            hot_reloader.stop();
-        }
-        mach.close();
-        return 1;
-    } except KeyboardInterrupt {
-        console.print('\nShutting down');
-        return 0;
-    } except Exception as e {
-        import from jaclang.runtime.traceback_render { dump_traceback }
-        import from jaclang.server.net { PortInUseError }
-        if isinstance(e, PortInUseError) {
-            raise;
-        }
-        console.error(f"Server error: {e}");
-        console.error(dump_traceback(e));
-        return 1;
-    } finally {
         try {
+            mach.mem.unit_exit();
+        } except Exception {}
+        ServerClass = Jac.get_api_server_class();
+        server = ServerClass(module_name=mod, base_path=base, settings=settings);
+        if prepared.client_compiler is not None or (dev and not no_client) {
+            server.introspector._bundle_builder = Jac.get_client_bundle_builder();
+        }
+        if prepared.client_compiler is not None {
+            server.introspector._bundle_builder._compiler = prepared.client_compiler;
+        }
+        if faux {
+            try {
+                server.print_endpoint_docs();
+            } except Exception as e {
+                import from jaclang.runtime.traceback_render { dump_traceback }
+                console.error(f"Error generating endpoint documentation: {e}");
+                console.error(dump_traceback(e));
+                mach.close();
+                return 1;
+            }
+            mach.close();
+            return 0;
+        }
+        hot_reloader = None;
+        vite_holder: list[any] = [];
+        if dev {
+            if not _ensure_watchdog_installed() {
+                mach.close();
+                return 1;
+            }
+            try {
+                import from jaclang.server.hmr { HotReloader }
+                import from jaclang.server.watcher { JacFileWatcher }
+
+                watcher = JacFileWatcher(watch_paths=[base]);
+                client_compiler = None;
+                if not no_client {
+                    try {
+                        client_compiler = server.introspector._bundle_builder._get_compiler();
+                    } except Exception as e {
+                        console.warning(
+                            f"Client compiler unavailable, HMR uses legacy mode: {e}"
+                        );
+                    }
+                }
+                hot_reloader = HotReloader(
+                    base_path=base,
+                    module_name=mod,
+                    entry_path=os.path.realpath(filename),
+                    watcher=watcher,
+                    client_compiler=client_compiler
+                );
+                hot_reloader.start();
+
+                if server?.enable_hmr {
+                    server.enable_hmr(hot_reloader);
+                }
+            } except ImportError as e {
+                console.error(f"Error: Could not initialize HMR: {e}");
+                console.error(
+                    "\nMake sure 'watchdog' is installed by running: jac install --dev"
+                );
+                mach.close();
+                return 1;
+            } except Exception as e {
+                console.warning(f"HMR initialization failed: {e}");
+            }
+        }
+        def _announce_ready(actual_port: int) {
+            primary_port = actual_port;
+            if dev and not no_client {
+                free_vite_port = _find_free_port(
+                    vite_port, skip_port=actual_port, strict=port_pinned
+                );
+                declared_paths: list[str] = [];
+                claimed_paths: list[str] = [];
+                try {
+                    import from jaclang.client.vite_bundler { DEV_PROXY_PREFIXES }
+                    declared_paths = server.introspector.declared_api_paths();
+                    claimed_paths = server.introspector.client_claimed_paths(
+                        DEV_PROXY_PREFIXES
+                    );
+                } except Exception as e {
+                    console.warning(f"Could not read declared API paths: {e}");
+                }
+                (started_vite, bound_port) = _start_vite_dev_server(
+                    base, free_vite_port, actual_port, declared_paths, claimed_paths
+                );
+                if started_vite {
+                    vite_holder.append(started_vite);
+                }
+                primary_port = bound_port;
+            }
+            _print_startup_message(
+                dev=dev,
+                no_client=no_client,
+                primary_port=primary_port,
+                api_port=actual_port,
+                base_path=base
+            );
+        }
+        try {
+            return int(
+                server.start(dev=dev, no_client=no_client, on_ready=_announce_ready)
+            );
+        } except ServeConfigError as e {
+            console.error(str(e));
             if hot_reloader is not None {
                 hot_reloader.stop();
             }
-        } finally {
-            import subprocess;
-            for started_vite in vite_holder {
-                started_vite.terminate();
-                try {
-                    started_vite.`wait(timeout=5);
-                } except subprocess.TimeoutExpired {
-                    started_vite.kill();
-                    started_vite.`wait();
-                }
-            }
             mach.close();
+            return 1;
+        } except KeyboardInterrupt {
+            console.print('\nShutting down');
+            return 0;
+        } except Exception as e {
+            import from jaclang.runtime.traceback_render { dump_traceback }
+            import from jaclang.server.net { PortInUseError }
+            if isinstance(e, PortInUseError) {
+                raise;
+            }
+            console.error(f"Server error: {e}");
+            console.error(dump_traceback(e));
+            return 1;
+        } finally {
+            try {
+                if hot_reloader is not None {
+                    hot_reloader.stop();
+                }
+            } finally {
+                import subprocess;
+                for started_vite in vite_holder {
+                    started_vite.terminate();
+                    try {
+                        started_vite.`wait(timeout=5);
+                    } except subprocess.TimeoutExpired {
+                        started_vite.kill();
+                        started_vite.`wait();
+                    }
+                }
+                mach.close();
+            }
         }
     }
 }
@@ -2140,9 +2133,8 @@ impl x(
     use_global: bool = False,
     use_node: bool = False,
     list_tools: bool = False,
-    args: (list[str] | None) = None
+    args: list[str] = []
 ) -> int {
-    args = args or [];
     tiers = _tool_tiers(use_global, use_node);
 
     if list_tools or not name {

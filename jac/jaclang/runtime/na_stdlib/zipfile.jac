@@ -1,5 +1,11 @@
-import from _zlib_native { z_crc32 }
-import from _deflate { inflate_exact }
+import from _zlib_native {
+    ZInflateResult,
+    Z_STREAM_END,
+    Z_MEM_ERROR,
+    z_crc32,
+    z_inflate_all,
+    z_inflate_bound
+}
 
 glob:pub ZIP_STORED: int = 0,
      ZIP_DEFLATED: int = 8;
@@ -231,14 +237,19 @@ def _name(raw: bytes, flags: int) -> str {
 }
 
 def _inflate(data: bytes, size: int) -> bytes {
-    if size < 0 or size > len(data) * 1032 + 1024 {
+    if size < 0 or size > z_inflate_bound(len(data)) {
         raise BadZipFile("Invalid DEFLATE output size");
     }
-    result = inflate_exact(data, size);
-    if result is None {
+    res: ZInflateResult = z_inflate_all(data, 0, len(data), -15, size, size + 1);
+    if res.status == Z_MEM_ERROR {
+        raise MemoryError("zipfile: allocation failed");
+    }
+    if res.status != Z_STREAM_END
+        or res.consumed != len(data)
+        or len(res.data) != size {
         raise BadZipFile("Invalid or truncated DEFLATE stream");
     }
-    return result;
+    return res.data;
 }
 
 obj:pub ZipFile {
