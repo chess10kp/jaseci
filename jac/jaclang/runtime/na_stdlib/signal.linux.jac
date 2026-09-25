@@ -6,7 +6,7 @@ import from _signal_native {
     sig_pause,
     sig_mask
 }
-import from _errno_native { last_errno, raise_errno_error }
+import from _errno_native { last_errno, raise_errno }
 
 glob:pub SIGHUP: int = 1,
      SIGINT: int = 2,
@@ -84,7 +84,7 @@ def:pub signal(signum: int, handler: Callable[[int, any], None]) -> any {
         old = sig_install_fn(signum, handler);
     }
     if old == -1 {
-        raise_errno_error(last_errno());
+        raise_errno(last_errno());
     }
     _shadow[signum] = handler;
     return prev;
@@ -102,7 +102,7 @@ def:pub raise_signal(signum: int) {
     _check_signum(signum);
     rc = sig_kill_self(signum);
     if rc != 0 {
-        raise_errno_error(last_errno());
+        raise_errno(last_errno());
     }
 }
 
@@ -112,7 +112,7 @@ def:pub alarm(seconds: int) -> int {
     }
     old = sig_alarm(seconds);
     if old == -1 {
-        raise_errno_error(last_errno());
+        raise_errno(last_errno());
     }
     return old;
 }
@@ -183,7 +183,7 @@ def:pub pthread_sigmask(how: int, mask: list[int]) -> list[int] {
     }
     (rc, out) = sig_mask(how, mask, NSIG);
     if rc != 0 {
-        raise_errno_error(rc);
+        raise_errno(rc);
     }
     return out;
 }

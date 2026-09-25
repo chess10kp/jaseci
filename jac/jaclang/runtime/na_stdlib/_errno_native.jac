@@ -20,10 +20,6 @@ def:pub errno_message -> str {
     return strerror(i32(last_errno()));
 }
 
-def:pub errno_message_for(code: int) -> str {
-    return strerror(i32(code));
-}
-
 def _raise_for_errno(code: int, message: imm str) {
     if code == ENOENT {
         raise FileNotFoundError(message);
@@ -40,18 +36,14 @@ def _raise_for_errno(code: int, message: imm str) {
     raise OSError(message);
 }
 
-def:pub raise_errno_error(code: int, operation: str = "") {
-    message = errno_message_for(code);
+def:pub raise_errno(code: int, operation: imm str = "") {
+    message = "[Errno " + str(code) + "] ";
     if operation != "" {
-        message = operation + ": " + message;
+        message = message + operation + ": ";
     }
-    raise OSError("[Errno " + str(code) + "] " + message);
+    _raise_for_errno(code, message + strerror(i32(code)));
 }
 
 def:pub raise_os_error(operation: imm str, path: imm str, code: int) {
     _raise_for_errno(code, operation + ": " + strerror(i32(code)) + ": " + path);
-}
-
-def:pub raise_errno(code: int) {
-    _raise_for_errno(code, "[Errno " + str(code) + "] " + strerror(i32(code)));
 }

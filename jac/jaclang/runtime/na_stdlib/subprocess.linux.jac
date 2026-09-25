@@ -18,7 +18,7 @@ import from _subprocess_native {
     sp_now_ms,
     sp_pollio
 }
-import from _errno_native { last_errno, raise_errno_error, raise_os_error }
+import from _errno_native { EINTR, last_errno, raise_errno, raise_os_error }
 import from signal { signal, SIG_IGN, SIGPIPE }
 
 glob:pub PIPE: int = -1,
@@ -28,7 +28,6 @@ glob:pub PIPE: int = -1,
 glob _WNOHANG: int = 1,
      _SIGKILL: int = 9,
      _SIGTERM: int = 15,
-     _EINTR: int = 4,
      _ECHILD: int = 10,
      _O_RDWR: int = 2,
      _POLLIN: int = 1,
@@ -176,7 +175,7 @@ obj:pub Popen {
                     sp_close(r[2]);
                 }
             }
-            raise_errno_error(pipe_err, "pipe");
+            raise_errno(pipe_err, "pipe");
         }
         in_pipe = [r_in[1], r_in[2]];
         out_pipe = [r_out[1], r_out[2]];
@@ -299,13 +298,13 @@ obj:pub Popen {
                 return -1;
             }
             err = last_errno();
-            if err == _EINTR {
+            if err == EINTR {
                 continue;
             }
             if err == _ECHILD {
                 return -2;
             }
-            raise_errno_error(err, "waitpid");
+            raise_errno(err, "waitpid");
         }
     }
 
@@ -389,10 +388,10 @@ obj:pub Popen {
                 self._raise_timeout(timeout, bytes(out_acc), bytes(err_acc));
             }
             if pr[0] < 0 {
-                if last_errno() == _EINTR {
+                if last_errno() == EINTR {
                     continue;
                 }
-                raise_errno_error(last_errno(), "poll");
+                raise_errno(last_errno(), "poll");
             }
             if wfd >= 0 {
                 if (pr[3] & (_POLLERR | _POLLHUP | _POLLNVAL)) != 0 {
