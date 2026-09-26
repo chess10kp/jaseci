@@ -30,14 +30,9 @@ import from configparser {
 }
 
 
-def _mk -> ConfigParser {
-    return ConfigParser();
-}
-
-
 def configparser_py -> dict[any, any] {
     out: dict[any, any] = {};
-    cp: ConfigParser = _mk();
+    cp: ConfigParser = ConfigParser();
     cp.read_string(
         "[DEFAULT]\nbase = 100\nname = bench\n[s0]\nnum = 7\nratio = 2.5\nflag = yes\noff = 0\nref = %(base)s\n[s1]\nnum = 8\n"
     );
@@ -60,10 +55,10 @@ def configparser_py -> dict[any, any] {
     out["item0_v"] = it0[1];
     itlast: tuple[(str, str)] = its[len(its) - 1];
     out["iteml_k"] = itlast[0];
-    cp2: ConfigParser = _mk();
+    cp2: ConfigParser = ConfigParser();
     cp2.read_string("[s]\nlong = first\n  second\n");
     out["cont"] = cp2.get("s", "long");
-    cp3: ConfigParser = _mk();
+    cp3: ConfigParser = ConfigParser();
     cp3.read_string("[s]\na = 1\nb = \n");
     cp3.set("s", "c", "3");
     out["set_get"] = cp3.get("s", "c");
@@ -71,14 +66,14 @@ def configparser_py -> dict[any, any] {
     out["rm_opt2"] = cp3.remove_option("s", "a");
     out["rm_sec"] = cp3.remove_section("s");
     out["rm_sec2"] = cp3.remove_section("s");
-    cp4: ConfigParser = _mk();
+    cp4: ConfigParser = ConfigParser();
     cp4.read_string("[s]\na = 1\n");
     cp4.add_section("t");
     out["addsec"] = cp4.has_section("t");
-    cp5: ConfigParser = _mk();
+    cp5: ConfigParser = ConfigParser();
     cp5.read_dict({"s": {"a": "1"}, "t": {"b": "2"}});
     out["rd_secs"] = len(cp5.sections());
-    cpw: ConfigParser = _mk();
+    cpw: ConfigParser = ConfigParser();
     cpw.read_string("[s]\nb = multi\n\tline2\n");
     try {
         ConfigParser().get("nope", "k");
@@ -87,7 +82,7 @@ def configparser_py -> dict[any, any] {
     } except Exception {
         out["e_ns"] = "WRONG-TYPE";
     }
-    cpn: ConfigParser = _mk();
+    cpn: ConfigParser = ConfigParser();
     cpn.read_string("[s]\na = 1\n");
     try {
         cpn.get("s", "zz");
@@ -117,7 +112,7 @@ def configparser_py -> dict[any, any] {
     } except Exception {
         out["e_do"] = "WRONG-TYPE";
     }
-    cpi: ConfigParser = _mk();
+    cpi: ConfigParser = ConfigParser();
     cpi.read_string(
         "[DEFAULT]\nv0 = %(v1)s\nv1 = %(v0)s\n[s]\na = %(zz)s\npct = 50% off\n"
     );
@@ -149,7 +144,7 @@ def configparser_py -> dict[any, any] {
     } except Exception {
         out["e_pe"] = "WRONG-TYPE";
     }
-    cpg: ConfigParser = _mk();
+    cpg: ConfigParser = ConfigParser();
     cpg.read_string("[s]\nv = maybe\n");
     try {
         cpg.getboolean("s", "v");
@@ -176,7 +171,7 @@ def configparser_cl -> dict[any, any] {
 
 def configparser_na -> dict[str, any] {
     out: dict[str, any] = {};
-    cp: ConfigParser = _mk();
+    cp: ConfigParser = ConfigParser();
     cp.read_string(
         "[DEFAULT]\nbase = 100\nname = bench\n[s0]\nnum = 7\nratio = 2.5\nflag = yes\noff = 0\nref = %(base)s\n[s1]\nnum = 8\n"
     );
@@ -199,10 +194,10 @@ def configparser_na -> dict[str, any] {
     out["item0_v"] = it0[1];
     itlast: tuple[(str, str)] = its[len(its) - 1];
     out["iteml_k"] = itlast[0];
-    cp2: ConfigParser = _mk();
+    cp2: ConfigParser = ConfigParser();
     cp2.read_string("[s]\nlong = first\n  second\n");
     out["cont"] = cp2.get("s", "long");
-    cp3: ConfigParser = _mk();
+    cp3: ConfigParser = ConfigParser();
     cp3.read_string("[s]\na = 1\nb = \n");
     cp3.set("s", "c", "3");
     out["set_get"] = cp3.get("s", "c");
@@ -210,14 +205,14 @@ def configparser_na -> dict[str, any] {
     out["rm_opt2"] = cp3.remove_option("s", "a");
     out["rm_sec"] = cp3.remove_section("s");
     out["rm_sec2"] = cp3.remove_section("s");
-    cp4: ConfigParser = _mk();
+    cp4: ConfigParser = ConfigParser();
     cp4.read_string("[s]\na = 1\n");
     cp4.add_section("t");
     out["addsec"] = cp4.has_section("t");
-    cp5: ConfigParser = _mk();
+    cp5: ConfigParser = ConfigParser();
     cp5.read_dict({"s": {"a": "1"}, "t": {"b": "2"}});
     out["rd_secs"] = len(cp5.sections());
-    cpw: ConfigParser = _mk();
+    cpw: ConfigParser = ConfigParser();
     cpw.read_string("[s]\nb = multi\n\tline2\n");
     try {
         ConfigParser().get("nope", "k");
@@ -226,7 +221,7 @@ def configparser_na -> dict[str, any] {
     } except Exception {
         out["e_ns"] = "WRONG-TYPE";
     }
-    cpn: ConfigParser = _mk();
+    cpn: ConfigParser = ConfigParser();
     cpn.read_string("[s]\na = 1\n");
     try {
         cpn.get("s", "zz");
@@ -256,7 +251,7 @@ def configparser_na -> dict[str, any] {
     } except Exception {
         out["e_do"] = "WRONG-TYPE";
     }
-    cpi: ConfigParser = _mk();
+    cpi: ConfigParser = ConfigParser();
     cpi.read_string(
         "[DEFAULT]\nv0 = %(v1)s\nv1 = %(v0)s\n[s]\na = %(zz)s\npct = 50% off\n"
     );
@@ -288,7 +283,7 @@ def configparser_na -> dict[str, any] {
     } except Exception {
         out["e_pe"] = "WRONG-TYPE";
     }
-    cpg: ConfigParser = _mk();
+    cpg: ConfigParser = ConfigParser();
     cpg.read_string("[s]\nv = maybe\n");
     try {
         cpg.getboolean("s", "v");
