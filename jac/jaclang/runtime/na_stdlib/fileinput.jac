@@ -7,17 +7,18 @@ def _resolve_files(files: (list[str] | str | None)) -> list[str] {
     if isinstance(f0, str) {
         return [f0];
     }
-    if isinstance(f0, list[str]) {
-        if len(f0) == 0 {
-            return ["-"];
+    if f0 is None {
+        argv: list[str] = sys.argv;
+        if len(argv) > 1 {
+            return argv[1:];
         }
-        return f0;
+        return ["-"];
     }
-    argv: list[str] = sys.argv;
-    if len(argv) > 1 {
-        return argv[1:];
+    lst: list[str] = f0 as list[str];
+    if len(lst) == 0 {
+        return ["-"];
     }
-    return ["-"];
+    return lst;
 }
 
 obj:pub FileInput {

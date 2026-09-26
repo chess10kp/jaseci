@@ -72,8 +72,9 @@ def tempfile_py -> dict[any, any] {
     d["tf_read"] = trb.decode();
     tf.close();
     xf = tempfile.TemporaryFile(mode="w+", dir=base);
-    xf.write("t1");
-    xf.seek(0);
+    d["xf_write"] = xf.write("t1");
+    d["xf_seek"] = xf.seek(0);
+    d["xf_tell"] = xf.tell();
     d["xf_text"] = xf.read();
     xf.close();
     td = tempfile.TemporaryDirectory(suffix=".td", prefix="pt", dir=base);
@@ -159,8 +160,9 @@ def tempfile_na -> dict[str, any] {
     d["tf_read"] = trb.decode();
     tf.close();
     xf = tempfile.TemporaryFile(mode="w+", dir=base);
-    xf.write("t1");
-    xf.seek(0);
+    d["xf_write"] = xf.write("t1");
+    d["xf_seek"] = xf.seek(0);
+    d["xf_tell"] = xf.tell();
     d["xf_text"] = xf.read();
     xf.close();
     td = tempfile.TemporaryDirectory(suffix=".td", prefix="pt", dir=base);
