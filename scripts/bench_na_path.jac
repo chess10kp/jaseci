@@ -96,6 +96,16 @@ def bench_translate(n: int) -> int {
     i: int = 0;
     while i < n {
         acc += len(fnmatch.translate("a*b?c[de].txt"));
+        i += 1;
+    }
+    return acc;
+}
+
+
+def bench_escape(n: int) -> int {
+    acc: int = 0;
+    i: int = 0;
+    while i < n {
         acc += len(escape("dir/x*y?.log"));
         if has_magic("a/b[cd]") {
             acc += 1;
@@ -271,6 +281,7 @@ glob rounds: int = 3;
 glob names: list[str] = [
          "fnmatch",
          "translate",
+         "escape",
          "glob_walk",
          "pathlib",
          "pathlib_io",
@@ -284,6 +295,7 @@ glob names: list[str] = [
      ns_list: list[int] = [
          200000,
          50000,
+         150000,
          2000,
          100000,
          20000,
@@ -311,20 +323,22 @@ with entry {
             } elif phase == 1 {
                 acc = bench_translate(n);
             } elif phase == 2 {
-                acc = bench_glob(n);
+                acc = bench_escape(n);
             } elif phase == 3 {
-                acc = bench_pathlib(n);
+                acc = bench_glob(n);
             } elif phase == 4 {
-                acc = bench_pathlib_io(n);
+                acc = bench_pathlib(n);
             } elif phase == 5 {
-                acc = bench_which(n);
+                acc = bench_pathlib_io(n);
             } elif phase == 6 {
-                acc = bench_tmpfile(n);
+                acc = bench_which(n);
             } elif phase == 7 {
-                acc = bench_tmpdir(n);
+                acc = bench_tmpfile(n);
             } elif phase == 8 {
-                acc = bench_filecmp(n);
+                acc = bench_tmpdir(n);
             } elif phase == 9 {
+                acc = bench_filecmp(n);
+            } elif phase == 10 {
                 acc = bench_fileinput(n);
             } else {
                 acc = bench_linecache(n);
