@@ -202,13 +202,13 @@ obj:pub TempFile {
         return tf_tell(self._fd);
     }
 
-    def write(data: any) -> int {
+    def write(data: (bytes | str)) -> int {
         self._check_open();
         payload: bytes = b"";
         if isinstance(data, str) {
             payload = data.encode();
         } else {
-            payload = data as bytes;
+            payload = data;
         }
         if tf_write(self._fd, payload) != 0 {
             raise_os_error("write", self.name, last_errno());

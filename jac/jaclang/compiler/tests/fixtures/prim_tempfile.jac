@@ -76,6 +76,7 @@ def tempfile_py -> dict[any, any] {
     d["xf_seek"] = xf.seek(0);
     d["xf_tell"] = xf.tell();
     d["xf_text"] = xf.read();
+    d["xf_pos"] = xf.tell();
     xf.close();
     td = tempfile.TemporaryDirectory(suffix=".td", prefix="pt", dir=base);
     tn = os.path.basename(td.name);
@@ -164,6 +165,7 @@ def tempfile_na -> dict[str, any] {
     d["xf_seek"] = xf.seek(0);
     d["xf_tell"] = xf.tell();
     d["xf_text"] = xf.read();
+    d["xf_pos"] = xf.tell();
     xf.close();
     td = tempfile.TemporaryDirectory(suffix=".td", prefix="pt", dir=base);
     tn = os.path.basename(td.name);
