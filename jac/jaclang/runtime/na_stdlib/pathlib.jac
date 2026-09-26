@@ -229,9 +229,9 @@ obj:pub Path {
             raise FileExistsError("[Errno 17] File exists: '" + self._p + "'");
         }
         if parents {
-            os.makedirs(self._p, mode);
+            os.makedirs(self._p);
         } else {
-            os.mkdir(self._p, mode);
+            os.mkdir(self._p);
         }
     }
 
