@@ -149,6 +149,8 @@ def _setops_sub(stuff: str) -> str {
         if (i + 1 < n and stuff[i + 1] == c and (c == "&" or c == "~" or c == "|")) {
             out += "\\";
             out += c;
+            out += "\\";
+            out += c;
             i += 2;
             continue;
         }

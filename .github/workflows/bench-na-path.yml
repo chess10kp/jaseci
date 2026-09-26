@@ -42,15 +42,17 @@ jobs:
       - name: Prim equivalence tests (na-path modules)
         working-directory: jac
         run: |
-          set -euo pipefail
+          set -uo pipefail
           BIN="$PWD/zig-out/bin/jac"
+          rc=0
           for case in "glob bundled" "pathlib bundled" "fnmatch bundled" \
               "tempfile bundled" "filecmp bundled" "fileinput bundled" \
               "linecache bundled" "bundled shutil"; do
             echo "=== case: $case"
             "$BIN" test jaclang/compiler/tests/test_prim_equivalence.jac \
-              -f "$case" 2>&1 | tee -a prim.txt
+              -f "$case" 2>&1 | tee -a prim.txt || rc=1
           done
+          exit $rc
 
       - name: Upload prim output
         if: always()
