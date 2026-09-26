@@ -10183,6 +10183,7 @@ graph import compiler {
         driver.module_analysis.run_analysis { settle_server },
         driver.nativecache.NativeUnitRegistry.known_native_deps { native_unit },
         native_scope.package_host_edge { native_lowered, native_unit },
+        symbol_utils.import_target_pinned_server { pinned_module_space },
     ]
     placement.placement_pins ++> [
         driver.boundary_classify { BareImportVerdict, classify_bare_import },
