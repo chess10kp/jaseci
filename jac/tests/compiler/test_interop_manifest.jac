@@ -220,14 +220,14 @@ test "unmappable signature on pinned-server import is E5093" {
         f"a list param on a native->server imported signature must block "
         f"native lowering; errors: {msgs}, stderr: {notes!r}"
     );
-    assert not mod.gen.native_codespace , (
+    assert mod.decided_codespace != 'native' , (
         "the demoted module must not keep a native verdict"
     );
 }
 
 test "native default codespace stamps the na->sv caller once" {
     # The aot + native-default-codespace path stamps the module-level verdict
-    # once (gen.native_codespace): the binding records a NATIVE caller, never
+    # once (decided_codespace): the binding records a NATIVE caller, never
     # a meaningless SERVER caller from the stamp pass disagreeing with the
     # analysis pass.
     tmp = write_mods(
