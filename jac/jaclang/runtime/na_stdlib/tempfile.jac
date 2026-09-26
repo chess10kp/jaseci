@@ -274,10 +274,10 @@ def _mk_tempfile(
     delete: bool,
     anonymous: bool
 ) -> TempFile {
-    flags: tuple[(int, str)] = mkstemp(suffix, prefix, dir);
+    (fd, name) = mkstemp(suffix, prefix, dir);
     f: TempFile = TempFile();
-    f._fd = flags[0];
-    f.name = flags[1];
+    f._fd = fd;
+    f.name = name;
     f.mode = mode;
     f._text = not ("b" in mode);
     if anonymous {
