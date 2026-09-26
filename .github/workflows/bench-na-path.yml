@@ -84,9 +84,9 @@ jobs:
           set -euxo pipefail
           BIN="$PWD/zig-out/bin/jac"
           "$BIN" build --native ../scripts/bench_na_path.jac \
-            -o "$PWD/bench_na_path" --jit-jobs 0
+            -o "$PWD/bench_na_path"
           "$BIN" build --native ../scripts/bench_na_path_ffi.jac \
-            -o "$PWD/bench_na_path_ffi" --jit-jobs 0
+            -o "$PWD/bench_na_path_ffi"
 
       - name: Bench -- native lane
         working-directory: jac
