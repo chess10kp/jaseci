@@ -35,9 +35,13 @@ jobs:
         run: |
           set -euo pipefail
           BIN="$PWD/zig-out/bin/jac"
-          "$BIN" test jaclang/compiler/tests/test_prim_equivalence.jac \
-            -f "glob bundled or pathlib bundled or fnmatch bundled or tempfile bundled or filecmp bundled or fileinput bundled or linecache bundled or bundled shutil" \
-            2>&1 | tee prim.txt
+          for case in "glob bundled" "pathlib bundled" "fnmatch bundled" \
+              "tempfile bundled" "filecmp bundled" "fileinput bundled" \
+              "linecache bundled" "bundled shutil"; do
+            echo "=== case: $case"
+            "$BIN" test jaclang/compiler/tests/test_prim_equivalence.jac \
+              -f "$case" 2>&1 | tee -a prim.txt
+          done
 
       - name: Upload prim output
         if: always()
