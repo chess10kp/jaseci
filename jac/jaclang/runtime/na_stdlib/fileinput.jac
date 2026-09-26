@@ -3,14 +3,15 @@ import sys;
 import from _tempfile_native { tf_stdin_read_all }
 
 def _resolve_files(files: (list[str] | str | None)) -> list[str] {
-    if isinstance(files, str) {
-        return [files];
+    f0: any = files;
+    if isinstance(f0, str) {
+        return [f0];
     }
-    if isinstance(files, list[str]) {
-        if len(files) == 0 {
+    if isinstance(f0, list[str]) {
+        if len(f0) == 0 {
             return ["-"];
         }
-        return files;
+        return f0;
     }
     argv: list[str] = sys.argv;
     if len(argv) > 1 {

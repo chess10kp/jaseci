@@ -50,7 +50,8 @@ def tempfile_py -> dict[any, any] {
     d["nf_write"] = nf.write(b"hello");
     d["nf_tell"] = nf.tell();
     d["nf_seek"] = nf.seek(0);
-    d["nf_read"] = (nf.read() as bytes).decode();
+    nrb: bytes = nf.read() as bytes;
+    d["nf_read"] = nrb.decode();
     nb = os.path.basename(nf.name);
     d["nf_name"] = nb.startswith("pf") and nb.endswith(".dat");
     d["nf_present"] = os.path.exists(nf.name);
@@ -67,7 +68,8 @@ def tempfile_py -> dict[any, any] {
     tf = tempfile.TemporaryFile(mode="w+b", dir=base);
     tf.write(b"anon");
     tf.seek(0);
-    d["tf_read"] = (tf.read() as bytes).decode();
+    trb: bytes = tf.read() as bytes;
+    d["tf_read"] = trb.decode();
     tf.close();
     xf = tempfile.TemporaryFile(mode="w", dir=base);
     xf.write("t1");
@@ -135,7 +137,8 @@ def tempfile_na -> dict[str, any] {
     d["nf_write"] = nf.write(b"hello");
     d["nf_tell"] = nf.tell();
     d["nf_seek"] = nf.seek(0);
-    d["nf_read"] = (nf.read() as bytes).decode();
+    nrb: bytes = nf.read() as bytes;
+    d["nf_read"] = nrb.decode();
     nb = os.path.basename(nf.name);
     d["nf_name"] = nb.startswith("pf") and nb.endswith(".dat");
     d["nf_present"] = os.path.exists(nf.name);
@@ -152,7 +155,8 @@ def tempfile_na -> dict[str, any] {
     tf = tempfile.TemporaryFile(mode="w+b", dir=base);
     tf.write(b"anon");
     tf.seek(0);
-    d["tf_read"] = (tf.read() as bytes).decode();
+    trb: bytes = tf.read() as bytes;
+    d["tf_read"] = trb.decode();
     tf.close();
     xf = tempfile.TemporaryFile(mode="w", dir=base);
     xf.write("t1");

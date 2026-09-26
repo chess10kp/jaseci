@@ -66,7 +66,12 @@ def fileinput_py -> dict[any, any] {
     }
     d["lines"] = "|".join(lines);
     d["marks"] = "|".join(marks);
-    d["post_filename"] = os.path.basename(fileinput.filename());
+    fn0: (str | None) = fileinput.filename();
+    if fn0 is None {
+        d["post_filename"] = "";
+    } else {
+        d["post_filename"] = os.path.basename(fn0);
+    }
     fileinput.close();
     try {
         fileinput.lineno();

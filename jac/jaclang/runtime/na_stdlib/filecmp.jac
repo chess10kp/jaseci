@@ -186,13 +186,15 @@ obj:pub dircmp {
         self.left = a;
         self.right = b;
         self.shallow = shallow;
-        if isinstance(hide, list[str]) {
-            self.hide = hide;
+        h0: any = hide;
+        if isinstance(h0, list[str]) {
+            self.hide = h0;
         } else {
             self.hide = [".", ".."];
         }
-        if isinstance(ignore, list[str]) {
-            self.ignore = ignore;
+        i0: any = ignore;
+        if isinstance(i0, list[str]) {
+            self.ignore = i0;
         } else {
             self.ignore = DEFAULT_IGNORES;
         }

@@ -146,13 +146,8 @@ def _setops_sub(stuff: str) -> str {
     n: int = len(stuff);
     while i < n {
         c: str = stuff[i];
-        if (i + 1 < n and stuff[i + 1] == c and (c == "&" or c == "~" or c == "|")) {
+        if (c == "&" or c == "~" or c == "|") {
             out += "\\";
-            out += c;
-            out += "\\";
-            out += c;
-            i += 2;
-            continue;
         }
         out += c;
         i += 1;
