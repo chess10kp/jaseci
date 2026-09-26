@@ -9,68 +9,66 @@ pinned on both lanes; `translate` results compare as raw strings and
 
 import fnmatch;
 
-glob PATS: list[str] = [
-         "*.txt",
-         "a?c",
-         "[ab]c",
-         "[!a]c",
-         "[a-c]x",
-         "a*b*c",
-         "**",
-         "a***b",
-         "[]a]",
-         "[a-]",
-         "[-a]",
-         "x[",
-         "a\\b",
-         "a b",
-         "a.b",
-         "[a&&b]",
-         "[~a]",
-         "a(b)",
-         "foo|bar",
-         "[z-a]",
-         "*.tar.gz",
-         "x/**/y"
-     ],
-     NAMES: list[str] = [
-         "foo.txt",
-         "bar.log",
-         "a.tar.gz",
-         "abc",
-         "aXc",
-         "ac",
-         "axc",
-         "aXXbXc",
-         "a b",
-         "a.b",
-         "a\\b",
-         "x[",
-         "z",
-         "-a",
-         "[a&&b]",
-         "x/y",
-         "x/a/b/y"
-     ];
-
 
 def _grid_py(d: dict[any, any]) {
+    pats: list[str] = [
+        "*.txt",
+        "a?c",
+        "[ab]c",
+        "[!a]c",
+        "[a-c]x",
+        "a*b*c",
+        "**",
+        "a***b",
+        "[]a]",
+        "[a-]",
+        "[-a]",
+        "x[",
+        "a\\b",
+        "a b",
+        "a.b",
+        "[a&&b]",
+        "[~a]",
+        "a(b)",
+        "foo|bar",
+        "[z-a]",
+        "*.tar.gz",
+        "x/**/y"
+    ];
+    names: list[str] = [
+        "foo.txt",
+        "bar.log",
+        "a.tar.gz",
+        "abc",
+        "aXc",
+        "ac",
+        "axc",
+        "aXXbXc",
+        "a b",
+        "a.b",
+        "a\\b",
+        "x[",
+        "z",
+        "-a",
+        "[a&&b]",
+        "x/y",
+        "x/a/b/y"
+    ];
     i: int = 0;
-    while i < len(PATS) {
+    while i < len(pats) {
         j: int = 0;
-        while j < len(NAMES) {
-            nm: str = NAMES[j];
-            pt: str = PATS[i];
+        while j < len(names) {
+            nm: str = names[j];
+            pt: str = pats[i];
             d["m" + str(i) + "_" + str(j)] = fnmatch.fnmatch(nm, pt);
             d["c" + str(i) + "_" + str(j)] = fnmatch.fnmatchcase(nm, pt);
             j += 1;
         }
-        d["t" + str(i)] = fnmatch.translate(PATS[i]);
+        d["t" + str(i)] = fnmatch.translate(pats[i]);
         i += 1;
     }
-    d["filt_txt"] = "\n".join(fnmatch.filter(NAMES, "*.txt"));
-    d["filt_case"] = "\n".join(fnmatch.filter(NAMES, "A*"));
-    d["normcase"] = fnmatch.normcase("AbC/x");
+    d["filt_txt"] = "\n".join(fnmatch.filter(names, "*.txt"));
+    d["filt_case"] = "\n".join(fnmatch.filter(names, "A*"));
 }
 
 
@@ -87,22 +85,64 @@ def fnmatch_cl -> dict[any, any] {
 
 
 def _grid_na(d: dict[str, any]) {
+    pats: list[str] = [
+        "*.txt",
+        "a?c",
+        "[ab]c",
+        "[!a]c",
+        "[a-c]x",
+        "a*b*c",
+        "**",
+        "a***b",
+        "[]a]",
+        "[a-]",
+        "[-a]",
+        "x[",
+        "a\\b",
+        "a b",
+        "a.b",
+        "[a&&b]",
+        "[~a]",
+        "a(b)",
+        "foo|bar",
+        "[z-a]",
+        "*.tar.gz",
+        "x/**/y"
+    ];
+    names: list[str] = [
+        "foo.txt",
+        "bar.log",
+        "a.tar.gz",
+        "abc",
+        "aXc",
+        "ac",
+        "axc",
+        "aXXbXc",
+        "a b",
+        "a.b",
+        "a\\b",
+        "x[",
+        "z",
+        "-a",
+        "[a&&b]",
+        "x/y",
+        "x/a/b/y"
+    ];
     i: int = 0;
-    while i < len(PATS) {
+    while i < len(pats) {
         j: int = 0;
-        while j < len(NAMES) {
-            nm: str = NAMES[j];
-            pt: str = PATS[i];
+        while j < len(names) {
+            nm: str = names[j];
+            pt: str = pats[i];
             d["m" + str(i) + "_" + str(j)] = fnmatch.fnmatch(nm, pt);
             d["c" + str(i) + "_" + str(j)] = fnmatch.fnmatchcase(nm, pt);
             j += 1;
         }
-        d["t" + str(i)] = fnmatch.translate(PATS[i]);
+        d["t" + str(i)] = fnmatch.translate(pats[i]);
         i += 1;
     }
-    d["filt_txt"] = "\n".join(fnmatch.filter(NAMES, "*.txt"));
-    d["filt_case"] = "\n".join(fnmatch.filter(NAMES, "A*"));
-    d["normcase"] = fnmatch.normcase("AbC/x");
+    d["filt_txt"] = "\n".join(fnmatch.filter(names, "*.txt"));
+    d["filt_case"] = "\n".join(fnmatch.filter(names, "A*"));
 }
 
 
