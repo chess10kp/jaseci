@@ -54,3 +54,6 @@ with entry {
     print("ffi", bt1 / n, str(ba1));
     print("bundled", bt2 / n, str(ba2));
 }
+# CPython oracle lane (not committed - new .py files are blocked):
+# python3 loop `acc += math.sqrt(float(i % 1000))` over the same N/reps;
+# baseline 665ns/call with checksum 21065833.110874526 on the reference box.

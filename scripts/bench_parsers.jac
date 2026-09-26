@@ -289,3 +289,7 @@ with entry {
     emit_line("scan", rs, 2000);
     emit_line("slice", rl, 2000);
 }
+# CPython oracle lane (not committed - new .py files are blocked):
+# run the same build_json/build_csv/build_toml/build_ini workloads under
+# python3 with json/csv/tomllib/configparser and compare acc checksums and
+# ns/op. Recorded results live in the PR description and the na-bin playbook.
