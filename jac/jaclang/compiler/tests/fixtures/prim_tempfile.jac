@@ -71,7 +71,7 @@ def tempfile_py -> dict[any, any] {
     trb: bytes = tf.read() as bytes;
     d["tf_read"] = trb.decode();
     tf.close();
-    xf = tempfile.TemporaryFile(mode="w", dir=base);
+    xf = tempfile.TemporaryFile(mode="w+", dir=base);
     xf.write("t1");
     xf.seek(0);
     d["xf_text"] = xf.read();
@@ -158,7 +158,7 @@ def tempfile_na -> dict[str, any] {
     trb: bytes = tf.read() as bytes;
     d["tf_read"] = trb.decode();
     tf.close();
-    xf = tempfile.TemporaryFile(mode="w", dir=base);
+    xf = tempfile.TemporaryFile(mode="w+", dir=base);
     xf.write("t1");
     xf.seek(0);
     d["xf_text"] = xf.read();

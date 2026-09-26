@@ -153,8 +153,6 @@ def:pub updatecache(filename: str) -> list[str] {
     return lines;
 }
 
-def:pub lazycache(
-    filename: str, module_globals: (dict[any, any] | None) = None
-) -> bool {
+def:pub lazycache(filename: str, module_globals: any = None) -> bool {
     return False;
 }
