@@ -251,9 +251,19 @@ native layout records the emitted name separately from its source-level key.
   whose components do not all exist `realpath(3)` reports failure and the
   answer falls back to the lexical collapse, so a symlink sitting on an
   existing *prefix* of a missing path is not resolved the way CPython's
-  component walk resolves it. Comparison, hashing, iteration, `.parts`,
-  `.suffix`, `.glob`, `.open`, `.cwd()`, `.home()`, and the whole I/O surface
-  are not provided.
+  component walk resolves it. The wider surface this batch adds --
+`.parts` (a `list[str]`, not a tuple), `.anchor`/`.root`/`.drive`,
+`.suffix`/`.suffixes`, `.is_absolute()`, `.absolute()`, `.joinpath` (four
+segments max), `.with_name`/`.with_suffix`, `.match` (per-component
+`fnmatchcase` from the right; `**` in a component is ordinary wildcard
+text), `.is_file()`/`.is_symlink()` (lstat floor), `.read_text()`/
+`.write_text()`, `.mkdir(parents, exist_ok)`, `.unlink(missing_ok)`,
+`.rmdir()`, `.glob`/`.rglob` over the bundled `glob` module (hidden files
+included, like CPython's `Path.glob`), and static `.cwd()`/`.home()` --
+follows the same derivations, and absolute patterns to `.glob` raise
+`NotImplementedError` like CPython. Comparison, hashing, iteration,
+`.open`, `.stat`, `relative_to` and the rest of the I/O surface are still
+not provided.
 
 - **`fnmatch.jac`** (#8201) -- `fnmatch` and `fnmatchcase` as a direct
   backtracking glob matcher (`*`, `?`, `[seq]`, `[!seq]`, ranges), since the
@@ -261,10 +271,72 @@ native layout records the emitted name separately from its source-level key.
   reproduces CPython's `translate` rules exactly: a `]` immediately after `[`
   or `[!` is a literal member, an unterminated `[` degrades to a literal `[`,
   and a `-` first or last in a class is a literal `-`. Pinned against CPython
-  over a 29-pattern by 14-name grid. `normcase` is the identity, which is what
+  over a pattern/name grid. `normcase` is the identity, which is what
   it is on POSIX, so `fnmatch` and `fnmatchcase` agree here; on Windows
-  CPython's `fnmatch` would case-fold first. `filter` and `translate` are not
-  provided.
+  CPython's `fnmatch` would case-fold first. `filter` selects the matching
+  names from a `list[str]`, and `translate` is a mechanical port of CPython's
+  `_translate`/`_join_translated_parts` (3.14 output, atomic groups and
+  set-op escapes included), pinned byte-identical across the fixture's
+  pattern grid.
+
+- **`glob.jac`** -- CPython's `_iglob` walk (`*`, `?`, `[seq]`, `**` with
+  `recursive=`, and `include_hidden=`) over the bundled `fnmatch` plus an
+  lstat/dirent FFI floor (`_glob_native`). `glob` is a Jac keyword, so the
+  module declares it under the backtick escape (`def:pub `glob`); call sites
+  after a dot or in a `from` import need no escape. `iglob` returns the same
+  eager `list[str]` (CPython yields lazily -- iteration results agree).
+  Directory listings come back sorted where CPython's scandir order is
+  undefined, so the fixture sorts before comparing. `escape`/`has_magic`
+  included.
+
+- **`tempfile.jac`** -- `mkstemp`/`mkdtemp`/`mktemp`/`gettempdir`/
+  `gettempdirb`/`TMP_MAX`/`template` plus `NamedTemporaryFile`/
+  `TemporaryFile` (returning the fd-backed `TempFile` object with
+  read/write/seek/tell/close/`name`/`closed`) and `TemporaryDirectory`
+  (cleanup via bundled `shutil.rmtree`), over an `openat64`/`openat`/`mkdir`/
+  `read`/`write`/`lseek` FFI floor (`_tempfile_native` per-OS). Names are 8
+  chars of `abcdefghijklmnopqrstuvwxyz0123456789_` from `csprng_bytes`,
+  retried up to `TMP_MAX=20` on `EEXIST` exactly like CPython.
+  SCOPE/divergences: `TemporaryFile` creates then unlinks a named file
+  (CPython uses `O_TMPFILE` where available -- the observable result is
+  identical, an anonymous read/write file); `mkstemp`'s `text` flag is
+  accepted and ignored, matching POSIX where O_TEXT is a no-op;
+  `NamedTemporaryFile`'s `delete_on_close`/`errors` kwargs and
+  `SpooledTemporaryFile` are not provided.
+
+- **`filecmp.jac`** -- `cmp`/`cmpfiles`/`clear_cache`/`DEFAULT_IGNORES` and
+  an eager `dircmp` over a `stat(2)` FFI floor (`_filecmp_native`) that
+  digests CPython's `(S_IFMT, st_size, st_mtime)` signature into a single
+  i64 (plus the is-reg bit) and answers "is a directory" through the same
+  buffer. `cmp` follows CPython: not-regular -> False, identical shallow
+  signature -> True without reading, size mismatch -> False, then the
+  100-entry result cache keyed on the digested signatures. `dircmp`
+  computes phases 0-4 eagerly at construction including recursive `subdirs`
+  (CPython is lazy via `__getattr__` -- the values agree, the cost model
+  differs). SCOPE/divergences: the signature digest could in principle
+  collide where CPython's tuple compare could not; `dircmp.report*`,
+  `methodmap` and `__getattr__` laziness are not provided.
+
+- **`fileinput.jac`** -- `input`/`FileInput` plus the module-level
+  `filename`/`lineno`/`filelineno`/`fileno`/`isfirstline`/`isstdin`/
+  `nextfile`/`close` helpers and their `RuntimeError` messages, over
+  `open().read()` + `splitlines(keepends)` per file and an fd-0 FFI read
+  for `-` (stdin becomes `"<stdin>"` like CPython). `FileInput` is a real
+  iterator (`__iter__`/`__next__` with `StopIteration()`). SCOPE:
+  `inplace`/`backup` filtering raises `ValueError`, `openhook`/
+  `hook_compressed`/`hook_encoded` are not provided, binary mode is not
+  provided, and `fileno()` answers 0 only for stdin.
+
+- **`linecache.jac`** -- `getline`/`getlines`/`checkcache`/`clearcache`/
+  `updatecache`/`lazycache` over four parallel typed tables. Reads go
+  through `open().read()` + `splitlines(keepends=True)`, which is
+  byte-identical to `readlines` for the UTF-8 paths the module serves, with
+  CPython's "empty file -> `['\n']`" and "pad the last line" rules.
+  `lazycache` returns `False` unconditionally: the PEP 302
+  `__loader__`/`__spec__` path has no native analogue. SCOPE: the
+  `module_globals` parameters are dropped, the `sys.path` fallback for
+  relative names is not implemented, and `<frozen ` names answer `[]` /
+  `''` like CPython without globals.
 
 - **`logging.jac`** (#8201) -- `basicConfig`, `getLogger(name)`, the level
   constants, and `.debug`/`.info`/`.warning`/`.error`/`.critical` on both the

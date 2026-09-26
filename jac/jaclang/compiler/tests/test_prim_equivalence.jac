@@ -485,6 +485,55 @@ glob STR_NA_GAPS: list[any] = [
              "hashlib_na",
              ["na"]
          ),
+         ("glob bundled", "prim_glob.jac", "glob_py", "glob_cl", "glob_na", ["na"]),
+         (
+             "pathlib bundled",
+             "prim_pathlib.jac",
+             "pathlib_py",
+             "pathlib_cl",
+             "pathlib_na",
+             ["na"]
+         ),
+         (
+             "fnmatch bundled",
+             "prim_fnmatch.jac",
+             "fnmatch_py",
+             "fnmatch_cl",
+             "fnmatch_na",
+             ["na"]
+         ),
+         (
+             "tempfile bundled",
+             "prim_tempfile.jac",
+             "tempfile_py",
+             "tempfile_cl",
+             "tempfile_na",
+             ["na"]
+         ),
+         (
+             "filecmp bundled",
+             "prim_filecmp.jac",
+             "filecmp_py",
+             "filecmp_cl",
+             "filecmp_na",
+             ["na"]
+         ),
+         (
+             "fileinput bundled",
+             "prim_fileinput.jac",
+             "fileinput_py",
+             "fileinput_cl",
+             "fileinput_na",
+             ["na"]
+         ),
+         (
+             "linecache bundled",
+             "prim_linecache.jac",
+             "linecache_py",
+             "linecache_cl",
+             "linecache_na",
+             ["na"]
+         ),
          (
              "secrets bundled",
              "prim_secrets.jac",
