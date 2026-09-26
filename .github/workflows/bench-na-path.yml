@@ -5,6 +5,11 @@ name: bench-na-path
 # checkout, runs the prim_* equivalence fixtures for the new modules, then
 # runs the three-lane bench (native / sv bridge / CPython oracle) plus the
 # FFI-floor lane. Dispatch only -- not part of PR CI.
+#
+# JAC_NO_DEV_SOURCE=1 keeps every `jac` invocation on the embedded compiler
+# (built from this same checkout during "Build the jac binary"), skipping
+# the dev-mode self-host bootstrap that otherwise recompiles jaclang --
+# including na_ir_gen_pass.jac, ~50 min alone -- inside each step.
 
 on:
   workflow_dispatch:
@@ -12,9 +17,13 @@ on:
 permissions:
   contents: read
 
+env:
+  JAC_NO_DEV_SOURCE: "1"
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
 
@@ -53,6 +62,7 @@ jobs:
 
   bench:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
 
@@ -68,16 +78,37 @@ jobs:
           zig build fetch-typeshed --summary all
           zig build vendor-musl --summary all
 
+      - name: Build the bench binary (native)
+        working-directory: jac
+        run: |
+          set -euxo pipefail
+          BIN="$PWD/zig-out/bin/jac"
+          "$BIN" build --native ../scripts/bench_na_path.jac \
+            -o "$PWD/bench_na_path" --jit-jobs 0
+          "$BIN" build --native ../scripts/bench_na_path_ffi.jac \
+            -o "$PWD/bench_na_path_ffi" --jit-jobs 0
+
       - name: Bench -- native lane
         working-directory: jac
         run: |
           set -euo pipefail
           {
-            echo "### bench_na_path.jac -- jac run -b native (${{ runner.os }} / ${{ runner.arch }}, $(nproc) vcpu)"
+            echo "### bench_na_path.jac -- native binary (${{ runner.os }} / ${{ runner.arch }}, $(nproc) vcpu)"
             echo '```'
-            "$PWD/zig-out/bin/jac" run -b native ../scripts/bench_na_path.jac
+            ./bench_na_path
             echo '```'
           } | tee bench_native.txt | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Bench -- FFI floor lane
+        working-directory: jac
+        run: |
+          set -euo pipefail
+          {
+            echo "### bench_na_path_ffi.jac -- native binary (floor only)"
+            echo '```'
+            ./bench_na_path_ffi
+            echo '```'
+          } | tee bench_ffi.txt | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Bench -- sv bridge lane
         working-directory: jac
@@ -104,17 +135,6 @@ jobs:
             "$PY" ../scripts/bench_na_path.py
             echo '```'
           } | tee bench_py.txt | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: Bench -- FFI floor lane
-        working-directory: jac
-        run: |
-          set -euo pipefail
-          {
-            echo "### bench_na_path_ffi.jac -- jac run -b native (floor only)"
-            echo '```'
-            "$PWD/zig-out/bin/jac" run -b native ../scripts/bench_na_path_ffi.jac
-            echo '```'
-          } | tee bench_ffi.txt | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload bench output
         if: always()
