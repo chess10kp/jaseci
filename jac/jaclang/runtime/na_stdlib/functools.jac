@@ -65,11 +65,6 @@ obj:pub _Lru {
     has fn: Callable[[any], any],
         cap: (int | None),
         typed: bool,
-        # Values live in two stores: an i64-keyed dict for the hot int-ish
-        # case (a string key would cost an allocation plus a string hash on
-        # every call) and a str-keyed dict for everything else. Recency is a
-        # per-entry logical timestamp (`tick_*`) so eviction order is exact
-        # across both stores without a per-hit reorder.
         store_i: dict[int, any],
         store_s: dict[str, any],
         tick_i: dict[int, int],
@@ -163,10 +158,6 @@ obj:pub _Lru {
     }
 
     def __call__(x: any) -> any {
-        # CPython 3.14 compares cache keys with equal-type equality, so `1`,
-        # `1.0` and `True` live in separate key spaces whether the cache is
-        # typed or not; only the ±0.0 float pair aliases (0.0 == -0.0, same
-        # type).
         ik: int = 0;
         sk: str = "";
         use_i = False;
