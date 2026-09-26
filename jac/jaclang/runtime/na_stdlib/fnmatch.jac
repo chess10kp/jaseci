@@ -166,9 +166,7 @@ def _find_in(hay: str, needle: str, lo: int, hi: int) -> int {
     return -1;
 }
 
-def _translate(pat: str) -> tuple[(list[str], list[int])] {
-    res: list[str] = [];
-    star_indices: list[int] = [];
+def _translate(pat: str, res: list[str], star_indices: list[int]) {
     i: int = 0;
     n: int = len(pat);
     while i < n {
@@ -262,13 +260,12 @@ def _translate(pat: str) -> tuple[(list[str], list[int])] {
         }
         res.append(_re_escape(c));
     }
-    return (res, star_indices);
 }
 
 def:pub translate(pat: str) -> str {
-    tr: tuple[(list[str], list[int])] = _translate(pat);
-    parts: list[str] = tr[0];
-    star_indices: list[int] = tr[1];
+    parts: list[str] = [];
+    star_indices: list[int] = [];
+    _translate(pat, parts, star_indices);
     if not star_indices {
         return "(?s:" + "".join(parts) + ")\\z";
     }
