@@ -477,7 +477,7 @@ test "guardrail: @lru_cache binds the bundled module where a dict cache does not
         options=native_force_opts()
     );
     errs = fmt_errors(dec);
-    assert errs == [] , (
+    assert len(errs) == 0 , (
         f"`functools` now binds the bundled native module, so the decorator "
         f"resolves to `_LruDeco` and nothing is module-fatal: {errs}"
     );
