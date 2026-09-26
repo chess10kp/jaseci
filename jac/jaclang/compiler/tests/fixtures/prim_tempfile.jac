@@ -77,7 +77,15 @@ def tempfile_py -> dict[any, any] {
     d["xf_tell"] = xf.tell();
     d["xf_text"] = xf.read();
     d["xf_pos"] = xf.tell();
+    d["xf_fd"] = xf.fileno() >= 0;
     xf.close();
+    xn = tempfile.NamedTemporaryFile(
+        mode="w+", suffix=".xn", prefix="xn", dir=base, delete=False
+    );
+    xname = xn.name;
+    xn.write("q7");
+    xn.close();
+    d["xn_size"] = os.path.getsize(xname);
     td = tempfile.TemporaryDirectory(suffix=".td", prefix="pt", dir=base);
     tn = os.path.basename(td.name);
     d["td_dir"] = os.path.isdir(td.name) and tn.startswith("pt") and tn.endswith(".td");
@@ -166,7 +174,15 @@ def tempfile_na -> dict[str, any] {
     d["xf_tell"] = xf.tell();
     d["xf_text"] = xf.read();
     d["xf_pos"] = xf.tell();
+    d["xf_fd"] = xf.fileno() >= 0;
     xf.close();
+    xn = tempfile.NamedTemporaryFile(
+        mode="w+", suffix=".xn", prefix="xn", dir=base, delete=False
+    );
+    xname = xn.name;
+    xn.write("q7");
+    xn.close();
+    d["xn_size"] = os.path.getsize(xname);
     td = tempfile.TemporaryDirectory(suffix=".td", prefix="pt", dir=base);
     tn = os.path.basename(td.name);
     d["td_dir"] = os.path.isdir(td.name) and tn.startswith("pt") and tn.endswith(".td");
