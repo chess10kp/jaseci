@@ -657,6 +657,10 @@ impl JacProgram.stamp_native_import_facts(self: JacProgram, mod: uni.Module) -> 
         imp.native_only_drop = needs_native
             and target is not None
             and (os.sep + 'jaclang' + os.sep) not in os.path.abspath(target);
+
+        if imp.native_only_drop and target is not None {
+            imp.native_only_target = target;
+        }
     }
 }
 

@@ -102,6 +102,7 @@ import from jaclang.compiler.backends.native.na_constants {
     NATIVE_OS_FUNCS,
     NATIVE_OSPATH_FUNCS,
     NATIVE_RANDOM_FUNCS,
+    NATIVE_STDLIB_FUNC_TABLES,
     NATIVE_STRUCT_FUNCS,
     RC_BUFFERED_BIT,
     RC_COLOR_BLACK,
@@ -473,6 +474,7 @@ walker NaIRGenPass(CompilerPass) {
         set_release_fns: dict[str, ir.Function] = {},
         _struct_bodies_done: set[str] = set(),
         _native_stdlib_modules: set[str] = set(),
+        _native_stdlib_bare_names: dict[str, tuple[(str, str)]] = {},
         _native_module_imports: set[str] = set(),
         _stdlib_helpers_emitted: set[str] = set(),
         _global_origins: dict[str, str] = {},
@@ -776,6 +778,7 @@ walker NaIRGenPass(CompilerPass) {
     ) -> bool;
 
     def _emit_new(nd: uni.FuncCall) -> (ir.Value | None);
+    def _emit_jid(nd: uni.FuncCall) -> (ir.Value | None);
     def _codegen_decorated_call(nd: uni.FuncCall, func_name: str) -> (ir.Value | None);
     def _emit_isinstance(nd: uni.FuncCall) -> (ir.Value | None);
     def _emit_buffer_isinstance(
@@ -1206,6 +1209,7 @@ walker NaIRGenPass(CompilerPass) {
 
     def _rename_demoted_symbol(name: str, func: ir.Function) -> None;
     def _process_clib_imports(module: uni.Module) -> None;
+    def _record_stdlib_bare_name(mod_name: str, item: uni.UniNode) -> None;
     def _declare_pending_clib_abilities -> None;
     def _resolve_clib_lib_name(components: list[str], level: int) -> str;
     def _llvm_type_str(ty: ir.Type, pointee_names: dict[(ir.Type, str)]) -> str;
@@ -1515,6 +1519,7 @@ walker NaIRGenPass(CompilerPass) {
     def _codegen_ability(nd: uni.Ability) -> None;
     def _codegen_nested_ability(nd: uni.Ability) -> None;
     def _predeclare_nested_siblings(nd: uni.Ability) -> None;
+    def _test_call_reaches_demoted(call: uni.FuncCall, seen: set) -> bool;
     def _codegen_test(nd: uni.Test) -> None;
     def _apply_static_decorators -> None;
     def _ability_is_generator(nd: uni.Ability) -> bool;
@@ -2694,6 +2699,7 @@ walker NaIRGenPass(CompilerPass) {
     def _jac_optional_type(payload: ir.Type) -> ir.Type;
     def _opt_payload_of(t: ir.Type) -> (ir.Type | None);
     def _opt_ptr_payload_of(t: ir.Type) -> (ir.Type | None);
+    def _peer_container_of(t: ir.Type) -> (ir.Type | None);
     def _flow_narrowed_type_of(expr: (uni.UniNode | None)) -> (TypeBase | None);
     def _narrowed_flow_type(nd: uni.UniNode) -> (TypeBase | None);
     def _narrowing_blocked_by_none_test(nd: uni.UniNode) -> bool;
