@@ -143,6 +143,218 @@ def native_safe_sym(src: str) -> str {
     return f"{safe}_{hashlib.sha1(src.encode()).hexdigest()[:8]}";
 }
 
+def _reserved_c_symbols -> frozenset[str] {
+    names: set[str] = set();
+    for base in (
+        "acos asin atan atan2 cos sin tan acosh asinh atanh cosh sinh tanh exp exp2 "
+        "exp10 expm1 frexp ilogb ldexp log log10 log1p log2 logb modf scalbn scalbln "
+        "cbrt fabs hypot pow sqrt erf erfc lgamma tgamma ceil floor nearbyint rint "
+        "lrint llrint round lround llround trunc fmod remainder remquo copysign nan "
+        "nextafter nexttoward fdim fmax fmin fma sincos "
+    ).split() {
+        for suffix in ("", "f", "l") {
+            names.add(base + suffix);
+        }
+    }
+    for name in (
+        "isalnum isalpha isblank iscntrl isdigit isgraph islower isprint ispunct "
+        "isspace isupper isxdigit tolower toupper "
+        "feclearexcept fegetexceptflag feraiseexcept fesetexceptflag fetestexcept "
+        "fegetround fesetround fegetenv feholdexcept fesetenv feupdateenv "
+        "setlocale localeconv setjmp longjmp _setjmp _longjmp sigsetjmp siglongjmp "
+        "signal raise kill "
+        "remove rename renameat tmpfile tmpnam fclose fflush fopen freopen fdopen "
+        "fileno setbuf setvbuf "
+        "fprintf fscanf printf scanf snprintf sprintf sscanf dprintf vfprintf "
+        "vfscanf vprintf vscanf vsnprintf vsprintf vsscanf "
+        "fgetc fgets fputc fputs getc getchar putc putchar puts ungetc fread fwrite "
+        "fgetpos fseek fseeko fsetpos ftell ftello rewind clearerr feof ferror "
+        "perror getline getdelim popen pclose "
+        "stdin stdout stderr __stdinp __stdoutp __stderrp "
+        "atof atoi atol atoll strtod strtof strtold strtol strtoll strtoul strtoull "
+        "rand srand "
+        "aligned_alloc calloc free malloc realloc posix_memalign malloc_size "
+        "malloc_usable_size "
+        "abort atexit at_quick_exit exit _exit _Exit quick_exit getenv setenv "
+        "unsetenv putenv system realpath mkstemp bsearch qsort "
+        "abs labs llabs div ldiv lldiv mblen mbtowc wctomb mbstowcs wcstombs "
+        "memcpy memmove memset memcmp memchr memmem memccpy strcpy strncpy stpcpy "
+        "stpncpy strcat strncat strcmp strncmp strcasecmp strncasecmp strcoll "
+        "strxfrm "
+        "strchr strrchr strcspn strpbrk strspn strstr strtok strtok_r strerror "
+        "strerror_r strlen strnlen strdup strndup bcmp bcopy bzero "
+        "clock difftime mktime time timespec_get asctime ctime gmtime gmtime_r "
+        "localtime localtime_r strftime clock_gettime nanosleep sleep usleep "
+        "open openat creat close read pread write lseek stat fstat lstat access "
+        "chmod chdir getcwd mkdir rmdir link symlink readlink unlink utime "
+        "opendir readdir closedir getpid getpwuid_r getpwnam_r errno __error "
+        "__errno_location environ _NSGetExecutablePath "
+        "fcntl ioctl poll tcgetattr tcsetattr cfgetispeed cfgetospeed "
+        "pthread_create pthread_join pthread_key_create pthread_getspecific "
+        "pthread_setspecific "
+        "socket connect send recv shutdown getaddrinfo freeaddrinfo gai_strerror "
+        "dlopen dlsym dlclose dlerror "
+        "main _start __libc_start_main __getmainargs mainCRTStartup "
+        "compress2 uncompress uncompress2 compressBound crc32_z adler32_z "
+        "BZ2_bzBuffToBuffCompress BZ2_bzBuffToBuffDecompress "
+        "ZSTD_isError ZSTD_getErrorName ZSTD_compressBound ZSTD_freeCCtx "
+        "ZSTD_CCtx_setParameter ZSTD_compress2 ZSTD_freeDCtx ZSTD_DCtx_setParameter "
+        "ZSTD_decompressStream_simpleArgs ZSTD_getFrameContentSize "
+        "ZSTD_getDictID_fromFrame "
+        "RAND_bytes EVP_MD_CTX_free EVP_DigestInit_ex EVP_DigestUpdate "
+        "EVP_DigestFinal_ex HMAC_CTX_free HMAC_Init_ex HMAC_Update HMAC_Final "
+        "SSL_CTX_new SSL_CTX_set_verify SSL_CTX_load_verify_locations "
+        "SSL_CTX_set_default_verify_paths SSL_CTX_free SSL_new SSL_set_fd SSL_ctrl "
+        "SSL_set1_host SSL_connect SSL_get_verify_result SSL_get_error SSL_read "
+        "SSL_write SSL_shutdown SSL_free X509_verify_cert_error_string "
+        "ERR_reason_error_string "
+        "Py_DecRef PyBool_FromLong PyBytes_AsString PyDict_New PyDict_SetItemString "
+        "PyErr_Print PyFloat_AsDouble PyFloat_FromDouble PyGILState_Ensure "
+        "PyGILState_Release PyImport_ImportModule PyLong_AsLongLong "
+        "PyLong_FromLongLong PyObject_Call PyObject_GetAttrString PyObject_IsTrue "
+        "PyObject_SetAttrString PyTuple_New PyTuple_SetItem PyUnicode_AsUTF8String "
+        "PyUnicode_FromString "
+        "__mt_genrand_u32 __mt_getrandbits __mt_init_by_array __mt_randbelow "
+        "GC_malloc "
+        "clock_settime clock_nanosleep inflateInit2_ inflate inflateEnd zlibVersion "
+        "__connect "
+        "sqlite3_open sqlite3_open_v2 sqlite3_close sqlite3_exec sqlite3_free "
+        "sqlite3_errmsg sqlite3_errcode sqlite3_extended_errcode sqlite3_libversion "
+        "sqlite3_busy_timeout sqlite3_prepare_v2 sqlite3_step sqlite3_reset "
+        "sqlite3_finalize sqlite3_clear_bindings sqlite3_bind_null sqlite3_bind_int64 "
+        "sqlite3_bind_double sqlite3_bind_text sqlite3_bind_blob "
+        "sqlite3_bind_parameter_count sqlite3_bind_parameter_name "
+        "sqlite3_column_count sqlite3_column_name sqlite3_column_type "
+        "sqlite3_column_int64 sqlite3_column_double sqlite3_column_text "
+        "sqlite3_column_blob sqlite3_column_bytes sqlite3_changes64 "
+        "sqlite3_total_changes64 sqlite3_last_insert_rowid sqlite3_get_autocommit "
+        "sqlite3_stmt_readonly sqlite3_complete "
+    ).split() {
+        names.add(name);
+    }
+    return frozenset(names);
+}
+
+glob NATIVE_RESERVED_C_SYMBOLS: frozenset[str] = _reserved_c_symbols();
+
+glob NATIVE_ARCH_SCOPE_SEP: str = "$",
+     _native_arch_scope_memo: dict[str, str] = {},
+     _native_arch_scope_gen: list[int] = [-1],
+     _native_unit_identity_memo: dict[str, str] = {};
+
+def native_arch_scope(mod_path: str) -> str {
+    import os;
+    if not mod_path {
+        return "";
+    }
+    gen = kernel_target_generation();
+    if _native_arch_scope_gen[0] != gen {
+        _native_arch_scope_memo.clear();
+        _native_arch_scope_gen[0] = gen;
+    }
+    memo = _native_arch_scope_memo.get(mod_path);
+    if memo is not None {
+        return memo;
+    }
+    source = os.path.realpath(mod_path);
+    out = "";
+    if not is_target_package_path(source) {
+        stem = os.path.basename(source);
+        dot = stem.find(".");
+        if dot > 0 {
+            stem = stem[:dot];
+        }
+        safe = "".join(
+            ch if (ch.isascii() and (ch.isalnum() or ch == "_")) else "_" for ch in stem
+        );
+        ident = native_unit_identity(source);
+        digest = hashlib.sha1(ident.encode()).hexdigest()[:8];
+        out = f"{NATIVE_ARCH_SCOPE_SEP}{safe}_{digest}";
+    }
+    _native_arch_scope_memo[mod_path] = out;
+    return out;
+}
+
+def native_arch_name(mod_path: str, name: str) -> str {
+    if not name {
+        return name;
+    }
+    return f"{name}{native_arch_scope(mod_path)}";
+}
+
+def _is_word_char(ch: str) -> bool {
+    return ch.isalnum() or ch == "_";
+}
+
+def native_unit_spelling(text: str, mod_path: str) -> str {
+    scope = native_arch_scope(mod_path) if NATIVE_ARCH_SCOPE_SEP in text else "";
+    if not scope {
+        return text;
+    }
+    out: list[str] = [];
+    i = 0;
+    while i < len(text) {
+        j = text.find(scope, i);
+        if j < 0 {
+            out.append(text[i:]);
+            break;
+        }
+        end = j + len(scope);
+        if end < len(text) and _is_word_char(text[end]) {
+            out.append(text[i:end]);
+        } else {
+            out.append(text[i:j]);
+        }
+        i = end;
+    }
+    return "".join(out);
+}
+
+def native_arch_display(native_name: str) -> str {
+    sep = native_name.find(NATIVE_ARCH_SCOPE_SEP);
+    return native_name if sep < 0 else native_name[:sep];
+}
+
+def _scope_suffix_end(text: str, start: int) -> int {
+    n = len(text);
+    k = start + 1;
+    while k < n and _is_word_char(text[k]) {
+        if text[k] == "_"
+            and k + 9 <= n
+            and (k + 9 == n or not _is_word_char(text[k + 9])) {
+            digest = text[k + 1:k + 9];
+            if all(ch in "0123456789abcdef" for ch in digest) {
+                return k + 9;
+            }
+        }
+        k += 1;
+    }
+    return -1;
+}
+
+def native_display_text(text: str) -> str {
+    if NATIVE_ARCH_SCOPE_SEP not in text {
+        return text;
+    }
+    out: list[str] = [];
+    i = 0;
+    while i < len(text) {
+        j = text.find(NATIVE_ARCH_SCOPE_SEP, i);
+        if j < 0 {
+            out.append(text[i:]);
+            break;
+        }
+        end = _scope_suffix_end(text, j);
+        if end < 0 {
+            out.append(text[i:j + 1]);
+            i = j + 1;
+        } else {
+            out.append(text[i:j]);
+            i = end;
+        }
+    }
+    return "".join(out);
+}
 
 def native_def_symbol(name: str) -> str {
     return f"__jac_def_{name}" if name in NATIVE_RESERVED_C_SYMBOLS else name;
