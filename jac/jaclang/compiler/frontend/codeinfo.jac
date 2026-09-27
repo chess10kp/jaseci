@@ -161,7 +161,7 @@ def _reserved_c_symbols -> frozenset[str] {
         "isspace isupper isxdigit tolower toupper "
         "feclearexcept fegetexceptflag feraiseexcept fesetexceptflag fetestexcept "
         "fegetround fesetround fegetenv feholdexcept fesetenv feupdateenv "
-        "setlocale localeconv setjmp longjmp _setjmp _longjmp sigsetjmp siglongjmp "
+        "setlocale localeconv nl_langinfo setjmp longjmp _setjmp _longjmp sigsetjmp siglongjmp "
         "signal raise kill "
         "remove rename renameat tmpfile tmpnam fclose fflush fopen freopen fdopen "
         "fileno setbuf setvbuf "
