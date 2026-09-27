@@ -15,6 +15,7 @@ import from jaclang.compiler.backends.common.primitives {
 }
 import type from jaclang.compiler.backends.native.na_ir_gen_pass { NaIRGenPass }
 import type from jaclang.compiler.types.types { TypeBase }
+import from jaclang.compiler.backends.native.na_constants { JACVAL_STRUCT_TAG }
 import from jaclang.compiler.frontend.codeinfo { HDR_ALLOC_ID_OFF }
 import from jaclang.compiler.frontend.constant { Tokens as Tok }
 import from jaclang.compiler.frontend.unitree { Expr, UniNode }
@@ -1625,7 +1626,10 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
             _tag = b.extract_value(arg_val, 0, name="jid.tag");
             _payload = b.extract_value(arg_val, 1, name="jid.payload");
             _is_graph = b.icmp_unsigned(
-                "==", _tag, ir.Constant(ir.IntType(8), 6), name="jid.is_graph"
+                "==",
+                _tag,
+                ir.Constant(ir.IntType(8), JACVAL_STRUCT_TAG),
+                name="jid.is_graph"
             );
             _has_payload = b.icmp_unsigned(
                 "!=", _payload, ir.Constant(i64, 0), name="jid.has_payload"
@@ -1685,14 +1689,11 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
         _snprintf = p._get_or_declare_extern(
             "snprintf", i32, [i8p, i64, i8p], var_arg=True
         );
+        _fmt = p._get_snprintf_fmt("%032llx");
+        _fmt_ptr = b.bitcast(_fmt, i8p, name="jid.fmt.ptr");
         b.call(
             _snprintf,
-            [
-                _buf,
-                ir.Constant(i64, 33),
-                p._make_global_string("%032llx", name_prefix=".jid.fmt"),
-                _identity
-            ],
+            [_buf, ir.Constant(i64, 33), _fmt_ptr, _identity],
             name="jid.format"
         );
         p._str_finish(b, _buf, ir.Constant(i64, 32));

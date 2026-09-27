@@ -539,6 +539,30 @@ obj OspGraph {
         return cur;
     }
 
+    def hop_only(
+        origins: list[int], dir: int, edge_tag: int, edges_only: bool, target: int
+    ) -> list[int] {
+        """Hop results that land on a bound endpoint (`[p ->:E:-> c]`).
+
+        For node hops the result must be `target` itself; for edge hops the
+        edge's far endpoint from `origin` must be `target`.
+        """;
+        out: list[int] = [];
+        seen: set[int] = set();
+        for origin in origins {
+            for h in self.refs(origin, dir, edge_tag, edges_only) {
+                hit = (self.edge_peer(h, origin) == target)
+                    if edges_only
+                    else (h == target);
+                if hit and h not in seen {
+                    seen.add(h);
+                    out.append(h);
+                }
+            }
+        }
+        return out;
+    }
+
     def conn_many(
         srcs: list[int],
         tgts: list[int],
@@ -1008,29 +1032,7 @@ def osp_disconn_between_many(
 def osp_hop_only(
     origins: list[int], dir: int, edge_tag: int, edges_only: int, target: int
 ) -> list[int] {
-    out: list[int] = [];
-    i = 0;
-    n = len(origins);
-    while i < n {
-        hop = osp_refs(origins[i], dir, edge_tag, edges_only);
-        j = 0;
-        m = len(hop);
-        while j < m {
-            h = hop[j];
-            hit = False;
-            if edges_only != 0 {
-                hit = osp_edge_peer(h, origins[i]) == target;
-            } else {
-                hit = h == target;
-            }
-            if hit and h not in out {
-                out.append(h);
-            }
-            j = j + 1;
-        }
-        i = i + 1;
-    }
-    return out;
+    return DEFAULT_GRAPH.hop_only(origins, dir, edge_tag, edges_only != 0, target);
 }
 
 def osp_wrap1(x: int) -> list[int] {

@@ -501,48 +501,14 @@ impl NaIRGenPass._codegen_lambda(nd: uni.LambdaExpr) -> (ir.Value | None) {
         if not isinstance(body, uni.Expr) {
             tail = nd.tail_return_expr();
             if tail is not None {
-                body_value = self._codegen_expr(tail);
-                if body_value is not None and ret_type != ir.VoidType() {
-                    self.builder.ret(self._coerce_type(body_value, ret_type));
-                } else {
-                    if body_value is None and len(self.ctx.errors_had) == _lam_errs0 {
-                        self.emit(
-                            E5092,
-                            node_override=nd,
-                            kind="expression",
-                            name="lambda body",
-                            help_text="An expression in this lambda body could not lower natively; an unresolvable name here usually means the lambda reads a variable its enclosing frame cannot expose (e.g. a module-entry local)."
-                        );
-                    }
-                    if ret_type == ir.VoidType() {
-                        self.builder.ret_void();
-                    } else {
-                        self.builder.ret(self._zero_const(ret_type));
-                    }
-                }
+                self._finish_lambda_ret(
+                    nd, self._codegen_expr(tail), ret_type, _lam_errs0
+                );
             } else {
                 self._codegen_body(body);
             }
         } else {
-            body_value = self._codegen_expr(body);
-            if body_value is not None and ret_type != ir.VoidType() {
-                self.builder.ret(self._coerce_type(body_value, ret_type));
-            } else {
-                if body_value is None and len(self.ctx.errors_had) == _lam_errs0 {
-                    self.emit(
-                        E5092,
-                        node_override=nd,
-                        kind="expression",
-                        name="lambda body",
-                        help_text="An expression in this lambda body could not lower natively; an unresolvable name here usually means the lambda reads a variable its enclosing frame cannot expose (e.g. a module-entry local)."
-                    );
-                }
-                if ret_type == ir.VoidType() {
-                    self.builder.ret_void();
-                } else {
-                    self.builder.ret(self._zero_const(ret_type));
-                }
-            }
+            self._finish_lambda_ret(nd, self._codegen_expr(body), ret_type, _lam_errs0);
         }
 
         for bb in anon_fn.basic_blocks {
@@ -3027,4 +2993,30 @@ impl NaIRGenPass._peer_container_of(t: ir.Type) -> (ir.Type | None) {
     unwrap the optional payload before lending the type across.
     """;
     return t if isinstance(t, ir.PointerType) else self._opt_ptr_payload_of(t);
+}
+
+
+impl NaIRGenPass._finish_lambda_ret(
+    nd: uni.LambdaExpr, body_value: (ir.Value | None), ret_type: ir.Type, err_count: int
+) -> None {
+    """Terminate a lambda body: coerce and return its value, or the void/zero
+    terminator when the body produced nothing usable.""";
+    if body_value is not None and ret_type != ir.VoidType() {
+        self.builder.ret(self._coerce_type(body_value, ret_type));
+        return;
+    }
+    if body_value is None and len(self.ctx.errors_had) == err_count {
+        self.emit(
+            E5092,
+            node_override=nd,
+            kind="expression",
+            name="lambda body",
+            help_text="An expression in this lambda body could not lower natively; an unresolvable name here usually means the lambda reads a variable its enclosing frame cannot expose (e.g. a module-entry local)."
+        );
+    }
+    if ret_type == ir.VoidType() {
+        self.builder.ret_void();
+    } else {
+        self.builder.ret(self._zero_const(ret_type));
+    }
 }

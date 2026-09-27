@@ -1976,3 +1976,21 @@ impl NaIRGenPass._record_stdlib_bare_name(mod_name: str, item: uni.UniNode) -> N
         self._native_stdlib_bare_names[_bound] = (mod_name, _orig.value);
     }
 }
+
+
+impl NaIRGenPass._stdlib_call_emitter(mod_name: str) -> (Callable | None) {
+    """The `mod.func(...)` emitter for a natively-lowered stdlib module.
+
+    Qualified calls and bare `from`-imported names share this table so adding a
+    stdlib module means one row here and one in `NATIVE_STDLIB_FUNC_TABLES`.
+    """;
+    if not self._stdlib_call_emitters {
+        self._stdlib_call_emitters = {
+            "os": self._emit_os_call,
+            "os.path": self._emit_ospath_call,
+            "random": self._emit_random_call,
+            "struct": self._emit_struct_call
+        };
+    }
+    return self._stdlib_call_emitters.get(mod_name);
+}
