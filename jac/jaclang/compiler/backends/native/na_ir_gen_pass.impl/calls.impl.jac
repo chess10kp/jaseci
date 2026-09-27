@@ -2103,10 +2103,20 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
             }
             if params_l {
                 arg_val = self._codegen_expr(params_l[0]);
+                call_args: list[ir.Value] = [arg_val] if arg_val is not None else [];
+                if func_name == "int"
+                    and arg_val is not None
+                    and len(params_l) == 2
+                    and not isinstance(params_l[1], uni.KWPair) {
+                    base_val = self._codegen_expr(params_l[1]);
+                    if base_val is not None {
+                        call_args.append(base_val);
+                    }
+                }
                 if arg_val is not None {
                     result = self._dispatch_builtin(
                         func_name,
-                        [arg_val],
+                        call_args,
                         kwargs=self._split_call_kwargs(nd),
                         kw_node=nd,
                         type_key=(self._type_key_of(params_l[0]) or ""),
@@ -3441,6 +3451,12 @@ impl NaIRGenPass._emit_isinstance_user(
         );
         eq = self.builder.icmp_unsigned("==", vptr, vt_base, name="isinst.eq");
         cmp = eq if cmp is None else self.builder.or_(cmp, eq, name="isinst.or");
+    }
+    if cmp is not None
+        and self._vtable_slot_certain(
+            self._flow_narrowed_type_of(nd.params[0] if nd.params else None)
+        ) {
+        cmp = self._isinstance_vtable_fallback(cmp, vptr, names, "isinst");
     }
 
     if self._is_owned(operand) {
