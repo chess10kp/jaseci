@@ -1405,7 +1405,6 @@ walker NaIRGenPass(CompilerPass) {
 
     def _get_or_register_exc_type(exc_name: str) -> int;
     def _get_exc_descendants(type_name: str) -> list[str];
-    def _exc_binds_object(type_name: str) -> bool;
     def _exception_member_name(member: uni.UniNode) -> (str | None);
     def _exception_handler_targets(ex: uni.Expr | None) -> (list[str] | None);
     def _emit_exception_match(
