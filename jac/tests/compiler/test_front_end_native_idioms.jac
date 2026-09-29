@@ -476,10 +476,10 @@ test "guardrail: @lru_cache binds the bundled module where a dict cache does not
         "def twice(n: int) -> int { return n * 2; }\n",
         options=native_force_opts()
     );
-    errs = fmt_errors(dec);
-    assert len(errs) == 0 , (
+    assert not dec.errors_had , (
         f"`functools` now binds the bundled native module, so the decorator "
-        f"resolves to `_LruDeco` and nothing is module-fatal: {errs}"
+        f"resolves to `_LruDeco` and nothing is module-fatal: "
+        f"{[str(e) for e in dec.errors_had]}"
     );
     assert dec_ir.gen.llvm_ir is not None , (
         "the decorated module compiles; LLVM IR must be emitted (calls of "
