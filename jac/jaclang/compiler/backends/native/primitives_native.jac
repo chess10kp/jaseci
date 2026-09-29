@@ -1734,9 +1734,7 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
         ascii_end = b.basic_block;
         b.branch(done_bb);
         b.position_at_end(wide_bb);
-        # Shared with _emit_one_char_str: the heap path lives in the
-        # private __jac_char_from_cp helper, so chr() call sites keep
-        # only the __jac_chars cache fast path inline.
+
         buf = b.call(p._one_char_wide_fn(), [point], name="chr.wide.str");
         wide_end = b.basic_block;
         b.branch(done_bb);

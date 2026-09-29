@@ -774,7 +774,7 @@ impl NativeStrEmitter.emit_count(
     result = b.phi(i64, name="cnt.result");
     result.add_incoming(empty_count, empty_bb);
     result.add_incoming(count_cur, check_bb);
-    # A start past the end is an invalid region: CPython counts nothing.
+
     return b.select(region_ok, result, zero, name="cnt.result.ok");
 }
 
@@ -868,9 +868,7 @@ impl NativeStrEmitter.emit_index(
     found = b.and_(
         region_ok, b.icmp_signed(">=", pos, zero, name="index.hit"), name="index.ok"
     );
-    p._emit_runtime_raise(
-        b.not_(found), "ValueError", "substring not found"
-    );
+    p._emit_runtime_raise(b.not_(found), "ValueError", "substring not found");
     pos_eff = b.select(found, pos, zero, name="index.pos.eff");
     return p._call_utf8_cplen(b, target, pos_eff, name="index.cp");
 }
@@ -987,8 +985,6 @@ def _emit_affix_match(
         b.icmp_signed("<=", start, end), b.icmp_signed("<=", start, length)
     );
     if region_ok is not None {
-        # A start past the codepoint length is an invalid region: nothing
-        # matches there, not even an empty candidate (CPython tailmatch).
         bounds_ok = b.and_(bounds_ok, region_ok, name="affix.bounds.ok");
     }
     fn = b.basic_block.function;

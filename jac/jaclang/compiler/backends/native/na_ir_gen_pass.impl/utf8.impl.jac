@@ -398,10 +398,7 @@ impl NaIRGenPass._emit_norm_cp_region(
     zero = ir.Constant(i64, 0);
     raw_start = self._coerce_type(bounds[0], i64) if bounds[0] is not None else zero;
     raw_end = self._coerce_type(bounds[1], i64) if bounds[1] is not None else cplen;
-    # CPython adjust_indices: a negative start wraps and floors at zero but
-    # is NEVER clamped down to the length -- a start past the end leaves an
-    # invalid region (endswith -> False, find -> -1, count -> 0), while
-    # start == len is a valid empty region. Only `end` is clamped above.
+
     start = b.select(
         b.icmp_signed("<", raw_start, zero),
         b.add(raw_start, cplen, name="rg.s.wrap"),
@@ -460,10 +457,7 @@ impl NaIRGenPass._emit_one_char_str(
     ascii_end = b.basic_block;
     b.branch(done_bb);
     b.position_at_end(wide_bb);
-    # The heap allocation for a non-ASCII codepoint lives in the shared
-    # private helper (__jac_char_from_cp), so callers only inline the
-    # __jac_chars cache fast path -- a char extraction never drags an
-    # allocator call into the enclosing function body.
+
     buf = b.call(self._one_char_wide_fn(), [point], name="chr1.wide.str");
     wide_end = b.basic_block;
     b.branch(done_bb);
@@ -518,7 +512,9 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
     continuation = wb.sub(width, ir.Constant(i64, 1), name="chrw.cont");
     lead = wb.or_(
         lead_prefix,
-        wb.lshr(point, wb.mul(continuation, ir.Constant(i64, 6)), name="chrw.lead.bits"),
+        wb.lshr(
+            point, wb.mul(continuation, ir.Constant(i64, 6)), name="chrw.lead.bits"
+        ),
         name="chrw.lead"
     );
     wb.store(wb.trunc(lead, i8, name="chrw.lead.byte"), buf);
