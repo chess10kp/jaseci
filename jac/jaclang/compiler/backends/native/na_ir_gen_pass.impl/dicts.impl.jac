@@ -381,12 +381,25 @@ impl NaIRGenPass._box_to_jacval(value: ir.Value) -> ir.Value {
             }
         }
         payload = b.ptrtoint(value, i64, name="jv.p2i");
-        tag = b.select(
-            b.icmp_unsigned("==", payload, ir.Constant(i64, 0), name="jv.isnone"),
-            ir.Constant(i8, 8),
-            ir.Constant(i8, self._jacval_pointer_tag(value.type)),
-            name="jv.nonetag"
+        _static_tag = self._jacval_pointer_tag(value.type);
+        _none_cmp = b.icmp_unsigned(
+            "==", payload, ir.Constant(i64, 0), name="jv.isnone"
         );
+        if _static_tag == 2 {
+            _tag_fn = self._heap_ref_jacval_tag_fn();
+            tag = b.select(
+                _none_cmp,
+                ir.Constant(i8, 8),
+                b.call(
+                    _tag_fn,
+                    [b.inttoptr(payload, i8.as_pointer(), name="jv.tagp")],
+                    name="jv.heapref.tag"
+                ),
+                name="jv.nonetag"
+            );
+        } else {
+            tag = b.select(_none_cmp, ir.Constant(i8, 8), ir.Constant(i8, _static_tag), name="jv.nonetag");
+        }
     } elif self._opt_payload_of(value.type) is not None {
         inner = self._box_to_jacval(b.extract_value(value, 1, name="jv.optpay"));
         absent = b.icmp_unsigned(
