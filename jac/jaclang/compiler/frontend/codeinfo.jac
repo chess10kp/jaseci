@@ -976,6 +976,30 @@ def resolve_native_module(
         }
     }
 
+    if allow_inferred and not clean.startswith('jaclang.') {
+        import from jaclang.compiler.frontend.host { active_host }
+        host = active_host();
+        owners: list[str] = [];
+        for start in [base_dir, ""] {
+            owner = host.project_root(start);
+            if owner {
+                owners.append(owner);
+            }
+        }
+        for owner in owners {
+            facts = host.project_facts(owner);
+            mounts = facts.package_mounts if facts is not None else "";
+            if mounts and os.path.isdir(mounts) {
+                mounted = _inferred_native_path(
+                    _native_variant_path(os.path.join(mounts, path_name))
+                );
+                if mounted is not None {
+                    return (path_name, mounted);
+                }
+            }
+        }
+    }
+
     if clean.startswith('jaclang.') {
         import from jaclang.compiler.native_scope { in_native_scope_path }
         _cand = os.path.join(
