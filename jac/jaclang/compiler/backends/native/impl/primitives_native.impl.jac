@@ -722,7 +722,7 @@ impl NativeStrEmitter.emit_count(
     blen = p._call_str_len(b, target, name="cnt.blen");
     cplen = p._call_utf8_cplen(b, target, blen, name="cnt.cplen");
     nlen = p._call_str_len(b, args[0], name="cnt.nlen");
-    (start_b, end_b) = p._emit_norm_cp_region(
+    (start_b, end_b, region_ok) = p._emit_norm_cp_region(
         b,
         target,
         blen,
@@ -774,7 +774,8 @@ impl NativeStrEmitter.emit_count(
     result = b.phi(i64, name="cnt.result");
     result.add_incoming(empty_count, empty_bb);
     result.add_incoming(count_cur, check_bb);
-    return result;
+    # A start past the end is an invalid region: CPython counts nothing.
+    return b.select(region_ok, result, zero, name="cnt.result.ok");
 }
 
 impl NativeStrEmitter.emit_find(
@@ -789,7 +790,7 @@ impl NativeStrEmitter.emit_find(
     blen = p._call_str_len(b, target, name="find.blen");
     cplen = p._call_utf8_cplen(b, target, blen, name="find.cplen");
     nlen = p._call_str_len(b, args[0], name="find.nlen");
-    (start_b, end_b) = p._emit_norm_cp_region(
+    (start_b, end_b, region_ok) = p._emit_norm_cp_region(
         b,
         target,
         blen,
@@ -800,9 +801,13 @@ impl NativeStrEmitter.emit_find(
         b, target, blen, args[0], nlen, start_b, end_b, name="find.b"
     );
     neg_one = ir.Constant(i64, -1);
-    is_neg = b.icmp_signed("<", pos, ir.Constant(i64, 0), name="find.miss");
-    cp_pos = p._call_utf8_cplen(b, target, pos, name="find.cp");
-    return b.select(is_neg, neg_one, cp_pos, name="find.result");
+    zero = ir.Constant(i64, 0);
+    found = b.and_(
+        region_ok, b.icmp_signed(">=", pos, zero, name="find.hit"), name="find.ok"
+    );
+    pos_eff = b.select(found, pos, zero, name="find.pos.eff");
+    cp_pos = p._call_utf8_cplen(b, target, pos_eff, name="find.cp");
+    return b.select(found, cp_pos, neg_one, name="find.result");
 }
 
 impl NativeStrEmitter.emit_rfind(
@@ -817,7 +822,7 @@ impl NativeStrEmitter.emit_rfind(
     blen = p._call_str_len(b, target, name="rfind.blen");
     cplen = p._call_utf8_cplen(b, target, blen, name="rfind.cplen");
     nlen = p._call_str_len(b, args[0], name="rfind.nlen");
-    (start_b, end_b) = p._emit_norm_cp_region(
+    (start_b, end_b, region_ok) = p._emit_norm_cp_region(
         b,
         target,
         blen,
@@ -828,9 +833,13 @@ impl NativeStrEmitter.emit_rfind(
         b, target, blen, args[0], nlen, start_b, end_b, name="rfind.b"
     );
     neg_one = ir.Constant(i64, -1);
-    is_neg = b.icmp_signed("<", pos, ir.Constant(i64, 0), name="rfind.miss");
-    cp_pos = p._call_utf8_cplen(b, target, pos, name="rfind.cp");
-    return b.select(is_neg, neg_one, cp_pos, name="rfind.result");
+    zero = ir.Constant(i64, 0);
+    found = b.and_(
+        region_ok, b.icmp_signed(">=", pos, zero, name="rfind.hit"), name="rfind.ok"
+    );
+    pos_eff = b.select(found, pos, zero, name="rfind.pos.eff");
+    cp_pos = p._call_utf8_cplen(b, target, pos_eff, name="rfind.cp");
+    return b.select(found, cp_pos, neg_one, name="rfind.result");
 }
 
 impl NativeStrEmitter.emit_index(
@@ -845,7 +854,7 @@ impl NativeStrEmitter.emit_index(
     blen = p._call_str_len(b, target, name="index.blen");
     cplen = p._call_utf8_cplen(b, target, blen, name="index.cplen");
     nlen = p._call_str_len(b, args[0], name="index.nlen");
-    (start_b, end_b) = p._emit_norm_cp_region(
+    (start_b, end_b, region_ok) = p._emit_norm_cp_region(
         b,
         target,
         blen,
@@ -855,9 +864,15 @@ impl NativeStrEmitter.emit_index(
     pos = p._call_str_find_b(
         b, target, blen, args[0], nlen, start_b, end_b, name="index.b"
     );
-    is_neg = b.icmp_signed("<", pos, ir.Constant(i64, 0), name="index.miss");
-    p._emit_runtime_raise(is_neg, "ValueError", "substring not found");
-    return p._call_utf8_cplen(b, target, pos, name="index.cp");
+    zero = ir.Constant(i64, 0);
+    found = b.and_(
+        region_ok, b.icmp_signed(">=", pos, zero, name="index.hit"), name="index.ok"
+    );
+    p._emit_runtime_raise(
+        b.not_(found), "ValueError", "substring not found"
+    );
+    pos_eff = b.select(found, pos, zero, name="index.pos.eff");
+    return p._call_utf8_cplen(b, target, pos_eff, name="index.cp");
 }
 
 impl NativeStrEmitter.emit_rindex(
@@ -924,7 +939,7 @@ impl NativeStrEmitter._emit_affix(
     }
     blen = p._call_str_len(b, target, name="affix.blen");
     cplen = p._call_utf8_cplen(b, target, blen, name="affix.cplen");
-    (start_b, end_b) = p._emit_norm_cp_region(
+    (start_b, end_b, region_ok) = p._emit_norm_cp_region(
         b,
         target,
         blen,
@@ -941,7 +956,8 @@ impl NativeStrEmitter._emit_affix(
             for candidate in candidates
         ],
         [start_b, end_b],
-        suffix
+        suffix,
+        region_ok
     );
 }
 
@@ -952,7 +968,8 @@ def _emit_affix_match(
     length: ir.Value,
     candidates: list[tuple[ir.Value, ir.Value]],
     bounds: list[ir.Value],
-    suffix: bool
+    suffix: bool,
+    region_ok: (ir.Value | None) = None
 ) -> ir.Value {
     i8p = ir.IntType(8).as_pointer();
     i32 = ir.IntType(32);
@@ -969,6 +986,11 @@ def _emit_affix_match(
     bounds_ok = b.and_(
         b.icmp_signed("<=", start, end), b.icmp_signed("<=", start, length)
     );
+    if region_ok is not None {
+        # A start past the codepoint length is an invalid region: nothing
+        # matches there, not even an empty candidate (CPython tailmatch).
+        bounds_ok = b.and_(bounds_ok, region_ok, name="affix.bounds.ok");
+    }
     fn = b.basic_block.function;
     match_bb = fn.append_basic_block("affix.match");
     miss = fn.append_basic_block("affix.miss");

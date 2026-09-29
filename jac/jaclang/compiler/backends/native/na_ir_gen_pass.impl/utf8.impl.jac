@@ -398,6 +398,10 @@ impl NaIRGenPass._emit_norm_cp_region(
     zero = ir.Constant(i64, 0);
     raw_start = self._coerce_type(bounds[0], i64) if bounds[0] is not None else zero;
     raw_end = self._coerce_type(bounds[1], i64) if bounds[1] is not None else cplen;
+    # CPython adjust_indices: a negative start wraps and floors at zero but
+    # is NEVER clamped down to the length -- a start past the end leaves an
+    # invalid region (endswith -> False, find -> -1, count -> 0), while
+    # start == len is a valid empty region. Only `end` is clamped above.
     start = b.select(
         b.icmp_signed("<", raw_start, zero),
         b.add(raw_start, cplen, name="rg.s.wrap"),
@@ -405,18 +409,23 @@ impl NaIRGenPass._emit_norm_cp_region(
         name="rg.s"
     );
     start = b.select(b.icmp_signed("<", start, zero), zero, start, name="rg.s.lo");
-    start = b.select(b.icmp_signed(">", start, cplen), cplen, start, name="rg.s.hi");
     end = b.select(
-        b.icmp_signed("<", raw_end, zero),
-        b.add(raw_end, cplen, name="rg.e.wrap"),
-        raw_end,
+        b.icmp_signed(">", raw_end, cplen),
+        cplen,
+        b.select(
+            b.icmp_signed("<", raw_end, zero),
+            b.add(raw_end, cplen, name="rg.e.wrap"),
+            raw_end,
+            name="rg.e.wrapped"
+        ),
         name="rg.e"
     );
     end = b.select(b.icmp_signed("<", end, zero), zero, end, name="rg.e.lo");
-    end = b.select(b.icmp_signed(">", end, cplen), cplen, end, name="rg.e.hi");
-    start_b = self._call_utf8_cp_to_boff(b, data, blen, start, name="rg.s.b");
+    ok = b.icmp_signed("<=", start, end, name="rg.ok");
+    start_eff = b.select(ok, start, zero, name="rg.s.eff");
+    start_b = self._call_utf8_cp_to_boff(b, data, blen, start_eff, name="rg.s.b");
     end_b = self._call_utf8_cp_to_boff(b, data, blen, end, name="rg.e.b");
-    return (start_b, end_b);
+    return (start_b, end_b, ok);
 }
 
 impl NaIRGenPass._emit_one_char_str(
@@ -451,65 +460,11 @@ impl NaIRGenPass._emit_one_char_str(
     ascii_end = b.basic_block;
     b.branch(done_bb);
     b.position_at_end(wide_bb);
-    self._set_rc_ctx("chr1", "");
-    buf = self._str_alloc(b, ir.Constant(i64, 5), name="chr1.buf");
-    self._clear_rc_ctx();
-    width = b.select(
-        b.icmp_unsigned("<", point, ir.Constant(i64, 2048)),
-        ir.Constant(i64, 2),
-        b.select(
-            b.icmp_unsigned("<", point, ir.Constant(i64, 65536)),
-            ir.Constant(i64, 3),
-            ir.Constant(i64, 4),
-            name="chr1.width.wide"
-        ),
-        name="chr1.width"
-    );
-    lead_prefix = b.select(
-        b.icmp_signed("==", width, ir.Constant(i64, 2)),
-        ir.Constant(i64, 192),
-        b.select(
-            b.icmp_signed("==", width, ir.Constant(i64, 3)),
-            ir.Constant(i64, 224),
-            ir.Constant(i64, 240),
-            name="chr1.lead.wide"
-        ),
-        name="chr1.lead.prefix"
-    );
-    continuation = b.sub(width, ir.Constant(i64, 1), name="chr1.cont");
-    lead = b.or_(
-        lead_prefix,
-        b.lshr(point, b.mul(continuation, ir.Constant(i64, 6)), name="chr1.lead.bits"),
-        name="chr1.lead"
-    );
-    b.store(b.trunc(lead, i8, name="chr1.lead.byte"), buf);
-    for offset in range(1, 4) {
-        position = ir.Constant(i64, offset);
-        shift = b.select(
-            b.icmp_unsigned("<", position, width, name=f"chr1.in.{offset}"),
-            b.mul(
-                b.sub(continuation, position, name=f"chr1.rest.{offset}"),
-                ir.Constant(i64, 6),
-                name=f"chr1.shift.{offset}"
-            ),
-            ir.Constant(i64, 0),
-            name=f"chr1.bits.{offset}"
-        );
-        payload = b.and_(
-            b.lshr(point, shift, name=f"chr1.part.{offset}"),
-            ir.Constant(i64, 63),
-            name=f"chr1.low.{offset}"
-        );
-        b.store(
-            b.trunc(
-                b.or_(payload, ir.Constant(i64, 128), name=f"chr1.byte.{offset}"),
-                i8,
-                name=f"chr1.contb.{offset}"
-            ),
-            b.gep(buf, [position], name=f"chr1.slot.{offset}")
-        );
-    }
-    self._str_finish(b, buf, width);
+    # The heap allocation for a non-ASCII codepoint lives in the shared
+    # private helper (__jac_char_from_cp), so callers only inline the
+    # __jac_chars cache fast path -- a char extraction never drags an
+    # allocator call into the enclosing function body.
+    buf = b.call(self._one_char_wide_fn(), [point], name="chr1.wide.str");
     wide_end = b.basic_block;
     b.branch(done_bb);
     b.position_at_end(done_bb);
@@ -517,6 +472,86 @@ impl NaIRGenPass._emit_one_char_str(
     result.add_incoming(cached, ascii_end);
     result.add_incoming(buf, wide_end);
     return self._mark_owned(result);
+}
+
+impl NaIRGenPass._one_char_wide_fn -> ir.Function {
+    if self.utf8_char_wide_fn is not None {
+        return self.utf8_char_wide_fn;
+    }
+    i8 = ir.IntType(8);
+    i64 = ir.IntType(64);
+    fn = self._define_function(
+        "__jac_char_from_cp", ir.FunctionType(i8.as_pointer(), [i64])
+    );
+    fn.linkage = "private";
+    fn.args[0].name = "cp";
+    wb = ir.IRBuilder(fn.append_basic_block("entry"));
+    point = fn.args[0];
+    _saved = self._builder;
+    self._builder = wb;
+    self._set_rc_ctx("chr1", "");
+    buf = self._str_alloc(wb, ir.Constant(i64, 5), name="chrw.buf");
+    self._clear_rc_ctx();
+    self._builder = _saved;
+    width = wb.select(
+        wb.icmp_unsigned("<", point, ir.Constant(i64, 2048)),
+        ir.Constant(i64, 2),
+        wb.select(
+            wb.icmp_unsigned("<", point, ir.Constant(i64, 65536)),
+            ir.Constant(i64, 3),
+            ir.Constant(i64, 4),
+            name="chrw.width.wide"
+        ),
+        name="chrw.width"
+    );
+    lead_prefix = wb.select(
+        wb.icmp_signed("==", width, ir.Constant(i64, 2)),
+        ir.Constant(i64, 192),
+        wb.select(
+            wb.icmp_signed("==", width, ir.Constant(i64, 3)),
+            ir.Constant(i64, 224),
+            ir.Constant(i64, 240),
+            name="chrw.lead.wide"
+        ),
+        name="chrw.lead.prefix"
+    );
+    continuation = wb.sub(width, ir.Constant(i64, 1), name="chrw.cont");
+    lead = wb.or_(
+        lead_prefix,
+        wb.lshr(point, wb.mul(continuation, ir.Constant(i64, 6)), name="chrw.lead.bits"),
+        name="chrw.lead"
+    );
+    wb.store(wb.trunc(lead, i8, name="chrw.lead.byte"), buf);
+    for offset in range(1, 4) {
+        position = ir.Constant(i64, offset);
+        shift = wb.select(
+            wb.icmp_unsigned("<", position, width, name=f"chrw.in.{offset}"),
+            wb.mul(
+                wb.sub(continuation, position, name=f"chrw.rest.{offset}"),
+                ir.Constant(i64, 6),
+                name=f"chrw.shift.{offset}"
+            ),
+            ir.Constant(i64, 0),
+            name=f"chrw.bits.{offset}"
+        );
+        payload = wb.and_(
+            wb.lshr(point, shift, name=f"chrw.part.{offset}"),
+            ir.Constant(i64, 63),
+            name=f"chrw.low.{offset}"
+        );
+        wb.store(
+            wb.trunc(
+                wb.or_(payload, ir.Constant(i64, 128), name=f"chrw.byte.{offset}"),
+                i8,
+                name=f"chrw.contb.{offset}"
+            ),
+            wb.gep(buf, [position], name=f"chrw.slot.{offset}")
+        );
+    }
+    self._str_finish(wb, buf, width);
+    wb.ret(buf);
+    self.utf8_char_wide_fn = fn;
+    return fn;
 }
 
 impl NaIRGenPass._emit_decode_cp(
