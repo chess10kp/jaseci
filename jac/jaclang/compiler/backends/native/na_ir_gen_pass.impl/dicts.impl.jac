@@ -156,7 +156,11 @@ impl NaIRGenPass._emit_dict_box_fn(dict_key: str) -> (ir.Function | None) {
     the vals array as JacVal. Boxing the pointer unchanged therefore turns
     every value into garbage. The copy walks the source in insertion order
     and re-inserts each entry with its value boxed, so the result honours the
-    `:jacval` contract `any` requires. Null in, null out.
+    `:jacval` contract `any` requires. An `i8*` slot no longer names its heap
+    kind, so each boxed value is retagged from the payload's allocation
+    header (the same read `_any_view_fn` does for pointer slots): without it
+    a nested container boxes as `str` and survives every later header check
+    as one. Null in, null out.
     """;
     if self.jacval_type is None {
         return None;
@@ -222,6 +226,17 @@ impl NaIRGenPass._emit_dict_box_fn(dict_key: str) -> (ir.Function | None) {
     k = self.builder.call(src_helpers["get_key"], [src, i], name="box.k");
     v = self.builder.call(src_helpers["get_val"], [src, i], name="box.v");
     jv = self._box_to_jacval(v);
+    if (
+        src_helpers["val_type"] == ir.IntType(8).as_pointer()
+        and not self._nogc_headerless()
+    ) {
+        jv = self.builder.insert_value(
+            jv,
+            self.builder.call(self._heap_ref_jacval_tag_fn(), [v], name="box.etag"),
+            0,
+            name="box.etagged"
+        );
+    }
     self.builder.call(dest_helpers["set"], [dest, k, jv]);
     i.add_incoming(
         self.builder.add(i, ir.Constant(i64, 1), name="box.i1"), self.builder.block
