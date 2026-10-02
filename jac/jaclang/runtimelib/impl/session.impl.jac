@@ -62,7 +62,8 @@ impl takeover_project(base_path: str, target_path: (str | None) = None) -> int {
     } else {
         rt = PgRuntime(
             data_dir=shared_pg_data_dir(),
-            database=project_db_name(base_path, target_path)
+            database=project_db_name(base_path, target_path),
+            origin=base_path
         );
         store = PgStore(conninfo=rt.ensure(), ensure_cb=rt.ensure);
     }
@@ -166,7 +167,8 @@ impl Session.postinit -> None {
         } else {
             rt = PgRuntime(
                 data_dir=shared_pg_data_dir(),
-                database=project_db_name(self.base_path, self.target_path)
+                database=project_db_name(self.base_path, self.target_path),
+                origin=self.base_path
             );
             self._runtime = rt;
             pgs = PgStore(conninfo=rt.ensure(), ensure_cb=rt.ensure);

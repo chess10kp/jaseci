@@ -191,6 +191,27 @@ impl PgRuntime.stop -> None {
 }
 
 
+impl PgRuntime.drop_database -> None {
+    import from jaclang.vendor.pgload { connect }
+    info = self.conninfo();
+    try {
+        conn: Any = connect(
+            info.user,
+            host=info.host,
+            port=info.port,
+            unix_socket_dir=info.unix_socket_dir,
+            database='postgres'
+        );
+        try {
+            conn.run(f'DROP DATABASE IF EXISTS "{self.database}" WITH (FORCE)');
+        } finally {
+            conn.close();
+        }
+    } except Exception as e {
+        logger.debug(f"drop_database({self.database}): {e}");
+    }
+}
+
 impl PgRuntime._resolve_binaries -> str {
     if self._bin_dir is not None {
         return self._bin_dir;
@@ -517,6 +538,7 @@ impl PgRuntime._wait_ready(timeout: float = 60.0) -> None {
 
 
 impl PgRuntime._ensure_database -> None {
+    self._register_origin();
     import from jaclang.vendor.pgload { connect }
     info = self.conninfo();
     conn: Any = connect(
@@ -565,4 +587,119 @@ impl PgRuntime.serve -> int {
     signal.signal(int(signal.SIGTERM), _forward);
     signal.signal(int(signal.SIGINT), _forward);
     return proc.wait();
+}
+
+
+impl PgRuntime._register_origin -> None {
+    if not self.origin {
+        return;
+    }
+    import fcntl;
+    origin = self.origin;
+    digest = hashlib.sha1(origin.encode('utf-8')).hexdigest()[:8];
+    path = os.path.join(self.data_dir, '.db_origins');
+    os.makedirs(self.data_dir, exist_ok=True);
+    lock_f = open(path + '.lock', 'w');
+    fcntl.flock(lock_f.fileno(), fcntl.LOCK_EX);
+    try {
+        have: set[str] = set();
+        if os.path.isfile(path) {
+            with open(path) as f {
+                for line in f {
+                    have.add(line.strip());
+                }
+            }
+        }
+        entry = f"{digest}\t{self.database}\t{origin}";
+        if entry not in have {
+            with open(path, 'a') as f {
+                f.write(entry + '\n');
+            }
+        }
+    } finally {
+        fcntl.flock(lock_f.fileno(), fcntl.LOCK_UN);
+        lock_f.close();
+    }
+}
+
+
+def _gc_staleness_of(origin: str) -> bool {
+    import tempfile;
+    if not os.path.isdir(origin) {
+        return True;
+    }
+    if os.path.commonpath([origin, tempfile.gettempdir()]) != tempfile.gettempdir() {
+        return False;
+    }
+    try {
+        age = time.time() - os.stat(origin).st_mtime;
+    } except OSError as e {
+        logger.debug(f"gc: stat failed for {origin}: {e}");
+        return True;
+    }
+    return age > 7 * 24 * 3600;
+}
+
+
+impl gc_stale_dbs(data_dir: str) -> int {
+    import jaclang.vendor.pgload as pgload;
+    path = os.path.join(data_dir, '.db_origins');
+    if not os.path.isfile(path) {
+        return 0;
+    }
+    entries: list[tuple[str, str, str]] = [];
+    with open(path) as f {
+        for line in f {
+            parts = line.rstrip('\n').split('\t');
+            if len(parts) == 3 {
+                entries.append((parts[0], parts[1], parts[2]));
+            }
+        }
+    }
+    if not entries {
+        return 0;
+    }
+    kept: list[str] = [];
+    dropped = 0;
+    conn: Any = None;
+    for (_digest, datname, origin) in entries {
+        if not _gc_staleness_of(origin) {
+            kept.append(f"{_digest}\t{datname}\t{origin}");
+            continue;
+        }
+        try {
+            if conn is None {
+                rt = PgRuntime(data_dir=data_dir, database='postgres');
+                info = rt.conninfo();
+                conn = pgload.connect(
+                    info.user,
+                    unix_socket_dir=info.unix_socket_dir,
+                    port=info.port,
+                    database='postgres'
+                );
+            }
+            conn.run(f'DROP DATABASE IF EXISTS "{datname}" WITH (FORCE)');
+            dropped += 1;
+        } except Exception as e {
+            logger.debug(f"gc: could not drop {datname}: {e}");
+            kept.append(f"{_digest}\t{datname}\t{origin}");
+        }
+    }
+    if conn is not None {
+        conn.close();
+    }
+    import fcntl;
+    lock_f = open(path + '.lock', 'w');
+    fcntl.flock(lock_f.fileno(), fcntl.LOCK_EX);
+    try {
+        with open(path, 'w') as f {
+            for line in kept {
+                f.write(line + '\n');
+            }
+        }
+    } finally {
+        fcntl.flock(lock_f.fileno(), fcntl.LOCK_UN);
+        lock_f.close();
+    }
+    return dropped;
 }

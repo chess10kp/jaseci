@@ -64,6 +64,14 @@ test "different standalone files get separate databases" {
         );
     } finally {
         Jac.set_base_path(_orig_base);
+        # The fixture-derived databases are verified; reclaim them so test
+        # runs do not accumulate databases on the shared embedded server.
+        PgRuntime(
+            data_dir=shared_pg_data_dir(), database=db_persistent
+        ).drop_database();
+        PgRuntime(
+            data_dir=shared_pg_data_dir(), database=db_connection
+        ).drop_database();
     }
 }
 
@@ -87,5 +95,12 @@ test "running file with same name as project uses project DB name" {
         assert matches , "Expected a jac_test_db_naming_* database on the shared server";
     } finally {
         Jac.set_base_path(_orig_base);
+        # Reclaim every database this test (and the plugin-base variant the
+        # run minted) created, regardless of which base digest it carries.
+        for n in _database_names() {
+            if n.startswith('jac_test_db_naming_') {
+                PgRuntime(data_dir=shared_pg_data_dir(), database=n).drop_database();
+            }
+        }
     }
 }

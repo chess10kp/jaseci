@@ -28,12 +28,14 @@ glob logger = logging.getLogger(__name__),
          'PG_MAJOR',
          'PG_MAX_CONNECTIONS',
          'pinned_major',
-         'dist_cache_dir'
+         'dist_cache_dir',
+         'gc_stale_dbs'
      ];
 
 
 def pinned_major -> int;
 def dist_cache_dir -> str;
+def gc_stale_dbs(data_dir: str) -> int;
 
 
 obj PgRuntime {
@@ -42,6 +44,7 @@ obj PgRuntime {
         tcp: bool = False,
         superuser: str = 'jac',
         database: str = 'jac',
+        origin: str = '',
         _bin_dir: (str | None) postinit,
         _proc: (Any | None) postinit,
         _lock: threading.RLock postinit;
@@ -50,6 +53,7 @@ obj PgRuntime {
     def ensure -> ConnInfo;
     def serve -> int;
     def stop -> None;
+    def drop_database -> None;
     def is_running -> bool;
     def conninfo -> ConnInfo;
     def _sock_dir -> str;
@@ -68,4 +72,5 @@ obj PgRuntime {
     def _start(bin_dir: str) -> None;
     def _wait_ready(timeout: float = 60.0) -> None;
     def _ensure_database -> None;
+    def _register_origin -> None;
 }

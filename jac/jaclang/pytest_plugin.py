@@ -23,7 +23,9 @@ import contextlib
 import importlib
 import importlib.machinery
 import importlib.util
+import logging
 import os
+import shutil
 import sys
 import tempfile
 import types
@@ -195,6 +197,63 @@ def _module_is_client(file_path: Path) -> bool:
 
 _jac_runtime_ready = False
 
+_logger = logging.getLogger("jac.pytest_plugin")
+
+# Temp dirs (and, by extension, embedded-pg databases) owned by this plugin.
+# The prefix doubles as the safety guard in _sweep_base_dbs: only directories
+# we created are ever cleaned up.
+_TEST_BASE_PREFIX = "jac-test-"
+
+# Every base_path this plugin minted during the pytest session, in creation
+# order. Database names embed sha1(base_path)[:8], so sweeping by that
+# suffix reclaims a base's whole database family (jac_main_<digest> today,
+# jac_<stem>_<digest> if an import pinned a target) without re-reading the
+# runtime's base/target globs -- jac_import mutates ``full_target_path``
+# behind the plugin's back, and execution.enter swaps the live exec_ctx.
+_test_bases: list[str] = []
+
+
+def _sweep_base_dbs(base_path: str) -> None:
+    """Drop every database derived from *base_path* and remove the dir.
+
+    Only plugin-created temp dirs (``_TEST_BASE_PREFIX``) are ever touched;
+    real project databases are never candidates.
+    """
+    if not os.path.basename(base_path).startswith(_TEST_BASE_PREFIX):
+        return
+    try:
+        import hashlib
+
+        from jaclang.runtimelib.pgembed import PgRuntime
+        from jaclang.runtimelib.session import shared_pg_data_dir
+        from jaclang.vendor.pgload import connect
+
+        digest = hashlib.sha1(
+            os.path.abspath(base_path).encode("utf-8")
+        ).hexdigest()[:8]
+        info = PgRuntime(data_dir=shared_pg_data_dir(), database="postgres").conninfo()
+        conn = connect(
+            info.user,
+            unix_socket_dir=info.unix_socket_dir,
+            port=info.port,
+            database="postgres",
+        )
+        try:
+            rows = conn.run(
+                "SELECT datname FROM pg_database WHERE datname LIKE :p",
+                p="%" + digest,
+            )
+            for (db,) in rows:
+                # WITH (FORCE) terminates stray backends (pg >= 13) so a
+                # leaked connection cannot block cleanup.
+                conn.run(f'DROP DATABASE "{db}" WITH (FORCE)')
+        finally:
+            conn.close()
+    except Exception as exc:
+        # Cleanup is best-effort; never fail a test run over it.
+        _logger.debug("jac test store sweep skipped: %s", exc)
+    shutil.rmtree(base_path, ignore_errors=True)
+
 
 def _ensure_jac_runtime():
     """Verify that the Jac runtime can be imported, once per pytest session.
@@ -241,12 +300,14 @@ def _fresh_jac_state(*, clear_modules: bool = True):
                 sys.modules.pop(mod.__name__, None)
         JacRuntime.loaded_modules.clear()
 
-    # Set up fresh state with isolated storage (temp directory avoids
-    # stale SQLite data from previous tests). Seed the bootstrap default
-    # so any subsequent `ExecutionContext()` without explicit args picks
-    # it up. The session-wide exec_ctx is constructed with the seed
-    # passed explicitly so its L3 path is locked in at construction.
-    fresh_base = tempfile.mkdtemp()
+    # Set up fresh state with isolated storage: a per-test temp base_path
+    # derives a unique embedded-pg database, so no test sees another test's
+    # data (and _discard_jac_test_store reclaims the previous one). Seed the
+    # bootstrap default so any subsequent `ExecutionContext()` without
+    # explicit args picks it up. The session-wide exec_ctx is constructed
+    # with the seed passed explicitly so its L3 path is locked in at
+    # construction.
+    fresh_base = tempfile.mkdtemp(prefix=_TEST_BASE_PREFIX)
     JacRuntime.set_base_path(fresh_base)
     JacRuntime.set_full_target_path(None)
     JacRuntime.program = JacProgram()
@@ -254,6 +315,48 @@ def _fresh_jac_state(*, clear_modules: bool = True):
     JacRuntime.exec_ctx = JacRuntimeInterface.create_j_context(
         user_root=None, base_path_dir=fresh_base, full_target_path=None
     )
+
+    # The new context is live, so the previous test's databases are no
+    # longer referenced -- reclaim them (and the temp dir) instead of
+    # letting every test leak a database family into the shared cluster.
+    prev_base = _test_bases[-1] if _test_bases else None
+    _test_bases.append(fresh_base)
+    if prev_base is not None:
+        _sweep_base_dbs(prev_base)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Reclaim the last test's embedded-pg databases and temp dir.
+
+    ``_fresh_jac_state`` sweeps every base but the live one; this closes the
+    final context and sweeps all remaining plugin bases, so a completed run
+    leaves no databases behind even when the suite ends on a test.
+    """
+    try:
+        from jaclang.jac0core.runtime import JacRuntime
+
+        if JacRuntime.exec_ctx is not None:
+            JacRuntime.exec_ctx.mem.close()
+            JacRuntime.exec_ctx = None
+        while _test_bases:
+            _sweep_base_dbs(_test_bases.pop())
+    except Exception as exc:
+        _logger.debug("jac session store cleanup skipped: %s", exc)
+
+
+def pytest_unconfigure(config: pytest.Config) -> None:
+    """Last-resort sweep at pytest teardown.
+
+    Under xdist, worker ``pytest_sessionfinish`` is not a reliable sweep
+    point; ``pytest_unconfigure`` runs in every pytest process (workers and
+    controller alike) and is idempotent -- ``_test_bases`` is empty when
+    ``pytest_sessionfinish`` already collected everything.
+    """
+    try:
+        while _test_bases:
+            _sweep_base_dbs(_test_bases.pop())
+    except Exception as exc:
+        _logger.debug("jac unconfigure store sweep skipped: %s", exc)
 
 
 # ---------------------------------------------------------------------------

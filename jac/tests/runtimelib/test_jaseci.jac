@@ -4,6 +4,7 @@ import io;
 import os;
 import sys;
 import shutil;
+import hashlib;
 import from tests.support { JAC_ROOT }
 import from tempfile { mkdtemp }
 import jaclang;
@@ -12,6 +13,32 @@ import from jaclang.cli.commands { execution }
 import from tests.conftest { get_object }
 
 glob FIXTURES = os.path.join(JAC_ROOT, "tests", "runtimelib", "fixtures");
+
+def _drop_base_dbs(tmpdir: str) {
+    # Databases are named jac_<stem>_<sha1(base)[:8]>; sweep every database
+    # minted from this test's temp base so runs do not accumulate them on
+    # the shared embedded server. mkdtemp paths are already absolute, which
+    # is what project_db_name hashes.
+    import from jaclang.runtimelib.pgembed { PgRuntime }
+    import from jaclang.runtimelib.session { shared_pg_data_dir }
+    import from jaclang.runtimelib.store { PgStore }
+    digest = hashlib.sha1(tmpdir.encode('utf-8')).hexdigest()[:8];
+    st = PgStore(
+        conninfo=PgRuntime(data_dir=shared_pg_data_dir(), database='postgres').ensure()
+    );
+    st.begin(serializable=False);
+    names = [
+        str(r[0])
+        for r in st.rows(
+            'SELECT datname FROM pg_database WHERE datname LIKE :p', {'p': '%' + digest}
+        )
+    ];
+    st.commit();
+    st.close();
+    for n in names {
+        PgRuntime(data_dir=shared_pg_data_dir(), database=n).drop_database();
+    }
+}
 
 def capture_start -> io.StringIO {
     captured = io.StringIO();
@@ -262,6 +289,7 @@ test "walker simple persistent" {
         assert output == "node a\nnode b";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -290,6 +318,7 @@ test "entrypoint root" {
         assert output == "node a\nnode b";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -326,6 +355,7 @@ test "entrypoint non root" {
         assert output == "node a\nnode b";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -357,6 +387,7 @@ test "get edge" {
         assert {no["archetype"].tag for no in node_objs} == {"first", "second"};
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -376,6 +407,7 @@ test "filter on edge get edge" {
         assert capture_get(captured).strip() == "[simple_edge(index=1)]";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -395,6 +427,7 @@ test "filter on edge get node" {
         assert capture_get(captured).strip() == "[simple(tag='second')]";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -414,6 +447,7 @@ test "filter on node get node" {
         assert capture_get(captured).strip() == "[simple(tag='second')]";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -433,6 +467,7 @@ test "filter on edge visit" {
         assert capture_get(captured).strip() == "simple(tag='first')";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -452,6 +487,7 @@ test "filter on node visit" {
         assert capture_get(captured).strip() == "simple(tag='first')";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -477,6 +513,7 @@ test "indirect reference node" {
         # assert output == "[b(name='node b')]\n[GenericEdge()]"
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -542,6 +579,7 @@ test "walker purger" {
         assert output == "Root()\n1\n0" , f"got: {output!r}";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -647,6 +685,7 @@ test "other root access" {
         );
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -736,6 +775,7 @@ test "get object read access" {
         assert capture_get(captured).strip() == "None";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -826,6 +866,7 @@ test "savable object" {
         assert got == "None" , f"post-delete get printed: {got!r}";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -860,6 +901,7 @@ test "traversing save" {
             );
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -1046,6 +1088,7 @@ test "custom access validation" {
         assert capture_get(captured).strip() == "A(val1='NO_ACCESS', val2=2)";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -1117,6 +1160,7 @@ test "run persistent reuse" {
         assert second_run_edges == 2 , "Root should still have only 2 edges (not 4)";
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }
@@ -1221,6 +1265,7 @@ test "user isolation via set user root" {
         );
     } finally {
         Jac.set_base_path(_orig_base);
+        _drop_base_dbs(_tmpdir);
         shutil.rmtree(_tmpdir, ignore_errors=True);
     }
 }

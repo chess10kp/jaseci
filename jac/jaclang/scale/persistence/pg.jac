@@ -78,7 +78,8 @@ def shared_store -> (Any | None) {
                         data_dir=shared_pg_data_dir(),
                         database=project_db_name(
                             base, JacRuntime.get_full_target_path()
-                        )
+                        ),
+                        origin=base
                     );
                     store = PgStore(conninfo=rt.ensure(), ensure_cb=rt.ensure);
                 }

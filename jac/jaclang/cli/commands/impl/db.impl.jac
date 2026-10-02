@@ -149,6 +149,12 @@ impl db(
         }
         return 0;
     }
+    if action == 'gc' {
+        import from jaclang.runtimelib.pgembed { gc_stale_dbs }
+        n = gc_stale_dbs(dd);
+        console.print(f"collected {n} stale database(s)");
+        return 0;
+    }
     console.error(f"unknown action: {action}");
     return 1;
 }

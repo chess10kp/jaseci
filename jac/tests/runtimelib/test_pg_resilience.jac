@@ -63,6 +63,16 @@ def _mk_store(td: str) -> tuple {
 }
 
 
+def _drop_store_db(td: str) {
+    # Reclaim the database _mk_store created so test runs do not accumulate
+    # databases on the shared embedded server.
+    PgRuntime(
+        data_dir=shared_pg_data_dir(),
+        database=project_db_name(td, str(Path(td) / 'app.jac'))
+    ).drop_database();
+}
+
+
 def _peer(info: ConnInfo, app_name: str) -> Any {
     last: Any = None;
     for _ in range(30) {
@@ -151,6 +161,7 @@ test "layer1: current schema boots without waiting on DDL locks" {
             s2.close();
             s1.close();
         }
+        _drop_store_db(td);
     }
 }
 
@@ -175,6 +186,7 @@ test "layer2: connections carry a jac:<pid>:<cmd> identity" {
         } finally {
             s1.close();
         }
+        _drop_store_db(td);
     }
 }
 
@@ -203,6 +215,7 @@ test "layer2: blocker owned by a dead process is reaped automatically" {
             s2.close();
             s1.close();
         }
+        _drop_store_db(td);
     }
 }
 
@@ -239,6 +252,7 @@ test "layer2: blocker owned by a live process raises a structured conflict" {
         assert str(os.getpid()) in str(got) , (
             f"conflict error {str(got)!r} does not name the blocking pid"
         );
+        _drop_store_db(td);
     }
 }
 
@@ -267,6 +281,7 @@ test "layer2: takeover_project evicts every other session on the db" {
         s1.close();
         assert n >= 1 , f"takeover reported {n} evictions, expected >= 1";
         assert evicted , 'the blocking session survived takeover';
+        _drop_store_db(td);
     }
 }
 

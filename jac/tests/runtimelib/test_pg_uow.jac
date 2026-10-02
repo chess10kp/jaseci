@@ -59,6 +59,11 @@ test "uow: last unit out closes the store transaction" {
             }
         } finally {
             s.close();
+            rt = PgRuntime(
+                data_dir=shared_pg_data_dir(),
+                database=project_db_name(td, str(Path(td) / 'app.jac'))
+            );
+            rt.drop_database();
         }
     }
 }
@@ -86,6 +91,7 @@ test "uow: read-only transactions take zero SIREAD predicate locks" {
             );
         } finally {
             store.close();
+            rt.drop_database();
         }
     }
 }
