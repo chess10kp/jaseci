@@ -264,6 +264,13 @@ def _ensure_jac_runtime():
     global _jac_runtime_ready
     if _jac_runtime_ready:
         return
+    # Disposable test clusters run without durability guarantees: test runs
+    # mint a fresh database per test, so catalog commits (CREATE/DROP
+    # DATABASE) and test-body writes dominate the wall time and fsync is
+    # pure overhead there. Inert when the shared cluster is already running
+    # (server options only apply at start) and when the user set the var
+    # themselves (including to an explicit "0" to forbid it).
+    os.environ.setdefault("JAC_PG_UNSAFE", "1")
     try:
         from jaclang.jac0core.runtime import JacRuntime  # noqa: F401
 

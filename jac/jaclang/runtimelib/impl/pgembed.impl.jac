@@ -465,6 +465,17 @@ impl PgRuntime._initdb_if_needed(bin_dir: str) -> None {
 }
 
 
+def _unsafe_server_opts -> str {
+    flag = os.environ.get('JAC_PG_UNSAFE', '').strip().lower();
+    if flag not in ('1', 'true', 'yes') {
+        return '';
+    }
+    return (
+        " -c fsync=off -c synchronous_commit=off -c full_page_writes=off"
+    );
+}
+
+
 impl PgRuntime._server_opts -> str {
     listen = "-c listen_addresses=127.0.0.1" if self.tcp else "-c listen_addresses=''";
     return (
@@ -474,6 +485,7 @@ impl PgRuntime._server_opts -> str {
         f"-c max_connections={PG_MAX_CONNECTIONS} "
         "-c max_pred_locks_per_transaction=1024 "
         "-c idle_in_transaction_session_timeout=300000"
+        + _unsafe_server_opts()
     );
 }
 
