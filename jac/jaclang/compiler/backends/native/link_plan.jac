@@ -301,9 +301,7 @@ obj LinkPlan {
         return GlueSpec(
             units=units,
             root_index=self.root_index(),
-            shared=(
-                kind == ArtifactKind.SHARED or kind == ArtifactKind.ENTRY_LIB
-            ),
+            shared=(kind == ArtifactKind.SHARED or kind == ArtifactKind.ENTRY_LIB),
             entry_lib=kind == ArtifactKind.ENTRY_LIB,
             platform=platform if kind != ArtifactKind.JIT else "jit",
             static_musl=static_musl,

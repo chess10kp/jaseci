@@ -270,13 +270,13 @@ def entry_lib_protocol_ir(spec: GlueSpec) -> str {
     root_unit = spec.units[spec.root_index] if spec.root_index >= 0 else None;
     decl = (
         _decl_void_fn(root_unit.entry_symbol)
-        if root_unit is not None and root_unit.entry_symbol
-        else ""
+            if root_unit is not None and root_unit.entry_symbol
+            else ""
     );
     call = (
         f'  call void @"{root_unit.entry_symbol}"()\n'
-        if root_unit is not None and root_unit.entry_symbol
-        else ""
+            if root_unit is not None and root_unit.entry_symbol
+            else ""
     );
     return (
         argv_globals_ir()

@@ -409,12 +409,7 @@ def _floor_ca_bundle -> (str | None) {
 }
 
 
-"""Compile a module once and build the link plan a sealed pair links from:
-the standalone executable and the host-driven entry library share one native
-compilation."""
-def _sealed_native_plan(
-    filename: str
-) -> (tuple[object, LinkPlan, any] | None) {
+def _sealed_native_plan(filename: str) -> (tuple[object, LinkPlan, any] | None) {
     import from jaclang.jac0core.ext_registry { is_jac, is_retired_native_marker }
     import from jaclang.compiler.driver.program { JacProgram }
     import from jaclang.compiler.driver.compile_options { CompileOptions }
@@ -437,15 +432,11 @@ def _sealed_native_plan(
     }
     prog = JacProgram();
     options = CompileOptions(
-        aot_mode=True,
-        default_codespace="native",
-        skip_native_engine=True
+        aot_mode=True, default_codespace="native", skip_native_engine=True
     );
     prog.options = options;
     try {
-        ir_module = prog.compile(
-            file_path=os.path.abspath(filename), options=options
-        );
+        ir_module = prog.compile(file_path=os.path.abspath(filename), options=options);
         plan = build_link_plan(prog, [os.path.abspath(filename)], options);
     } except Exception as e {
         console.error(f"Jac compilation failed: {e}");
@@ -566,9 +557,7 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
             _interop_record.unlink();
         }
         try {
-            link_artifact(
-                plan, exe_output, ArtifactKind.EXECUTABLE, log=console.print
-            );
+            link_artifact(plan, exe_output, ArtifactKind.EXECUTABLE, log=console.print);
         } except LinkPlanError as e {
             console.error(str(e));
             console.error("Native compilation failed; seal aborted.");

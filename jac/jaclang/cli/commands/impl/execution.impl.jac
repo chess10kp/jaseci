@@ -620,9 +620,7 @@ impl run_jab_image(
                         );
                     }
                 }
-                rc = _jab_run_entry_lib(
-                    img_root, entry_rel, host_argv, interop=False
-                );
+                rc = _jab_run_entry_lib(img_root, entry_rel, host_argv, interop=False);
                 if rc is not None {
                     return rc;
                 }
