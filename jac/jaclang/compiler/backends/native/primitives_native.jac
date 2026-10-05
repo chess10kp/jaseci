@@ -1680,9 +1680,10 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
         # branching on the allocation size.
         buf = b.call(rc_alloc_fn, [ir.Constant(i64, 5)], name="chr.buf");
         p._clear_rc_ctx();
-        # Branchless RFC-3629 encoding: (e1..e4, ln) are the UTF-8 bytes of the
-        # scalar and its length; junk lanes are stored at position ln-1 and then
-        # overwritten by the correct byte as the stores descend k=4..1.
+        # Branchless RFC-3629 encoding. Continuation bytes depend on the length
+        # (their shift is 6*(L-k)), so the shifts are selected from ln; junk
+        # lanes land at position ln-1 and are overwritten by the correct byte
+        # as the stores descend k=4..1.
         c80 = ir.Constant(i64, 0x80);
         c800 = ir.Constant(i64, 0x800);
         c10000 = ir.Constant(i64, 0x10000);
@@ -1690,35 +1691,41 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
         is_1 = b.icmp_unsigned("<", arg_val, c80, name="chr.lt1");
         is_2 = b.icmp_unsigned("<", arg_val, c800, name="chr.lt2");
         is_3 = b.icmp_unsigned("<", arg_val, c10000, name="chr.lt3");
-        e4 = b.or_(c80, b.and_(arg_val, m3f));
-        e3 = b.or_(c80, b.and_(b.lshr(arg_val, ir.Constant(i64, 6)), m3f));
-        e2 = b.or_(c80, b.and_(b.lshr(arg_val, ir.Constant(i64, 12)), m3f));
-        e1_1 = b.and_(arg_val, ir.Constant(i64, 0x7F));
-        e1_2 = b.or_(ir.Constant(i64, 0xC0), b.lshr(arg_val, ir.Constant(i64, 6)));
-        e1_3 = b.or_(ir.Constant(i64, 0xE0), b.lshr(arg_val, ir.Constant(i64, 12)));
-        e1_4 = b.or_(ir.Constant(i64, 0xF0), b.lshr(arg_val, ir.Constant(i64, 18)));
-        e1 = b.select(is_1, e1_1, b.select(is_2, e1_2, b.select(is_3, e1_3, e1_4)));
         ln = b.select(is_1, ir.Constant(i64, 1), b.select(
             is_2, ir.Constant(i64, 2), b.select(is_3, ir.Constant(i64, 3), ir.Constant(i64, 4))
         ));
+        lead_1 = b.and_(arg_val, ir.Constant(i64, 0x7F));
+        lead_2 = b.or_(ir.Constant(i64, 0xC0), b.lshr(arg_val, ir.Constant(i64, 6)));
+        lead_3 = b.or_(ir.Constant(i64, 0xE0), b.lshr(arg_val, ir.Constant(i64, 12)));
+        lead_4 = b.or_(ir.Constant(i64, 0xF0), b.lshr(arg_val, ir.Constant(i64, 18)));
+        lead = b.select(is_1, lead_1, b.select(is_2, lead_2, b.select(is_3, lead_3, lead_4)));
+        # k=2 continuation: shift 0 for 2-byte, 6 for 3-byte, 12 for 4-byte.
+        sh2 = b.select(is_2, ir.Constant(i64, 0), b.select(
+            is_3, ir.Constant(i64, 6), ir.Constant(i64, 12)
+        ));
+        c2 = b.or_(c80, b.and_(b.lshr(arg_val, sh2), m3f));
+        # k=3 continuation: shift 0 for 3-byte, 6 for 4-byte (junk for 2-byte).
+        sh3 = b.select(is_3, ir.Constant(i64, 0), ir.Constant(i64, 6));
+        c3 = b.or_(c80, b.and_(b.lshr(arg_val, sh3), m3f));
+        c4 = b.or_(c80, b.and_(arg_val, m3f));
         # NUL terminator slots first; byte stores below overwrite the prefix.
         b.store(ir.Constant(i8, 0), b.gep(buf, [ir.Constant(i64, 1)], name="chr.n1"));
         b.store(ir.Constant(i8, 0), b.gep(buf, [ir.Constant(i64, 2)], name="chr.n2"));
         b.store(ir.Constant(i8, 0), b.gep(buf, [ir.Constant(i64, 3)], name="chr.n3"));
         b.store(ir.Constant(i8, 0), b.gep(buf, [ir.Constant(i64, 4)], name="chr.n4"));
         one64 = ir.Constant(i64, 1);
-        c3 = ir.Constant(i64, 3);
-        c2 = ir.Constant(i64, 2);
+        c3c = ir.Constant(i64, 3);
+        c2c = ir.Constant(i64, 2);
         scratch4 = b.gep(buf, [b.sub(ln, one64)], name="chr.s4");
         scratch3 = b.gep(buf, [b.sub(ln, one64)], name="chr.s3");
         scratch2 = b.gep(buf, [b.sub(ln, one64)], name="chr.s2");
-        p4 = b.select(b.icmp_unsigned("<", c3, ln), b.gep(buf, [c3], name="chr.p4r"), scratch4);
-        b.store(b.trunc(e4, i8), p4);
-        p3 = b.select(b.icmp_unsigned("<", c2, ln), b.gep(buf, [c2], name="chr.p3r"), scratch3);
-        b.store(b.trunc(e3, i8), p3);
+        p4 = b.select(b.icmp_unsigned("<", c3c, ln), b.gep(buf, [c3c], name="chr.p4r"), scratch4);
+        b.store(b.trunc(c4, i8), p4);
+        p3 = b.select(b.icmp_unsigned("<", c2c, ln), b.gep(buf, [c2c], name="chr.p3r"), scratch3);
+        b.store(b.trunc(c3, i8), p3);
         p2 = b.select(b.icmp_unsigned("<", one64, ln), b.gep(buf, [one64], name="chr.p2r"), scratch2);
-        b.store(b.trunc(e2, i8), p2);
-        b.store(b.trunc(e1, i8), b.gep(buf, [ir.Constant(i64, 0)], name="chr.p1"));
+        b.store(b.trunc(c2, i8), p2);
+        b.store(b.trunc(lead, i8), b.gep(buf, [ir.Constant(i64, 0)], name="chr.p1"));
         return buf;
     }
 
