@@ -1596,7 +1596,9 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
             if func_name is None {
                 _erased_ctor = self._erased_generic_ctor(nd);
                 if _erased_ctor is not None {
-                    return self._codegen_instantiation(nd, type_name_override=_erased_ctor);
+                    return self._codegen_instantiation(
+                        nd, type_name_override=_erased_ctor
+                    );
                 }
                 self._pending_lambda_captures = None;
                 callable_value = self._codegen_expr(nd.target);
