@@ -7,6 +7,60 @@ This page documents significant breaking changes in Jac and Jaseci that may affe
 
 ---
 
+### `[dependencies]` lists Jac packages; Python moves to `[dependencies.pypi]` (unreleased)
+
+Jac now has its own packages (`org/name`, see [Packages](../reference/packages.md)), and `[dependencies]` in `jac.toml` lists them. Python packages move to a `pypi` subtable:
+
+| Before | Now |
+|---|---|
+| `[dependencies]` `requests = ">=2"` | `[dependencies.pypi]` `requests = ">=2"` |
+| `[dev-dependencies]` `pytest = ">=8"` | `[dev-dependencies.pypi]` `pytest = ">=8"` |
+| `[dependencies.git]` `lib = { git = "...", branch = "main" }` | `[dependencies.pypi]` `lib = { git = "...", branch = "main" }` |
+| `jac install requests` | `jac install --pypi requests` |
+| `jac remove requests` / `jac update requests` | `jac remove --pypi requests` / `jac update --pypi requests` |
+| `jac create --use https://.../x.jacpack` | `jac create --use org/name` (a published template), a template directory, or a template `.jab` |
+| `jac create --pack DIR` | `jac build --as jab` in a project with a `[jacpack]` table |
+
+A manifest that still lists a PyPI name under `[dependencies]` fails to load with an error that names the move. `jac fix dependencies` rewrites every `jac.toml` under the current directory, keeping comments and formatting where it can. `[dependencies.npm]` and `[dependencies.system]` are unchanged.
+
+Also in this change: comptime `embed_file` / `embed_bytes` can only read files inside the module's project, and `jac build --as wheel` fails instead of silently dropping client-codespace modules (`--allow-drop-client` restores the old behavior).
+
+---
+
+### Endpoint exposure follows the declaration: plain `def` / `walker` are private, `:protect` is the authenticated endpoint (unreleased)
+
+Which top-level functions and walkers are served, importable by client code,
+and bridgeable from another app is now decided in one place, from the access
+tag on the declaration, and every stage of the toolchain (type checker, client
+bundler, server registration, cross-app imports) reads that one verdict.
+
+| Declaration | Before | Now |
+|---|---|---|
+| `walker Foo` (plain) | served, JWT required | private: not served, not importable by client code, not bridgeable |
+| `def foo` imported by the entry module | served, JWT required | private |
+| any element of a module under a `[placement.pins]` `"server"` pin | callable from client code with auth | private unless tagged; the pin is placement only |
+| `walker:priv` / `def:priv` | served, JWT required | private |
+| `walker:protect` / `def:protect` | served, JWT required | unchanged: authenticated endpoint; now also bridgeable from client code and from other apps |
+| `walker:pub` / `def:pub` | served, no auth | unchanged: anonymous endpoint, always served |
+
+Removed: the `_`-prefix rule, the "imported by the entry module" rule, the
+callers-decide rule for uncalled `def:pub`, and the module-pin trust-boundary
+shape that let client code call non-`:pub` items of a pinned module. There is
+no configuration escape hatch; `[placement.pins]` decides where code runs and
+nothing else. `def:protect` and `walker:protect` are now endpoint placement
+evidence in any app kind that has a server, exactly like `def:pub`, so a
+declared endpoint is never pulled into the client bundle.
+
+Run `jac fix access` (or `jac fix access --dry-run` to preview) at the project
+root. It rewrites every plain `walker` reachable from a serving app and every
+plain `def` declared in, or imported by, a serving app's entry module to
+`:protect`, which preserves the previous authenticated behaviour. It leaves
+`:priv` declarations alone and lists any that used to be served so you can
+decide whether each was really an endpoint. A client import of a private symbol
+is `E5082`; a cross-app import of one is `E5106`.
+
+---
+
 ### An `edge` declaration must name its endpoints ([#9315](https://github.com/jaseci-labs/jac/pull/9315), unreleased)
 
 `edge Foo {}` is now `E2086`. The endpoint clause is what lets a traversal through
