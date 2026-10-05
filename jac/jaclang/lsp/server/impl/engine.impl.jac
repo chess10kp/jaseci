@@ -63,11 +63,11 @@ impl _merge_app_alerts(
     return (merge(1), merge(2));
 }
 
-import from jaclang.compiler.tools.unparse_pass { unparse_node }
+import from jaclang.compiler.frontend.unparse { unparse_node }
 
 impl Task.postinit -> None {
     self.task_id = Task._task_id;
-    self.cancel_token = threading.Event();
+    self.cancel_token = CancelToken();
     Task._task_id += 1;
 }
 
@@ -187,7 +187,7 @@ impl JacLangServer._fanout_dependents(file_uri: str) -> None {
 }
 
 impl JacLangServer.type_check_file(
-    file_uri: str, cancel_token: threading.Event | None = None
+    file_uri: str, cancel_token: (CancelToken | None) = None
 ) -> bool {
     if cancel_token and cancel_token.is_set() {
         return False;
@@ -256,7 +256,6 @@ impl JacLangServer.type_check_file(
                 use_str=main_doc.source,
                 options=CompileOptions(
                     no_cgen=True,
-                    force_target_program=True,
                     cancel_token=cancel_token,
                     target_app=app_name,
                     app_kind=app_kind,
@@ -668,7 +667,7 @@ impl JacLangServer._module_spec_target(mp: uni.ModulePath) -> Optional[str] {
         resolve_client_npm_declarations,
         resolve_client_npm_package
     }
-    import from jaclang.compiler.placement.placement_pins { is_client_npm_import }
+    import from jaclang.compiler.placement.placement_pins { in_client_npm_world }
     try {
         resolved = mp.resolve_relative_path();
         if os.path.isfile(resolved) {
@@ -683,7 +682,7 @@ impl JacLangServer._module_spec_target(mp: uni.ModulePath) -> Optional[str] {
         return None;
     }
     try {
-        if is_client_npm_import(spec, src_path) {
+        if in_client_npm_world(spec, src_path) {
             return (
                 resolve_client_npm_declarations(spec, src_path)
                 or resolve_client_npm_package(spec, src_path)
@@ -702,7 +701,7 @@ impl JacLangServer._npm_item_location(
         resolve_client_npm_declarations,
         resolve_client_npm_package
     }
-    import from jaclang.compiler.placement.placement_pins { is_client_npm_import }
+    import from jaclang.compiler.placement.placement_pins { in_client_npm_world }
     def at_file(path_: str, rng: Optional[lspt.Range]) -> Optional[lspt.Location] {
         path_uri = uris.from_fs_path(path_);
         if path_uri is None {
@@ -719,7 +718,7 @@ impl JacLangServer._npm_item_location(
     }
     spec = from_loc.string_path_value or from_loc.dot_path_str;
     src_path = from_loc.loc.mod_path if from_loc.loc else None;
-    if not spec or not src_path or not is_client_npm_import(spec, src_path) {
+    if not spec or not src_path or not in_client_npm_world(spec, src_path) {
         return None;
     }
     dts = resolve_client_npm_declarations(spec, src_path);

@@ -1,5 +1,6 @@
 import os;
 import json;
+import base64;
 import unittest.mock as mock;
 import from pathlib { Path }
 import from jaclang.scale.deploy.target.kubernetes.manifest_builder {
@@ -13,13 +14,16 @@ import from jaclang.scale.deploy.target.kubernetes.kubernetes_config {
 }
 import from jaclang.scale.config.app_config { AppConfig }
 import from jaclang.scale.deploy.target.kubernetes.utils.kubernetes_utils {
-    create_k8s_secret
+    create_k8s_secret,
+    resolve_signing_secret
 }
+import from jaclang.server.serving.authcrypt { PLACEHOLDER_JWT_SECRET }
 import from kubernetes.client.exceptions { ApiException }
 import from types { SimpleNamespace }
 import from jaclang.scale.deploy.target.kubernetes.runtime_resolver {
     build_k8s_registry,
-    K8sRuntimeServiceResolver
+    K8sRuntimeServiceResolver,
+    resolve_peer_route
 }
 import from jaclang.scale.runtime.gateway.service_registry {
     ServiceRegistry,
@@ -27,6 +31,7 @@ import from jaclang.scale.runtime.gateway.service_registry {
 }
 import from jaclang.server.sv_client { peer_url_env_key }
 import from jaclang.scale.runtime.fleet { FLEET_ENV, fleet_of }
+import from jaclang.scale.config.config_loader { reset_scale_config }
 import from jaclang.scale.deploy.target.kubernetes.target { KubernetesTarget }
 import from jaclang.scale.deploy.target.kubernetes.database_provisioner {
     DatabaseProvisioner
@@ -575,6 +580,31 @@ test "a shipped jac.toml value the pods cannot resolve stops the deploy before p
         ),
         ("values the pod env supplies", {"jac.toml": pod_supplied}, []),
         (
+            "a shell form in a script, which the shell expands, not jac",
+            {"jac.toml": "[scripts]\nbuild = \"npm run build ${CI:+--ci}\"\n"},
+            []
+        ),
+        (
+            "a shell form in a profile's script",
+            {
+                "jac.toml": "[environments.ci.scripts]\nbuild = \"npm run build ${CI:+--ci}\"\n"
+            },
+            []
+        ),
+        (
+            "a form jac does not read in a value the pods are handed",
+            {"jac.toml": "[plugins.demo]\nalt = \"${DEMO_ALT:+on}\"\n"},
+            ["jac.toml: plugins.demo.alt: Unsupported form ${DEMO_ALT:+on}"]
+        ),
+        (
+            "two unset variables in one value",
+            {"jac.toml": "[plugins.demo]\npair = \"${PAIR_ONE}/${PAIR_TWO}\"\n"},
+            [
+                "jac.toml: plugins.demo.pair: Environment variable PAIR_ONE is not set (every pod)",
+                "jac.toml: plugins.demo.pair: Environment variable PAIR_TWO is not set (every pod)"
+            ]
+        ),
+        (
             "a nested app project",
             {"lib/jac.toml": "[plugins.demo]\nroot = \"${LIB_ONLY}\"\n"},
             [
@@ -671,6 +701,105 @@ test "a shipped jac.toml value the pods cannot resolve stops the deploy before p
 }
 
 
+test "a deploy setting this machine cannot resolve stops the deploy, dry run included" {
+    import tempfile;
+    secret_toml = "[scale.secrets]\nOPENAI_API_KEY = \"${OPENAI_API_KEY}\"\n";
+    target_toml = "[scale.kubernetes]\nnamespace = \"${K8S_NS:?set K8S_NS}\"\n";
+    cases = [
+        (
+            "an unset secret",
+            secret_toml,
+            "ns",
+            {"OPENAI_API_KEY": "${OPENAI_API_KEY}"},
+            {},
+            ["scale.secrets.OPENAI_API_KEY", "OPENAI_API_KEY is not set"]
+        ),
+        (
+            "an unset target setting",
+            target_toml,
+            "${K8S_NS:?set K8S_NS}",
+            {},
+            {},
+            ["scale.kubernetes.namespace", "K8S_NS is not set", "set K8S_NS"]
+        ),
+        (
+            "the variable exported",
+            secret_toml,
+            "ns",
+            {"OPENAI_API_KEY": "sk-live"},
+            {"OPENAI_API_KEY": "sk-live"},
+            []
+        ),
+        (
+            "a default",
+            "[scale.secrets]\nREGION = \"${DEPLOY_REGION:-us-east-1}\"\n",
+            "ns",
+            {"REGION": "us-east-1"},
+            {},
+            []
+        ),
+        (
+            "an alternate-value form jac does not read, with the variable unset",
+            "[scale.secrets]\nSNEAKY = \"${MISSING_ALT:+on}\"\n",
+            "ns",
+            {"SNEAKY": "${MISSING_ALT:+on}"},
+            {},
+            ["scale.secrets.SNEAKY", "${MISSING_ALT:+on} is not a form jac reads"]
+        ),
+        (
+            "an alternate-value form jac does not read, with the variable exported",
+            "[scale.secrets]\nSNEAKY = \"${DEPLOY_REGION:+on}\"\n",
+            "ns",
+            {"SNEAKY": "${DEPLOY_REGION:+on}"},
+            {"DEPLOY_REGION": "us-east-1"},
+            ["scale.secrets.SNEAKY", "${DEPLOY_REGION:+on} is not a form jac reads"]
+        )
+    ];
+    for (label, extra, namespace, secrets, host_env, expected) in cases {
+        with tempfile.TemporaryDirectory() as tmp {
+            project = _routed_project(tmp, ["main.jac"]);
+            toml_path = Path(project) / "jac.toml";
+            toml_path.write_text(toml_path.read_text() + extra);
+            builder = ManifestBuilder(
+                k8s_config=KubernetesConfig(
+                    app_name="jac-shop",
+                    namespace=namespace,
+                    bundle_storage_class="efs-sc"
+                ),
+                project_dir=project,
+                secrets=secrets,
+                fleet=fleet_of({}, root_app="main"),
+                dry_run=True
+            );
+            caught = "";
+            with mock.patch.dict(os.environ, host_env, clear=False) {
+                for name in (
+                    "OPENAI_API_KEY",
+                    "K8S_NS",
+                    "DEPLOY_REGION",
+                    "MISSING_ALT"
+                ) {
+                    if name not in host_env {
+                        os.environ.pop(name, None);
+                    }
+                }
+                try {
+                    builder.generate_manifests(
+                        AppConfig(code_folder=project, app_name="jac-shop"), "img"
+                    );
+                } except ValueError as e {
+                    caught = str(e);
+                }
+            }
+            assert bool(caught) == bool(expected) , f"{label}: {caught!r}";
+            for fragment in expected {
+                assert fragment in caught , f"{label}: {caught}";
+            }
+        }
+    }
+}
+
+
 test "user env cannot point a pod at an arbitrary service file" {
     cfg = KubernetesConfig(app_name="jac-shop", namespace="ns");
     builder = ManifestBuilder(k8s_config=cfg);
@@ -680,6 +809,88 @@ test "user env cannot point a pod at an arbitrary service file" {
     values: dict[str, str] = {e["name"]: e["value"] for e in env};
     assert values["JAC_SV_NAME"] == "orders";
     assert "JAC_SV_FILE" not in values;
+}
+
+
+test "build_env bakes a direct peer URL only for peers that are not HTTP-activated" {
+    # A baked JAC_APP_<PEER>_URL would let sv_client.peer_url_from_env's
+    # env-var override (runtime_resolver.jac::resolve_peer_route) win over
+    # the interceptor route on every call, sending traffic straight at a
+    # Service with no live endpoints instead of through the KEDA HTTP
+    # interceptor that can wake it.
+    activated = {
+        "worker": {
+            "http_activation": {
+                "enabled": True,
+                "target_port": 8000,
+                "concurrency_target": 1,
+                "rules": [{"hosts": ["worker.ns.local"]}]
+            }
+        }
+    };
+    for (label, overrides, baked) in [
+        ("HTTP-activated peer", activated, False),
+        ("plain peer", {}, True)
+    ] {
+        builder = ManifestBuilder(
+            k8s_config=KubernetesConfig(app_name="jac-shop", namespace="ns"),
+            fleet=fleet_of(
+                {"worker": "/worker"},
+                root_app="app",
+                root_file="app.jac",
+                overrides=overrides
+            )
+        );
+        env = {e["name"]: e["value"] for e in builder._build_env("app", {})};
+        assert ("JAC_APP_WORKER_URL" in env) == baked , f"{label}: {env}";
+    }
+}
+
+
+test "resolve_peer_route warns once per service, then again after it recovers and fails again" {
+    # resolve_peer_route runs per fleet member on every sv-to-sv call and
+    # every get_sv_service_routes() lookup, so an unreachable or malformed
+    # scale config used to warn on every single one of those, per service.
+    import jaclang.scale.deploy.target.kubernetes.runtime_resolver as resolver_mod;
+    import jaclang.scale.config.config_loader as config_loader_mod;
+
+    original_warning = resolver_mod.logger.warning;
+    original_get_scale_config = config_loader_mod.get_scale_config;
+    warn_calls: list = [];
+
+    def failing_config(project_dir: object = None) -> object {
+        raise RuntimeError("config unreachable");
+    }
+
+    def healthy_config(project_dir: object = None) -> object {
+        return SimpleNamespace(
+            get_kubernetes_config=lambda { {}},
+            get_app_scale_config=lambda (app_name: str) { {}}
+        );
+    }
+
+    resolver_mod._config_load_warned.discard("k9_warn_once_svc");
+    setattr(
+        resolver_mod.logger, "warning", lambda (msg: str) { warn_calls.append(msg); }
+    );
+
+    try {
+        for (label, loader, expected) in [
+            ("three failing calls warn once", failing_config, 1),
+            ("a recovered call stays quiet", healthy_config, 1),
+            ("failing again after recovery warns again", failing_config, 2)
+        ] {
+            setattr(config_loader_mod, "get_scale_config", loader);
+            for _ in range(3) {
+                resolve_peer_route("k9_warn_once_svc", "ns", 8000);
+            }
+            assert len(warn_calls) == expected , label;
+        }
+    } finally {
+        setattr(config_loader_mod, "get_scale_config", original_get_scale_config);
+        setattr(resolver_mod.logger, "warning", original_warning);
+        resolver_mod._config_load_warned.discard("k9_warn_once_svc");
+    }
 }
 
 
@@ -726,6 +937,7 @@ def _peer_env_restore(saved: dict[str, str | None]) {
             os.environ[key] = value;
         }
     }
+    reset_scale_config();
 }
 
 
@@ -734,6 +946,10 @@ def _peer_env_isolate {
         os.environ.pop(peer_url_env_key(name), None);
     }
     os.environ["POD_NAMESPACE"] = _PEER_NS;
+    # build_k8s_registry now consults scale config (for http_activation
+    # awareness); reset so no earlier test's cached, possibly
+    # activation-enabled config leaks into these naming-convention checks.
+    reset_scale_config();
 }
 
 
@@ -911,11 +1127,17 @@ test "url_for derives when no override is set" {
 
 obj _FakeSecrets {
     has created: list[str] = [],
+        reads: int = 0,
         version: str = "77";
 
     def create_namespaced_secret(namespace: str, body: any) -> any {
         self.created.append(body["metadata"]["name"]);
         return SimpleNamespace(metadata=SimpleNamespace(resource_version=self.version));
+    }
+
+    def read_namespaced_secret(name: str, namespace: str) -> any {
+        self.reads += 1;
+        raise ApiException(status=404);
     }
 }
 
@@ -961,7 +1183,9 @@ test "an unusable revision is reported rather than silently skipped" {
 # would leave the suite green while every real redeploy failed on the missing
 # revision.
 obj _FakeSecretsExisting(_FakeSecrets) {
-    has replaced: list[str] = [];
+    has replaced: list[str] = [],
+        live: dict[str, (str | bytes)] = {},
+        read_status: int = 0;
 
     def create_namespaced_secret(namespace: str, body: any) -> any {
         raise ApiException(status=409);
@@ -971,20 +1195,104 @@ obj _FakeSecretsExisting(_FakeSecrets) {
         self.replaced.append(name);
         return SimpleNamespace(metadata=SimpleNamespace(resource_version=self.version));
     }
+
+    def read_namespaced_secret(name: str, namespace: str) -> any {
+        self.reads += 1;
+        if self.read_status {
+            raise ApiException(status=self.read_status);
+        }
+        return SimpleNamespace(
+            data={
+                k: base64.b64encode(v if isinstance(v, bytes) else v.encode()).decode()
+                for (k, v) in self.live.items()
+            }
+        );
+    }
 }
 
 
-test "a redeploy takes its revision from the replace, not the create" {
-    api = _FakeSecretsExisting(version="88");
+test "a redeploy keeps the signing secret and takes its revision from the replace" {
+    cases = [
+        (
+            "redeploy reuses live",
+            {},
+            {"JAC_SERVE_AUTH_SECRET": "kept"},
+            0,
+            "kept",
+            1,
+            False
+        ),
+        ("configured wins", {"JAC_SERVE_AUTH_SECRET": "mine"}, {}, 0, "mine", 0, False),
+        (
+            "live placeholder is replaced",
+            {},
+            {"JAC_SERVE_AUTH_SECRET": PLACEHOLDER_JWT_SECRET},
+            0,
+            None,
+            1,
+            True
+        ),
+        ("denied read fails the deploy", {}, {}, 403, ApiException, 1, None),
+        (
+            "non UTF-8 live value fails loud",
+            {},
+            {"JAC_SERVE_AUTH_SECRET": b"\xff\xfe"},
+            0,
+            RuntimeError,
+            1,
+            None
+        )
+    ];
+    for (label, configured, live, read_status, expected, reads, minted) in cases {
+        api = _FakeSecretsExisting(version="88", live=live, read_status=read_status);
+        data = ManifestBuilder(
+            k8s_config=KubernetesConfig(app_name="app", namespace="ns"),
+            secrets=configured
+        )._build_user_secret_manifest()["stringData"];
 
-    revision = create_k8s_secret(api, "ns", "app-secrets", {"MARKER": "v2"});
+        if isinstance(expected, type) {
+            raised = False;
+            try {
+                resolve_signing_secret(api, "ns", "app-secrets", data);
+                create_k8s_secret(api, "ns", "app-secrets", data);
+            } except expected {
+                raised = True;
+            }
+            assert raised , label;
+            assert api.reads == reads , label;
+            assert api.replaced == [] , (
+                f"{label}: an unreadable live secret must stop the deploy before "
+                "it replaces that secret with a fresh one"
+            );
+            continue;
+        }
+        assert resolve_signing_secret(api, "ns", "app-secrets", data) == minted , label;
+        revision = create_k8s_secret(api, "ns", "app-secrets", data);
 
-    assert revision == "88" , (
-        "the 409 path has to return the replace response's revision, or a "
-        "redeploy stamps nothing and the config never reaches running pods"
+        if expected is None {
+            assert data["JAC_SERVE_AUTH_SECRET"]
+                not in ("", PLACEHOLDER_JWT_SECRET) , label;
+        } else {
+            assert data["JAC_SERVE_AUTH_SECRET"] == expected , label;
+        }
+        assert api.reads == reads , label;
+        assert revision == "88" , (
+            "the 409 path has to return the replace response's revision, or a "
+            "redeploy stamps nothing and the config never reaches running pods"
+        );
+        assert api.replaced == ["app-secrets"];
+        assert api.created == [];
+    }
+
+    rendered = ManifestBuilder(
+        k8s_config=KubernetesConfig(app_name="app", namespace="ns")
+    )._build_user_secret_manifest()["stringData"];
+    assert rendered["JAC_SERVE_AUTH_SECRET"] == PLACEHOLDER_JWT_SECRET , (
+        "a rendered manifest must never carry a random value the apply will not use"
     );
-    assert api.replaced == ["app-secrets"];
-    assert api.created == [];
+    first = _FakeSecrets();
+    assert resolve_signing_secret(first, "ns", "app-secrets", rendered);
+    assert rendered["JAC_SERVE_AUTH_SECRET"] not in ("", PLACEHOLDER_JWT_SECRET) , "a first deploy mints a real secret";
 }
 
 

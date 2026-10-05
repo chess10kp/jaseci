@@ -1,5 +1,4 @@
 import jaclang.runtime.osp_graph as _graph;
-import from jaclang.runtime.object_model { field }
 import from jaclang.runtime.archetype {
     Anchor,
     EdgeAnchor,
@@ -12,7 +11,7 @@ import from typing { cast }
 
 obj _SvStore {
     has h_of_key: dict[any, int] = {},
-        forgotten: set[int] = field(default_factory=`set),
+        forgotten: set[int] = set(),
         region: int = 0;
 }
 
@@ -48,11 +47,8 @@ def _mem_or_ctx(mem: any) -> any {
     if mem is not None {
         return mem;
     }
-    import from jaclang.runtime.runtime { JacRuntime, _request_context }
-    ctx = _request_context.get();
-    if ctx is None {
-        ctx = JacRuntime.exec_ctx;
-    }
+    import from jaclang.runtime.runtime { JacRuntime }
+    ctx = JacRuntime.peek_context();
     return ctx.mem if ctx is not None else None;
 }
 

@@ -1,3 +1,4 @@
+import from jaclang.compiler.frontend.roles { Kid }
 import from jaclang.compiler.frontend.unitree {
     Module,
     TreeWalker,
@@ -38,9 +39,7 @@ import from jaclang.compiler.frontend.unitree {
     ability_of_symbol,
     resolved_decl_of
 }
-import from jaclang.compiler.passes.context { CompileContext }
-import type from jaclang.compiler.driver.program { JacProgram }
-import from jaclang.runtime.object_model { field }
+import from jaclang.compiler.passes.context { CompileContext, TreePass }
 import from jaclang.compiler.frontend.constant {
     CodeContext,
     SymbolType,
@@ -49,32 +48,14 @@ import from jaclang.compiler.frontend.constant {
 import from jaclang.compiler.frontend.codeinfo {
     BoundaryTypeInfo,
     InteropBinding,
-    InteropContext
+    InteropContext,
+    InteropManifest
 }
 
-walker BoundaryAnalysisPass(TreeWalker) {
-    can enter_walk with UniNode entry {
-        self.ctx.enter_node(here);
-    }
-
-    can exit_walk with UniNode exit {
-        self.ctx.exit_node(here);
-    }
-
-    has ctx: CompileContext,
-        module: Module,
-        prog: JacProgram;
-
-    static has HOST_PASS: bool = True;
-    has _func_defs: dict[(str, tuple[(InteropContext, Ability)])] = field(
-        default_factory=`dict
-    ),
-        _imported_native_funcs: dict[(str, tuple[(str, InteropContext)])] = field(
-            default_factory=`dict
-        ),
-        _imported_native_modules: dict[(str, tuple[(str, InteropContext)])] = field(
-            default_factory=`dict
-        );
+walker BoundaryAnalysisPass(TreePass) {
+    has _func_defs: dict[(str, tuple[(InteropContext, Ability)])] = {},
+        _imported_native_funcs: dict[(str, tuple[(str, InteropContext)])] = {},
+        _imported_native_modules: dict[(str, tuple[(str, InteropContext)])] = {};
 
     can prepare with entry;
     def _resolved_native_decl(name_node: (UniNode | None)) -> (Ability | None);
@@ -130,5 +111,5 @@ walker BoundaryAnalysisPass(TreeWalker) {
 
     def _literal_default(expr: (UniNode | None)) -> tuple[(bool, any)];
     can finish with exit;
-    def _record_access_levels(manifest: any) -> None;
+    def _record_surface(manifest: InteropManifest) -> None;
 }

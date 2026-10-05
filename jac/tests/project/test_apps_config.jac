@@ -6,6 +6,7 @@ import from pathlib { Path }
 import from tempfile { TemporaryDirectory }
 import from jaclang.project.apps { AppConfig, implicit_app, parse_apps }
 import from jaclang.project.config { JacConfig }
+import from jaclang.project.plugin_config { PluginConfigBase }
 import from jaclang.project.kinds {
     KIND_SPECS,
     MOBILE_PLATFORMS,
@@ -477,7 +478,7 @@ test "kind specs carry ui and has_server; the client axis is gone" {
 
 test "resolve_app_kind infers only for the implicit app" {
     cfg = JacConfig.from_toml_str(
-        '[project]\nname = "x"\n\n[dependencies]\njac-client = "*"\n'
+        '[project]\nname = "x"\n\n[dependencies.pypi]\njac-client = "*"\n'
     );
     app = cfg.resolve_app("");
     assert app.implicit and app.kind == "";
@@ -615,8 +616,14 @@ def _rewrite_toml(root_path: Path, toml: str) {
     os.utime(toml_path, (st.st_atime + bump, st.st_mtime + bump));
 }
 
-test "app_fact_digest tracks routes and entry modules" {
-    import from jaclang.project.workspace { app_fact_digest, app_for_path }
+def _fact_digest(path: str) -> str {
+    import from jaclang.project.workspace { app_for_path }
+    app = app_for_path(path);
+    return app.fact_digest if app is not None else "";
+}
+
+test "app fact digest tracks routes and entry modules" {
+    import from jaclang.project.workspace { app_for_path }
     with TemporaryDirectory() as td {
         root_path = write_workspace(Path(td) / "acme");
         (root_path / "core" / "social_graph2.jac").write_text("walker:pub Hi {}\n");
@@ -625,15 +632,15 @@ test "app_fact_digest tracks routes and entry modules" {
         (root_path / "web" / "index.jac").write_text(MAIN_JAC);
         sg_file = str(root_path / "core" / "social_graph.jac");
         web_file = str(root_path / "web" / "main.jac");
-        sg_before = app_fact_digest(app_for_path(sg_file));
-        web_before = app_fact_digest(app_for_path(web_file));
+        sg_before = _fact_digest(sg_file);
+        web_before = _fact_digest(web_file);
         assert len(sg_before) == 12 and len(web_before) == 12;
         assert sg_before != web_before;
-        assert app_fact_digest(app_for_path(sg_file)) == sg_before , "stable";
+        assert _fact_digest(sg_file) == sg_before , "stable";
         _rewrite_toml(root_path, WORKSPACE_TOML.replace('/api/social', '/api/graph'));
-        sg_route = app_fact_digest(app_for_path(sg_file));
+        sg_route = _fact_digest(sg_file);
         assert sg_route != sg_before , "the effective route is part of the digest";
-        assert app_fact_digest(app_for_path(web_file)) == web_before , (
+        assert _fact_digest(web_file) == web_before , (
             "another app's route does not perturb this app"
         );
         _rewrite_toml(
@@ -642,9 +649,9 @@ test "app_fact_digest tracks routes and entry modules" {
                 'route = "/api/social"', 'route = "/api/social_graph"'
             )
         );
-        sg_default = app_fact_digest(app_for_path(sg_file));
+        sg_default = _fact_digest(sg_file);
         _rewrite_toml(root_path, WORKSPACE_TOML.replace('route = "/api/social"\n', ""));
-        assert app_fact_digest(app_for_path(sg_file)) == sg_default , (
+        assert _fact_digest(sg_file) == sg_default , (
             "an explicit route equal to the /api/<name> default is the same fact"
         );
         _rewrite_toml(
@@ -652,30 +659,29 @@ test "app_fact_digest tracks routes and entry modules" {
             WORKSPACE_TOML.replace("core/social_graph.jac", "core/social_graph2.jac")
         );
         sg2_file = str(root_path / "core" / "social_graph2.jac");
-        assert app_fact_digest(app_for_path(sg2_file)) != sg_before , (
+        assert _fact_digest(sg2_file) != sg_before , (
             "the entry-point is part of the digest"
         );
         _rewrite_toml(
             root_path, WORKSPACE_TOML.replace('web/main.jac', 'web2/main.jac')
         );
         web2_file = str(root_path / "web2" / "main.jac");
-        assert app_fact_digest(app_for_path(web2_file)) != web_before , (
+        assert _fact_digest(web2_file) != web_before , (
             "the app root is part of the digest"
         );
         _rewrite_toml(root_path, WORKSPACE_TOML);
-        assert app_fact_digest(app_for_path(web_file)) == web_before;
+        assert _fact_digest(web_file) == web_before;
         assert app_for_path(str(root_path / "web/index.jac")) is None;
     }
 }
 
-test "app_fact_digest does not depend on where the workspace is checked out" {
-    import from jaclang.project.workspace { app_fact_digest, app_for_path }
+test "app fact digest does not depend on where the workspace is checked out" {
     with TemporaryDirectory() as td_a, TemporaryDirectory() as td_b {
         root_a = write_workspace(Path(td_a) / "acme");
         root_b = write_workspace(Path(td_b) / "elsewhere" / "acme");
         for rel in [("web", "main.jac"), ("core", "social_graph.jac")] {
-            da = app_fact_digest(app_for_path(str(root_a.joinpath(*rel))));
-            db = app_fact_digest(app_for_path(str(root_b.joinpath(*rel))));
+            da = _fact_digest(str(root_a.joinpath(*rel)));
+            db = _fact_digest(str(root_b.joinpath(*rel)));
             assert da == db , f"{rel}: {da} != {db}";
         }
     }
@@ -734,5 +740,89 @@ test "entry resolution shares local import rules without executing packages" {
             == str(root_path / 'core' / '__init__.py');
         assert package_app.entry_path(directory)
             == resolve_module('core', str(root_path / 'main.jac'))[0];
+    }
+}
+
+
+# ===========================================================================
+# Plugin config layers
+# ===========================================================================
+glob LAYERED_TOML = (
+         '[project]\nname = "acme"\n\n[apps.web]\nkind = "web-app"\nentry-point = "web.main"\n\n[apps.mobile]\nkind = "mobile"\nentry-point = "mobile.main"\n\n[byllm]\nmodel = "base-model"\ntemperature = 0.1\n\n[apps.web.byllm]\nmodel = "web-model"\n'
+     ),
+     LAYERED_STRICT_ENV = "JAC_TEST_PLUGIN_CONFIG_STRICT";
+
+
+"""A plugin that declares a schema for its [byllm] table; the real byllm loader declares none."""
+class LayeredPluginConfig(PluginConfigBase) {
+    override def get_plugin_name(self: LayeredPluginConfig) -> str {
+        return "byllm";
+    }
+
+    override def get_default_config(self: LayeredPluginConfig) -> dict[str, any] {
+        return {"model": "default-model", "temperature": 0.5};
+    }
+
+    override def get_config_schema(self: LayeredPluginConfig) -> dict[str, any] {
+        return {
+            "section": "byllm",
+            "options": {
+                "model": {"type": "string", "default": "default-model"},
+                "temperature": {"type": "float", "default": 0.5}
+            }
+        };
+    }
+
+    override def get_config_strict_env(self: LayeredPluginConfig) -> str {
+        return LAYERED_STRICT_ENV;
+    }
+}
+
+
+"""Load the plugin config as the process serving root_path/web/main.jac does,
+with strict validation on; returns the strict error ('' when it loaded) and the config."""
+def _strict_plugin_load(root_path: Path, toml: str) -> tuple[str, dict[str, any]] {
+    (root_path / "jac.toml").write_text(toml);
+    os.environ[LAYERED_STRICT_ENV] = "1";
+    try {
+        cfg = LayeredPluginConfig(
+            project_dir=root_path, entry_path=str(root_path / "web" / "main.jac")
+        );
+        return ("", cfg.load());
+    } except ValueError as e {
+        return (str(e), {});
+    } finally {
+        os.environ.pop(LAYERED_STRICT_ENV, None);
+    }
+}
+
+
+test "PluginConfigBase validates the project table and the app overlay separately" {
+    config_mod._config = None;
+    with TemporaryDirectory() as td {
+        root_path = write_workspace(Path(td) / "acme", LAYERED_TOML);
+        (raised, loaded) = _strict_plugin_load(root_path, LAYERED_TOML);
+        assert raised == "" , raised;
+        assert loaded == {"model": "web-model", "temperature": 0.1} , loaded;
+        (raised, _) = _strict_plugin_load(
+            root_path,
+            LAYERED_TOML.replace('[apps.web.byllm]\nmodel', '[apps.web.byllm]\nmodle')
+        );
+        assert "[apps.web.byllm] has unknown key 'modle'" in raised , raised;
+        assert "did you mean 'model'" in raised , raised;
+        assert "[byllm]" not in raised , raised;
+        (raised, _) = _strict_plugin_load(
+            root_path, LAYERED_TOML.replace("temperature = 0.1", "temprature = 0.1")
+        );
+        assert "[byllm] has unknown key 'temprature'" in raised , raised;
+        assert "did you mean 'temperature'" in raised , raised;
+        assert "web-model" not in raised and "[apps.web.byllm]" not in raised , raised;
+        (raised, loaded) = _strict_plugin_load(
+            root_path, LAYERED_TOML.replace("[apps.web.byllm]", "[apps.mobile.byllm]")
+        );
+        assert raised == "" , raised;
+        assert loaded == {"model": "base-model", "temperature": 0.1} , (
+            "another app's overlay never reaches this app's config"
+        );
     }
 }

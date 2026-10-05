@@ -315,6 +315,10 @@ def _http_call(
         }
         data = payload;
     }
+    return function_result(data, app, fn);
+}
+
+def function_result(data: any, app: str, fn: str) -> any {
     envelope = _unwrap_envelope(data, app, fn);
     if isinstance(envelope, dict) and ("result" in envelope) {
         return envelope["result"];
@@ -322,12 +326,18 @@ def _http_call(
     return envelope;
 }
 
-def _rehydrate_walker(envelope: any, stub_cls: any) -> any {
-    if not isinstance(envelope, dict) or stub_cls is None {
-        raise BridgeError(detail="Walker response has no declared boundary contract");
+def hydrate_walker_envelope(
+    data: any, app: str, walker_name: str, stub_cls: any
+) -> any {
+    envelope = _unwrap_envelope(data, app, walker_name);
+    if not isinstance(envelope, dict) {
+        envelope = {};
+    }
+    if stub_cls is None {
+        return envelope;
     }
     payload = dict(envelope.get("result") or {});
-    payload["reports"] = envelope.get("reports", []);
+    payload["reports"] = envelope.get("reports") or [];
     return stub_cls._from_wire(payload);
 }
 
@@ -358,7 +368,7 @@ def _http_spawn(
         }
         data = resp.json();
     }
-    return _rehydrate_walker(_unwrap_envelope(data, app, walker_name) or {}, stub_cls);
+    return hydrate_walker_envelope(data, app, walker_name, stub_cls);
 }
 
 async def _await_if_needed(value: any) -> any {
@@ -375,7 +385,36 @@ async def _local_call(app: str, fn: str, kwargs: dict[str, any]) -> any {
     if target is None or not callable(target) {
         raise BridgeError(app=app, name=fn, detail=f"no function '{fn}'", status=404);
     }
-    return await _await_if_needed(target(**kwargs));
+    import from jaclang.runtime.prepared { application_of }
+    if application_of(target) is None {
+        return await _await_if_needed(target(**kwargs));
+    }
+    import from jaclang.runtime.runtime { JacRuntime }
+    import from jaclang.runtime.context { ExecutionContext }
+    parent = JacRuntime.get_context();
+    ctx = await ExecutionContext.for_target(
+        target, parent, str(parent.user_root.ensure_id())
+    );
+    token = JacRuntime.push_request_context(ctx);
+    streaming = False;
+    try {
+        result = await _await_if_needed(target(**kwargs));
+        ctx.mem.commit();
+        import inspect;
+        streaming = inspect.isgenerator(result) or inspect.isasyncgen(result);
+        return await ctx.bind_stream(result) if streaming else result;
+    } except BaseException {
+        ctx.mem.abort();
+        raise;
+    } finally {
+        try {
+            if not streaming {
+                ctx.close();
+            }
+        } finally {
+            JacRuntime.reset_request_context(token);
+        }
+    }
 }
 
 async def _local_spawn(app: str, walker_name: str, kwargs: dict[str, any]) -> any {
@@ -388,21 +427,11 @@ async def _local_spawn(app: str, walker_name: str, kwargs: dict[str, any]) -> an
             app=app, name=walker_name, detail=f"no walker '{walker_name}'", status=404
         );
     }
-    current = JacRuntime.peek_context();
-    owns_ctx = current is None or current is JacRuntime.exec_ctx;
-    req_ctx = current;
-    token: any = None;
-    if owns_ctx {
-        parent = JacRuntime.get_context();
-        req_ctx = ExecutionContext(_parent=parent);
-        req_ctx.set_user_root(str(parent.system_root.id));
-        token = JacRuntime.push_request_context(req_ctx);
-    }
-    if req_ctx is None {
-        raise BridgeUnavailable(
-            app=app, name=walker_name, detail="no execution context"
-        );
-    }
+    parent = JacRuntime.get_context();
+    req_ctx = await ExecutionContext.for_target(
+        walker_cls, parent, str(parent.user_root.ensure_id())
+    );
+    token = JacRuntime.push_request_context(req_ctx);
     try {
         mem = req_ctx.mem;
         session = mem if mem?.run_request else None;
@@ -425,8 +454,13 @@ async def _local_spawn(app: str, walker_name: str, kwargs: dict[str, any]) -> an
             } except Exception {}
         }
         return walked;
+    } except BaseException {
+        req_ctx.mem.abort();
+        raise;
     } finally {
-        if owns_ctx and token is not None {
+        try {
+            req_ctx.close();
+        } finally {
             JacRuntime.reset_request_context(token);
         }
     }
@@ -489,6 +523,13 @@ async def spawn_walker(
     stub_cls: any,
     idempotency_key: str = ""
 ) -> any {
+    if stub_cls is None and app not in _local_providers {
+        raise BridgeError(
+            app=app,
+            name=walker_name,
+            detail="Walker response has no declared boundary contract"
+        );
+    }
     _active_writes[app] = _active_writes.get(app, 0) + 1;
     clear_read_cache(app);
     try {

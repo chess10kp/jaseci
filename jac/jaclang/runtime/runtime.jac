@@ -9,7 +9,7 @@ import from collections { OrderedDict, deque }
 import from collections.abc { Callable, Coroutine, Iterable, Mapping, Sequence }
 import from concurrent.futures { Future, ThreadPoolExecutor }
 import from contextvars { ContextVar }
-import from jaclang.runtime.object_model { field, make_object }
+import from jaclang.runtime.object_model { make_object }
 import from inspect { getfile }
 import from logging { getLogger }
 import from typing { TYPE_CHECKING, Literal, ParamSpec, Protocol, TypeAlias, TypeVar }
@@ -34,7 +34,7 @@ import from jaclang.runtime.archetype {
     light_hop_answers
 }
 import from jaclang.runtime.constants { EdgeDir, colors }
-import from jaclang.runtime.graph_query { GraphQuery, QHop }
+import from jaclang.runtime.graph_query { GraphQuery, QHop, QPred, filter_query_nodes }
 import from jaclang.runtime.constructs {
     AccessLevel,
     access_level_cast,
@@ -156,17 +156,10 @@ def resolve_ref(
     }
     ctx = JacRuntimeInterface.get_context();
 
-    if ctx.mem.is_recoverable_quarantine(stub.ensure_id()) {
+    if ctx.mem.preserve_unresolved_ref(stub.ensure_id()) {
         return None;
     }
 
-    if os.environ.get("JAC_SV_SIBLING") == "1" {
-        logger.debug(
-            f"unresolvable ref {type(stub).__name__} [{stub.id}] in sibling "
-            "service; skipping without heal (peer-owned or owner will heal)"
-        );
-        return None;
-    }
     ref_repr = referrer.id if referrer is not None else '?';
     logger.error(
         f"dangling reference: {type(stub).__name__} [{stub.id}] cited by "
@@ -197,9 +190,9 @@ class JacClassReferences {
 obj LLMModel(Protocol) {
     has call_params: dict[(str, object)];
 
-    def __call__(**kwargs: object) -> LLMModel;
-    def invoke(mt_run: MTRuntime) -> object;
-    async def ainvoke(mt_run: MTRuntime) -> object;
+    def __call__(**kwargs: object) -> LLMModel abst;
+    def invoke(mt_run: MTRuntime) -> object abst;
+    async def ainvoke(mt_run: MTRuntime) -> object abst;
 }
 
 class JacContext {
@@ -224,7 +217,8 @@ class JacPersistence {
     static def get_object(id: str) -> (Archetype | None);
     static async def aget_object(id: str) -> (Archetype | None);
     static def object_ref(`obj: Archetype) -> str;
-    static def save(`obj: (Archetype | Anchor)) -> None;
+    static def save(`obj: (Archetype | Anchor), owner: (UUID | None) = None) -> None;
+    static def owner_of(`obj: (Archetype | Anchor)) -> (UUID | None);
     static def destroy(objs: any, strict: bool = False) -> None;
     static def _destroy_anchors(objs: any, strict: bool) -> list[Anchor];
     static def peek_attr(`obj: any, name: str) -> any;
@@ -330,7 +324,13 @@ class JacGraph {
     ) -> EdgeArchetype;
 
     static def hop(
-        origin: any, dir: int, edge_type: (type | None) = None, edges_only: bool = False
+        origin: any,
+        dir: int,
+        edge_type: (type | None) = None,
+        edges_only: bool = False,
+        nd: (type | tuple[type, ...] | None) = None,
+        preds: (list[QPred] | None) = None,
+        from_visit: bool = False
     ) -> list[any];
 
     static def clear_edges(
@@ -449,8 +449,8 @@ class JacLLM {
     static def `by(model: LLMModel) -> Callable;
     static def by_operator(lhs: any, rhs: any) -> any;
     static def default_llm -> LLMModel;
-    static def add_mtir_to_map(scope: str, mtir: Info) -> None;
     static def get_mtir_from_map(scope: str) -> (Info | None);
+    static def fetch_mtir(func: Callable) -> (Info | None);
 }
 
 class JacServe {

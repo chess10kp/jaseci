@@ -4,6 +4,7 @@ import struct;
 import sys;
 import types;
 import from collections.abc { Callable }
+import type from jaclang.compiler.frontend.codeinfo { CodeGenTarget }
 
 import from jaclang.compiler.backends.py.codegen_ir {
     CirContainer,
@@ -231,13 +232,11 @@ def _pop_values(stack: list[object], n: int, what: str) -> list[object] {
             f"{what} pops {n} values but only {len(stack)} are on the stack"
         );
     }
-    vals: list[object] = [];
-    i = 0;
-    while i < n {
-        vals.append(stack.pop());
-        i += 1;
+    if n <= 0 {
+        return [];
     }
-    vals.reverse();
+    vals: list[object] = stack[-n:];
+    del stack[-n:];
     return vals;
 }
 
@@ -268,16 +267,14 @@ def transcribe_module(
             krefs = op[2];
             vals = _pop_values(stack, len(krefs), f"OP_NODE {cls.__name__}");
             kw: dict[str, object] = {};
-            j = 0;
-            while j < len(krefs) {
-                if isinstance(vals[j], CirSplice) {
+            for (key_ref, value) in zip(krefs, vals) {
+                if isinstance(value, CirSplice) {
                     raise CodegenIrFormatError(
                         f"a splice chunk reached OP_NODE {cls.__name__} as a "
                         "field value; splices may only be spliced into OP_LIST"
                     );
                 }
-                kw[keys[krefs[j]]] = vals[j];
-                j += 1;
+                kw[keys[key_ref]] = value;
             }
             try {
                 built = _call_kw(cls, kw);
@@ -405,4 +402,14 @@ def compile_ir(ir_bytes: bytes, python_compiler: any = None) -> CirResult {
         );
     }
     return CirResult(modules=modules, diags=diags);
+}
+
+def generated_python(gen: CodeGenTarget) -> str {
+    if gen.py_text is None {
+        if not gen.py_ast {
+            return "";
+        }
+        gen.py_text = ast.unparse(gen.py_ast[0]);
+    }
+    return gen.py_text;
 }

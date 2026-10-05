@@ -275,12 +275,67 @@ impl EsastGenPass.exit_ctrl_stmt with uni.CtrlStmt exit {
     stmt: (es.BreakStatement | es.ContinueStatement | es.ReturnStatement);
     if (here.ctrl.name == Tok.KW_BREAK) {
         stmt = self.sync_loc(es.BreakStatement(), jac_node=here);
+        breakable = self._innermost_breakable(here);
+        if isinstance(breakable, uni.MatchStmt) {
+            label = self._match_break_label(breakable);
+            stmt = self.sync_loc(
+                es.BreakStatement(
+                    label=self.sync_loc(es.Identifier(name=label), jac_node=here)
+                ),
+                jac_node=here
+            );
+        } elif (not isinstance(breakable, uni.SwitchStmt) and self._loop_label_stack) {
+            label = self._loop_label_stack[-1];
+            if label != '' {
+                stmt = self.sync_loc(
+                    es.BreakStatement(
+                        label=self.sync_loc(es.Identifier(name=label), jac_node=here)
+                    ),
+                    jac_node=here
+                );
+                self._used_loop_labels.add(label);
+            }
+        }
     } elif (here.ctrl.name == Tok.KW_SKIP) {
         stmt = self.sync_loc(es.ReturnStatement(argument=None), jac_node=here);
     } else {
         stmt = self.sync_loc(es.ContinueStatement(), jac_node=here);
     }
     here.gen.es_ast = stmt;
+}
+
+impl EsastGenPass._innermost_breakable(nd: uni.CtrlStmt) -> (uni.UniNode | None) {
+    parent = nd.parent;
+    while parent is not None {
+        if isinstance(
+            parent,
+            (
+                uni.InForStmt,
+                uni.IterForStmt,
+                uni.WhileStmt,
+                uni.ForeverStmt,
+                uni.SwitchStmt,
+                uni.MatchStmt
+            )
+        ) {
+            return parent;
+        }
+        if isinstance(parent, (uni.Ability, uni.LambdaExpr, uni.Module)) {
+            return None;
+        }
+        parent = parent.parent;
+    }
+    return None;
+}
+
+impl EsastGenPass._match_break_label(nd: uni.MatchStmt) -> str {
+    label = self._match_break_labels.get(id(nd));
+    if label is None {
+        self._match_break_seq += 1;
+        label = f"__jac_match_{self._match_break_seq}";
+        self._match_break_labels[id(nd)] = label;
+    }
+    return label;
 }
 
 impl EsastGenPass.exit_return_stmt with uni.ReturnStmt exit {
@@ -564,11 +619,21 @@ impl EsastGenPass.exit_try_stmt with uni.TryStmt exit {
             import from jaclang.compiler.type_registry { JAC_TYPE_REGISTRY }
 
             (ex_ty_known, ex_builtin) = _raised_exc_identity(except_node.ex_type);
+            use_matches = exc_type_name is not None
+                and JAC_TYPE_REGISTRY.is_exception(exc_type_name);
             if ex_ty_known {
-                exc_type_name = ex_builtin;
+                ex_ty = except_node.ex_type.type;
+                user_class = isinstance(ex_ty, ClassType)
+                    and not ex_ty.shared.is_builtin_class;
+                use_matches = ex_builtin is not None;
+                if ex_builtin is not None {
+                    exc_type_name = ex_builtin;
+                } elif not user_class {
+                    exc_type_name = None;
+                }
             }
             test_expr: (es.Expression | None) = None;
-            if exc_type_name and JAC_TYPE_REGISTRY.is_exception(exc_type_name) {
+            if exc_type_name and use_matches {
                 test_expr = self.sync_loc(
                     es.CallExpression(
                         callee=self._jac_exc_ref('matches', except_node),
@@ -685,19 +750,23 @@ impl EsastGenPass.enter_else_stmt with uni.ElseStmt entry {
 }
 
 impl EsastGenPass.enter_in_for_stmt with uni.InForStmt entry {
+    self._push_loop_label(here);
     self._view_open_loop_acc(here);
 }
 
 impl EsastGenPass.enter_iter_for_stmt with uni.IterForStmt entry {
+    self._push_loop_label(here);
     self._view_open_loop_acc(here);
 }
 
 impl EsastGenPass.enter_while_stmt with uni.WhileStmt entry {
+    self._push_loop_label(here);
     self._view_open_loop_acc(here);
 }
 
 impl EsastGenPass.enter_forever_stmt with uni.ForeverStmt entry {
     self._view_open_loop_acc(here);
+    self._push_loop_label(here);
 }
 
 impl EsastGenPass.exit_in_for_stmt with uni.InForStmt exit {
@@ -769,7 +838,7 @@ impl EsastGenPass.exit_in_for_stmt with uni.InForStmt exit {
         es.ForOfStatement(left=decl, right=right, body=body, await_=here.is_async),
         jac_node=here
     );
-    here.gen.es_ast = self._view_loop_stmt(here, for_stmt);
+    here.gen.es_ast = self._finish_loop(here, for_stmt);
 }
 
 impl EsastGenPass.exit_iter_for_stmt with uni.IterForStmt exit {
@@ -795,7 +864,7 @@ impl EsastGenPass.exit_iter_for_stmt with uni.IterForStmt exit {
         update = cast(es.AssignmentExpression, here.count_by.gen.es_ast.expression);
     }
     body = self._build_block_statement(here, here.body);
-    here.gen.es_ast = self._view_loop_stmt(
+    here.gen.es_ast = self._finish_loop(
         here,
         self.sync_loc(
             es.ForStatement(`init=`init, `test=`test, update=update, body=body),
@@ -820,15 +889,21 @@ impl EsastGenPass.exit_while_stmt with uni.WhileStmt exit {
     while_stmt = self.sync_loc(
         es.WhileStatement(`test=`test, body=body), jac_node=here
     );
-    here.gen.es_ast = self._view_loop_stmt(here, while_stmt);
+    here.gen.es_ast = self._finish_loop(here, while_stmt);
 }
 
 impl EsastGenPass.exit_forever_stmt with uni.ForeverStmt exit {
     body = self._build_block_statement(here, here.body);
     forever_stmt = self.sync_loc(
-        es.WhileStatement(`test=es.Literal(value=True), body=body), jac_node=here
+        es.WhileStatement(
+            `test=self.sync_loc(es.Literal(value=True), jac_node=here), body=body
+        ),
+        jac_node=here
     );
-    here.gen.es_ast = self._view_loop_stmt(here, forever_stmt);
+    if self._loop_label_stack {
+        self._loop_label_stack.pop();
+    }
+    here.gen.es_ast = self._view_loop_stmt(here, [forever_stmt]);
 }
 
 impl EsastGenPass.exit_else_stmt with uni.ElseStmt exit {
