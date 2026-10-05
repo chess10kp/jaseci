@@ -21,7 +21,14 @@ impl expr_primitive_name(expr_node: UniNode) -> str {
     while isinstance(expr_node, CfgExpr) {
         expr_node = expr_node.expr;
     }
-    return primitive_type_name_of(expr_node?.type) or "";
+    if not isinstance(expr_node, Expr) {
+        return "";
+    }
+    return expr_type_primitive_name(expr_node);
+}
+
+impl expr_type_primitive_name(expr_node: Expr) -> str {
+    return primitive_type_name_of(expr_node.type) or "";
 }
 
 impl get_generator_type_args(return_type: TypeBase) -> (list[TypeBase] | None) {
@@ -231,8 +238,8 @@ impl types_equivalent(a: TypeBase, b: TypeBase, depth: int = 0) -> bool {
         if a.get_literal_value() != b.get_literal_value() {
             return False;
         }
-        a_args = a.private.type_args or [];
-        b_args = b.private.type_args or [];
+        a_args: list[TypeBase] = a.private.type_args or [];
+        b_args: list[TypeBase] = b.private.type_args or [];
         if len(a_args) != len(b_args) {
             return False;
         }
@@ -244,8 +251,8 @@ impl types_equivalent(a: TypeBase, b: TypeBase, depth: int = 0) -> bool {
         return True;
     }
     if isinstance(a, FunctionType) and isinstance(b, FunctionType) {
-        a_params = a.parameters or [];
-        b_params = b.parameters or [];
+        a_params: list[Parameter] = a.parameters or [];
+        b_params: list[Parameter] = b.parameters or [];
         if len(a_params) != len(b_params) {
             return False;
         }
@@ -272,8 +279,8 @@ impl types_equivalent(a: TypeBase, b: TypeBase, depth: int = 0) -> bool {
         return True;
     }
     if isinstance(a, UnionType) and isinstance(b, UnionType) {
-        a_types = a.types or [];
-        b_types = b.types or [];
+        a_types: list[TypeBase] = a.types or [];
+        b_types: list[TypeBase] = b.types or [];
         if len(a_types) != len(b_types) {
             return False;
         }
@@ -379,6 +386,9 @@ impl collect_member_syms(
 
     def descend(s: UniScopeNode) -> list[Symbol] {
         gathered: list[Symbol] = list(s.lookup_all(name, deep=False) or []);
+        if gathered and not is_overload_sym(gathered[0]) {
+            return gathered;
+        }
         for kid in s.kid_scope {
             if UniScopeNode.is_python_scoping(kid) {
                 continue;
@@ -573,7 +583,7 @@ impl linearize_mro(
                 head = linz[0];
                 in_tail = False;
                 for other_lin in linearizations {
-                    if any(head.shared is o.shared for o in other_lin[1:]) {
+                    if any(head.shared.same_class(o.shared) for o in other_lin[1:]) {
                         in_tail = True;
                         break;
                     }
@@ -593,7 +603,7 @@ impl linearize_mro(
                 new_lin = [
                     c
                     for c in linz
-                    if c.shared is not candidate.shared
+                    if not c.shared.same_class(candidate.shared)
                 ];
                 if new_lin {
                     new_linearizations.append(new_lin);
@@ -620,16 +630,16 @@ impl compute_mro_linearization(
     }
 }
 
-impl mro_signature(cls: ClassType) -> tuple {
-    sig: list = [];
+impl mro_signature(cls: ClassType) -> list[tuple[int, str]] {
+    sig: list[tuple[int, str]] = [];
     for base in cls.shared.base_classes {
         if isinstance(base, ClassType) {
-            sig.append((id(base.shared), len(base.shared.mro)));
+            sig.append((id(base.shared), str(len(base.shared.mro))));
         } else {
             sig.append((0, type(base).__name__));
         }
     }
-    return tuple(sig);
+    return sig;
 }
 
 impl ensure_mro_fresh(cls: ClassType, _visiting: (set[int] | None) = None) -> bool {
@@ -774,8 +784,8 @@ impl apply_solved_type_vars(
         }
 
         if class_type is not None and ty.name {
-            cls_type_params = class_type.shared.type_params or [];
-            cls_type_args = class_type.private.type_args or [];
+            cls_type_params: list[TypeVarType] = class_type.shared.type_params or [];
+            cls_type_args: list[TypeBase] = class_type.private.type_args or [];
             for (idx, tp) in enumerate(cls_type_params) {
                 if tp.name == ty.name {
                     if idx < len(cls_type_args) {

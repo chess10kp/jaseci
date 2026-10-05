@@ -7,10 +7,10 @@ impl JcirGenPass.exit_atom_trailer with AtomTrailer exit {
         here.is_attr
         and trailer_cv is not None
         and self._ct_concrete(here)
-        and self._ct_kind(trailer_cv.v) in ("scalar", "CtEnumMember")
+        and self._ct_kind(trailer_cv) in ("scalar", "CtEnumMember")
         and self._trailer_reaches_ct_class(here)
     ) {
-        folded = self._materialize(trailer_cv.v, here);
+        folded = self._materialize(trailer_cv, here);
         if folded is not None {
             self.set_out(here, [folded]);
             return;
@@ -18,7 +18,7 @@ impl JcirGenPass.exit_atom_trailer with AtomTrailer exit {
     }
     ct_slots = self._ct_ctor_slots(here);
     if ct_slots is not None {
-        kws: list = [];
+        kws: list[CgNode] = [];
         for pair in ct_slots {
             pname: str = pair[0];
             pexpr: UniNode = pair[1];
@@ -54,7 +54,7 @@ impl JcirGenPass.exit_atom_trailer with AtomTrailer exit {
                 ]
             );
         } else {
-            self.emit(E5008);
+            self.ctx.emit(E5008);
         }
     } elif isinstance(here.right, FilterCompr) {
         if self._is_edge_ref_target(here.target) {
@@ -217,6 +217,7 @@ impl JcirGenPass.exit_atom_trailer with AtomTrailer exit {
             ]
         );
     }
+    self._c_copy_rewrite(here);
 }
 
 impl JcirGenPass.exit_atom_unit with AtomUnit exit {
@@ -231,7 +232,7 @@ impl JcirGenPass.exit_atom_unit with AtomUnit exit {
     self.set_out(here, self.outs(here.value));
 }
 
-impl JcirGenPass.gen_call_args(nd: FuncCall) -> tuple[(list, list)] {
+impl JcirGenPass.gen_call_args(nd: FuncCall) -> tuple[list[CgNode], list[CgNode]] {
     args: list[CgNode] = [];
     keywords: list[CgNode] = [];
     if nd.params {
@@ -245,7 +246,7 @@ impl JcirGenPass.gen_call_args(nd: FuncCall) -> tuple[(list, list)] {
             } elif (isinstance(x, KWPair) and self.val(x).cls == 'keyword') {
                 keywords.append(self.val(x));
             } else {
-                raise RuntimeError(self.ice('Invalid Parameter'));
+                raise RuntimeError(self.ctx.ice('Invalid Parameter'));
             }
         }
     }
@@ -254,9 +255,10 @@ impl JcirGenPass.gen_call_args(nd: FuncCall) -> tuple[(list, list)] {
 
 impl JcirGenPass.exit_func_call with FuncCall exit {
     self._exit_func_call_impl(here);
+    self._c_interop_call_rewrite(here);
 }
 
-impl JcirGenPass._place_parts(arg: UniNode) -> (tuple | None) {
+impl JcirGenPass._place_parts(arg: UniNode) -> (tuple[str, any, any] | None) {
     place = arg;
     if isinstance(arg, UnaryExpr) and is_borrow_kind(arg.ownership) {
         place = arg.operand;
@@ -299,7 +301,7 @@ impl JcirGenPass._name_take_expr(owner: str) -> CgNode {
 }
 
 impl JcirGenPass._lower_take(nd: FuncCall) -> (CgNode | None) {
-    params = list(nd.params or []);
+    params: list[Expr | KWPair] = list(nd.params or []);
     if len(params) != 1 or isinstance(params[0], KWPair) {
         return None;
     }
@@ -320,7 +322,7 @@ impl JcirGenPass._lower_take(nd: FuncCall) -> (CgNode | None) {
 }
 
 impl JcirGenPass._lower_swap(nd: FuncCall) -> (CgNode | None) {
-    params = list(nd.params or []);
+    params: list[Expr | KWPair] = list(nd.params or []);
     if len(params) != 2 or any([isinstance(p, KWPair) for p in params]) {
         return None;
     }
@@ -431,7 +433,7 @@ impl JcirGenPass._exit_func_call_impl(nd: FuncCall) -> None {
         and call_cv is not None
         and self._ct_concrete(nd)
     ) {
-        folded = self._materialize(call_cv.v, nd);
+        folded = self._materialize(call_cv, nd);
         if folded is not None {
             self.set_out(nd, [folded]);
             return;

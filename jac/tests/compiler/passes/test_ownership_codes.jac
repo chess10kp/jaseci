@@ -18,8 +18,44 @@ import from jaclang.testing.test { parametrize }
 import from tests.ownership_helpers { compile_fixture, expect_ownership_codes }
 
 # (group, case name, fixture, expected E13xx codes, [enforce nogc])
-glob OWNERSHIP_CASES: list[tuple] = [
+glob OWNERSHIP_CASES: list[tuple[any, ...]] = [
          ("places", "take needs optional storage", "take_nonoptional.jac", ["E1319"]),
+         (
+             "managed borrows",
+             "a borrow of a parameter path is accepted",
+             "managed_borrow_ok.jac",
+             []
+         ),
+         (
+             "managed borrows",
+             "writing a field the borrow reads through",
+             "managed_borrow_write.jac",
+             ["E1321"]
+         ),
+         (
+             "managed borrows",
+             "a call that may write that field",
+             "managed_borrow_call.jac",
+             ["E1322"]
+         ),
+         (
+             "managed borrows",
+             "a call that writes nothing it reads through",
+             "managed_borrow_call_ok.jac",
+             []
+         ),
+         (
+             "managed borrows",
+             "assigning through a shared borrow",
+             "managed_borrow_shared_write.jac",
+             ["E1320"]
+         ),
+         (
+             "managed borrows",
+             "a borrow must start where the value outlives it",
+             "managed_borrow_start.jac",
+             ["E1323"]
+         ),
          (
              "places",
              "take cannot mutate a shared field",
@@ -414,6 +450,13 @@ glob OWNERSHIP_CASES: list[tuple] = [
              "a binding that is moved but never read again is clean",
              "move_only_ok.jac",
              []
+         ),
+         (
+             "ownership_check_pass",
+             "bytes() and bytearray() copy their argument instead of moving it",
+             "bytes_ctor_copy_ok.jac",
+             [],
+             True
          ),
          (
              "ownership_check_pass",
@@ -899,11 +942,11 @@ glob OWNERSHIP_CASES: list[tuple] = [
          )
      ];
 
-def _case_id(row: tuple) -> str {
+def _case_id(row: tuple[any, ...]) -> str {
     return f"{row[0]}: {row[1]}";
 }
 
-def _ownership_case(row: tuple) {
+def _ownership_case(row: tuple[any, ...]) {
     enforce = row[4] if len(row) > 4 else False;
     prog = compile_fixture(row[2], enforce=enforce);
     expect_ownership_codes(prog, row[3]);

@@ -1,23 +1,29 @@
 impl EsastGenPass._ct_es_expr(
-    cv: any, jac_node: uni.UniNode
+    cv: (CtValue | None), jac_node: uni.UniNode
 ) -> (es.Expression | None) {
-    if cv is None or getattr(cv, "is_deferred", False) {
+    if cv is None or cv.is_deferred {
         return None;
     }
-    built = self._ct_es_value(cv.v);
+    built = self._ct_es_value(cv);
     if built is None {
         return None;
     }
     return self.sync_loc(built, jac_node=jac_node);
 }
 
-impl EsastGenPass._ct_es_value(v: any) -> (es.Expression | None) {
-    if v is None or isinstance(v, (bool, int, float, str)) {
-        return es.Literal(value=v);
+impl EsastGenPass._ct_es_value(v: CtValue) -> (es.Expression | None) {
+    if isinstance(v, CtNone) {
+        return es.Literal(value=None);
     }
-    if isinstance(v, (list, tuple, set, frozenset)) {
+    if isinstance(v, (CtBool, CtFloat, CtStr)) {
+        return es.Literal(value=v.value);
+    }
+    if isinstance(v, CtInt) {
+        return es.Literal(value=int_host(v));
+    }
+    if isinstance(v, (CtList, CtTuple, CtSet)) {
         elements: list[(es.Expression | es.SpreadElement | None)] = [];
-        for item in v {
+        for item in v.items {
             built = self._ct_es_value(item);
             if built is None {
                 return None;
@@ -26,17 +32,17 @@ impl EsastGenPass._ct_es_value(v: any) -> (es.Expression | None) {
         }
         return es.ArrayExpression(elements=elements);
     }
-    if isinstance(v, dict) {
+    if isinstance(v, CtDict) {
         props: list[(es.Property | es.SpreadElement)] = [];
-        for (k, item) in v.items() {
-            if not isinstance(k, str) {
+        for (i, k) in enumerate(v.keys) {
+            if not isinstance(k, CtStr) {
                 return None;
             }
-            built = self._ct_es_value(item);
+            built = self._ct_es_value(v.vals[i]);
             if built is None {
                 return None;
             }
-            props.append(es.Property(key=es.Literal(value=k), value=built));
+            props.append(es.Property(key=es.Literal(value=k.value), value=built));
         }
         return es.ObjectExpression(properties=props);
     }
@@ -49,7 +55,7 @@ impl EsastGenPass._comptime_only_names -> set[str] {
         return cached;
     }
     names: set[str] = set();
-    for imp in self.ir_in.get_all_sub_nodes(uni.Import) {
+    for imp in self.module.get_all_sub_nodes(uni.Import) {
         if not imp.is_comptime {
             continue;
         }
@@ -71,7 +77,7 @@ impl EsastGenPass._comptime_only_names -> set[str] {
             }
         }
     }
-    for ab in self.ir_in.get_all_sub_nodes(uni.Ability) {
+    for ab in self.module.get_all_sub_nodes(uni.Ability) {
         if ab.is_comptime and ab.name_ref is not None {
             names.add(ab.name_ref.sym_name);
         }
@@ -106,7 +112,9 @@ impl EsastGenPass._is_ct_type_param(nd: uni.Name) -> bool {
     return isinstance(owner, uni.TypeParam) and owner.is_comptime;
 }
 
-impl EsastGenPass._ct_ctor_slots(nd: uni.UniNode) -> (list[tuple] | None) {
+impl EsastGenPass._ct_ctor_slots(
+    nd: uni.UniNode
+) -> (list[tuple[str, uni.Expr]] | None) {
     if not isinstance(nd, uni.AtomTrailer) or nd.is_attr {
         return None;
     }
@@ -114,8 +122,11 @@ impl EsastGenPass._ct_ctor_slots(nd: uni.UniNode) -> (list[tuple] | None) {
         return None;
     }
     t = nd.target.type;
-    shared = t?.shared;
-    if shared is None or not shared.ct_params {
+    if not isinstance(t, ClassType) {
+        return None;
+    }
+    shared = t.shared;
+    if not shared.ct_params {
         return None;
     }
     arch = shared.symbol_table;
@@ -124,13 +135,17 @@ impl EsastGenPass._ct_ctor_slots(nd: uni.UniNode) -> (list[tuple] | None) {
     }
     s0 = nd.right.slices[0] if nd.right.slices else None;
     head = s0.start if s0 is not None else None;
-    vals: list = `list(head.values)
+    vals: list[uni.Expr | uni.KWPair] = list(head.values)
         if isinstance(head, uni.TupleVal)
         else ([head] if head else []);
-    out: list[tuple] = [];
+    out: list[tuple[str, uni.Expr]] = [];
     for (i, tp) in enumerate(arch.type_params or []) {
         if tp.is_comptime and i < len(vals) {
-            out.append((tp.name.value, vals[i], ));
+            value = vals[i];
+            if not isinstance(value, uni.Expr) {
+                return None;
+            }
+            out.append((tp.name.value, value));
         }
     }
     return out;

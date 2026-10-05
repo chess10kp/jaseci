@@ -1,6 +1,6 @@
 import from jaclang.runtime.runtime { JacRuntime }
 import from core.github { RepoMeta }
-import from core.leaderboard.scoring { RepoAnalysis, RepoFeatures, ScoreBreakdown }
+import from core.leaderboard.scoring { RepoAnalysis, RepoFeatures }
 import os;
 import from unittest.mock { patch }
 import from tempfile { mkdtemp }
@@ -67,7 +67,7 @@ def login_as(client: JacTestClient, username: str, password: str) {
     client.login(username, password);
 }
 
-def reports_of(response: TestResponse) -> list {
+def reports_of(response: TestResponse) -> list[any] {
     data = response.data;
     if data and "reports" in data {
         return list(data["reports"]);

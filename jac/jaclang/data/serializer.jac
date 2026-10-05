@@ -1,3 +1,13 @@
+import from jaclang.data.type_identity {
+    class_facts,
+    storage_type,
+    type_module,
+    register_type,
+    resolve_type,
+    resolution_required,
+    TypeResolutionError,
+    UnavailableType
+}
 import importlib;
 import logging;
 import sys;
@@ -41,7 +51,7 @@ glob logger = logging.getLogger(__name__),
      _IMPORT_RETRY_CEILING_SECONDS: float = 900.0,
      _IMPORT_RETRY_MAX_DOUBLINGS: int = 8,
      _PLAIN_WIRE_SCALARS: frozenset = frozenset({str, int, float, bool}),
-     _SIZED_FIELD_CACHE: dict = {};
+     _SIZED_FIELD_CACHE: dict[type, any] = {};
 
 obj ImportFailure {
     has attempts: int = 0,
@@ -61,8 +71,11 @@ obj Serializer {
     static def register_alias(old_name: str, cls: type) -> None;
     static def is_auto_registered_module(module_name: str) -> bool;
     static def fingerprint(cls: type) -> str;
-    static def repair(data: dict[str, object], cls: type) -> tuple;
-    static def coerce(val: object, target_type: object) -> tuple;
+    static def repair(
+        data: dict[str, object], cls: type
+    ) -> tuple[dict[str, object], list[str]];
+
+    static def coerce(val: object, target_type: object) -> tuple[object, bool];
     static def serialize(
         `obj: object,
         include_type: bool = False,

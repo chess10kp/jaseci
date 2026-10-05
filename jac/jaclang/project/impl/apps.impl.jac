@@ -21,7 +21,7 @@ impl validate_entry_point(module: str) -> str {
 }
 
 impl resolve_entry_path(module: str, project_root: str) -> str {
-    import from jaclang.compiler.driver.modresolver { resolve_local_module }
+    import from jaclang.project.modresolver { resolve_local_module }
     validate_entry_point(module);
     base = os.path.abspath(project_root);
     parts = module.split('.');
@@ -58,7 +58,9 @@ impl validate_app_name(name: str) -> None {
     }
 }
 
-impl parse_apps(project_data: dict, apps_data: dict) -> dict[str, AppConfig] {
+impl parse_apps(
+    project_data: dict[str, any], apps_data: dict[str, any]
+) -> dict[str, AppConfig] {
     import from jaclang.project.app_kinds { KIND_SPECS }
     if not isinstance(apps_data, dict) {
         raise ValueError("[apps] must be a table of [apps.<name>] tables");

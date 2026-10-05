@@ -1,4 +1,4 @@
-import from typing { TypeAlias }
+import from jaclang.compiler.passes.context { CompileContext, CompilerPass }
 import from jaclang.compiler.frontend.unitree {
     Ability,
     Assignment,
@@ -34,20 +34,20 @@ import from jaclang.compiler.frontend.unitree {
     String,
     Symbol,
     Test,
+    Token,
     UnaryExpr,
     UniCFGNode,
     UniNode,
     WhileStmt
 }
-import from jaclang.compiler.passes.dataflow { solve_backward_gen_kill }
+import from jaclang.compiler.passes.dataflow { SymId, solve_backward_gen_kill }
 import from jaclang.compiler.frontend.constant {
+    ExprCtx,
     OwnershipKind,
     SymbolStorage,
+    Tokens as Tok,
     is_borrow_kind
 }
-import from jaclang.compiler.passes.transform { Transform }
-
-glob SymId: TypeAlias = int;
 
 enum Ownership {
     OWNED = "owned",
@@ -83,6 +83,12 @@ def result_ownership(expr: (Expr | None)) -> Ownership {
     if isinstance(expr, String) {
         return Ownership.STATIC;
     }
+    if isinstance(expr, AtomTrailer) {
+        import from jaclang.compiler.c_interop { foreign_read_copies }
+        if foreign_read_copies(expr) {
+            return Ownership.OWNED;
+        }
+    }
     if isinstance(expr, (Name, AtomTrailer)) {
         return Ownership.BORROWED;
     }
@@ -95,29 +101,32 @@ def loop_body_locals(body: (Sequence[UniNode] | None)) -> list[str] {
     if not body {
         return out;
     }
+    body_names: list[Name] = [];
     for stmt in body {
-        for nm in stmt.get_all_sub_nodes(typ=Name) {
-            sym = nm.sym;
-            if sym is None or not sym.defn {
+        body_names.extend(stmt.get_all_sub_nodes(typ=Name));
+    }
+    body_ids = {id(nm) for nm in body_names};
+    for nm in body_names {
+        sym = nm.sym;
+        if sym is None or not sym.defn {
+            continue;
+        }
+        if sym.defn[0] is nm and nm.sym_name not in seen {
+            seen.add(nm.sym_name);
+
+            if any(id(use) not in body_ids for use in sym.uses) {
                 continue;
             }
-            if sym.defn[0] is nm and nm.sym_name not in seen {
-                seen.add(nm.sym_name);
-                out.append(nm.sym_name);
-            }
+            out.append(nm.sym_name);
         }
     }
     return out;
 }
 
-walker RcFactsPass(Transform) {
-    has ir_in: Module,
-        cancel_token: any = None,
-        _node_use: dict[int, set[SymId]] = {},
+walker RcFactsPass(CompilerPass) {
+    has _node_use: dict[int, set[SymId]] = {},
         _node_def: dict[int, set[SymId]] = {};
 
-    def postinit -> None;
-    def transform(ir_in: Module) -> Module;
     def _run_impl(ir_in: Module) -> Module;
     can run_walk with Module entry;
     def _stamp_param_rebound(ir_in: Module) -> None;
@@ -141,7 +150,7 @@ walker RcFactsPass(Transform) {
         owner: UniNode, body: Sequence[UniNode], out: dict[int, list[str]]
     ) -> None;
 
-    def _param_plainly_rebound(sym: Symbol) -> bool;
+    def _binds_local_name(nm: Name) -> bool;
     def _stamp_move_lowerable(ir_in: Module) -> None;
     def _cfg_owner(sub: UniNode) -> (UniCFGNode | None);
     def _is_def_name(nm: NameAtom) -> bool;

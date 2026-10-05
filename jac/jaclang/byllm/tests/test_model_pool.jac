@@ -5,6 +5,7 @@ A pool dispatches through a litellm Router, never through its members. Fake
 """
 
 import from jaclang.byllm.lib { Model, ModelPool }
+import from support { text_chunk }
 
 
 """The pool's litellm Router, as an untyped handle. ModelPool never exposes it
@@ -17,7 +18,7 @@ def router(pool: ModelPool) -> any {
 """A litellm Router completion that answers `content`, standing in for a live
 deployment."""
 def _pool_reply(content: str) -> Callable {
-    def _completion(**_kwargs: object) -> dict {
+    def _completion(**_kwargs: object) -> dict[str, any] {
         return {
             "model": "mock-pool-model",
             "choices": [
@@ -66,7 +67,7 @@ test "every routing strategy dispatches through the router and answers" {
 
         answer = f"{strategy}_answer";
         if is_async {
-            async def _acompletion(**_kwargs: object) -> dict {
+            async def _acompletion(**_kwargs: object) -> dict[str, any] {
                 return _pool_reply(answer)();
             }
             router(pool).acompletion = _acompletion;
@@ -137,22 +138,17 @@ test "router init aliases deployments by strategy" {
 }
 
 
-"""One streaming chunk, in the shape litellm's Router hands back."""
-def _stream_chunk(text: str) -> object {
-    import types;
-    return types.SimpleNamespace(
-        choices=[types.SimpleNamespace(delta=types.SimpleNamespace(content=text))]
-    );
-}
-
-
 test "a pool that fails before streaming falls back to the next deployment" {
     import from litellm.exceptions { RateLimitError }
     pool = _pool("fallback", ["gpt-3.5-turbo", "gpt-4"]);
-    tried: list = [];
+    tried: list[str] = [];
 
     def _completion(
-        model: str, messages: list, stream: bool, fallbacks: list, **_kw: object
+        model: str,
+        messages: list[dict[str, any]],
+        stream: bool,
+        fallbacks: list[any],
+        **_kw: object
     ) -> object {
         tried.append(model);
         if model == "pool-primary" {
@@ -163,8 +159,8 @@ test "a pool that fails before streaming falls back to the next deployment" {
             );
         }
         def _gen -> object {
-            yield _stream_chunk("stream_fallback_");
-            yield _stream_chunk("success");
+            yield text_chunk("stream_fallback_");
+            yield text_chunk("success");
         }
         return _gen();
     }
@@ -188,15 +184,19 @@ test "a pool that fails mid-stream raises rather than splicing in a fallback" {
     # yielded guard turns that into a raise instead.
     import from litellm.exceptions { RateLimitError }
     pool = _pool("fallback", ["gpt-3.5-turbo", "gpt-4"]);
-    tried: list = [];
+    tried: list[str] = [];
 
     def _completion(
-        model: str, messages: list, stream: bool, fallbacks: list, **_kw: object
+        model: str,
+        messages: list[dict[str, any]],
+        stream: bool,
+        fallbacks: list[any],
+        **_kw: object
     ) -> object {
         tried.append(model);
         if model == "pool-primary" {
             def _failing -> object {
-                yield _stream_chunk("partial_chunk");
+                yield text_chunk("partial_chunk");
                 raise RateLimitError(
                     message="Primary failed mid-stream",
                     model="gpt-3.5-turbo",
@@ -206,7 +206,7 @@ test "a pool that fails mid-stream raises rather than splicing in a fallback" {
             return _failing();
         }
         def _never -> object {
-            yield _stream_chunk("should_not_appear");
+            yield text_chunk("should_not_appear");
         }
         return _never();
     }
@@ -214,7 +214,7 @@ test "a pool that fails mid-stream raises rather than splicing in a fallback" {
 
     def stream_answer(question: str) -> str by pool(stream=True);
 
-    chunks: list = [];
+    chunks: list[any] = [];
     raised: any = None;
     try {
         for chunk in stream_answer("test question") {

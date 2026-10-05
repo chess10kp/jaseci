@@ -15,7 +15,7 @@ impl EsastGenPass.exit_test with uni.Test exit {
     self.client_manifest.tests.append(
         {
             'name': here.name.sym_name,
-            'description': here.description.lit_value
+            'description': str(here.description.lit_value)
                 if here.description
                 else here.name.sym_name
         }
@@ -33,7 +33,8 @@ impl EsastGenPass.exit_global_vars with uni.GlobalVars exit {
         if is_pub or here.codespace_dual {
             for assignment in here.assignments {
                 for target in assignment.target {
-                    if (sym_name := target?.sym_name) {
+                    if isinstance(target, (uni.NameAtom, uni.AstSymbolNode))
+                        and (sym_name := target.sym_name) {
                         self.client_manifest.globals.append(sym_name);
                         if (
                             assignment.value
@@ -90,7 +91,7 @@ impl EsastGenPass._es_json_literal(value: any) -> any {
 
 impl EsastGenPass.exit_module with uni.Module exit {
     import from jaclang.compiler.symbol_utils { report_client_bare_import_uses }
-    report_client_bare_import_uses(self, here);
+    report_client_bare_import_uses(self, here, self._unbound_reported);
     server_forwarders = self._bind_client_value_refs(here);
     if (self.scoped_styles is not None and self.scoped_styles.class_map) {
         import os;
@@ -110,6 +111,13 @@ impl EsastGenPass.exit_module with uni.Module exit {
             )
         );
     }
+    if self.needs_osp_graph or self.needs_osp_kernel {
+        self.needs_jac_runtime = True;
+    }
+    if self.needs_jac_runtime {
+        import from jaclang.compiler.backends.es.jac_runtime_js { JAC_PRELUDE_MODULE }
+        self._inject_runtime_import('_jac', here, src=JAC_PRELUDE_MODULE);
+    }
     body: list[(es.Statement | es.ModuleDeclaration)] = [];
     body.extend(self.imports);
 
@@ -125,22 +133,6 @@ impl EsastGenPass.exit_module with uni.Module exit {
         body.extend(hoisted);
     }
 
-    if self.needs_osp_graph or self.needs_osp_kernel {
-        self.needs_jac_runtime = True;
-    }
-    if self.needs_jac_runtime {
-        import from jaclang.compiler.backends.es.jac_runtime_js { build_jac_runtime_js }
-        jac_rt_decl = es.VariableDeclaration(
-            declarations=[
-                es.VariableDeclarator(
-                    id=es.Identifier(name='_jac'),
-                    init=es.RawCode(code=build_jac_runtime_js())
-                )
-            ],
-            kind='const'
-        );
-        body.append(jac_rt_decl);
-    }
     merged_body = self._merge_module_bodies(here);
     client_items: list[es.Statement | list[es.Statement] | None] = [];
     fallback_items: list[es.Statement | list[es.Statement] | None] = [];
@@ -256,10 +248,11 @@ impl EsastGenPass.exit_module with uni.Module exit {
 }
 
 impl EsastGenPass.get_main_mod -> uni.Module {
-    main_mod_path = self.ir_in.annexable_by or self.ir_in.loc.mod_path;
+    main_mod_path = self.module.annexable_by or self.module.loc.mod_path;
     mod = self.prog.mod.hub.get(main_mod_path);
     if not isinstance(mod, uni.Module) {
-        self.emit(E5012);
+        self.ctx.emit(E5012);
+        raise RuntimeError(f"Missing main module: {main_mod_path}");
     }
     return mod;
 }

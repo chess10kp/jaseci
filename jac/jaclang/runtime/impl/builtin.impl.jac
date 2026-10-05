@@ -4,8 +4,8 @@ impl _jac_graph_json(file: (str | None) = None) -> str {
     visited_nodes: set = set();
     connections: set = set();
     edge_ids: set = set();
-    nodes: list[dict] = [];
-    edges: list[dict] = [];
+    nodes: list[dict[str, any]] = [];
+    edges: list[dict[str, any]] = [];
     `root = jac.`root();
     collect_node_connections(`root, visited_nodes, connections, edge_ids);
     nodes.append({'id': id(`root), 'label': 'root'});
@@ -119,6 +119,9 @@ impl __getattr__(name: str) -> object {
             '_jac_region_instrument': 'instrument_drops'
         };
         return getattr(_region_mod, _region_map[name]);
+    } elif name in _CINTEROP_NAMES {
+        import jaclang.runtime.cinterop as _cinterop_mod;
+        return getattr(_cinterop_mod, _CINTEROP_NAMES[name]);
     } elif name.startswith('wrapping_') or _is_sized_type_name(name) {
         import jaclang.runtime.sized as _sized_mod;
         if name.startswith('wrapping_') {
@@ -214,7 +217,7 @@ impl new(cls: any, *args: any) -> any {
     return cls(*args);
 }
 
-impl unsafe_html(html: any) -> dict {
+impl unsafe_html(html: any) -> dict[str, any] {
     return {"__jacUnsafeHtml": str(html) if (html is not None) else ""};
 }
 
@@ -455,11 +458,11 @@ impl _jac_swap_places(
     }
 }
 
-impl _jac_chunks(xs: any, n: int) -> list {
+impl _jac_chunks(xs: any, n: int) -> list[any] {
     if n < 1 {
         n = 1;
     }
-    out: list = [];
+    out: list[any] = [];
     i = 0;
     total = len(xs);
     while i < total {

@@ -112,6 +112,10 @@ import from ..parent.mod { SomeClass }
 # Include merges a module's namespace into the current scope
 include random;
 
+# Project-internal imports can live in arch.jac beside jac.toml instead:
+#   impl import core { util --> core.svc { now } }   # generates the import into core.svc
+# See reference/wiring.md
+
 # Cross-codespace imports are plain imports (see Full-Stack section below)
 # import from ...main { MyWalker }          # server import in client -> RPC bridge
 # import from "@jac/runtime" { Link }       # npm runtime import (client-only syntax)
@@ -164,7 +168,7 @@ def kitchen_sink(
 }
 
 # Public function (becomes API endpoint with `jac run`)
-def:pub get_items() -> list {
+def:pub get_items() -> list[any] {
     return [];
 }
 
@@ -810,7 +814,7 @@ node Person {
 }
 
 # Edges connect nodes and can carry data
-edge Friendship {
+edge Friendship: Person --> Person {
     has since: int = 0;
 }
 
@@ -834,7 +838,7 @@ node Employee(Person) {
 }
 
 # Edge with methods
-edge Weighted {
+edge Weighted: Person --> Person {
     has weight: float = 1.0;
 
     def normalize(max_w: float) -> float {
@@ -1125,7 +1129,7 @@ walker:pub add_todo {
 # Body: {"title": "Learn Jac"}
 
 # Public functions also become endpoints
-def:pub health_check() -> dict {
+def:pub health_check() -> dict[str, any] {
     return {"status": "ok"};
 }
 
@@ -1385,7 +1389,7 @@ node Todo {
     has title: str, done: bool = False;
 }
 
-def:pub get_todos() -> list {
+def:pub get_todos() -> list[any] {
     return [{"title": t.title} for t in [root -->][?:Todo]];
 }
 
@@ -1578,7 +1582,7 @@ def:pub TodoApp() -> JsxElement {
 
 # import from "@jac/runtime" {
 #     jacLogin,       # (email, pass) -> bool
-#     jacSignup,      # (email, pass) -> dict
+#     jacSignup,      # (email, pass) -> dict[str, any]
 #     jacLogout,      # () -> void
 #     jacIsLoggedIn   # () -> bool
 # }

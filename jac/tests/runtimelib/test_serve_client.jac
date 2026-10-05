@@ -7,6 +7,7 @@ import io;
 import json;
 import logging;
 import os;
+import types;
 import re;
 import shutil;
 import uuid;
@@ -200,7 +201,7 @@ interop facts land in that hub rather than `Jac.program.mod.hub` -- the exact
 condition under which the serve endpoint collector missed them. Returns
 `(client, cleanup_dir)`; the caller must rmtree `cleanup_dir`.
 """
-def make_bundled_crossboundary_client -> tuple {
+def make_bundled_crossboundary_client -> tuple[any, ...] {
     import jaclang;
     jaclang_root = Path(jaclang.__file__).resolve().parent;
     fixtures_src = Path(fixture_abs_path("")).resolve();
@@ -250,7 +251,9 @@ def make_spa_client(tmp_path: str) -> JacTestClient {
 }
 
 """Attach a StringIO handler to logger and return (buf, handler, old_level)."""
-def capture_log_start(logger: logging.Logger, level: int = logging.DEBUG) -> tuple {
+def capture_log_start(
+    logger: logging.Logger, level: int = logging.DEBUG
+) -> tuple[any, ...] {
     buf = io.StringIO();
     handler = logging.StreamHandler(buf);
     handler.setLevel(level);
@@ -1082,27 +1085,26 @@ test "serve protected function with auth" {
     }
 }
 
-test "serve private function requires auth" {
+test "serve private function is not served without auth" {
     with TemporaryDirectory() as tmpdir {
         ac = make_access_client(tmpdir);
         response = ac.post("/function/private_function", json={"secret": "test"});
         assert not response.ok;
-        data = response.data;
-        assert "error" in data;
-        assert "Unauthorized" in data["error"];
+        assert response.status_code in (404, 405) , response.status_code;
         ac.close();
     }
 }
 
-test "serve private function with auth" {
+test "serve private function is not served even with auth" {
     with TemporaryDirectory() as tmpdir {
         ac = make_access_client(tmpdir);
         ac.register_user("privuser", "pass456");
         response = ac.post("/function/private_function", json={"secret": "topsecret"});
-        assert response.ok;
-        data = response.data;
-        assert "result" in data;
-        assert data["result"] == "Private: topsecret";
+        assert not response.ok , ":priv is private, not an authenticated endpoint";
+        assert response.status_code in (404, 405) , response.status_code;
+        listing = ac.get("/functions");
+        assert "private_function" not in str(listing.data);
+        assert "protected_function" in str(listing.data);
         ac.close();
     }
 }
@@ -1142,26 +1144,25 @@ test "serve protected walker with auth" {
     }
 }
 
-test "serve private walker requires auth" {
+test "serve private walker is not served without auth" {
     with TemporaryDirectory() as tmpdir {
         ac = make_access_client(tmpdir);
         response = ac.post("/walker/PrivateWalker", json={"secret": "test"});
         assert not response.ok;
-        data = response.data;
-        assert "error" in data;
-        assert "Unauthorized" in data["error"];
+        assert response.status_code in (404, 405) , response.status_code;
         ac.close();
     }
 }
 
-test "serve private walker with auth" {
+test "serve private walker is not served even with auth" {
     with TemporaryDirectory() as tmpdir {
         ac = make_access_client(tmpdir);
         ac.register_user("privwalk", "pass000");
         response = ac.post("/walker/PrivateWalker", json={"secret": "verysecret"});
-        assert response.ok;
-        data = response.data;
-        assert "result" in data or "reports" in data;
+        assert not response.ok , ":priv walkers are private, not authenticated endpoints";
+        listing = ac.get("/walkers");
+        assert "PrivateWalker" not in str(listing.data);
+        assert "ProtectedWalker" in str(listing.data);
         ac.close();
     }
 }
@@ -1200,10 +1201,9 @@ test "serve mixed access levels" {
         result3 = ac.post("/function/protected_function", json={"message": "test"});
         data3 = result3.data;
         assert "result" in data3;
-        # Private function with auth - should work
+        # Private function with auth - not an endpoint at all
         result4 = ac.post("/function/private_function", json={"secret": "test"});
-        data4 = result4.data;
-        assert "result" in data4;
+        assert not result4.ok;
         ac.close();
     }
 }
@@ -1295,12 +1295,12 @@ test "issue 6221: client-called def:pub endpoint registers without entry re-impo
     }
 }
 
-test "issue 6221: cross-boundary def:priv endpoint registers but requires auth" {
+test "issue 6221: cross-boundary def:protect endpoint registers but requires auth" {
     with TemporaryDirectory() as tmpdir {
         client = make_crossboundary_client(tmpdir);
-        # Reached via the same `sv import`, so it registers -- but its own `priv`
-        # access level must still be honored: rejected without auth, callable
-        # with auth (proving it is registered, just gated -- never auto-public).
+        # Reached via the same `sv import`, so it registers -- but its own
+        # `:protect` access level must still be honored: rejected without auth,
+        # callable with auth (registered, just gated -- never auto-public).
         unauth = client.post("/function/cross_priv", json={});
         assert not unauth.ok , "cross_priv must require auth";
         client.register_user("cb_user", "pw_12345678");
@@ -1311,15 +1311,15 @@ test "issue 6221: cross-boundary def:priv endpoint registers but requires auth" 
     }
 }
 
-test "issue 6221: uncalled def:pub endpoint is not auto-exposed" {
+test "issue 6221: an uncalled def:pub endpoint is still served (declaration decides)" {
     with TemporaryDirectory() as tmpdir {
         client = make_crossboundary_client(tmpdir);
-        # cross_orphan is def:pub but nothing calls it across the boundary and the
-        # entry never imports it. Path B is call-scoped (not "expose every pub"),
-        # so it must stay unregistered even for an authenticated caller.
-        client.register_user("cb_user2", "pw_12345678");
+        # cross_orphan is def:pub: nothing calls it across the boundary and the
+        # entry never imports it, but exposure is declared on the definition, not
+        # inferred from callers, so it is registered like every other :pub.
         response = client.post("/function/cross_orphan", json={});
-        assert not response.ok , "uncalled cross_orphan should not be registered";
+        assert response.ok , f"declared :pub must be served: {response.data}";
+        assert response.data["result"]["msg"] == "orphan";
         client.close();
     }
 }
@@ -1377,7 +1377,7 @@ test "bundled app: cross-boundary def:pub endpoint registers for jaclang-bundled
     # Regression for `jac ai --ui`: when the app lives under the jaclang package
     # root, its modules route to the self-host program, so the
     # cross-boundary bindings land there -- not in `Jac.program.mod.hub`. The
-    # serve collector must span both hubs (`_search_hubs`); before the fix it
+    # serve collector must span both hubs (`execution_hubs`); before the fix it
     # scanned only `Jac.program.mod.hub` (empty for a bundled app), so cross_pub
     # went unregistered and the client got a 404/405 instead of "pub-ok".
     bundled = make_bundled_crossboundary_client();
@@ -1436,14 +1436,15 @@ test "serve imported protected walker with auth" {
     }
 }
 
-test "serve imported default walker requires auth" {
+test "serve imported plain walker is private and not served" {
     with TemporaryDirectory() as tmpdir {
         iac = make_imported_access_client(tmpdir);
         response = iac.post("/walker/DefaultImportedWalker", json={"value": 100});
         assert not response.ok;
-        data = response.data;
-        assert "error" in data;
-        assert "Unauthorized" in data["error"];
+        assert response.status_code in (404, 405) , f"plain walker must not be served: {response.status_code}";
+        iac.register_user("plainuser", "plainpass");
+        authed = iac.post("/walker/DefaultImportedWalker", json={"value": 100});
+        assert not authed.ok , f"plain walker stays unserved with auth: {authed.data}";
         iac.close();
     }
 }
@@ -1459,14 +1460,15 @@ test "serve local public walker without auth" {
     }
 }
 
-test "serve local default walker requires auth" {
+test "serve local plain walker is private and not served" {
     with TemporaryDirectory() as tmpdir {
         iac = make_imported_access_client(tmpdir);
         response = iac.post("/walker/LocalDefaultWalker", json={"msg": "test"});
         assert not response.ok;
-        data = response.data;
-        assert "error" in data;
-        assert "Unauthorized" in data["error"];
+        assert response.status_code in (404, 405) , f"plain walker must not be served: {response.status_code}";
+        iac.register_user("plainuser", "plainpass");
+        authed = iac.post("/walker/LocalDefaultWalker", json={"msg": "test"});
+        assert not authed.ok , f"plain walker stays unserved with auth: {authed.data}";
         iac.close();
     }
 }
@@ -1501,9 +1503,9 @@ test "serve mixed local and imported access" {
         );
         assert result5.ok , f"Imported protected walker should work with auth: {result5.data}";
         result6 = iac.post("/walker/DefaultImportedWalker", json={"value": 42});
-        assert result6.ok , f"Imported default walker should work with auth: {result6.data}";
+        assert not result6.ok , f"Imported plain walker is private even with auth: {result6.data}";
         result7 = iac.post("/walker/LocalDefaultWalker", json={"msg": "auth test"});
-        assert result7.ok , f"Local default walker should work with auth: {result7.data}";
+        assert not result7.ok , f"Local plain walker is private even with auth: {result7.data}";
         iac.close();
     }
 }
@@ -1548,14 +1550,15 @@ test "serve imported protected function with auth" {
     }
 }
 
-test "serve imported default function requires auth" {
+test "serve imported plain function is private and not served" {
     with TemporaryDirectory() as tmpdir {
         iac = make_imported_access_client(tmpdir);
         response = iac.post("/function/defaultImportedFunc", json={});
         assert not response.ok;
-        data = response.data;
-        assert "error" in data;
-        assert "Unauthorized" in data["error"];
+        assert response.status_code in (404, 405) , f"plain function must not be served: {response.status_code}";
+        iac.register_user("plainuser", "plainpass");
+        authed = iac.post("/function/defaultImportedFunc", json={});
+        assert not authed.ok , f"plain function stays unserved with auth: {authed.data}";
         iac.close();
     }
 }
@@ -1571,14 +1574,15 @@ test "serve local public function without auth" {
     }
 }
 
-test "serve local default function requires auth" {
+test "serve local plain function is private and not served" {
     with TemporaryDirectory() as tmpdir {
         iac = make_imported_access_client(tmpdir);
         response = iac.post("/function/localDefaultFunc", json={});
         assert not response.ok;
-        data = response.data;
-        assert "error" in data;
-        assert "Unauthorized" in data["error"];
+        assert response.status_code in (404, 405) , f"plain function must not be served: {response.status_code}";
+        iac.register_user("plainuser", "plainpass");
+        authed = iac.post("/function/localDefaultFunc", json={});
+        assert not authed.ok , f"plain function stays unserved with auth: {authed.data}";
         iac.close();
     }
 }
@@ -1607,9 +1611,9 @@ test "serve mixed local and imported function access" {
         result5 = iac.post("/function/protectedImportedFunc", json={});
         assert result5.ok , f"Imported protected function should work with auth: {result5.data}";
         result6 = iac.post("/function/defaultImportedFunc", json={});
-        assert result6.ok , f"Imported default function should work with auth: {result6.data}";
+        assert not result6.ok , f"Imported plain function is private even with auth: {result6.data}";
         result7 = iac.post("/function/localDefaultFunc", json={});
-        assert result7.ok , f"Local default function should work with auth: {result7.data}";
+        assert not result7.ok , f"Local plain function is private even with auth: {result7.data}";
         iac.close();
     }
 }
@@ -1856,7 +1860,7 @@ test "spawn_walker_sync and spawn_walker_async dispatch to explicit paths" {
         user_mgr = UserManager(base_path=tmpdir);
         exec_mgr = ExecutionManager(base_path=tmpdir, user_manager=user_mgr);
         user_mgr.create_user("testuser", "testpass");
-        async def run -> tuple {
+        async def run -> tuple[any, ...] {
             # Explicit sync path: must still run concurrently via to_thread.
             start = time();
             tasks = [
@@ -2043,7 +2047,7 @@ test "CallState.reports is thread-safe (sync walker worker threads put safely)" 
     items_per_thread = 100;
     expected_count = total_threads * items_per_thread;
 
-    received: list = [];
+    received: list[any] = [];
 
     def worker(tid: int) {
         for i in range(items_per_thread) {
@@ -2126,7 +2130,7 @@ test "concurrent multi-user requests do not race on ctx.user_root" {
         }
         # Sanity: each user got a unique root.
         assert len(set(root_ids.values())) == 3;
-        async def run_probe(walker_cls: any) -> list {
+        async def run_probe(walker_cls: any) -> list[any] {
             tasks = [
                 exec_mgr.spawn_walker(walker_cls, {"sleep_s": 0.1}, uname)
                 for uname in users
@@ -2265,7 +2269,8 @@ test "ensure_bundle retries a missing-bun failure and a build error alike" {
     import from jaclang.server.server { ModuleIntrospector }
     import from jaclang.client.client_bundle { ClientBundleError, MissingBunError }
     intro = ModuleIntrospector("serve_api", FIXTURES);
-    intro._module = object();
+    intro._module = types.ModuleType("serve_api");
+    intro._module.__file__ = fixture_abs_path("serve_api.jac");
     bun_missing = MagicMock();
     bun_missing.build.side_effect = MissingBunError("bun is not available");
     intro._bundle_builder = bun_missing;
@@ -2278,7 +2283,8 @@ test "ensure_bundle retries a missing-bun failure and a build error alike" {
     assert bun_missing.build.call_count == 2 , "missing bun must be re-checked on every call, not memoized";
 
     intro2 = ModuleIntrospector("serve_api", FIXTURES);
-    intro2._module = object();
+    intro2._module = types.ModuleType("serve_api");
+    intro2._module.__file__ = fixture_abs_path("serve_api.jac");
     broken = MagicMock();
     broken.build.side_effect = RuntimeError("vite exploded");
     intro2._bundle_builder = broken;
@@ -2321,7 +2327,8 @@ test "concurrent ensure_bundle callers share one build instead of each running t
     import from concurrent.futures { ThreadPoolExecutor }
     import from jaclang.server.server { ModuleIntrospector }
     intro = ModuleIntrospector("serve_api", FIXTURES);
-    intro._module = object();
+    intro._module = types.ModuleType("serve_api");
+    intro._module.__file__ = fixture_abs_path("serve_api.jac");
     builder = _SlowRealBuilder();
     intro._bundle_builder = builder;
 
@@ -2348,7 +2355,8 @@ test "a module reload during a build wins over the build's result" {
     import time;
     import from jaclang.server.server { ModuleIntrospector }
     intro = ModuleIntrospector("serve_api", FIXTURES);
-    intro._module = object();
+    intro._module = types.ModuleType("serve_api");
+    intro._module.__file__ = fixture_abs_path("serve_api.jac");
     builder = _SlowRealBuilder();
     intro._bundle_builder = builder;
 
@@ -2371,10 +2379,63 @@ test "a module reload during a build wins over the build's result" {
     );
 }
 
-"""/graph, /graph/data and /docs must be served by the stdlib server too -
-previously they existed only on the scale (FastAPI) server, so apps embedding
-them 404'd whenever serving fell back to the zero-dependency stack."""
+glob _GRAPH_LOGIN_HARNESS: str = """
+import { JSDOM } from "jsdom";
+
+const [base, username, password] = process.argv.slice(2);
+const html = await (await fetch(base + "/graph")).text();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const until = async (ok) => { for (let i = 0; i < 400 && !ok(); i++) await sleep(25); };
+
+// `send` replaces the body on the wire, so the server's own rejection reaches the modal.
+const ROWS = [
+  { name: "valid credentials", password, token: true, badge: "User Graph", error: null },
+  { name: "wrong password", password: password + "x", token: false, badge: "Public Graph", error: "Invalid credentials" },
+  { name: "rejected body", password, send: { username, password }, token: false, badge: "Public Graph", error: "identity is required" },
+];
+
+let failed = 0;
+for (const row of ROWS) {
+  const calls = [];
+  const dom = new JSDOM(html, {
+    url: base + "/graph",
+    runScripts: "dangerously",
+    beforeParse(window) {
+      window.fetch = (url, init = {}) => {
+        calls.push({ url, auth: (init.headers || {}).Authorization });
+        const body = row.send && url.endsWith("/user/login") ? JSON.stringify(row.send) : init.body;
+        return fetch(url, { ...init, body });
+      };
+    },
+  });
+  const { document, localStorage } = dom.window;
+  const button = document.getElementById("login-btn");
+  document.getElementById("login-username").value = username;
+  document.getElementById("login-password").value = row.password;
+  button.click();
+  await until(() => !button.disabled);
+  const errorEl = document.getElementById("login-error");
+  const seen = {
+    token: Boolean(localStorage.getItem("jac_token")),
+    badge: document.getElementById("mode-badge").textContent,
+    error: errorEl.style.display === "block" ? errorEl.textContent : null,
+    authedGraph: calls.some((c) => c.url.endsWith("/graph/data") && Boolean(c.auth)),
+  };
+  const want = { token: row.token, badge: row.badge, error: row.error, authedGraph: row.token };
+  const ok = JSON.stringify(seen) === JSON.stringify(want);
+  console.log((ok ? "PASS  " : "FAIL  ") + row.name + ": " + JSON.stringify(seen) + (ok ? "" : " want " + JSON.stringify(want)));
+  failed += ok ? 0 : 1;
+}
+process.exit(failed ? 1 : 0);
+""";
+
+"""The stdlib server serves /graph, /graph/data and /docs, and the /graph login
+modal signs in against it (#8951)."""
 test "stdlib server serves graph visualizer and docs" {
+    import from jaclang.client.bun_installer { get_bun }
+    import from jaclang.server.settings { ServeSettings }
+    import from .react_jsdom_harness { REACT_JSDOM_DEPS, bun_install, run_harness }
+
     with TemporaryDirectory() as tmpdir {
         client = JacTestClient.from_file(
             fixture_abs_path("serve_shared_root.jac"), base_path=tmpdir
@@ -2397,6 +2458,33 @@ test "stdlib server serves graph visualizer and docs" {
         paths = spec.json()["paths"];
         assert "/walker/leave_note" in paths , "openapi should list the module's walkers";
         assert "/user/login" in paths , "openapi should list auth endpoints";
+        _require_client_integration();
+        bun = get_bun();
+        assert bun is not None , "bun is on PATH but get_bun() could not locate it";
+        registered = client.register_user("graph_viewer", "pw12345678");
+        assert registered.ok , f"register failed: {registered.text}";
+        client.server.settings = ServeSettings.load(
+            tmpdir, {"host": "127.0.0.1", "port": 0}
+        );
+        stop = client.server.serve_background(no_client=True);
+        try {
+            work = Path(tmpdir) / "graph_login";
+            work.mkdir();
+            bun_install(bun, work, "graph-login", {"jsdom": REACT_JSDOM_DEPS["jsdom"]});
+            (work / "harness.mjs").write_text(_GRAPH_LOGIN_HARNESS, encoding="utf-8");
+            run_harness(
+                bun,
+                work,
+                [
+                    f"http://127.0.0.1:{client.server.port}",
+                    "graph_viewer",
+                    "pw12345678"
+                ],
+                "graph login"
+            );
+        } finally {
+            stop();
+        }
         client.close();
     }
 }
@@ -2564,7 +2652,7 @@ import from jaclang.server.bridge {
     BridgeUnavailable,
     bridge_error_from
 }
-import from jaclang.compiler.frontend.constant { Constants as Con }
+import from jaclang.runtime.constants { Constants as Con }
 import from jaclang.server.outbox {
     SqliteOutboxStore,
     cached_result,
@@ -2578,22 +2666,22 @@ import from jaclang.server.serving.client {
 }
 
 obj _BridgeStubResponse {
-    has payload: dict,
-        headers: dict = {},
+    has payload: dict[str, any],
+        headers: dict[str, any] = {},
         text: str = "";
 
-    def json -> dict {
+    def json -> dict[str, any] {
         return self.payload;
     }
 }
 
 obj _BridgeStubClient {
-    has calls: list = [],
-        payload: dict = {},
-        headers_seen: list = [];
+    has calls: list[any] = [],
+        payload: dict[str, any] = {},
+        headers_seen: list[any] = [];
 
     def post(
-        path: str, json: dict, headers: (dict | None) = None
+        path: str, json: dict[str, any], headers: (dict[str, any] | None) = None
     ) -> _BridgeStubResponse {
         self.calls.append((path, json));
         self.headers_seen.append(dict(headers or {}));
@@ -2602,7 +2690,7 @@ obj _BridgeStubClient {
 }
 
 obj _LocalProviderModule {
-    has seen: list = [];
+    has seen: list[str] = [];
 
     def greet(name: str) -> str {
         self.seen.append(name);
@@ -2882,7 +2970,7 @@ test "sv_client: bearer token is sent on bridged calls and falls back to JAC_BRI
 
 obj _StubWalker {
     has name: str = "",
-        reports: list = [];
+        reports: list[any] = [];
 
     static def _from_wire(d: any) -> any {
         inst = _StubWalker();
@@ -2921,6 +3009,27 @@ test "sv_client: awaited walker spawn rehydrates the stub with reports" {
         assert stub.headers_seen[-1].get("X-Jac-Idempotency-Key") == "entry-42" , (
             "a deferred delivery forwards its idempotency key on the wire"
         );
+    } finally {
+        _reset_bridge_state();
+    }
+}
+
+test "sv_client: a walker spawn without a stub class is refused before the provider runs" {
+    _reset_bridge_state();
+    stub = _BridgeStubClient(
+        payload={"ok": True, "data": {"result": {"name": "ada"}, "reports": []}}
+    );
+    sv_client.register_test_client("social", stub);
+    try {
+        try {
+            asyncio.run(
+                sv_client.spawn_walker("social", "greet_walker", {"name": "ada"}, None)
+            );
+            assert False , "a spawn with no boundary contract must raise";
+        } except BridgeError as e {
+            assert "no declared boundary contract" in str(e);
+        }
+        assert stub.calls == [] , "the provider must not have been asked to run the walker";
     } finally {
         _reset_bridge_state();
     }

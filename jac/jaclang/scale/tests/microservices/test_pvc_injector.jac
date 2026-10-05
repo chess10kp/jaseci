@@ -4,7 +4,8 @@ import tarfile;
 import tempfile;
 import tomllib;
 import from pathlib { Path }
-import from jaclang.scale.injector.bundle { sanitized_jac_toml, pack_jab }
+import from jaclang.scale.injector.bundle { pack_jab }
+import from jaclang.dist.sanitize { sanitized_jac_toml }
 import from jaclang.scale.tests.support { pod_binary, require_pod_binary }
 import from jaclang.scale.injector.pvc_injector {
     PvcInjector,
@@ -31,7 +32,7 @@ def _make_project(project: str, toml: str) {
 }
 
 
-def _sanitized_toml(project: str) -> dict {
+def _sanitized_toml(project: str) -> dict[str, any] {
     # sanitized_jac_toml owns the strip logic pack_jab ships verbatim, so
     # assert it directly instead of running a full (binary-dependent) seal.
     return tomllib.loads(sanitized_jac_toml(Path(project)) or "");

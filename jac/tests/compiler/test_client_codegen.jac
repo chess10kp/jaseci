@@ -1,5 +1,6 @@
 """Client-side code generation tests -- migrated from test_client_codegen.py."""
 
+import from jaclang.compiler.backends.py.codegen_shim { generated_python }
 import os;
 import tempfile;
 import from pathlib { Path }
@@ -11,14 +12,11 @@ import from jaclang.compiler.frontend.codeinfo { endpoint_key }
 
 test "endpoint identity preserves compact JSON and escaping" {
     import json;
-    import from types { SimpleNamespace }
     import from jaclang.compiler.frontend.codeinfo { endpoint_descriptor }
+    import from jaclang.compiler.frontend.parser.frontend { parse }
     with TemporaryDirectory() as directory {
-        mod = SimpleNamespace(
-            loc=SimpleNamespace(mod_path=os.path.join(directory, "identity.jac")),
-            name='module, "quoted"',
-            app=""
-        );
+        (mod, _had_error) = parse("", os.path.join(directory, "identity.jac"));
+        mod.name = 'module, "quoted"';
         name = 'name with spaces, "quotes" and \\slashes';
         descriptor = endpoint_descriptor(mod, "func", name);
         assert endpoint_key(mod, "func", name)
@@ -75,11 +73,11 @@ test "compilation skips python stubs" {
     assert "__jacJsx(" in mod.gen.js;
 
     # Client Python definitions are intentionally omitted
-    assert "def component" not in mod.gen.py;
-    assert "__jac_client__" not in mod.gen.py;
+    assert "def component" not in generated_python(mod.gen);
+    assert "__jac_client__" not in generated_python(mod.gen);
 
     # Manifest data should be in mod.gen.client_manifest
-    assert "__jac_client_manifest__" not in mod.gen.py;
+    assert "__jac_client_manifest__" not in generated_python(mod.gen);
     manifest = mod.gen.client_manifest;
     assert manifest , "Client manifest should be available in mod.gen";
     assert "component" in manifest.exports;
@@ -107,7 +105,7 @@ test "type to typeof and spawn operator" {
     assert 'typeof "world"' in mod.gen.js;
 
     # --- spawn operator supports positional and spread ---
-    spawn_code = "walker MixedWalker {\n    has label: str;\n    has count: int;\n    has meta: dict = {};\n    can execute with Root entry;\n}\n\ndef spawn_client() -> dict {\n    node_id = \"abcd\";\n    extra = {\"meta\": {\"source\": \"client\"}};\n    positional = node_id spawn MixedWalker(\"First\", 3);\n    spread = MixedWalker(\"Second\", 1, **extra) spawn root;\n    return {\"positional\": positional, \"spread\": spread};\n}\n";
+    spawn_code = "walker MixedWalker {\n    has label: str;\n    has count: int;\n    has meta: dict[any, any] = {};\n    can execute with Root entry { }\n}\n\ndef spawn_client() -> dict[any, any] {\n    node_id = \"abcd\";\n    extra = {\"meta\": {\"source\": \"client\"}};\n    positional = node_id spawn MixedWalker(\"First\", 3);\n    spread = MixedWalker(\"Second\", 1, **extra) spawn root;\n    return {\"positional\": positional, \"spread\": spread};\n}\n";
     mod2 = compile_inline(spawn_code, prog, client=True);
     js = mod2.gen.js;
     assert '__jacSpawn("MixedWalker", node_id, {"label": "First", "count": 3},' in js;
@@ -139,7 +137,7 @@ test "def pub and endpoint effects" {
     prog = JacProgram();
 
     # --- def pub called from client imports jac call function ---
-    defpub_code = '"""\nTest def:pub called from client context.\n"""\n\nimport os;\n\ndef:pub get_server_data(name: str) -> dict {\n    return {"message": "Hello " + name + os.sep};\n}\n\nasync def:pub app() -> Any {\n    data = await get_server_data("World");\n    return <div>{data}</div>;\n}\n';
+    defpub_code = '"""\nTest def:pub called from client context.\n"""\n\nimport os;\n\ndef:pub get_server_data(name: str) -> dict[any, any] {\n    return {"message": "Hello " + name + os.sep};\n}\n\nasync def:pub app() -> Any {\n    data = await get_server_data("World");\n    return <div>{data}</div>;\n}\n';
     mod = compile_inline(defpub_code, prog);
     js = mod.gen.js;
     assert js.strip() , "Expected JavaScript output for client code";
@@ -148,7 +146,7 @@ test "def pub and endpoint effects" {
     assert '__jacCallFunction("get_server_data"' in js , "Should generate __jacCallFunction call with function name";
 
     # --- endpoint effects classifies walkers and functions ---
-    effects_code = '"""Test auto endpoint effects."""\n\nnode Todo {\n    has title: str,\n        done: bool = False;\n}\n\nwalker get_todos {\n    can visit_root with Root entry {\n        report [-->];\n    }\n}\n\nwalker create_todo {\n    has title: str;\n    can do_create with Root entry {\n        here ++> Todo(title=self.title);\n    }\n}\n\ndef:pub get_stats() -> dict {\n    return {"count": 10};\n}\n\ndef:pub reset_data() -> dict {\n    items = [];\n    del items;\n    return {};\n}\n\nasync def:pub app() -> Any {\n    todos = root spawn get_todos();\n    root spawn create_todo(title="test");\n    stats = await get_stats();\n    result = await reset_data();\n    return <div>{stats}{result}{todos}</div>;\n}\n';
+    effects_code = '"""Test auto endpoint effects."""\n\nnode Todo {\n    has title: str,\n        done: bool = False;\n}\n\nwalker get_todos {\n    can visit_root with Root entry {\n        report [-->];\n    }\n}\n\nwalker create_todo {\n    has title: str;\n    can do_create with Root entry {\n        here ++> Todo(title=self.title);\n    }\n}\n\ndef:pub get_stats() -> dict[any, any] {\n    return {"count": 10};\n}\n\ndef:pub reset_data() -> dict[any, any] {\n    items: list[any] = [];\n    del items;\n    return {};\n}\n\nasync def:pub app() -> Any {\n    todos = root spawn get_todos();\n    root spawn create_todo(title="test");\n    stats = await get_stats();\n    result = await reset_data();\n    return <div>{stats}{result}{todos}</div>;\n}\n';
     mod2 = compile_inline(effects_code, prog);
     effects = mod2.gen.client_manifest.endpoint_effects;
     # Walker reader: no write operations in body
@@ -177,7 +175,7 @@ test "endpoint effects follow helper calls" {
     # inside a plain `def` helper. The classifier must follow the call into
     # the helper -- otherwise the walker is misclassified as a reader and the
     # client cache is never invalidated after the mutation.
-    code = '"""Interprocedural endpoint effect analysis."""\n\nnode Item {\n    has title: str,\n        tags: list = [];\n}\n\ndef _add_tag(it: Item, label: str) -> None {\n    it.tags = it.tags + [label];\n}\n\nwalker tag_item {\n    has label: str;\n    can do_tag with Root entry {\n        for it in [-->[?:Item]] {\n            _add_tag(it, self.label);\n        }\n    }\n}\n\ndef:pub mark_item(label: str) -> dict {\n    items = [];\n    for it in items {\n        _add_tag(it, label);\n    }\n    return {};\n}\n\nasync def:pub app() -> Any {\n    root spawn tag_item(label="x");\n    result = await mark_item("y");\n    return <div>{result}</div>;\n}\n';
+    code = '"""Interprocedural endpoint effect analysis."""\n\nnode Item {\n    has title: str,\n        tags: list[any] = [];\n}\n\ndef _add_tag(it: Item, label: str) -> None {\n    it.tags = it.tags + [label];\n}\n\nwalker tag_item {\n    has label: str;\n    can do_tag with Root entry {\n        for it in [-->[?:Item]] {\n            _add_tag(it, self.label);\n        }\n    }\n}\n\ndef:pub mark_item(label: str) -> dict[any, any] {\n    items: list[Item] = [];\n    for it in items {\n        _add_tag(it, label);\n    }\n    return {};\n}\n\nasync def:pub app() -> Any {\n    root spawn tag_item(label="x");\n    result = await mark_item("y");\n    return <div>{result}</div>;\n}\n';
     mod = compile_inline(code, prog);
     effects = mod.gen.client_manifest.endpoint_effects;
 
@@ -285,7 +283,7 @@ test "archetype constructors in jsx-attribute lambdas emit new" {
 }
 
 def:pub app -> JsxElement {
-    has items: list = [];
+    has items: list[Task] = [];
 
     def add_direct {
         items = items + [Task(label=\"direct\")];

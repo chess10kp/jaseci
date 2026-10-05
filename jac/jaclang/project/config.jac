@@ -1,9 +1,11 @@
+import from jaclang.project.persistence { PersistenceConfig }
 import os;
 import re;
 import sys;
 import tomllib;
 import from pathlib { Path }
 import from jaclang.project.apps { AppConfig, implicit_app, parse_apps }
+import from jaclang.project.dependencies { PackageDep }
 glob CAPABILITY_SECTIONS: tuple[str, ...] = (
          "byllm",
          "scale",
@@ -37,6 +39,7 @@ obj ProjectConfig {
         entry_point: str = "main",
         kind: str = "",
         default_app: str = "",
+        exports: list[str] = [],
         urls: dict[str, str] = {},
         `include: PackageIncludeConfig = PackageIncludeConfig();
 }
@@ -49,10 +52,16 @@ obj RunConfig {
 }
 
 obj NativeConfig {
-    has target: str = "",
+    has link_mode: str = "objects",
+        require: list[str] = [],
+        target: str = "",
         opt: int = 2,
         debug: bool = False,
         threads: int = 4;
+}
+
+obj ArchConfig {
+    has closed: list[str] = [];
 }
 
 obj MemoryConfig {
@@ -188,10 +197,12 @@ obj LintConfig {
 obj CheckConfig {
     has print_errs: bool = True,
         lint: LintConfig = LintConfig(),
+        exclude: list[str] = [],
         suppress: list[str] = [],
         suppress_categories: list[str] = [],
         enforce_access: bool = False,
-        warn_native_seams: bool = True;
+        warn_native_seams: bool = True,
+        untyped_external: str = "warning";
 }
 
 obj DotConfig {
@@ -240,7 +251,32 @@ obj DevConfig {
         fmt_jobs: str = "";
 }
 
-def interpolate_env_vars(value: str) -> str;
+obj UnresolvedRef {
+    has path: str = "",
+        var: str = "",
+        raw: str = "",
+        required: bool = False,
+        message: str = "",
+        unsupported: bool = False,
+        form: str = "";
+
+    def describe -> str;
+    def reason -> str;
+}
+
+def interpolate_env_vars(
+    value: str,
+    environ: dict[str, str] | None = None,
+    sink: list[UnresolvedRef] | None = None
+) -> str;
+
+def resolve_env_refs(
+    data: any, environ: dict[str, str] | None = None, path: str = ""
+) -> tuple[any, list[UnresolvedRef]];
+
+def report_env_findings(
+    refs: list[UnresolvedRef], context: str, hint: str = ""
+) -> None;
 
 def find_project_root(start: Path | None = None) -> tuple[Path, Path] | None;
 
@@ -250,11 +286,17 @@ def serialize_toml(data: dict[str, any], prefix: str = "") -> str;
 
 def toml_value(value: any) -> str;
 
+def toml_minimal_update(
+    text: str, old_doc: dict[str, any], new_doc: dict[str, any], roots: list[str]
+) -> str | None;
+
 obj JacConfig {
-    has project: ProjectConfig = ProjectConfig(),
+    has persistence: PersistenceConfig = PersistenceConfig(),
+        project: ProjectConfig = ProjectConfig(),
         run: RunConfig = RunConfig(),
         build: BuildConfig = BuildConfig(),
         native: NativeConfig = NativeConfig(),
+        arch: ArchConfig = ArchConfig(),
         memory: MemoryConfig = MemoryConfig(),
         placement: PlacementConfig = PlacementConfig(),
         `test: TestConfig = TestConfig(),
@@ -268,10 +310,13 @@ obj JacConfig {
         client_errors: ClientErrorsConfig = ClientErrorsConfig(),
         client: ClientConfig = ClientConfig(),
         dev: DevConfig = DevConfig(),
-        dependencies: dict[str, str] = {},
-        dev_dependencies: dict[str, str] = {},
-        git_dependencies: dict[str, dict[str, str]] = {},
+        dependencies: dict[str, PackageDep] = {},
+        dev_dependencies: dict[str, PackageDep] = {},
+        pypi_dependencies: dict[str, str] = {},
+        pypi_dev_dependencies: dict[str, str] = {},
+        pypi_git_dependencies: dict[str, dict[str, str]] = {},
         plugin_dependencies: dict[str, dict[str, any]] = {},
+        registries: dict[str, str] = {},
         scripts: dict[str, str] = {},
         plugins: dict[str, dict[str, any]] = {},
         environments: dict[str, dict[str, any]] = {},
@@ -279,6 +324,7 @@ obj JacConfig {
         toml_path: Path | None = None,
         config_files: list[Path] | None = None,
         active_profile: str = "",
+        profile_override: str | None = None,
         _raw_data: dict[str, any] = {},
         entrypoints: dict[str, dict[str, str]] = {},
         optional_dependencies: dict[str, dict[str, str]] = {},
@@ -286,11 +332,16 @@ obj JacConfig {
         apps: dict[str, AppConfig] = {},
         is_workspace: bool = False,
         _base_data: dict[str, any] = {},
-        _layers: list[tuple[str, str]] = [];
+        _layers: list[tuple[str, str]] = [],
+        unresolved: list[UnresolvedRef] = [];
 
     has default_app: str { getter; }
 
     static def discover(
+        start_path: Path | None = None, profile: str | None = None
+    ) -> JacConfig | None;
+
+    static def resolve(
         start_path: Path | None = None, profile: str | None = None
     ) -> JacConfig | None;
 
@@ -327,12 +378,16 @@ obj JacConfig {
     def persist_doc(doc: dict[str, any]) -> None;
     def _write_toml_text(text: str) -> None;
     def add_dependency(
-        name: str, version: str, dev: bool = False, dep_type: str = "python"
+        name: str, version: str, dev: bool = False, dep_type: str = "pypi"
     ) -> None;
 
     def remove_dependency(
-        name: str, dev: bool = False, dep_type: str = "python"
+        name: str, dev: bool = False, dep_type: str = "pypi"
     ) -> bool;
+
+    def merge_dependency_tables(
+        data: dict[str, any], section_prefix: str = ""
+    ) -> None;
 
     def merge_from_toml_file(toml_path: Path) -> None;
     def merge_apps_table(apps_table: dict[str, any]) -> None;
@@ -347,7 +402,7 @@ obj JacConfig {
 
 def _parse_toml_data(data: dict[str, any], toml_path: Path | None = None) -> JacConfig;
 
-def _parse_persons(raw: list[any]) -> list[PersonConfig];
+def _parse_persons(raw: list[object]) -> list[PersonConfig];
 
 def _parse_include(raw: dict[str, any]) -> PackageIncludeConfig;
 
@@ -358,7 +413,9 @@ glob _config: JacConfig | None = None,
      _config_by_root: dict[str, JacConfig | None] = {};
 
 def get_config(
-    start_path: Path | None = None, force_discover: bool = False
+    start_path: Path | None = None,
+    force_discover: bool = False,
+    profile: str | None = None
 ) -> JacConfig | None;
 
 def set_config(config: JacConfig | None) -> None;
@@ -369,7 +426,9 @@ def project_scope_is_pinned -> bool;
 
 def get_explicit_config -> JacConfig | None;
 
-def get_config_for_path(start_path: Path) -> JacConfig | None;
+def get_config_for_path(
+    start_path: Path, profile: str | None = None, force_discover: bool = False
+) -> JacConfig | None;
 
 def get_config_for_dir(start_dir: str) -> JacConfig | None;
 
