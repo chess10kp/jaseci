@@ -12,16 +12,16 @@ test "string affixes support tuple candidates and bounds" {
     empty = get_sfunc(eng, "empty", ctypes.c_bool, ctypes.c_char_p, ctypes.c_int64);
     long_suffix = get_sfunc(eng, "long_suffix", ctypes.c_bool, ctypes.c_char_p);
     for value in ["", "a.jac", "module.py", "stub.pyi", "a.p", "jaclang", "python"] {
-        assert bool(suffix(value.encode())) == value.endswith((".jac", ".py", ".pyi"));
-        assert bool(prefix(value.encode())) == value.startswith(("jac", "python"));
+        assert suffix(value.encode()) == value.endswith((".jac", ".py", ".pyi"));
+        assert prefix(value.encode()) == value.startswith(("jac", "python"));
         assert not long_suffix(value.encode());
     }
     for start in [-20, -3, 0, 2, 6, 10] {
         for end in [-20, -1, 0, 5, 6, 10] {
             value = "xxjac!";
-            assert bool(bounds(value.encode(), start, end))
+            assert bounds(value.encode(), start, end)
                 == value.endswith(("jac", "py"), start, end);
         }
-        assert bool(empty(b"jac", start)) == "jac".endswith("", start);
+        assert empty(b"jac", start) == "jac".endswith("", start);
     }
 }
