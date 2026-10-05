@@ -1223,8 +1223,8 @@ impl NaIRGenPass._codegen_compare_link(
                 );
                 _lin_args = (
                     self._agg_key_args(_in_hay_nd.type, "list")
-                    if isinstance(_in_hay_nd, uni.Expr)
-                    else None
+                        if isinstance(_in_hay_nd, uni.Expr)
+                        else None
                 );
                 _lin_key = _lin_args[0] if _lin_args else None;
                 if _lin_key is not None

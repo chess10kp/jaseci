@@ -3435,8 +3435,10 @@ impl NaIRGenPass._emit_list_contains_fn(
             );
             eq = (
                 self._to_bool(_eq)
-                if _eq is not None
-                else self.builder.icmp_signed("==", fn.args[0], elem, name="contains.eq")
+                    if _eq is not None
+                    else self.builder.icmp_signed(
+                        "==", fn.args[0], elem, name="contains.eq"
+                    )
             );
         } elif isinstance(elem_type, ir.PointerType) {
             eq = self.builder.icmp_unsigned("==", fn.args[0], elem);
