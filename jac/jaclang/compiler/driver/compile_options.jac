@@ -22,11 +22,13 @@ obj CompileOptions {
         native_require: (list[str] | None) = None,
         iface_ok: bool = False,
         need_full_ast: bool = False,
+        skip_analysis: bool = False,
         skip_native_engine: bool = False,
         no_ir_cache: bool = False,
         resolve_annex_parent: bool = False,
         aot_mode: bool = False,
         native_unit: bool = False,
+        kernel_build: bool = False,
         native_link_mode: (str | None) = None,
         force_codespace: str = "",
         memory_profile: (str | None) = None,
@@ -211,6 +213,19 @@ obj CompileOptions {
         return self.base_codegen_identity() + f";required={required}";
     }
 
+    def dependency_projection(path: str) -> str {
+        return ";".join(
+            [
+                self.unit_codegen_identity(path),
+                f"app_kind={self.app_kind}",
+                f"aot={int(bool(self.aot_mode))}",
+                f"force_cs={self.force_codespace}",
+                f"default_cs={self.default_codespace}",
+                f"ui={self.ui}"
+            ]
+        );
+    }
+
     def module_projection -> str {
         return ";".join(
             [
@@ -247,6 +262,7 @@ obj CompileOptions {
             aot_mode=True,
             default_codespace='native',
             native_unit=self.native_unit,
+            kernel_build=self.kernel_build,
             native_link_mode=self.native_link_mode,
             na_gc_mode=self.na_gc_mode,
             nogc_enforce_all=self.nogc_enforce_all,

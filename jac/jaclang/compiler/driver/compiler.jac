@@ -20,7 +20,9 @@ import from jaclang.compiler.driver.jir {
     SEC_PLACEMENT,
     SEC_IFACE,
     SEC_CLIENT,
+    FLAG_CARRIED,
     FLAG_PRECOMPILED,
+    carried_module_bytecode,
     compute_content_sha256,
     get_module_cache_path,
     is_module_cache_valid,
@@ -197,7 +199,7 @@ obj JacCompiler(SessionHooks) {
 
     static def _check_native_abi(layout: NativeModuleLayout, full_target: str) -> None;
     def get_bytecode(
-        full_target: str, target_program: JacProgram
+        full_target: str, target_program: JacProgram, skip_analysis: bool = False
     ) -> (types.CodeType | None);
 
     def get_client_artifact(
@@ -205,7 +207,7 @@ obj JacCompiler(SessionHooks) {
     ) -> (ClientArtifact | None);
 
     def _get_bytecode(
-        full_target: str, target_program: JacProgram
+        full_target: str, target_program: JacProgram, skip_analysis: bool = False
     ) -> (types.CodeType | None);
 
     def _get_client_artifact(
