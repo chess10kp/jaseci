@@ -458,3 +458,26 @@ impl inject_heap_accounting(
     }
     return (llvm_ir_str + "\n" + "\n".join(definitions) + "\n", requested);
 }
+
+impl entry_lib_protocol_ir(spec: GlueSpec) -> str {
+    root_unit = spec.units[spec.root_index] if spec.root_index >= 0 else None;
+    entry_sym = root_unit.entry_symbol if root_unit is not None else "";
+    decl = _decl_void_fn(entry_sym) if entry_sym else "";
+    call = f'  call void @"{entry_sym}"()\n' if entry_sym else "";
+    return (
+        argv_globals_ir()
+        + decl
+        + "define void @jac_entry() {\nentry:\n"
+        + call
+        + "  ret void\n}\n\n"
+    );
+}
+
+impl entry_lib_dll_main_ir -> str {
+    return (
+        "define i32 @__jac_dll_main(ptr %module, i32 %reason, ptr %reserved) {\n"
+        "entry:\n"
+        "    ret i32 1\n"
+        "}\n\n"
+    );
+}

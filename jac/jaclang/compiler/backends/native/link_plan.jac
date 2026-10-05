@@ -11,6 +11,7 @@ glob PLAN_DIGEST_FORMAT: int = 3,
 enum ArtifactKind {
     EXECUTABLE = "executable",
     SHARED = "shared",
+    ENTRY_LIB = "entry-lib",
     WASM = "wasm",
     JIT = "jit"
 }

@@ -26,7 +26,8 @@ obj GlueSpec {
         data_layout: str = "",
         clib_paths: list[str] = [],
         needs_atexit_shim: bool = False,
-        needs_region_hook: bool = True;
+        needs_region_hook: bool = True,
+        entry_lib: bool = False;
 }
 
 def _decl_void_fn(name: str) -> str;
@@ -59,7 +60,7 @@ def shared_main_ir(spec: GlueSpec) -> str;
 
 def platform_entry_ir(spec: GlueSpec) -> str;
 
-def shared_init_registration_ir(spec: GlueSpec) -> str;
+def entry_lib_protocol_ir(spec: GlueSpec) -> str;
 
 def link_glue_ir(spec: GlueSpec) -> tuple[str, list[str]];
 
