@@ -1,6 +1,4 @@
 import from "@jac/runtime" { Outlet, useLocation }
-import from core.site.ui.Navbar { Navbar }
-import from core.site.ui.Footer { Footer }
 
 def:pub SiteShell -> JsxElement {
     location = useLocation();
