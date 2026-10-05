@@ -56,3 +56,13 @@ def resolve_module_backend(module: (uni.Module | None) = None) -> FrameworkBacke
     }
     return resolve_framework_backend(fw);
 }
+
+def active_framework -> str {
+    import from jaclang.compiler.frontend.host { active_host }
+    defaults = active_host().project_defaults();
+    return defaults.client_framework if defaults is not None else "react";
+}
+
+def resolve_active_backend -> FrameworkBackend {
+    return resolve_framework_backend(active_framework());
+}

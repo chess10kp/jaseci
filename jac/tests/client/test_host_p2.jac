@@ -219,7 +219,10 @@ test "scale microservices config can pin a persist service to bun host" {
                 '[project]\n'
                     + 'name = "persist-demo"\n'
                     + 'entry-point = "persisted.jac"\n\n'
-                    + '[scale.microservices.services.persisted]\n'
+                    + '[apps.persisted]\n'
+                    + 'kind = "service"\n'
+                    + 'entry-point = "persisted"\n\n'
+                    + '[apps.persisted.scale]\n'
                     + 'host = "bun"\n'
             );
         }
@@ -228,9 +231,7 @@ test "scale microservices config can pin a persist service to bun host" {
             os.chdir(tmp);
             reset_scale_config();
             cfg = get_scale_config(Path(tmp));
-            svc_cfg = cfg.get_microservices_config().get('services', {}).get(
-                'persisted', {}
-            );
+            svc_cfg = cfg.get_app_scale_config('persisted');
             assert str(svc_cfg.get('host', '')).lower() == 'bun';
             assert resolve_sv_service_host('persisted', tmp) == HOST_BUN;
         } finally {

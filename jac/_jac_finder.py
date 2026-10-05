@@ -92,7 +92,7 @@ def _inherited_dev_source() -> str | None:
     """The dev source a parent jac process exported, if it still holds a tree.
 
     ``apply_dev_source_override`` exports ``JAC_DEV_SOURCE`` whenever the loop
-    engages, so a child jac spawned from any cwd (a ``nacompile`` into a temp
+    engages, so a child jac spawned from any cwd (a native build into a temp
     dir, a desktop build compiling its host) inherits the same compiler instead
     of silently falling back to the bundled copy.
     """
@@ -100,6 +100,29 @@ def _inherited_dev_source() -> str | None:
     if src and os.path.isdir(os.path.join(src, "jaclang")):
         return src
     return None
+
+
+def _is_bare_checkout(src_dir: str) -> bool:
+    """Whether ``src_dir`` holds the compiler's source but not its typeshed stubs.
+
+    A git checkout carries ``jaclang/`` but not ``jaclang/vendor/typeshed/stdlib``:
+    the stdlib stubs are gitignored and materialized by ``zig build
+    fetch-typeshed`` (part of a plain ``zig build``). The type checker loads
+    ``builtins.pyi`` / ``typing.pyi`` from that directory for every compile, so
+    rerouting into a tree that never ran the build step breaks the first
+    compile with ``Stub file not found``. That tree is a fresh clone met with a
+    released binary -- how a quickstart reader arrives at a repo whose
+    ``jac.toml`` ships a ``[dev]`` stanza for its contributors -- and the loop
+    must refuse it rather than crash. A directory with no ``jaclang/`` at all is
+    not "bare"; the caller already skips those silently.
+    """
+    if not os.path.isdir(os.path.join(src_dir, "jaclang")):
+        return False
+    return not os.path.isfile(
+        os.path.join(
+            src_dir, "jaclang", "vendor", "typeshed", "stdlib", "builtins.pyi"
+        )
+    )
 
 
 def apply_dev_source_override() -> None:
@@ -122,7 +145,7 @@ def apply_dev_source_override() -> None:
        stanza.
     2. Otherwise, an inherited ``JAC_DEV_SOURCE`` -- exported by a jac process
        whose loop engaged, so the children it spawns (``jac test`` running a
-       ``nacompile`` into a temp dir, a desktop build compiling its host) stay
+       a native build into a temp dir, a desktop build compiling its host) stay
        on the same compiler whatever their cwd. Without this a child outside the
        repo would silently fall back to the bundled copy.
     3. Otherwise, a ``jac_linked_source`` marker baked into a linked dev binary
@@ -141,12 +164,23 @@ def apply_dev_source_override() -> None:
     scope -- used by CI jobs that must exercise the shipped binary's bundled +
     precompiled jaclang rather than the checked-out source tree.
 
-    Caches: sets ``JAC_NO_PRECOMPILE=1`` so the shipped, version-keyed
-    ``_precompiled`` JIR bundle is skipped. The per-module ``.jir`` cache is
-    content-keyed (``compute_module_key`` folds the source sha256), so source
-    edits self-invalidate on their own -- no forced full rebuild needed. Exports
-    ``JAC_DEV_SOURCE`` as a marker for tooling (also consumed by
-    ``_ext_registry`` to locate the registry inside the linked tree).
+    A jac.toml or inherited source is applied only when its tree is
+    materialized (see ``_is_bare_checkout``); a bare clone is refused with a
+    note and the bundled compiler serves. A baked link is never refused: a
+    linked binary has no bundled compiler to fall back on.
+
+    Caches: exports ``JAC_DEV_SOURCE``, which is both a marker for tooling
+    (``_ext_registry`` locates the registry inside the linked tree with it) and
+    the scope of the ``_precompiled`` bundle lookup. The shipped, version-keyed
+    bundle inside the binary's payload belongs to another jaclang and must never
+    serve a source run; a bundle sitting INSIDE this tree was built from this
+    tree and may. ``jir.bundle_dir_allowed`` draws that line, which is why this
+    no longer sets ``JAC_NO_PRECOMPILE=1`` -- that flag refused both, so every
+    dev run recompiled the whole compiler even when the checkout held a bundle
+    matching it exactly. Correctness does not rest on the location rule anyway:
+    both the per-module ``.jir`` cache and the bundle are content-keyed
+    (``compute_module_key`` folds the source sha256, and the bundle key folds
+    the compiler digest on top), so a stale unit can only miss.
 
     Plain Python, dev-only, never fatal.
     """
@@ -161,6 +195,14 @@ def apply_dev_source_override() -> None:
         toml_src: str | None = None
         if not os.environ.get("JAC_NO_DEV_SOURCE"):
             toml_src = _dev_source_from_toml() or _inherited_dev_source()
+            if toml_src is not None and _is_bare_checkout(toml_src):
+                sys.stderr.write(
+                    f"jac: ignoring [dev] jaclang_source {toml_src}: the tree has "
+                    "no typeshed stdlib stubs (run `zig build fetch-typeshed` in "
+                    "that checkout to use its compiler); the bundled compiler "
+                    "serves this run.\n"
+                )
+                toml_src = None
         src_dir = toml_src or _baked_source_dir()
         if src_dir is None:
             return
@@ -172,7 +214,6 @@ def apply_dev_source_override() -> None:
             sys.path.remove(src_dir)
         sys.path.insert(0, src_dir)
         os.environ["JAC_DEV_SOURCE"] = src_dir
-        os.environ.setdefault("JAC_NO_PRECOMPILE", "1")
     except Exception:
         # Dev convenience only; fall back to the bundled jaclang.
         pass
@@ -197,6 +238,12 @@ def add_project_venv_to_path() -> None:
         toml = _find_project_toml()
         if toml is None:
             return
+        # Jac packages (`jac install`) are mounted under .jac/packages as
+        # <org>/<name>; the directory is a search root ahead of the venv so a
+        # package's .py modules import as org.name.* like its .jac ones.
+        mounts = os.path.join(os.path.dirname(toml), ".jac", "packages")
+        if os.path.isdir(mounts) and mounts not in sys.path:
+            sys.path.insert(0, mounts)
         venv = os.path.join(os.path.dirname(toml), ".jac", "venv")
         if os.name == "nt":
             site_packages = os.path.join(venv, "Lib", "site-packages")

@@ -63,12 +63,12 @@ def emit_macho_object(triple: str) -> bytes {
 
 
 """Link the probe object into a dylib and return (path, bytes)."""
-def link_dylib(triple: str) -> tuple {
+def link_dylib(triple: str) -> tuple[any, ...] {
     relobj = emit_macho_object(triple);
     d = tempfile.mkdtemp();
     out = os.path.join(d, "libprobe.dylib");
     ok = MachOLinker.link(
-        obj_bytes=relobj,
+        objects=[relobj],
         output_path=out,
         needed_libs=["/usr/lib/libSystem.B.dylib"],
         symbol_lib_map={"malloc": "/usr/lib/libSystem.B.dylib"},
@@ -229,7 +229,7 @@ test "internal GOT slots are keyed by symbol, not by private symbol name" {
         d = tempfile.mkdtemp();
         out = os.path.join(d, "probe.dylib" if shared else "probe");
         ok = MachOLinker.link(
-            obj_bytes=main_obj,
+            objects=[main_obj],
             output_path=out,
             shared=shared,
             export_symbols=["jac_main_ptr", "jac_member_ptr"],
@@ -287,15 +287,15 @@ def absolute_text_relocs(relobj: bytes) -> int {
 }
 
 
-"""Link an executable the way `jac nacompile` does; return (object, image)."""
-def link_exec(triple: str) -> tuple {
+"""Link an executable the way `jac build --native` does; return (object, image)."""
+def link_exec(triple: str) -> tuple[any, ...] {
     relobj = emit_large_object(
         literal_ir(triple, "exec-literal", "jac_exec_ptr"), triple
     );
     d = tempfile.mkdtemp();
     out = os.path.join(d, "probe_exec");
     ok = MachOLinker.link(
-        obj_bytes=relobj,
+        objects=[relobj],
         output_path=out,
         needed_libs=["/usr/lib/libSystem.B.dylib"],
         shared=False
@@ -345,4 +345,248 @@ test "an arm64 executable is position-independent and stays PIE" {
         f"arm64 executable lost MH_PIE (flags={hex(flags)}); arm64 macOS "
         "refuses a non-PIE main executable"
     );
+}
+
+
+"""Decode pointer-rebase sites as file offsets, independently of symbol lookup."""
+def pointer_rebase_sites(img: bytes) -> set[int] {
+    segments: list[int] = [];
+    stream = b"";
+    off = 32;
+    for _ in range(struct.unpack_from("<I", img, 16)[0]) {
+        (cmd, size) = struct.unpack_from("<II", img, off);
+        if cmd == 0x19 {
+            segments.append(struct.unpack_from("<Q", img, off + 40)[0]);
+        } elif cmd == LC_DYLD_INFO_ONLY {
+            (start, length) = struct.unpack_from("<II", img, off + 8);
+            stream = img[start:start + length];
+        }
+        off += size;
+    }
+    sites: set[int] = set();
+    cursor = 0;
+    segment = 0;
+    offset = 0;
+    while cursor < len(stream) {
+        op = stream[cursor];
+        cursor += 1;
+        kind = op & 0xF0;
+        if kind == 0 {
+            break;
+        }
+        if kind == 0x10 {
+            assert (op & 15) == 1;
+        } elif kind == 0x20 {
+            segment = op & 15;
+            offset = 0;
+            shift = 0;
+            while True {
+                part = stream[cursor];
+                cursor += 1;
+                offset |= (part & 127) << shift;
+                if (part & 128) == 0 {
+                    break;
+                }
+                shift += 7;
+            }
+        } elif kind == 0x50 {
+            for _ in range(op & 15) {
+                sites.add(segments[segment] + offset);
+                offset += 8;
+            }
+        } else {
+            assert False , f"unsupported rebase opcode {hex(op)}";
+        }
+    }
+    return sites;
+}
+
+
+test "stored imported function pointers follow ASLR in executables and dylibs" {
+    llvm.initialize_all_targets();
+    llvm.initialize_all_asmprinters();
+    for triple in [MACHO_TRIPLE, MACHO_TRIPLE_X86] {
+        mod = llvm.parse_assembly(
+            f'target triple = "{triple}"\n'
+                + 'declare ptr @malloc(i64)\n'
+                + 'declare void @free(ptr)\n'
+                + '@callback_slot = global ptr @malloc\n'
+                + 'define i32 @main() { ret i32 0 }\n'
+                + 'define i32 @jac_allocates() {\n'
+                + ' %f = load volatile ptr, ptr @callback_slot\n'
+                + ' %p = call ptr %f(i64 16)\n'
+                + ' %ok = icmp ne ptr %p, null\n'
+                + ' call void @free(ptr %p)\n'
+                + ' %result = zext i1 %ok to i32\n'
+                + ' ret i32 %result\n}\n'
+        );
+        mod.verify();
+        tm = llvm.Target.from_triple(triple).create_target_machine(
+            opt=2, reloc="pic", codemodel="small"
+        );
+        relobj = tm.emit_object(mod);
+        for shared in [False, True] {
+            with tempfile.TemporaryDirectory() as directory {
+                out = os.path.join(directory, "probe.dylib" if shared else "probe");
+                assert MachOLinker.link(
+                    objects=[relobj],
+                    output_path=out,
+                    shared=shared,
+                    symbol_lib_map={
+                        "malloc": "/usr/lib/libSystem.B.dylib",
+                        "free": "/usr/lib/libSystem.B.dylib"
+                    },
+                    export_symbols=["jac_allocates"],
+                    soname="probe.dylib"
+                );
+                with open(out, "rb") as f {
+                    img = f.read();
+                }
+                off = 32;
+                slot = -1;
+                stubs = 0;
+                stub_size = 0;
+                for _ in range(struct.unpack_from("<I", img, 16)[0]) {
+                    (cmd, size) = struct.unpack_from("<II", img, off);
+                    if cmd == 0x19 {
+                        for i in range(struct.unpack_from("<I", img, off + 64)[0]) {
+                            sec = off + 72 + 80 * i;
+                            name = img[sec:sec + 16].split(b"\x00")[0];
+                            if name == b"__data" {
+                                slot = struct.unpack_from("<I", img, sec + 48)[0];
+                            } elif name == b"__stubs" {
+                                (stubs, stub_size) = struct.unpack_from(
+                                    "<QQ", img, sec + 32
+                                );
+                            }
+                        }
+                    }
+                    off += size;
+                }
+                assert slot >= 0 and stub_size > 0;
+                pointer = struct.unpack_from("<Q", img, slot)[0];
+                slide = 0x2DD0000;
+                moved = pointer + (slide if slot in pointer_rebase_sites(img) else 0);
+                assert stubs + slide <= moved < stubs + stub_size + slide , (
+                    f"{triple}, shared={shared}: stored import pointer escaped relocated stubs"
+                );
+                if shared and sys.platform == "darwin" {
+                    import platform;
+                    host_arm = platform.machine() == "arm64";
+                    if host_arm == (triple == MACHO_TRIPLE) {
+                        assert ctypes.CDLL(out).jac_allocates() == 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+"""IR whose exported function calls an internal one and an imported one."""
+def local_symbol_ir(triple: str) -> str {
+    return (
+        f'target triple = "{triple}"\n'
+        + 'declare ptr @malloc(i64)\n'
+        + 'define internal ptr @jac_hidden_helper(i64 %n) noinline {\n'
+        + 'entry:\n'
+        + '  %p = call ptr @malloc(i64 %n)\n'
+        + '  ret ptr %p\n'
+        + '}\n'
+        + 'define ptr @jac_visible(i64 %n) {\n'
+        + 'entry:\n'
+        + '  %p = call ptr @jac_hidden_helper(i64 %n)\n'
+        + '  ret ptr %p\n'
+        + '}\n'
+    );
+}
+
+
+"""The symbol table of a linked image: its (name, type, section, value)
+entries, the LC_DYSYMTAB local/extdef/undef ranges and its indirect symbol
+indices."""
+def symbol_table(
+    img: bytes
+) -> tuple[list[tuple[str, int, int, int]], list[int], list[int]] {
+    entries: list[tuple[str, int, int, int]] = [];
+    ranges: list[int] = [];
+    indirect: list[int] = [];
+    off = 32;
+    for _ in range(struct.unpack_from("<I", img, 16)[0]) {
+        (cmd, size) = struct.unpack_from("<II", img, off);
+        if cmd == 0x2 {
+            (symoff, nsyms, stroff, _strsize) = struct.unpack_from(
+                "<IIII", img, off + 8
+            );
+            for i in range(nsyms) {
+                (strx, n_type, n_sect, _desc, value) = struct.unpack_from(
+                    "<IBBhQ", img, symoff + i * 16
+                );
+                end = img.index(b"\x00", stroff + strx);
+                entries.append(
+                    (img[stroff + strx:end].decode(), n_type, n_sect, value)
+                );
+            }
+        } elif cmd == 0xB {
+            ranges = list(struct.unpack_from("<IIIIII", img, off + 8));
+            (ind_off, n_ind) = struct.unpack_from("<II", img, off + 56);
+            indirect = [
+                struct.unpack_from("<I", img, ind_off + i * 4)[0] for i in range(n_ind)
+            ];
+        }
+        off += size;
+    }
+    return (entries, ranges, indirect);
+}
+
+
+test "linked images keep internal functions' names as local symbols" {
+    # Without them a profiler or crash report attributes every internal
+    # function's samples to the nearest exported symbol before it.
+    relobj = emit_large_object(local_symbol_ir(MACHO_TRIPLE), MACHO_TRIPLE);
+    for shared in [False, True] {
+        d = tempfile.mkdtemp();
+        out = os.path.join(d, "probe.dylib" if shared else "probe");
+        ok = MachOLinker.link(
+            objects=[relobj],
+            output_path=out,
+            needed_libs=["/usr/lib/libSystem.B.dylib"],
+            shared=shared,
+            export_symbols=["jac_visible"],
+            soname="probe.dylib" if shared else ""
+        );
+        assert ok , "MachOLinker.link returned False";
+        with open(out, "rb") as f {
+            img = f.read();
+        }
+        (entries, ranges, indirect) = symbol_table(img);
+        (ilocal, nlocal, iextdef, nextdef, iundef, nundef) = ranges;
+        names = [symbol[0] for symbol in entries];
+        assert "_jac_hidden_helper" in names , f"shared={shared}: {names}";
+        helper = entries[names.index("_jac_hidden_helper")];
+        visible = entries[names.index("_jac_visible")];
+        assert helper[1] == 0x0E
+            and helper[2] == visible[2]
+            and helper[3] != 0 , helper;
+        assert visible[1] == 0x0F , visible;
+        # Locals first, then the defined externals, then the undefined ones,
+        # and every indirect entry still names an undefined import.
+        assert (ilocal, iextdef, iundef) == (0, nlocal, nlocal + nextdef) , ranges;
+        assert iundef + nundef == len(entries) , ranges;
+        assert names.index("_jac_hidden_helper")
+            < nlocal
+            <= names.index("_jac_visible");
+        imports = [
+            entries[i][0]
+            for i in indirect
+            if i < 0x80000000
+        ];
+        assert imports
+            and all(
+                iundef <= i < iundef + nundef
+                for i in indirect
+                if i < 0x80000000
+            );
+        assert "_malloc" in imports , imports;
+    }
 }

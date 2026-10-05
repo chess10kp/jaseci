@@ -55,8 +55,7 @@ def resolve_sv_service_host(module_name: str, base_path: str = '.') -> str {
     }
     try {
         import from jaclang.scale.config.config_loader { get_scale_config }
-        ms_cfg = get_scale_config().get_microservices_config();
-        svc_cfg = ms_cfg.get('services', {}).get(module_name, {});
+        svc_cfg = get_scale_config().get_app_scale_config(module_name);
         if isinstance(svc_cfg, dict) {
             raw_cfg = str(svc_cfg.get('host', '') or '');
             configured = _resolve_sv_host_override(raw_cfg);
@@ -65,7 +64,7 @@ def resolve_sv_service_host(module_name: str, base_path: str = '.') -> str {
             }
             if raw_cfg.strip() {
                 raise ValueError(
-                    f'[scale.microservices.services.{module_name}] '
+                    f'[apps.{module_name}.scale] '
                         + f"host='{raw_cfg}' is not a known sv host"
                 );
             }
