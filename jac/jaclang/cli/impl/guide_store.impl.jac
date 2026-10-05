@@ -4,6 +4,21 @@ import from pathlib { Path }
 
 glob _CODE_GUIDE_MAP: dict[str, str] = {
          "E0077": "jac-impl-files",
+         "E1140": "jac-arch-wiring",
+         "E1141": "jac-arch-wiring",
+         "E1142": "jac-arch-wiring",
+         "E1143": "jac-arch-wiring",
+         "E1144": "jac-arch-wiring",
+         "E2088": "jac-arch-wiring",
+         "E2089": "jac-arch-wiring",
+         "E2090": "jac-arch-wiring",
+         "E2091": "jac-arch-wiring",
+         "E2092": "jac-arch-wiring",
+         "E2093": "jac-arch-wiring",
+         "E2094": "jac-arch-wiring",
+         "W2083": "jac-arch-wiring",
+         "W3052": "jac-arch-wiring",
+         "W3053": "jac-arch-wiring",
          "E0033": "jac-comptime",
          "E0108": "jac-comptime",
          "E0109": "jac-comptime",
@@ -72,6 +87,7 @@ glob GUIDE_GROUP_ORDER: list[str] = [
          "jac-comptime": "Language",
          "jac-has-fields": "Language",
          "jac-impl-files": "Language",
+         "jac-arch-wiring": "Tooling & workflow",
          "jac-python-interop": "Language",
          "jac-concurrency": "Language",
          "jac-node-edge-patterns": "Graph & OSP",
@@ -332,7 +348,7 @@ impl corpus_blurb(ns: str) -> str {
     return _DOC_CORPUS_BLURBS.get(ns, "");
 }
 
-impl nav_manifest -> dict {
+impl nav_manifest -> dict[str, any] {
     path = docs_dir() / "nav.json";
     if not path.is_file() {
         return {};
@@ -348,7 +364,7 @@ impl nav_manifest -> dict {
 impl nav_pages -> list[NavPage] {
     pages: list[NavPage] = [];
 
-    def walk(items: list, trail: list[str]) {
+    def walk(items: list[object], trail: list[str]) {
         for item in items {
             if not isinstance(item, dict) {
                 continue;
@@ -364,11 +380,11 @@ impl nav_pages -> list[NavPage] {
                     )
                 );
             } elif "items" in item {
-                walk(item["items"] as list, trail + [title]);
+                walk(item["items"] as list[object], trail + [title]);
             }
         }
     }
-    walk(nav_manifest().get("nav", []) as list, []);
+    walk(nav_manifest().get("nav", []) as list[object], []);
     return pages;
 }
 

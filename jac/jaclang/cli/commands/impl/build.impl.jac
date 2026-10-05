@@ -1,3 +1,4 @@
+import type from jaclang.project.config { AppConfig }
 import os;
 
 import from pathlib { Path }
@@ -13,7 +14,7 @@ def _is_file_target(target: str) -> bool {
     return target.lower().endswith((".jac", ".py"));
 }
 
-def _build_target(cfg: any, target: str) -> tuple {
+def _build_target(cfg: any, target: str) -> tuple[AppConfig | None, str, int] {
     if _is_file_target(target) {
         abs_file = os.path.abspath(target);
         return (cfg.app_for_path(abs_file), abs_file, 0);
@@ -54,7 +55,8 @@ def _build_app(
     platform: str | None,
     fat: bool,
     entry_override: str,
-    place: bool
+    place: bool,
+    allow_drop_client: bool = False
 ) -> int {
     import from jaclang.project.kinds { plan_app_run }
 
@@ -71,7 +73,7 @@ def _build_app(
     }
     entry_path = entry_override or (plan.entry_path if plan is not None else "");
     kind_builds = plan is not None and plan.action == "build";
-    plan_flags: dict = plan.flags if plan is not None else {};
+    plan_flags: dict[str, any] = plan.flags if plan is not None else {};
     plan_verb = plan.verb if plan is not None else "";
     spec = plan.spec if plan is not None else None;
     client_artifact = projection == "client"
@@ -81,6 +83,23 @@ def _build_app(
             and not spec.has_server
             and "as" not in spec.flags
         );
+
+    if projection == "source" {
+        import from jaclang.dist.source.project { export_project }
+        destination = Path(output)
+            if output != "dist"
+            else Path(project_root) / 'dist' / 'source';
+        try {
+            result = export_project(
+                cfg, app.name if app is not None else "", destination, entry_override
+            );
+        } except (OSError, ValueError, RuntimeError) as error {
+            console.error(str(error));
+            return 1;
+        }
+        console.success(f'Exported source project: {result}');
+        return 0;
+    }
 
     if client_artifact {
         import from jaclang.project.kinds { kind_has_client }
@@ -148,15 +167,8 @@ def _build_app(
             output=output,
             target=projection,
             fat=fat,
-            app=(app.name if app is not None else "")
-        );
-    }
-    if projection == "source" {
-        import from jaclang.cli.commands.eject { eject }
-        return eject(
-            source=project_root,
-            output=(output if output != "dist" else ""),
-            force=False
+            app=(app.name if app is not None else ""),
+            allow_drop_client=allow_drop_client
         );
     }
     console.error(f"Unknown projection: '{projection}'");
@@ -175,14 +187,16 @@ impl build(
     lib: bool = False,
     memory: str = "",
     native_target: str = "",
-    debug: bool = False
+    debug: bool = False,
+    native_link_mode: str = "",
+    allow_drop_client: bool = False
 ) -> int {
     import from jaclang.project.config { get_config }
-    if native or lib or memory or native_target or debug {
+    if native or lib or memory or native_target or debug or native_link_mode {
         import from jaclang.cli.commands.native_build { native_build }
         if not native {
             console.error(
-                "--lib, --memory, --target-triple and --debug describe a native build.",
+                "--lib, --memory, --target-triple, --link-mode and --debug describe a native build.",
                 hint="Add --native: jac build main.jac --native --memory nogc"
             );
             return 1;
@@ -209,7 +223,8 @@ impl build(
             lib=lib,
             target=native_target,
             debug=debug,
-            memory=memory
+            memory=memory,
+            link_mode=native_link_mode
         );
     }
 
@@ -250,7 +265,8 @@ impl build(
                 platform,
                 fat,
                 "",
-                True
+                True,
+                allow_drop_client
             );
             if rc != 0 {
                 failed.append(app.name);
@@ -268,6 +284,15 @@ impl build(
         return rc;
     }
     return _build_app(
-        cfg, project_root, app, projection, output, platform, fat, file, False
+        cfg,
+        project_root,
+        app,
+        projection,
+        output,
+        platform,
+        fat,
+        file,
+        False,
+        allow_drop_client
     );
 }

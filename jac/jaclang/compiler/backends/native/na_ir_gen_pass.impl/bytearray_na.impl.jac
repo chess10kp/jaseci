@@ -3,7 +3,7 @@ impl NaIRGenPass._ensure_bytearray_type -> ir.Type {
     return self.list_types["u8"].as_pointer();
 }
 
-impl NaIRGenPass._bytearray_runtime_fns -> dict {
+impl NaIRGenPass._bytearray_runtime_fns -> dict[str, ir.Function] {
     if self._bytearray_fns {
         return self._bytearray_fns;
     }
@@ -149,7 +149,9 @@ impl NaIRGenPass._bytearray_runtime_fns -> dict {
     return self._bytearray_fns;
 }
 
-impl NaIRGenPass._bytearray_src_of(val: ir.Value) -> (tuple | None) {
+impl NaIRGenPass._bytearray_src_of(
+    val: ir.Value
+) -> (tuple[ir.Value, ir.Value] | None) {
     if self._is_bytes_value(val) {
         return (self._bytes_data_ptr(val), self._bytes_len_val(val));
     }
@@ -175,7 +177,7 @@ impl NaIRGenPass._dispatch_bytearray_method(
     fns = self._bytearray_runtime_fns();
     i8 = ir.IntType(8);
     i64 = ir.IntType(64);
-    params = nd.params or [];
+    params: Sequence[any] = nd.params or [];
     if method_name == "append" {
         if not params {
             return None;
@@ -198,9 +200,55 @@ impl NaIRGenPass._dispatch_bytearray_method(
         }
         src = self._bytearray_src_of(v);
         if src is None {
-            return None;
+            spec = self._infer_list_elem_type(v);
+            helpers = self.list_helpers.get(spec) if spec is not None else None;
+            if helpers is None or not isinstance(helpers["elem_type"], ir.IntType) {
+                return None;
+            }
+            elem_type = helpers["elem_type"];
+            if elem_type.width > 64 {
+                return None;
+            }
+            i32 = ir.IntType(32);
+            length_ptr = self.builder.gep(
+                v, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="ba.ext.len.p"
+            );
+            length = self.builder.load(length_ptr, name="ba.ext.len");
+
+            for phase in ("validate", "append") {
+                func = self.builder.function;
+                before = self.builder.block;
+                loop = func.append_basic_block(name=f"ba.ext.{phase}.loop");
+                body = func.append_basic_block(name=f"ba.ext.{phase}.body");
+                done = func.append_basic_block(name=f"ba.ext.{phase}.done");
+                self.builder.branch(loop);
+                self.builder.position_at_end(loop);
+                index = self.builder.phi(i64, name="ba.ext.index");
+                index.add_incoming(ir.Constant(i64, 0), before);
+                finished = self.builder.icmp_unsigned(">=", index, length);
+                self.builder.cbranch(finished, done, body);
+                self.builder.position_at_end(body);
+                element = self.builder.call(helpers["get"], [v, index]);
+                integer = self._coerce_type(element, i64);
+                if phase == "validate" {
+                    invalid = self.builder.icmp_unsigned(
+                        ">", integer, ir.Constant(i64, 255)
+                    );
+                    self._emit_runtime_raise(
+                        invalid, "ValueError", "byte must be in range(0, 256)"
+                    );
+                } else {
+                    byte = self.builder.trunc(integer, i8);
+                    self.builder.call(self.list_helpers["u8"]["append"], [recv, byte]);
+                }
+                next_index = self.builder.add(index, ir.Constant(i64, 1));
+                index.add_incoming(next_index, self.builder.block);
+                self.builder.branch(loop);
+                self.builder.position_at_end(done);
+            }
+        } else {
+            self.builder.call(fns["extend_raw"], [recv, src[0], src[1]], name="");
         }
-        self.builder.call(fns["extend_raw"], [recv, src[0], src[1]], name="");
         if self._is_owned(v) {
             self._emit_rc_release_simple(v, op="ba_extend", loc="");
         }
@@ -211,7 +259,7 @@ impl NaIRGenPass._dispatch_bytearray_method(
 
 impl NaIRGenPass._emit_struct_pack_into(
     nd: uni.FuncCall,
-    params: list,
+    params: Sequence[uni.Expr | uni.KWPair],
     fields: list[tuple[str, int, bool]],
     total: int,
     little: bool
@@ -266,7 +314,7 @@ impl NaIRGenPass._emit_struct_pack_into(
         );
         return None;
     }
-    arg_vals: list = [];
+    arg_vals: list[ir.Value] = [];
     for p in params[3:] {
         v = self._codegen_expr(p);
         if v is not None {
@@ -280,7 +328,7 @@ impl NaIRGenPass._emit_struct_pack_into(
     neg = b.icmp_signed("<", off_val, ir.Constant(i64, 0), name="pi.neg");
     self._emit_runtime_raise(
         b.or_(oob, neg, name="pi.bad"),
-        "RuntimeError",
+        "struct.error",
         "pack_into requires a buffer of at least the packed size"
     );
     data_p = b.gep(

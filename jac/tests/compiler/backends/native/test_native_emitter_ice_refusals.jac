@@ -13,10 +13,10 @@ glob FIXTURES = os.path.join(
      ),
      FIXTURE = "emitter_ice_refusals.jac";
 
-glob _MEMO: list = [];
+glob _MEMO: list[any] = [];
 
 """Compile the fixture once and return (coverage record, program, ir)."""
-def measured -> tuple {
+def measured -> tuple[any, ...] {
     if _MEMO {
         return _MEMO[0];
     }
@@ -25,10 +25,7 @@ def measured -> tuple {
     na_coverage_begin();
     try {
         ir = prog.compile(
-            file_path=path,
-            options=CompileOptions(
-                force_codespace='native', force_target_program=True, no_ir_cache=True
-            )
+            file_path=path, options=CompileOptions(force_codespace='native')
         );
     } finally {
         coverage = na_coverage_end();
@@ -41,7 +38,7 @@ def measured -> tuple {
 }
 
 """The one seam owned by `name`, or the empty string."""
-def seam_for(seams: list, name: str) -> str {
+def seam_for(seams: list[any], name: str) -> str {
     owned = [
         s
         for s in seams
@@ -81,12 +78,7 @@ test "a mismatched call argument is the checker's refusal, not the emitter's" {
             f.write(src);
         }
         prog = JacProgram();
-        prog.compile(
-            file_path=path,
-            options=CompileOptions(
-                force_codespace='native', force_target_program=True, no_ir_cache=True
-            )
-        );
+        prog.compile(file_path=path, options=CompileOptions(force_codespace='native'));
         hits = [
             str(e)
             for e in prog.errors_had

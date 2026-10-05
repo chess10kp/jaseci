@@ -1,10 +1,13 @@
+import from jaclang.compiler.frontend.roles { Kid }
+import from jaclang.compiler.frontend.unitree { TreeWalker, Tok, EmptyToken, Token }
+import from jaclang.compiler.passes.context { CompileContext, TreePass }
 import jaclang.compiler.frontend.unitree as uni;
-import from jaclang.compiler.passes { UniPass }
-import from jaclang.compiler.frontend.constant { CodeContext, EdgeDir }
-import from jaclang.compiler.frontend.unitree { Tok, EmptyToken, Token }
+
+import from jaclang.runtime.constants { EdgeDir }
+import from jaclang.compiler.frontend.constant { CodeContext }
 import from jaclang.compiler.frontend.roles { BodyRole, ItemsRole }
 
-walker NormalizePass(UniPass) {
+walker NormalizePass(TreePass) {
     can enter_sub_tag with uni.SubTag entry;
     can enter_module with uni.Module entry;
     can enter_type_param with uni.TypeParam entry;
@@ -116,4 +119,15 @@ walker NormalizePass(UniPass) {
     can enter_match_arch with uni.MatchArch entry;
     can enter_token with uni.Token entry;
     can enter_string with uni.String entry;
+    can enter_impl_import with uni.ImplImport entry;
+    can enter_import_wire with uni.ImportWire entry;
+    can enter_import_rule with uni.ImportRule entry;
+    can enter_module_pattern with uni.ModulePattern entry;
+    can enter_wire_item with uni.WireItem entry;
+    def _wiring_payload_kids(
+        items: Sequence[uni.WireItem],
+        open_form: bool,
+        new_kid: list[uni.UniNode],
+        owner: uni.UniNode
+    ) -> None;
 }

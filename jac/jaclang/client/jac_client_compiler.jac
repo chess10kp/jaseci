@@ -15,6 +15,9 @@ with entry {
 }
 
 class JacClientCompiler {
+    has entry_path: str = "",
+        na_wasm_modules: set[str] = set();
+
     with entry {
         ROUTER_EXPORTS = [
             'Router',
@@ -45,7 +48,8 @@ class JacClientCompiler {
         extract_exports_func: Callable[[ClientManifest | None], list[str]],
         extract_globals_func:
             Callable[[ClientManifest | None, ModuleType | None], dict[str, any]],
-        compiled_dir: (Path | None) = None
+        compiled_dir: (Path | None) = None,
+        entry_path: str = ""
     );
 
     def _get_client_dir(self: JacClientCompiler) -> Path;
@@ -58,6 +62,7 @@ class JacClientCompiler {
         self: JacClientCompiler, runtime_filename: str
     ) -> tuple[str, list[str]];
 
+    def emit_prelude(self: JacClientCompiler) -> Path;
     def compile_pwa_runtime(self: JacClientCompiler) -> tuple[str, list[str]];
     def compile_mobui_utils(self: JacClientCompiler) -> tuple[str, list[str]];
     def emit_dependencies(
@@ -105,6 +110,7 @@ class JacClientCompiler {
         self: JacClientCompiler, scanner: RouteScanner
     ) -> None;
 
+    def _warn_unrouted_pages(self: JacClientCompiler, scanner: RouteScanner) -> None;
     def _generate_routes_manifest(self: JacClientCompiler) -> bool;
     def _write_source_map(
         self: JacClientCompiler,

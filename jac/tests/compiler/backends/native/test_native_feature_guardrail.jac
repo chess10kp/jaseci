@@ -18,9 +18,16 @@ test that fails: "expected E5090, got no errors" — which is exactly the
 class of bug this guardrail exists to prevent.
 """
 
+import from jaclang.compiler.backends.py.codegen_shim { generated_python }
 import ctypes;
 import os;
-import from tests.support { TESTS_DIR, native_force_opts }
+import from tests.support {
+    TESTS_DIR,
+    by_source_name,
+    native_address,
+    native_force_opts,
+    source_spelled
+}
 import jaclang;
 import from jaclang.compiler.driver.program { JacProgram }
 import from jaclang.compiler.driver.compile_options { CompileOptions }
@@ -45,7 +52,7 @@ def compile_na_inline(label: str, code: str) -> JacProgram {
 layout assertions) and the JAC_NA_DEBUG stderr stream (for demotion-reason
 assertions -- granular demotion reports its cause there rather than as a
 program error)."""
-def compile_na_inline_demote(label: str, code: str) -> tuple {
+def compile_na_inline_demote(label: str, code: str) -> tuple[any, ...] {
     import contextlib;
     import io;
     path = os.path.join(FIXTURES_DIR, f"_guardrail_{label}.jac");
@@ -66,7 +73,7 @@ def compile_na_inline_demote(label: str, code: str) -> tuple {
             os.environ["JAC_NA_DEBUG"] = _prev;
         }
     }
-    return (prog, ir, buf.getvalue(), );
+    return (prog, ir, source_spelled(buf.getvalue()), );
 }
 
 """Compile a snippet through the FRONT-END check schedule (the `type_check`
@@ -81,10 +88,7 @@ def check_na_inline(label: str, code: str) -> JacProgram {
         file_path=path,
         use_str=code,
         options=CompileOptions(
-            no_cgen=True,
-            native_parity=True,
-            force_codespace="native",
-            force_target_program=True
+            no_cgen=True, native_parity=True, force_codespace="native",
         )
     );
     return prog;
@@ -95,7 +99,7 @@ engine. A guardrail that has become a lowering pin needs the native lane's
 answer, not just its layout membership."""
 def native_answer(eng: any, name: str) -> int {
     assert eng is not None , f"no native engine produced for {name}";
-    addr = eng.get_function_address(name);
+    addr = native_address(eng, name);
     assert addr != 0 , f"'{name}' not found in the JIT engine";
     return ctypes.CFUNCTYPE(ctypes.c_int64)(addr)();
 }
@@ -110,8 +114,8 @@ def server_answer(label: str, code: str, name: str) -> int {
         file_path=path, use_str=code, options=CompileOptions(default_codespace='server')
     );
     assert not prog.errors_had , f"server-lane compilation errors: {fmt_errors(prog)}";
-    ns: dict = {};
-    exec(compile(ir.gen.py, path, "exec"), ns);
+    ns: dict[str, any] = {};
+    exec(compile(generated_python(ir.gen), path, "exec"), ns);
     return ns[name]();
 }
 
@@ -215,7 +219,7 @@ test "guardrail: field access on an untyped (any) node-ref element demotes the a
     (prog, ir, log) = compile_na_inline_demote(
         "node_ref_any_field",
         "node N { has tag: int = 0; }\n"
-        "edge Portal {}\n"
+        "edge Portal: any --> any {}\n"
         "walker W {\n"
         "    has v: int = 0;\n"
         "    can go with N entry {\n"
@@ -229,8 +233,10 @@ test "guardrail: field access on an untyped (any) node-ref element demotes the a
         prog
     )}";
     layout = ir.gen.native_layout;
-    assert layout is not None , "whole-module native compile aborted";
-    assert "W.go" not in layout.methods , (
+    assert layout is not None , f"whole-module native compile aborted: {fmt_errors(
+        prog
+    )}\n{log}";
+    assert "W.go" not in by_source_name(layout.methods) , (
         "the violating ability must be demoted out of the native layout"
     );
     assert "NA_DEBUG demote W.go" in log , f"no demotion recorded for W.go in:\n{log}";
@@ -709,7 +715,7 @@ test "guardrail: list-endpoint disconnect lowers; list plus predicate stays loud
     )}";
     prog2 = compile_na_inline(
         "disconnect_pred_list",
-        "edge E { has w: int = 0; }\n"
+        "edge E: N --> N { has w: int = 0; }\n"
         "node N {}\n"
         "walker W {\n"
         "    can go with N entry {\n"
@@ -769,7 +775,7 @@ test "osp gate: connect-only module (no walker) lowers without E5090" {
     prog = compile_na_inline(
         "connect_no_walker",
         "node Area { has tag: int = 0; }\n"
-        "edge In {}\n"
+        "edge In: Area --> Area {}\n"
         "with entry {\n"
         "    a = Area(tag=1);\n"
         "    b = Area(tag=2);\n"
@@ -937,6 +943,32 @@ test "check rejects a native def with an unknown return type" {
         "native_unknown_ret", "def make_it(x: int) -> some_handle { return x; }\n"
     );
     assert has_error_code(prog, "E2018") , f"Expected E2018 for unknown native return type 'some_handle', got: {fmt_errors(
+        prog
+    )}";
+}
+
+# An unresolved type in an `as` cast is the same silent-i64 hazard as an
+# unresolved annotation: native lowering reads the cast type to pick a layout.
+test "check rejects a native cast to an unknown type" {
+    prog = check_na_inline(
+        "native_unknown_cast",
+        "def widen(n: int) -> int {\n    v = n as uint32_t;\n    return v;\n}\n"
+    );
+    assert has_error_code(prog, "E2018") , f"Expected E2018 for unknown native cast type 'uint32_t', got: {fmt_errors(
+        prog
+    )}";
+}
+
+# Nesting depth is not a boundary of the language: an unresolved annotation is
+# an error however deep the generic arguments go.
+test "check rejects an unknown type nested deep in a native annotation" {
+    prog = check_na_inline(
+        "native_unknown_deep",
+        "def take(xs: dict[str, dict[str, dict[str, list[uint32_t]]]]) -> int {\n"
+        "    return 0;\n"
+        "}\n"
+    );
+    assert has_error_code(prog, "E2018") , f"Expected E2018 for a deeply nested unknown native type 'uint32_t', got: {fmt_errors(
         prog
     )}";
 }
@@ -1239,4 +1271,15 @@ test "guardrail: nested event ability demotes its function, not an ICE" {
     assert "NA_DEBUG demote widget" in log , (
         f"no demotion recorded for widget in:\n{log}"
     );
+}
+
+test "C callbacks reject a boxed Callable parameter instead of bitcasting it" {
+    program = compile_na_inline(
+        "clib_boxed_callback",
+        "import from c { def register(callback: Callable[[i32], i32]); }\n"
+        "def sign(value: i32) -> i32 { return value; }\n"
+        "def install(callback: Callable[[i32], i32]) { register(callback); }\n"
+        "with entry { install(sign); }\n"
+    );
+    assert has_error_code(program, "E5092") , fmt_errors(program);
 }

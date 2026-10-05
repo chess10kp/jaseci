@@ -1,5 +1,8 @@
 impl Serializer._type_info(`obj: object, `include: bool) -> dict[str, object] {
-    return {'__type__': type(`obj).__name__, '__module__': type(`obj).__module__}
+    if `include {
+        register_type(type(`obj));
+    }
+    return {'__type__': type(`obj).__name__, '__module__': type_module(type(`obj))}
         if `include
         else {};
 }
@@ -11,6 +14,9 @@ impl Serializer._serialize_attrs(
     ref_mode: bool = False,
     _seen: (tuple[set, set] | None) = None
 ) -> dict[str, object] {
+    omitted: set[str] = (
+        {'reports'} if api_mode and isinstance(`obj, WalkerArchetype) else set()
+    );
     result = {
         a: Serializer._serialize_value(
             getattr(`obj, a),
@@ -21,7 +27,9 @@ impl Serializer._serialize_attrs(
             Serializer._declared_of(`obj, a)
         )
         for a in dir(`obj)
-        if not a.startswith('_') and not callable(getattr(`obj, a, None))
+        if not a.startswith('_')
+            and a not in omitted
+            and not callable(getattr(`obj, a, None))
     };
 
     if include_type and not api_mode {
@@ -155,7 +163,8 @@ impl Serializer._serialize_value(
                 );
         }
         if isinstance(val, NodeAnchor) {
-            result['edges'] = [str(e.ensure_id()) for e in val.edges];
+            edges = val.edges if api_mode else val.loaded_edges();
+            result['edges'] = [str(e.ensure_id()) for e in edges];
 
             result['version'] = val.version;
         }
@@ -287,6 +296,8 @@ impl Serializer._deserialize_jac_ref(data: dict[str, object]) -> (object | None)
                 return anchor.archetype;
             }
         }
+    } except TypeResolutionError {
+        raise;
     } except Exception as e {
         logger.warning(f"Failed to resolve $ref {id_str} from context: {e}");
     }
@@ -344,6 +355,8 @@ impl Serializer.deserialize(data: dict[str, object]) -> (object | None) {
                 }
             }
             return instance;
+        } except TypeResolutionError {
+            raise;
         } except Exception as e {
             if (
                 n
@@ -373,7 +386,7 @@ impl Serializer.deserialize_api(
     }
     tag = value.get('_jac_type_id', value.get('_jac_type'));
     cls = boundary_types.get(tag, target) if isinstance(tag, str) else target;
-    decoded = {
+    decoded: dict[str, object] = {
         k: Serializer.deserialize_api(v, boundary_types) for (k, v) in value.items()
     };
     if cls is None {
@@ -407,6 +420,7 @@ impl Serializer._deserialize_value(val: object) -> object {
 }
 
 impl Serializer.register(cls: type) -> None {
+    register_type(cls);
     Serializer._registry[f"{cls.__module__}.{cls.__name__}"] = cls;
     import from jaclang.runtime.typecache {
         invalidate as _invalidate_typecache,
@@ -438,15 +452,35 @@ impl Serializer.is_auto_registered_module(module_name: str) -> bool {
 }
 
 impl Serializer.register_alias(old_name: str, cls: type) -> None {
-    new_name = f"{cls.__module__}.{cls.__name__}";
+    new_name = f"{type_module(cls)}.{cls.__name__}";
     if old_name == new_name {
         logger.debug(f"archetype_alias: {old_name} == current name; alias is a no-op");
         return;
     }
+    prior = Serializer._aliases.get(old_name);
+    if prior is not None and prior != new_name {
+        raise ValueError(
+            f'Persistent type alias {old_name} has conflicting targets: {prior} and {new_name}'
+        );
+    }
+    cursor = new_name;
+    seen = {old_name};
+    while cursor in Serializer._aliases {
+        if cursor in seen {
+            raise ValueError(f'Persistent type alias cycle involving {old_name}');
+        }
+        seen.add(cursor);
+        cursor = Serializer._aliases[cursor];
+    }
+    if cursor == old_name {
+        raise ValueError(f'Persistent type alias cycle involving {old_name}');
+    }
     Serializer._aliases[old_name] = new_name;
 }
 
-impl Serializer.repair(data: dict[str, object], cls: type) -> tuple {
+impl Serializer.repair(
+    data: dict[str, object], cls: type
+) -> tuple[dict[str, object], list[str]] {
     import from jaclang.data.schema_rules { apply_rules, merged_rules_for, repair_mode }
     mode = repair_mode();
     if mode == 'off' {
@@ -480,7 +514,7 @@ impl Serializer.repair(data: dict[str, object], cls: type) -> tuple {
     return (repaired, steps);
 }
 
-impl Serializer.coerce(val: object, target_type: object) -> tuple {
+impl Serializer.coerce(val: object, target_type: object) -> tuple[object, bool] {
     if target_type is None or isinstance(target_type, str) {
         return (val, False);
     }
@@ -596,14 +630,16 @@ impl Serializer.coerce(val: object, target_type: object) -> tuple {
 }
 
 impl Serializer.fingerprint(cls: type) -> str {
+    import from jaclang.data.type_identity { schema_type }
+    field_types = get_field_types(cls);
     field_pairs: list[list[str]] = [];
     if is_record(cls) {
         for f in fields(cls) {
-            field_pairs.append([f.name, str(f.type)]);
+            field_pairs.append([f.name, schema_type(field_types.get(f.name, f.type))]);
         }
     }
-    field_pairs.sort(key=lambda (p: list) { p[0]; });
-    payload = {'module': cls.__module__, 'name': cls.__name__, 'fields': field_pairs};
+    field_pairs.sort(key=lambda (p: list[str]) { p[0]; });
+    payload = {'module': type_module(cls), 'name': cls.__name__, 'fields': field_pairs};
     encoded = _json_dumps(payload, sort_keys=True, `default=str).encode('utf-8');
     return sha256(encoded).hexdigest()[:FINGERPRINT_LENGTH];
 }
@@ -613,51 +649,60 @@ impl Serializer._get_class(module_name: str, class_name: str) -> (type | None) {
         return None;
     }
     key = f"{module_name}.{class_name}";
-    if (cls := Serializer._registry.get(key)) {
-        return cls;
-    }
-
-    if (aliased_key := Serializer._aliases.get(key)) {
-        aliased = Serializer._registry.get(aliased_key);
-        if aliased is None and '.' in aliased_key {
-            alias_parts = aliased_key.rsplit('.', 1);
-            aliased = Serializer._resolve_class_by_import(
-                alias_parts[0], alias_parts[1]
-            );
-            if aliased is not None {
-                Serializer.register(cast(type, aliased));
-            }
+    original_key = key;
+    visited: set[str] = set();
+    while key in Serializer._aliases {
+        if key in visited {
+            raise TypeResolutionError(f'Persistent type alias cycle involving {key}');
         }
-        if aliased is not None {
-            if (n := Serializer._warn_occurrence("alias-resolved", key)) {
+        visited.add(key);
+        key = Serializer._aliases[key];
+        (module_name, class_name) = key.rsplit('.', 1);
+    }
+    if key != original_key
+        and (n := Serializer._warn_occurrence("alias-resolved", original_key)) {
+        logger.info(
+            f"Serializer: resolving aliased class {original_key} -> {key}"
+                + Serializer._occurrence_note(n)
+        );
+    }
+    if module_name.startswith('jac:') {
+        resolved = resolve_type(module_name, class_name);
+        runtime_key = f'{resolved.__module__}.{resolved.__name__}';
+        if Serializer._registry.get(runtime_key) is not resolved {
+            Serializer.register(resolved);
+        }
+        return resolved;
+    }
+    if module_name.startswith('_jac_app_') {
+        raise TypeResolutionError(
+            f'Legacy path-derived persistent type identity {key}; declare an explicit schema alias and migrate the store before serving it'
+        );
+    }
+    cls = Serializer._registry.get(key);
+    if cls is None {
+        cls = Serializer._resolve_class_by_import(module_name, class_name);
+        if cls is not None {
+            Serializer.register(cls);
+            if (n := Serializer._warn_occurrence("import-resolved", key)) {
                 logger.info(
-                    f"Serializer: resolving aliased class {key} -> {aliased_key}"
+                    f"Serializer: {key} was not registered when it was first read; "
+                    "resolved it from its own module and registered it. Archetype "
+                    "classes normally register themselves as they are defined."
                         + Serializer._occurrence_note(n)
                 );
             }
-            return aliased;
         }
-
-        if (n := Serializer._warn_occurrence("alias-missing", key)) {
-            logger.warning(
-                f"Serializer: alias {key} -> {aliased_key} has no registered "
-                "target; cannot resolve."
-                    + Serializer._occurrence_note(n)
-            );
-        }
-        return None;
     }
-    if (resolved := Serializer._resolve_class_by_import(module_name, class_name)) {
-        Serializer.register(resolved);
-        if (n := Serializer._warn_occurrence("import-resolved", key)) {
-            logger.info(
-                f"Serializer: {key} was not registered when it was first read; "
-                "resolved it from its own module and registered it. Archetype "
-                "classes normally register themselves as they are defined."
-                    + Serializer._occurrence_note(n)
+    if cls is not None {
+        if class_facts(cls) {
+            raise TypeResolutionError(
+                f'Legacy runtime-named persistent type {key} is now {storage_type(
+                    cls
+                )}; declare @archetype_alias("{key}") and migrate the store before serving it'
             );
         }
-        return resolved;
+        return cls;
     }
     if (n := Serializer._warn_occurrence("unregistered", key)) {
         logger.warning(
@@ -665,6 +710,11 @@ impl Serializer._get_class(module_name: str, class_name: str) -> (type | None) {
             "registered and could not be resolved from its own module "
             "(enable DEBUG on this logger for the resolution attempt)."
                 + Serializer._occurrence_note(n)
+        );
+    }
+    if resolution_required() {
+        raise UnavailableType(
+            f'Persistent class {key} is unavailable; load its schema or declare an explicit alias'
         );
     }
     return None;
@@ -1011,6 +1061,8 @@ impl Serializer._deserialize_anchor(data: dict[str, object]) -> (Anchor | None) 
 
         anchor.hash = Serializer._compute_hash(anchor);
         return anchor;
+    } except TypeResolutionError {
+        raise;
     } except Exception as e {
         failed_arch = data.get('archetype');
         arch_id = (
@@ -1085,7 +1137,7 @@ impl Serializer._deserialize_archetype(
         arch: object = cls.__new__(cls);
         field_types = get_field_types(cls);
         known = set(field_types.keys());
-        attic: dict = {};
+        attic: dict[str, any] = {};
 
         stored_attic = data.get(ATTIC_KEY);
         if isinstance(stored_attic, dict) {
@@ -1225,6 +1277,8 @@ impl Serializer._deserialize_archetype(
         }
         setattr(arch, '__jac__', anchor);
         return arch;
+    } except TypeResolutionError {
+        raise;
     } except Exception as e {
         if (
             n

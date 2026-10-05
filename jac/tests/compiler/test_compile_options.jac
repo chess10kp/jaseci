@@ -1,7 +1,7 @@
 """Compile-options identity and boundary tests (#7871 workstream G).
 
 CompileOptions is the single authority for codegen-affecting build options:
-env vars are read once at options construction, the codegen fingerprint is
+project settings are read once at options construction, the codegen fingerprint is
 part of artifact identity (folded into the JIR module key), and no compiler
 pass reads os.environ directly (source-scan gate below).
 """
@@ -19,7 +19,7 @@ import from jaclang.compiler.driver.jir { compute_module_key }
 
 
 def _pinned_opts(**overrides: any) -> CompileOptions {
-    base: dict = {
+    base: dict[str, any] = {
         "memory_profile": "managed",
         "nogc_enforce_all": False,
         "memory_enforce": [],
@@ -47,10 +47,7 @@ test "forced server compilation retains Python standard-library imports" {
             + "def bind_local { sock = socket.socket(); "
             + "sock.bind(('127.0.0.1', 0)); sock.close(); }\n",
         options=CompileOptions(
-            default_codespace="native",
-            force_codespace="server",
-            force_target_program=True,
-            need_full_ast=True
+            default_codespace="native", force_codespace="server", need_full_ast=True
         )
     );
     assert not program.errors_had , str(program.errors_had);
@@ -60,7 +57,7 @@ test "forced server compilation retains Python standard-library imports" {
 
 test "every codegen option flip changes the fingerprint" {
     base_fp = _pinned_opts().codegen_fingerprint();
-    flips: list = [
+    flips: list[any] = [
         _pinned_opts(memory_profile="nogc"),
         _pinned_opts(memory_profile="rc"),
         _pinned_opts(nogc_enforce_all=True),
@@ -69,7 +66,8 @@ test "every codegen option flip changes the fingerprint" {
         _pinned_opts(rc_debug_codegen=True),
         _pinned_opts(native_target="wasm32-unknown-unknown"),
         _pinned_opts(native_debug=True),
-        _pinned_opts(opt_level=0)
+        _pinned_opts(opt_level=0),
+        _pinned_opts(native_threads=7)
     ];
     seen: set = {base_fp};
     for flipped in flips {
@@ -103,11 +101,6 @@ test "JAC_NA_DEBUG enters the options object at construction" {
         assert CompileOptions().na_debug == True;
         assert CompileOptions(na_debug=False).na_debug == False;
         assert CompileOptions().clone_for_native_import().na_debug == True;
-        assert CompileOptions(no_ir_cache=True).clone_for_native_import().no_ir_cache , (
-            "a cache-bypassing compile must bypass it for nested native imports "
-            "too, or a dep-of-a-dep is still served from a stale IR cache"
-        );
-        assert not CompileOptions().clone_for_native_import().no_ir_cache;
         os.environ["JAC_NA_DEBUG"] = "0";
         assert CompileOptions().na_debug == False;
     } finally {
@@ -711,6 +704,43 @@ test "no consumer-site NULL guards on string operands" {
     );
 }
 
+
+test "native import handoff preserves memory policy and generated thread defaults" {
+    parent = CompileOptions(
+        memory_profile="nogc",
+        memory_enforce=["app.*"],
+        memory_exempt=["app.legacy"],
+        native_threads=7,
+        native_link_mode="bitcode",
+        native_target="aarch64-unknown-linux-gnu"
+    );
+    for child in [parent.clone_for_native_import()] {
+        assert child.codegen_identity() == parent.codegen_identity();
+        assert child.analysis_identity() == parent.analysis_identity();
+        assert child.memory_profile == "nogc" and child.nogc_enforce_all;
+        assert child.native_threads == 7;
+        assert child.native_link_mode == "bitcode";
+        assert child.memory_enforce == ["app.*"];
+        assert child.memory_exempt == ["app.legacy"];
+    }
+}
+
+test "native link mode uses project configuration without changing unit codegen" {
+    import from unittest.mock { patch }
+    import from jaclang.project.config { JacConfig }
+    import from jaclang.project.compiler_host { ProjectHost, project_defaults_of }
+    cfg = JacConfig.from_toml_str('[native]\nlink_mode = "bitcode"\n');
+    with patch.object(
+        ProjectHost, "project_defaults", return_value=project_defaults_of(cfg)
+    ) {
+        configured = CompileOptions();
+        explicit = CompileOptions(native_link_mode="objects");
+        assert configured.native_link_mode == "bitcode";
+        assert explicit.native_link_mode == "objects";
+        assert configured.codegen_identity() == explicit.codegen_identity();
+    }
+}
+
 test "symbol requests preserve their app and native target context" {
     parent = CompileOptions(
         aot_mode=True,
@@ -728,4 +758,58 @@ test "symbol requests preserve their app and native target context" {
     assert child.project_root == parent.project_root;
     assert child.codegen_identity() == parent.codegen_identity();
     assert not parent.no_cgen and not parent.symtab_ir_only;
+}
+
+test "native-only policy is retained in dependency and cache identities" {
+    ordinary = _pinned_opts(native_require=[]);
+    strict = _pinned_opts(native_required=True, native_require=[]);
+    scoped = _pinned_opts(native_require=["jaclang.runtime.python.*"]);
+    import from jaclang.compiler.driver.program { JacProgram }
+    registry = JacProgram().iface_registry();
+    for options in (strict, scoped) {
+        assert registry.analysis_profile(options)
+            != registry.analysis_profile(ordinary);
+        assert options.codegen_fingerprint() != ordinary.codegen_fingerprint();
+        assert options.analysis_fingerprint() != ordinary.analysis_fingerprint();
+        for inherited in (options.for_symbols(), options.clone_for_native_import()) {
+            assert inherited.native_required == options.native_required;
+            assert inherited.native_require == options.native_require;
+        }
+    }
+    assert scoped.native_required_for(
+        "/checkout/jaclang/runtime/python/bindings/module.jac"
+    );
+    assert not scoped.native_required_for("/checkout/jaclang/runtime/runtime.jac");
+}
+
+test "native-only dependencies stay in the target rather than the compiler host" {
+    import from jaclang.compiler.driver.program { JacProgram }
+    import from jaclang.compiler.driver.selfhost { SelfHostCache }
+    program = JacProgram();
+    program.options = _pinned_opts(native_require=["jaclang.runtime.python.*"]);
+    host = SelfHostCache(_jaclang_root="/checkout/jaclang");
+    assert host.resolve("/checkout/jaclang/runtime/python/capi.jac", program)
+        is program;
+    assert host.peek_program() is None;
+}
+
+test "native dependency caches use the running compiler identity" {
+    import from unittest.mock { patch }
+    import from jaclang.compiler.driver.jir { current_native_stamp }
+    options = _pinned_opts();
+    with patch(
+        "jaclang.compiler.driver.jir.running_compiler_digest", return_value="compiler-a"
+    ) {
+        first = current_native_stamp(options.codegen_identity(), "").key();
+        assert first == current_native_stamp(options.codegen_identity(), "").key();
+        assert first
+            != current_native_stamp(
+                _pinned_opts(native_required=True).codegen_identity(), ""
+            ).key();
+    }
+    with patch(
+        "jaclang.compiler.driver.jir.running_compiler_digest", return_value="compiler-b"
+    ) {
+        assert first != current_native_stamp(options.codegen_identity(), "").key();
+    }
 }

@@ -168,7 +168,9 @@ def _register_builtin_client_templates(registry: TemplateRegistry) -> None {
     } except Exception {
         return;
     }
-    entries: list[any] = list(JacClientPluginConfig.client_project_templates());
+    entries: list[dict[str, any]] = list(
+        JacClientPluginConfig.client_project_templates()
+    );
     desktop = JacDesktopPluginConfig.desktop_project_template();
     if desktop is not None {
         entries.append(desktop);
@@ -201,7 +203,7 @@ def _core_template(
     config: dict[str, any] = {
         "project": project_section,
         "dependencies": {},
-        "dev-dependencies": {"watchdog": ">=3.0.0"}
+        "dev-dependencies": {"pypi": {"watchdog": ">=3.0.0"}}
     };
     for (k, v) in extra_config.items() {
         config[k] = v;

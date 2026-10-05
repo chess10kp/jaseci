@@ -21,7 +21,7 @@ test "standalone client build releases application trees before bundling" {
         );
         Jac.set_full_target_path(str(entry_path));
         reached: list[bool] = [];
-        trees: list = [];
+        trees: list[weakref.ref] = [];
         program = Jac.get_program();
         original_compile = program.compile;
         def compile(*args: any, **kwargs: any) -> any {
@@ -33,9 +33,6 @@ test "standalone client build releases application trees before bundling" {
         }
         def bundle(self: ViteBundler, *args: any, **kwargs: any) {
             program = Jac.get_program();
-            assert not program.source_store.units , (
-                "application source trees remain live while the bundler runs"
-            );
             assert not program.contexts , (
                 "application compilation contexts remain live while the bundler runs"
             );

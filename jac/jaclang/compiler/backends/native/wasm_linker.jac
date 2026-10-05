@@ -28,7 +28,7 @@ def _section(sid: int, payload: bytes) -> bytes {
     return bytes([sid]) + encode_uleb128(len(payload)) + payload;
 }
 
-def _vec(items: list) -> bytes {
+def _vec(items: list[bytes]) -> bytes {
     return encode_uleb128(len(items)) + b"".join(items);
 }
 
@@ -227,7 +227,7 @@ impl WasmObj.parse_reloc(nm: str, o: int, end: int) -> None {
     }
 }
 
-def _parse_data_segments(b: bytes) -> list {
+def _parse_data_segments(b: bytes) -> list[bytes] {
     if not b {
         return [];
     }
@@ -257,7 +257,11 @@ def _parse_data_segments(b: bytes) -> list {
 }
 
 def _sym_val(
-    ob: WasmObj, si: int, old2new: dict, seg_base: list[int], heap_base: int = -1
+    ob: WasmObj,
+    si: int,
+    old2new: dict[int, int],
+    seg_base: list[int],
+    heap_base: int = -1
 ) -> int {
     e = ob.symtab[si];
     k = e[0];
@@ -282,8 +286,8 @@ def _sym_val(
 
 obj WasmLinker {
     static def link(
-        obj_bytes: bytes,
-        export_funcs: list = [],
+        objects: list[bytes],
+        export_funcs: list[str] = [],
         mem_pages: int = 256,
         host_abi: (set | None) = None,
         host_module: str = "jac_host1",
@@ -292,14 +296,20 @@ obj WasmLinker {
 }
 
 impl WasmLinker.link(
-    obj_bytes: bytes,
-    export_funcs: list = [],
+    objects: list[bytes],
+    export_funcs: list[str] = [],
     mem_pages: int = 256,
     host_abi: (set | None) = None,
     host_module: str = "jac_host1",
     app_imports: (set | None) = None,
 ) -> bytes {
-    ob = WasmObj(b=obj_bytes);
+    if len(objects) != 1 {
+        raise ValueError(
+            f"WasmLinker.link takes exactly one object (got {len(objects)}); "
+            "link the units in bitcode mode first"
+        );
+    }
+    ob = WasmObj(b=objects[0]);
     segs = _parse_data_segments(ob.data_raw);
 
     base = 1024;
@@ -325,8 +335,8 @@ impl WasmLinker.link(
         for im in ob.imports
         if im[0] == "func"
     ];
-    kept = [];
-    old2new = {};
+    kept: list[list[any]] = [];
+    old2new: dict[int, int] = {};
     oi = 0;
     for im in obj_func_imports {
         if im[2] in _PLACEHOLDER {} else {
@@ -365,7 +375,7 @@ impl WasmLinker.link(
         di += 1;
     }
 
-    slot_of = {};
+    slot_of: dict[int, int] = {};
     nslot = 1;
     needs_table = False;
     for r in ob.relocs {
@@ -482,7 +492,7 @@ impl WasmLinker.link(
     out += _section(7, _vec(exps));
 
     if nslot > 1 {
-        pairs = [];
+        pairs: list[tuple[int, int]] = [];
         for kv in slot_of.items() {
             pairs.append((kv[1], kv[0]));
         }

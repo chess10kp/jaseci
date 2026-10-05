@@ -14,9 +14,8 @@ import from jaclang.compiler.driver.compile_options {
     pop_native_target
 }
 import subprocess;
-import sys;
 import tempfile;
-import from tests.support { TESTS_DIR }
+import from tests.support { TESTS_DIR, jac_command, source_spelled }
 import from jaclang.compiler.driver.program { JacProgram }
 import from jaclang.compiler.driver.compile_options { CompileOptions }
 
@@ -45,7 +44,7 @@ def _compile_ir_headerless -> str {
         );
         assert not prog.errors_had , [e.pretty_print() for e in prog.errors_had];
         assert ir is not None and ir.gen.llvm_ir is not None;
-        return str(ir.gen.llvm_ir);
+        return source_spelled(str(ir.gen.llvm_ir));
     } finally {
         pop_native_target(prev);
     }
@@ -69,7 +68,7 @@ test "flattened output stays byte-identical across all gc modes" {
         for mode in ("none", "rc", "cycles") {
             out_bin = os.path.join(tmp, f"ofi_{mode}");
             res = subprocess.run(
-                [sys.executable, "-m", "jaclang", "build", "--native", FIXTURE]
+                jac_command("build", "--native", FIXTURE)
                     + MODE_FLAGS[mode]
                     + ["-o", out_bin],
                 capture_output=True,
