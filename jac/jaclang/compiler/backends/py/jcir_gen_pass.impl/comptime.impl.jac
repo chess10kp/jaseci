@@ -1,54 +1,72 @@
-impl JcirGenPass._ct_kind(v: any) -> str {
-    if v is None or isinstance(v, (bool, int, float, str, bytes)) {
+impl JcirGenPass._ct_kind(v: CtValue) -> str {
+    import from jaclang.compiler.types.ct_value {
+        CtBool,
+        CtBytes,
+        CtDict,
+        CtEnumMember,
+        CtFloat,
+        CtFunc,
+        CtInt,
+        CtList,
+        CtNone,
+        CtRecord,
+        CtSet,
+        CtStr,
+        CtTuple,
+        CtType,
+        ct_host_scalar,
+        ct_is_materializable,
+        ct_is_scalar,
+        ct_repr
+    }
+    if ct_is_scalar(v) {
         return "scalar";
     }
-    kind = type(v).__name__;
-    if kind in ("CtEnumMember", "CtType", "CtFunc", "CtRecord") {
-        return kind;
+    if isinstance(v, CtEnumMember) {
+        return "CtEnumMember";
     }
-    if isinstance(v, (list, tuple, set, frozenset, dict)) {
+    if isinstance(v, CtType) {
+        return "CtType";
+    }
+    if isinstance(v, CtFunc) {
+        return "CtFunc";
+    }
+    if isinstance(v, CtRecord) {
+        return "CtRecord";
+    }
+    if isinstance(v, (CtList, CtTuple, CtSet, CtDict)) {
         return "container";
-    }
-    if isinstance(v, type) and v.__module__ == "builtins" {
-        return "pytype";
     }
     return "";
 }
 
-impl JcirGenPass._ct_materializable(v: any) -> bool {
-    kind = self._ct_kind(v);
-    if not kind {
-        return False;
+impl JcirGenPass._ct_materializable(v: CtValue) -> bool {
+    import from jaclang.compiler.types.ct_value {
+        CtBool,
+        CtBytes,
+        CtDict,
+        CtEnumMember,
+        CtFloat,
+        CtFunc,
+        CtInt,
+        CtList,
+        CtNone,
+        CtRecord,
+        CtSet,
+        CtStr,
+        CtTuple,
+        CtType,
+        ct_host_scalar,
+        ct_is_materializable,
+        ct_is_scalar,
+        ct_repr
     }
-    if kind == "container" {
-        items = v.values() if isinstance(v, dict) else v;
-        for item in items {
-            if not self._ct_materializable(item) {
-                return False;
-            }
-        }
-        if isinstance(v, dict) {
-            for k in v.keys() {
-                if not self._ct_materializable(k) {
-                    return False;
-                }
-            }
-        }
-        return True;
-    }
-    if kind == "CtRecord" {
-        for item in v.fields.values() {
-            if not self._ct_materializable(item) {
-                return False;
-            }
-        }
-    }
-    return True;
+    return ct_is_materializable(v);
 }
 
 impl JcirGenPass._ct_concrete(nd: Expr) -> bool {
     cv = nd.ct_value;
-    return cv is not None and not cv.is_deferred and self._ct_materializable(cv.v);
+    return cv is not None and not cv.is_deferred and self._ct_materializable(cv);
 }
 
 impl JcirGenPass._comptime_only_names -> set[str] {
@@ -57,7 +75,7 @@ impl JcirGenPass._comptime_only_names -> set[str] {
         return cached;
     }
     names: set[str] = set();
-    for imp in self.ir_in.get_all_sub_nodes(Import) {
+    for imp in self.module.get_all_sub_nodes(Import) {
         if not imp.is_comptime {
             continue;
         }
@@ -77,7 +95,7 @@ impl JcirGenPass._comptime_only_names -> set[str] {
             }
         }
     }
-    for ab in self.ir_in.get_all_sub_nodes(Ability) {
+    for ab in self.module.get_all_sub_nodes(Ability) {
         if ab.is_comptime and ab.name_ref is not None {
             names.add(ab.name_ref.sym_name);
         }
@@ -106,7 +124,7 @@ impl JcirGenPass._is_comptime_only_name(nd: Name) -> bool {
         par = decl.parent if isinstance(decl, Name) else None;
         if isinstance(par, Assignment) and isinstance(par.parent, GlobalVars) {
             home = par.find_parent_of_type(Module);
-            if home is not None and home is not self.ir_in {
+            if home is not None and home is not self.module {
                 hp = (home.loc.mod_path if home.loc else "").replace("\\", "/");
                 if hp.endswith("jaclang/comptime.jac") {
                     return True;
@@ -152,66 +170,99 @@ impl JcirGenPass._class_ref(module: str, name: str, jac_node: UniNode) -> CgNode
     }
     if module
         == module_dotted_name(
-            self.ir_in.loc.mod_path if self.ir_in.loc else "", self.ir_in.name
+            self.module.loc.mod_path if self.module.loc else "", self.module.name
         ) {
         return self.name_load(name, jac_node);
     }
-    local_sym = self.ir_in.sym_tab.lookup(name, deep=False);
+    local_sym = self.module.sym_tab.lookup(name, deep=False);
     if local_sym is not None {
         return self.name_load(name, jac_node);
     }
     return self._import_ref(module, name, jac_node);
 }
 
-impl JcirGenPass._ct_order_key(v: any) -> str {
-    if v is None {
+impl JcirGenPass._ct_order_key(v: CtValue) -> str {
+    import from jaclang.compiler.types.ct_value {
+        CtBool,
+        CtBytes,
+        CtDict,
+        CtEnumMember,
+        CtFloat,
+        CtFunc,
+        CtInt,
+        CtList,
+        CtNone,
+        CtRecord,
+        CtSet,
+        CtStr,
+        CtTuple,
+        CtType,
+        ct_host_scalar,
+        ct_is_materializable,
+        ct_is_scalar,
+        ct_repr
+    }
+    if isinstance(v, CtNone) {
         return "0";
     }
-    if isinstance(v, bool) {
-        return "1" + ("1" if v else "0");
+    if isinstance(v, CtBool) {
+        return "1" + ("1" if v.value else "0");
     }
-    if isinstance(v, (int, float)) {
-        return "2" + repr(v);
+    if isinstance(v, (CtInt, CtFloat)) {
+        return "2" + ct_repr(v);
     }
-    if isinstance(v, str) {
-        return "3" + v;
+    if isinstance(v, CtStr) {
+        return "3" + v.value;
     }
-    if isinstance(v, bytes) {
-        return "4" + v.hex();
+    if isinstance(v, CtBytes) {
+        return "4" + v.value.hex();
     }
-    if isinstance(v, frozenset) {
-        return "5" + "\x00".join(sorted([self._ct_order_key(x) for x in v]));
+    if isinstance(v, CtSet) and v.frozen {
+        return "5" + "\x00".join(sorted([self._ct_order_key(x) for x in v.items]));
     }
-    if isinstance(v, tuple) {
-        return "6" + "\x00".join([self._ct_order_key(x) for x in v]);
+    if isinstance(v, CtTuple) {
+        return "6" + "\x00".join([self._ct_order_key(x) for x in v.items]);
     }
-    return "7"
-        + self._ct_kind(v)
-        + ":"
-        + str(getattr(v, "enum_name", ""))
-        + ":"
-        + str(getattr(v, "member", ""))
-        + ":"
-        + str(
-            getattr(v, "qualname", "")
-                or getattr(v, "name", "")
-                or getattr(v, "__name__", "")
-        );
+    enum_name = v.enum_name if isinstance(v, CtEnumMember) else "";
+    member = v.member if isinstance(v, CtEnumMember) else "";
+    label = "";
+    if isinstance(v, CtFunc) {
+        label = v.qualname;
+    } elif isinstance(v, CtType) {
+        label = v.name;
+    }
+    return "7" + self._ct_kind(v) + ":" + enum_name + ":" + member + ":" + label;
 }
 
-impl JcirGenPass._materialize(v: any, jac_node: UniNode) -> (CgNode | None) {
+impl JcirGenPass._materialize(v: CtValue, jac_node: UniNode) -> (CgNode | None) {
     import from jaclang.compiler.frontend.codeinfo { module_dotted_name }
+    import from jaclang.compiler.types.ct_value {
+        CtBool,
+        CtBytes,
+        CtDict,
+        CtEnumMember,
+        CtFloat,
+        CtFunc,
+        CtInt,
+        CtList,
+        CtNone,
+        CtRecord,
+        CtSet,
+        CtStr,
+        CtTuple,
+        CtType,
+        ct_host_scalar,
+        ct_is_materializable,
+        ct_is_scalar,
+        ct_repr
+    }
     load = self.nod('Load', [], []);
-    kind = self._ct_kind(v);
-    if kind == "scalar" {
-        return self.const_of(v, jac_node);
+    if ct_is_scalar(v) {
+        return self.const_of(ct_host_scalar(v), jac_node);
     }
-    if kind == "pytype" {
-        return self.name_load(v.__name__, jac_node);
-    }
-    if isinstance(v, (list, tuple)) {
-        elts: list = [];
-        for item in v {
+    if isinstance(v, (CtList, CtTuple)) {
+        elts: list[CgNode] = [];
+        for item in v.items {
             m = self._materialize(item, jac_node);
             if m is None {
                 return None;
@@ -219,31 +270,31 @@ impl JcirGenPass._materialize(v: any, jac_node: UniNode) -> (CgNode | None) {
             elts.append(m);
         }
         return self.nod(
-            'List' if isinstance(v, list) else 'Tuple', ['elts', 'ctx'], [elts, load]
+            'List' if isinstance(v, CtList) else 'Tuple', ['elts', 'ctx'], [elts, load]
         );
     }
-    if isinstance(v, (set, frozenset)) {
-        elts2: list = [];
-        for item in sorted(v, key=self._ct_order_key) {
+    if isinstance(v, CtSet) {
+        elts2: list[CgNode] = [];
+        for item in sorted(v.items, key=self._ct_order_key) {
             m = self._materialize(item, jac_node);
             if m is None {
                 return None;
             }
             elts2.append(m);
         }
-        ctor = 'frozenset' if isinstance(v, frozenset) else 'set';
+        ctor = 'frozenset' if v.frozen else 'set';
         return self.call_node(
             self.name_load(ctor, jac_node),
             [self.nod('List', ['elts', 'ctx'], [elts2, load])],
             []
         );
     }
-    if isinstance(v, dict) {
-        keys: list = [];
-        vals: list = [];
-        for (k, item) in v.items() {
+    if isinstance(v, CtDict) {
+        keys: list[CgNode] = [];
+        vals: list[CgNode] = [];
+        for (i, k) in enumerate(v.keys) {
             mk = self._materialize(k, jac_node);
-            mv = self._materialize(item, jac_node);
+            mv = self._materialize(v.vals[i], jac_node);
             if mk is None or mv is None {
                 return None;
             }
@@ -252,7 +303,7 @@ impl JcirGenPass._materialize(v: any, jac_node: UniNode) -> (CgNode | None) {
         }
         return self.nod('Dict', ['keys', 'values'], [keys, vals]);
     }
-    if kind == "CtEnumMember" {
+    if isinstance(v, CtEnumMember) {
         return self.nod(
             'Attribute',
             ['value', 'attr', 'ctx'],
@@ -260,13 +311,13 @@ impl JcirGenPass._materialize(v: any, jac_node: UniNode) -> (CgNode | None) {
             jac_node=jac_node
         );
     }
-    if kind == "CtType" {
+    if isinstance(v, CtType) {
         cls_ref = self._class_ref(v.module, v.name, jac_node);
-        ct_args = v?.ct_args or {};
+        ct_args: dict[str, CtValue] = v.ct_args or {};
         if not ct_args {
             return cls_ref;
         }
-        ct_kws: list = [];
+        ct_kws: list[CgNode] = [];
         for (ck, cvv) in ct_args.items() {
             mv = self._materialize(cvv, jac_node);
             if mv is None {
@@ -281,10 +332,10 @@ impl JcirGenPass._materialize(v: any, jac_node: UniNode) -> (CgNode | None) {
             jac_node=jac_node
         );
     }
-    if kind == "CtFunc" {
+    if isinstance(v, CtFunc) {
         same_module = v.module
             == module_dotted_name(
-                self.ir_in.loc.mod_path if self.ir_in.loc else "", self.ir_in.name
+                self.module.loc.mod_path if self.module.loc else "", self.module.name
             );
         ct_only = v.ability is not None and v.ability.is_comptime;
         if same_module and not ct_only {
@@ -304,8 +355,8 @@ impl JcirGenPass._materialize(v: any, jac_node: UniNode) -> (CgNode | None) {
             jac_node=jac_node
         );
     }
-    if kind == "CtRecord" {
-        kws: list = [];
+    if isinstance(v, CtRecord) {
+        kws: list[CgNode] = [];
         for (k, item) in v.fields.items() {
             mv = self._materialize(item, jac_node);
             if mv is None {
@@ -349,7 +400,7 @@ impl JcirGenPass._ct_param_decls(cls_expr: Expr) -> (list[TypeParam] | None) {
     return `list(arch.type_params or []);
 }
 
-impl JcirGenPass._ct_ctor_slots(nd: AtomTrailer) -> (list[tuple] | None) {
+impl JcirGenPass._ct_ctor_slots(nd: AtomTrailer) -> (list[tuple[str, UniNode]] | None) {
     if nd.is_attr or not isinstance(nd.right, IndexSlice) or nd.right.is_range {
         return None;
     }
@@ -359,10 +410,10 @@ impl JcirGenPass._ct_ctor_slots(nd: AtomTrailer) -> (list[tuple] | None) {
     }
     s0 = nd.right.slices[0] if nd.right.slices else None;
     head = s0.start if s0 is not None else None;
-    vals: list = `list(head.values)
+    vals: list[UniNode] = `list(head.values)
         if isinstance(head, TupleVal)
         else ([head] if head else []);
-    out: list[tuple] = [];
+    out: list[tuple[str, UniNode]] = [];
     for (i, tp) in enumerate(tps) {
         if tp.is_comptime and i < len(vals) {
             out.append((tp.name.value, vals[i], ));
@@ -402,7 +453,9 @@ impl JcirGenPass._ct_param_fields(nd: Archetype) -> list[CgNode] {
                     ),
                     ann,
                     self.call_node(
-                        self._import_ref("jaclang.runtime.object_model", "field", tp),
+                        self._import_ref(
+                            "jaclang.runtime.object_model", "ObjectField", tp
+                        ),
                         [],
                         [
                             self.nod(
@@ -421,8 +474,8 @@ impl JcirGenPass._ct_param_fields(nd: Archetype) -> list[CgNode] {
     return out;
 }
 
-impl JcirGenPass._record_bypasses_init(v: any) -> bool {
-    ct = v?.class_type;
+impl JcirGenPass._record_bypasses_init(v: CtRecord) -> bool {
+    ct = v.class_type;
     shared = ct?.shared;
     if shared is None {
         return False;

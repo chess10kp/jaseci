@@ -12,7 +12,7 @@ import from jaclang.client.npm_provider {
     app_npm_deps
 }
 
-def _inject_missing(deps: dict, required: dict[str, str]) -> dict {
+def _inject_missing(deps: dict[str, any], required: dict[str, str]) -> dict[str, any] {
     merged = dict(deps);
     for (name, version) in required.items() {
         if name not in merged {
@@ -23,8 +23,8 @@ def _inject_missing(deps: dict, required: dict[str, str]) -> dict {
 }
 
 def _migrate_legacy_meta_packages(
-    jac_config: any, npm_deps: dict, npm_dev_deps: dict
-) -> tuple[dict, dict, bool] {
+    jac_config: any, npm_deps: dict[str, any], npm_dev_deps: dict[str, any]
+) -> tuple[dict[str, any], dict[str, any], bool] {
     migrated = False;
 
     if 'jac-client-node' in npm_deps {
@@ -111,7 +111,7 @@ impl JacClientConfig.get_default_config(self: JacClientConfig) -> dict[str, any]
 }
 
 impl JacClientConfig.load(self: JacClientConfig) -> dict[str, any] {
-    target_app = self.get_jac_config().app_for_target();
+    target_app = self.get_jac_config().app_for_target(self.entry_path);
     app_name = target_app.name if target_app is not None else '';
     cached = self._config;
     if cached is not None and self._config_app == app_name {
@@ -134,9 +134,13 @@ impl JacClientConfig.load(self: JacClientConfig) -> dict[str, any] {
         }
     }
 
-    npm_plugin_deps: dict = dict(jac_config.plugin_dependencies.get('npm', {}));
+    npm_plugin_deps: dict[str, any] = dict(
+        jac_config.plugin_dependencies.get('npm', {})
+    );
     dev_section = npm_plugin_deps.get('dev', {});
-    npm_dev_deps: dict = dict(dev_section) if isinstance(dev_section, dict) else {};
+    npm_dev_deps: dict[str, any] = dict(dev_section)
+        if isinstance(dev_section, dict)
+        else {};
 
     if 'client' in jac_config.plugins {
         (npm_deps, npm_dev_deps, migrated) = _migrate_legacy_meta_packages(
@@ -153,6 +157,9 @@ impl JacClientConfig.load(self: JacClientConfig) -> dict[str, any] {
     npm_dev_deps = _inject_missing(npm_dev_deps, CORE_DEV_DEPS);
     npm_dev_deps = {** npm_dev_deps, ** app_dev_deps};
     merged_npm_deps = {** npm_deps, ** target_scoped_deps};
+    for (dep_name, dep_version) in _package_npm_deps(jac_config).items() {
+        merged_npm_deps.setdefault(dep_name, dep_version);
+    }
 
     user_config: dict[str, any] = {
         'api': client_config.get('api', {}),
@@ -166,7 +173,7 @@ impl JacClientConfig.load(self: JacClientConfig) -> dict[str, any] {
         'pwa': client_config.get('pwa', {}),
         'assets': client_config.get('assets', {}),
         'package': {
-            'name': jac_config.project.name,
+            'name': _npm_package_name(jac_config.project.name),
             'version': jac_config.project.version,
             'description': jac_config.project.description,
             'dependencies': merged_npm_deps,
@@ -176,6 +183,29 @@ impl JacClientConfig.load(self: JacClientConfig) -> dict[str, any] {
     merged = deep_merge(default_config, user_config);
     self._config = merged;
     return merged;
+}
+
+def _package_npm_deps(jac_config: any) -> dict[str, str] {
+    import from jaclang.packages.install {
+        InstallError,
+        load_lock,
+        package_npm_requirements
+    }
+    if jac_config.project_root is None {
+        return {};
+    }
+    try {
+        lock = load_lock(jac_config);
+    } except InstallError {
+        return {};
+    }
+    return {
+        name: spec for (name, spec, _owner) in package_npm_requirements(lock, False)
+    };
+}
+
+def _npm_package_name(name: str) -> str {
+    return f"@{name}" if "/" in name and not name.startswith("@") else name;
 }
 
 impl JacClientConfig.get_package_config(self: JacClientConfig) -> dict[str, any] {
@@ -248,7 +278,8 @@ impl JacClientConfig.get_pwa_config(self: JacClientConfig) -> dict[str, any] {
 }
 
 impl JacClientConfig.get_assets_config(self: JacClientConfig) -> dict[str, any] {
-    return self.load().get('assets', {});
+    import from jaclang.project.client_paths { client_assets_config }
+    return client_assets_config(self.get_jac_config(), self.entry_path);
 }
 
 impl JacClientConfig.get_asset_extensions(self: JacClientConfig) -> set[str] {
@@ -258,19 +289,12 @@ impl JacClientConfig.get_asset_extensions(self: JacClientConfig) -> set[str] {
 impl JacClientConfig.get_assets_dir(
     self: JacClientConfig, entry_path: str = ""
 ) -> Path {
-    import from jaclang.client.targets.registry { client_app_root }
-    project_dir = self.project_dir if self.project_dir is not None else Path.cwd();
-    configured = str(self.get_assets_config().get('dir') or '');
-    jac_config = self.effective_jac_config();
-    if configured {
-        anchor = (
-            jac_config.project_root
-                if jac_config.project_root is not None
-                else project_dir
-        );
-        return Path(anchor) / configured;
-    }
-    return client_app_root(jac_config, project_dir, entry_path) / 'assets';
+    import from jaclang.project.client_paths { client_assets_dir }
+    return client_assets_dir(
+        self.get_jac_config(),
+        self.project_dir or Path.cwd(),
+        entry_path or self.entry_path
+    );
 }
 
 impl JacClientConfig.is_pwa_enabled(self: JacClientConfig) -> bool {

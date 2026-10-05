@@ -7,7 +7,7 @@ import tempfile;
 import from pathlib { Path }
 import from jaclang { JacRuntime as Jac }
 import from jaclang.compiler.driver.application { prepare_application }
-import from jaclang.compiler.frontend.constant { Constants as Con }
+import from jaclang.runtime.constants { Constants as Con }
 import from jaclang.server { sv_client as __jac_sv }
 import from jaclang.testing.testkit { ServingTestClient as TestClient }
 import from jaclang.server.server { JacAPIServer }
@@ -225,6 +225,12 @@ test "sv-to-sv: sv-imported walker round-trips report and fields" {
             "result"
         ];
         assert rpt2 == "hello, ada";
+
+        fields = xd(cons.post("/function/remote_walker_fields", json={"who": "ada"}))[
+            "result"
+        ];
+        assert fields
+            == {"name": "ada", "greeting": "hello, ada", "body": "[ops] hello"};
     } finally {
         done(tmp);
     }
@@ -265,8 +271,8 @@ test "sv-to-sv: sv-imported walker does not load provider in-process" {
     }
 }
 
-glob _SECURE_PROVIDER_SRC: str = '"""Secure downstream provider fixture.\n\n`report_status` (function) and `PrivateAudit` (walker) carry NO :pub marker,\nso the scale serve layer treats them as auth-required. A cross-service caller\nthat reaches these endpoints without a valid token is rejected by the real\ndownstream enforcement in serve.endpoints (requires_auth).\n"""\n\nobj AuditEntry {\n    has actor: str = "",\n        action: str = "",\n        allowed: bool = False;\n}\n\ndef report_status(actor: str) -> AuditEntry {\n    return AuditEntry(actor=actor, action="status", allowed=True);\n}\n\nwalker PrivateAudit {\n    has action: str;\n\n    can run with Root entry {\n        report AuditEntry(actor="downstream", action=self.action, allowed=True);\n    }\n}\n',
-     _SECURE_CONSUMER_SRC: str = '"""Consumer that imports the private downstream function report_status."""\n\nimport from secure_service { report_status, AuditEntry }\n\nasync def:pub proxy_status(actor: str) -> AuditEntry {\n    return await report_status(actor);\n}\n';
+glob _SECURE_PROVIDER_SRC: str = '"""Secure downstream provider fixture.\n\n`report_status` (function) and `PrivateAudit` (walker) are `:protect`: exposed,\nbut auth-required. A cross-service caller that reaches these endpoints without\na valid token is rejected by the real downstream enforcement in\nserve.endpoints (requires_auth). `hidden_status` is plain, so it is private:\nnever registered as an endpoint at all.\n"""\n\nobj AuditEntry {\n    has actor: str = "",\n        action: str = "",\n        allowed: bool = False;\n}\n\ndef:protect report_status(actor: str) -> AuditEntry {\n    return AuditEntry(actor=actor, action="status", allowed=True);\n}\n\ndef hidden_status(actor: str) -> AuditEntry {\n    return AuditEntry(actor=actor, action="hidden", allowed=True);\n}\n\nwalker:protect PrivateAudit {\n    has action: str;\n\n    can run with Root entry {\n        report AuditEntry(actor="downstream", action=self.action, allowed=True);\n    }\n}\n',
+     _SECURE_CONSUMER_SRC: str = '"""Consumer that imports the private downstream function hidden_status."""\n\nimport from secure_service { hidden_status, AuditEntry }\n\nasync def:pub proxy_status(actor: str) -> AuditEntry {\n    return await hidden_status(actor);\n}\n';
 
 def _mint_user_token(srv: JacAPIServer, username: str) -> tuple[str, str] {
     user_manager = srv.user_manager;
@@ -361,6 +367,28 @@ test "sv boundary: private function accepts valid token (200)" {
         assert body["ok"] is True;
         assert body["data"]["result"]["actor"] == "svc-a";
         assert body["data"]["result"]["allowed"] is True;
+    } finally {
+        done(tmp);
+    }
+}
+
+test "sv boundary: a plain def is private and never registered (404 even with a token)" {
+    tmp = setup_env();
+    try {
+        (prov, srv) = _secure_provider(tmp);
+        (_uid, token) = _mint_user_token(srv, "valid_user_hidden");
+        resp = prov.post(
+            "/function/hidden_status",
+            json={"actor": "svc-a"},
+            headers={"Authorization": f"Bearer {token}"}
+        );
+        assert resp.status_code in (404, 405) , resp.status_code;
+        listing = prov.get("/functions").json();
+        names = listing.get("data", listing).get(
+            "functions", listing.get("data", listing)
+        );
+        assert "report_status" in str(names);
+        assert "hidden_status" not in str(names);
     } finally {
         done(tmp);
     }

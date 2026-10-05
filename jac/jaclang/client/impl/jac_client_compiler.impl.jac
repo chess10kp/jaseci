@@ -3,7 +3,7 @@ import from jaclang.cli.console { console }
 def _jac_client_plugin_dir -> Path {
     import importlib;
     client_pkg = importlib.import_module("jaclang.client");
-    paths = list(getattr(client_pkg, "__path__", []) or []);
+    paths: list[str] = list(getattr(client_pkg, "__path__", []) or []);
     if not paths {
         raise ClientBundleError(
             "jaclang.client not found; cannot locate D9 client runtime"
@@ -42,8 +42,8 @@ impl JacClientCompiler._client_app_dir(self: JacClientCompiler) -> Path {
     client_dir = self._get_client_dir();
     try {
         import from jaclang.project.config { get_config }
-        import from jaclang.client.targets.registry { client_workspace_app }
-        app = client_workspace_app(get_config());
+        import from jaclang.project.client_paths { client_workspace_app }
+        app = client_workspace_app(get_config(), self.entry_path);
         if app is not None {
             return client_dir / app.name;
         }
@@ -54,8 +54,8 @@ impl JacClientCompiler._client_app_dir(self: JacClientCompiler) -> Path {
 impl JacClientCompiler._app_root(self: JacClientCompiler) -> Path {
     try {
         import from jaclang.project.config { get_config }
-        import from jaclang.client.targets.registry { client_app_root }
-        return client_app_root(get_config(), self.project_dir);
+        import from jaclang.project.client_paths { client_app_root }
+        return client_app_root(get_config(), self.project_dir, self.entry_path);
     } except ImportError {}
     return self.project_dir;
 }
@@ -87,12 +87,18 @@ impl JacClientCompiler._native_variant(self: JacClientCompiler, path: Path) -> P
     return path;
 }
 
+impl JacClientCompiler.emit_prelude(self: JacClientCompiler) -> Path {
+    import from jaclang.compiler.backends.es.jac_runtime_js { write_jac_prelude_file }
+    return Path(write_jac_prelude_file(str(self.compiled_dir)));
+}
+
 impl JacClientCompiler.compile(
     self: JacClientCompiler,
     module: (ModuleType | None),
     module_path: Path,
     native: bool = False
 ) -> tuple[list[str], list[str]] {
+    self.emit_prelude();
     artifact = self.jac_compiler.compile_module(module_path);
     self._collect_na_modules(artifact);
     collected_exports: set[str] = set(
@@ -125,7 +131,7 @@ impl JacClientCompiler.compile(
         self.compile_runtime_utils(self.NATIVE_RUNTIME_FILE);
     }
     import from jaclang.client.config_loader { JacClientConfig as PwaConfig }
-    pwa_config = PwaConfig(self.project_dir);
+    pwa_config = PwaConfig(self.project_dir, entry_path=self.entry_path);
     if pwa_config.is_pwa_enabled() and not native {
         self.compile_pwa_runtime();
     }
@@ -137,7 +143,9 @@ impl JacClientCompiler.compile(
 
 impl JacClientCompiler.copy_root_assets(self: JacClientCompiler) -> None {
     import from jaclang.client.config_loader { JacClientConfig }
-    root_assets_dir = JacClientConfig(self.project_dir).get_assets_dir();
+    root_assets_dir = JacClientConfig(
+        self.project_dir, entry_path=self.entry_path
+    ).get_assets_dir();
     compiled_assets_dir = self.compiled_dir / 'assets';
     if (root_assets_dir.exists() and root_assets_dir.is_dir()) {
         self.asset_processor.copy_assets(root_assets_dir, compiled_assets_dir);
@@ -237,7 +245,7 @@ impl JacClientCompiler.emit_dependencies(
     if (collected_globals is None) {
         collected_globals = {};
     }
-    import from jaclang.compiler.driver.pipeline { collect_client_graph }
+    import from jaclang.compiler.driver.client_graph { collect_client_graph }
     module_path = module_path.resolve();
     source_root = source_root.resolve()
         if source_root is not None
@@ -245,6 +253,7 @@ impl JacClientCompiler.emit_dependencies(
     def variant(path: Path) -> Path {
         return self._native_variant(path) if native else path;
     }
+    self.emit_prelude();
     closure = collect_client_graph(
         [module_path],
         self.jac_compiler.compile_module,
@@ -302,35 +311,6 @@ def _extract_import_lines(js_code: str) -> list[str] {
     return imports;
 }
 
-def _extract_jac_preamble(js_code: str) -> str {
-    start = js_code.find('const _jac =');
-    if start < 0 {
-        return '';
-    }
-    depth = 0;
-    i = js_code.find('{', start);
-    if i < 0 {
-        return '';
-    }
-    while i < len(js_code) {
-        ch = js_code[i];
-        if ch == '{' {
-            depth += 1;
-        } elif ch == '}' {
-            depth -= 1;
-            if depth == 0 {
-                end = i + 1;
-                if end < len(js_code) and js_code[end] == ';' {
-                    end += 1;
-                }
-                return js_code[start:end];
-            }
-        }
-        i += 1;
-    }
-    return '';
-}
-
 def _extract_function_bodies(js_code: str) -> str {
     stripped = _strip_esm_export_line(js_code);
 
@@ -341,14 +321,7 @@ def _extract_function_bodies(js_code: str) -> str {
         }
         body_lines.append(line);
     }
-    body = '\n'.join(body_lines);
-
-    jac_preamble = _extract_jac_preamble(body);
-    if jac_preamble {
-        body = body.replace(jac_preamble, '', 1);
-    }
-
-    return body;
+    return '\n'.join(body_lines);
 }
 
 def _merge_runtime_imports(platform_js: str, core_js: str) -> str {
@@ -382,19 +355,12 @@ def _strip_esm_export_line(js_code: str) -> str {
 
 def _bundle_runtime_js(core_js: str, platform_js: str, export_names: list[str]) -> str {
     imports = _merge_runtime_imports(platform_js, core_js);
-    jac_preamble = _extract_jac_preamble(platform_js);
-    if not jac_preamble {
-        jac_preamble = _extract_jac_preamble(core_js);
-    }
     core_body = _extract_function_bodies(core_js);
     platform_body = _extract_function_bodies(platform_js);
     export_line = 'export {' + ', '.join(export_names) + '};';
     parts: list[str] = [];
     if imports {
         parts.append(imports);
-    }
-    if jac_preamble {
-        parts.append(jac_preamble);
     }
     if core_body {
         parts.append(core_body);
@@ -575,6 +541,7 @@ impl JacClientCompiler._scan_and_compile_pages(
     }
     self._check_entry_renders_routes(entry_manifest);
     self._route_scanner = scanner;
+    self._warn_unrouted_pages(scanner);
     source_root = self.project_dir;
     for page_file in scanner.get_page_files() {
         self.emit_dependencies(
@@ -615,6 +582,15 @@ impl JacClientCompiler._warn_pages_without_routes(
     }
 }
 
+impl JacClientCompiler._warn_unrouted_pages(
+    self: JacClientCompiler, scanner: RouteScanner
+) -> None {
+    import from jaclang.client.route_scanner { describe_unrouted_pages }
+    for line in describe_unrouted_pages(scanner.get_unrouted_files()) {
+        console.warning(line);
+    }
+}
+
 impl JacClientCompiler.rescan_pages(self: JacClientCompiler) -> bool {
     scanner = RouteScanner(self._app_root(), route_exports_of=resolve_route_exports);
     if not scanner.has_pages_dir() {
@@ -626,6 +602,7 @@ impl JacClientCompiler.rescan_pages(self: JacClientCompiler) -> bool {
         return False;
     }
     self._route_scanner = scanner;
+    self._warn_unrouted_pages(scanner);
 
     for page_file in scanner.get_page_files() {
         if self._output_path_for(page_file, self.project_dir).exists() {
@@ -723,9 +700,11 @@ impl JacClientCompiler.init(
     extract_exports_func: Callable[[ClientManifest | None], list[str]],
     extract_globals_func:
         Callable[[ClientManifest | None, ModuleType | None], dict[str, any]],
-    compiled_dir: (Path | None) = None
+    compiled_dir: (Path | None) = None,
+    entry_path: str = ""
 ) {
     self.project_dir = project_dir;
+    self.entry_path = entry_path;
     self.runtime_path = runtime_path;
     self.compiled_dir = compiled_dir
         if compiled_dir is not None

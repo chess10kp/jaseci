@@ -241,7 +241,7 @@ impl _suite_source(filepath: str) -> str {
 
 impl _iter_candidate_files(start: str, ignore: (list[str] | None) = None) -> list[str] {
     import from jaclang.jac0core.ext_registry { is_impl, is_jac }
-    ignored = ignore or [];
+    ignored: list[str] = ignore or [];
     found: list[str] = [];
     for (dirpath, dirnames, filenames) in os.walk(start, topdown=True) {
         dirnames[:] = [
@@ -270,8 +270,8 @@ impl discover(
     ignore: (list[str] | None) = None
 ) -> TestPlan {
     import from jaclang.jac0core.ext_registry { is_jac }
-    targets = paths or [];
-    ignored = ignore or [];
+    targets: list[str] = paths or [];
+    ignored: list[str] = ignore or [];
     explicit: set[str] = set();
     ordered: list[str] = [];
     seen: set[str] = set();
@@ -720,7 +720,7 @@ impl run_file(
                 )
             ];
         }
-        pending: list = [];
+        pending: list[any] = [];
         for (_key, registered) in list(JacTestCheck.test_suite_path.items()) {
             for info in list(registered) {
                 pending.append(info);
@@ -1038,6 +1038,8 @@ impl run_tests(
     }
     selector = _build_selector(test_name, filter);
     workers = resolve_jobs(jobs);
+    import from jaclang.server.session { own_child_databases }
+    own_child_databases();
     started = time.perf_counter();
     raw_jobs = jobs
         if (jobs not in (None, ""))
@@ -1045,7 +1047,6 @@ impl run_tests(
     forced_serial = str(raw_jobs).strip() == "0";
     use_pool = hasattr(os, "fork")
         and not forced_serial
-        and ((workers > 1) or bool(iso_set) or bool(ser_set))
         and (len(plan.files) > 1 or bool(iso_set) or bool(ser_set));
     if not use_pool {
         _run_plan(
@@ -1102,16 +1103,19 @@ impl run_tests(
 
 impl resolve_jobs(requested: (str | int | None) = None) -> int {
     import from jaclang.cli.workpool { resolve_jobs as _resolve_pool_jobs }
+
     return _resolve_pool_jobs(requested, env_var="JAC_TEST_JOBS");
+}
+
+def _test_rss_cap_mb -> int {
+    import from jaclang.cli.workpool { env_int }
+    return env_int("JAC_TEST_RECYCLE_MB", 8192);
 }
 
 impl _test_retire(served: int, rss_mb: int) -> bool {
     import from jaclang.cli.workpool { env_int }
     return _should_retire(
-        served,
-        env_int("JAC_TEST_RECYCLE", 25),
-        rss_mb,
-        env_int("JAC_TEST_RECYCLE_MB", 8192)
+        served, env_int("JAC_TEST_RECYCLE", 25), rss_mb, _test_rss_cap_mb()
     );
 }
 

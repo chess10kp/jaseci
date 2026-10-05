@@ -11,6 +11,7 @@ Tests with SkipTest document DESIRED behavior that will pass once
 the boundary type manifest and hydration codegen are implemented.
 """
 
+import from jaclang.compiler.backends.py.codegen_shim { generated_python }
 import os;
 import unittest;
 import tempfile;
@@ -105,7 +106,7 @@ test "existing fixtures still compile" {
 # generated and the consumer module failed to import — silently dropping every
 # one of its own endpoints.
 test "sv-to-sv: relative sv import generates HTTP stubs (#6507)" {
-    py = compile_fixture("sv_relative_consumer.jac").gen.py;
+    py = generated_python(compile_fixture("sv_relative_consumer.jac").gen);
     # The provider must NOT be a plain Python import (that is the broken
     # fallthrough that crashes the module at load time).
     assert "from .sv_relative_provider import" not in py , (
@@ -140,7 +141,7 @@ test "sv-to-sv: relative sv import generates HTTP stubs (#6507)" {
 # return arrived as a raw `_jac_type` dict and the imported type degraded into a
 # bogus callable stub (#6710).
 test "sv-to-sv: typed archetype return is rehydrated, not a raw dict (#6710)" {
-    py = compile_fixture("sv_relative_consumer.jac").gen.py;
+    py = generated_python(compile_fixture("sv_relative_consumer.jac").gen);
     # The function stub must wrap the remote call in the return type's
     # `_from_wire`, not hand the wire dict straight back.
     assert (
@@ -177,7 +178,7 @@ test "cl->sv: sv-imported type does not become a callable stub (#6795)" {
 
 # Inline cl block with def:pub produces __jacCallFunction
 test "inline cl block with defpub generates stubs" {
-    code = '"""Test."""\n\nimport os;\n\ndef:pub get_data(name: str) -> dict {\n    return {"message": "Hello " + name + os.sep};\n}\n\nasync def:pub app() -> Any {\n    data = await get_data("World");\n    return <div>{data}</div>;\n}\n';
+    code = '"""Test."""\n\nimport os;\n\ndef:pub get_data(name: str) -> dict[any, any] {\n    return {"message": "Hello " + name + os.sep};\n}\n\nasync def:pub app() -> Any {\n    data = await get_data("World");\n    return <div>{data}</div>;\n}\n';
     mod = compile_inline(code);
     js = mod.gen.js;
     assert "__jacCallFunction" in js;

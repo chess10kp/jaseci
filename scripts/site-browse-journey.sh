@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Drive the served jaclang.org site (jac/examples/jaclang_org) through a full
 # user journey with `jac browse`, asserting rendered content and fullstack
-# behavior at every stop. Used by CI (ci.yml pack-smoke) and
+# behavior at every stop. Shared by the pack-smoke and pack-eject CI jobs and
 # runnable locally against any server:
 #
 #   scripts/site-browse-journey.sh [BASE_URL]
@@ -9,9 +9,6 @@
 # Env knobs:
 #   SITE_JOURNEY_SKIP_DOCS=1   skip the docs stop (docs sync needs either
 #                              network or JAC_DOCS_LOCAL on the server side)
-#   SITE_JOURNEY_SKIP_WASM=1   skip the arena.wasm asset check (dev-mode wasm
-#                              emission needs a jac newer than the fix; drop
-#                              this knob once that release ships)
 #   SITE_JOURNEY_ARTIFACTS     directory for failure screenshots (default /tmp)
 set -euo pipefail
 
@@ -39,6 +36,12 @@ fail() {
     jac browse snapshot | head -n 60 || true
     echo "--- console at failure ---"
     jac browse console || true
+    echo "--- module requests at failure ---"
+    jac browse eval 'JSON.stringify(performance.getEntriesByType("resource")
+      .filter(e => ["script", "link"].includes(e.initiatorType))
+      .map(e => ({url: e.name, status: e.responseStatus,
+        duration: Math.round(e.duration), transferred: e.transferSize,
+        decoded: e.decodedBodySize})), null, 2)' || true
     exit 1
 }
 
@@ -84,7 +87,31 @@ for i in 1 2 3; do
     sleep 5
     [ "$i" = 3 ] && fail "browser failed to launch after 3 attempts"
 done
-jac browse wait '#top' || fail "landing #top never appeared"
+# Cold 4-vCPU runners transform the whole client graph on demand the first
+# time the dev server is hit, and vite re-runs dep optimization every time a
+# lazily imported package is discovered: each round bumps the dep hash,
+# serves 504s for stale generations, and forces a full page reload, so the
+# landing can be knocked down and restarted several times before anything
+# mounts (observed: 7+ distinct dep generations, >2 minutes on a cold cache;
+# later stops and the fleet pass reuse the warm cache). Poll patiently past
+# the churn instead of a fixed handful of waits, and re-open periodically so
+# a page wedged mid-boot on a stale dep generation gets a clean navigation.
+mount_ok=false
+landing_deadline=$(( $(date +%s) + 360 ))
+next_reopen=$(( $(date +%s) + 90 ))
+while [ "$(date +%s)" -lt "$landing_deadline" ]; do
+    if jac browse wait '#top'; then
+        mount_ok=true
+        break
+    fi
+    echo "landing not mounted yet; waiting out vite's cold dep optimization"
+    if [ "$(date +%s)" -ge "$next_reopen" ]; then
+        echo "re-opening the landing for a clean load"
+        jac browse open "$BASE_URL" || true
+        next_reopen=$(( $(date +%s) + 90 ))
+    fi
+done
+[ "$mount_ok" = true ] || fail "landing #top never appeared"
 # The headless profile persists localStorage between runs; start from a clean
 # slate so the JacYac journey always begins at the auth form.
 jac browse eval 'localStorage.clear(); sessionStorage.clear(); "storage cleared"' \
@@ -143,14 +170,26 @@ check '(async () => {
   throw new Error("book cover image never became visible");
 })()'
 
-if [ "${SITE_JOURNEY_SKIP_WASM:-0}" = "1" ]; then
-    step "landing: wasm check skipped (SITE_JOURNEY_SKIP_WASM=1)"
-else
-    step "landing: native wasm module is built and served"
-    wasm_bytes="$(curl -sf --max-time 30 "$BASE_URL/static/arena.wasm" | wc -c | tr -d ' ')"
-    echo "arena.wasm: ${wasm_bytes} bytes"
-    [ "$wasm_bytes" -gt 10000 ] || fail "arena.wasm missing or implausibly small (${wasm_bytes} bytes)"
-fi
+step "landing: native arena initializes and advances frames"
+check '(async () => {
+  const section = document.querySelector("#game");
+  if (!section) throw new Error("Arena section missing");
+  section.scrollIntoView({block: "center"});
+  const launch = Array.from(section.querySelectorAll("button"))
+    .find(button => button.textContent.includes("Launch"));
+  if (!launch) throw new Error("Arena launch button missing");
+  launch.click();
+  for (let attempt = 0; attempt < 150; attempt++) {
+    const hud = section.querySelector("canvas")?.nextElementSibling;
+    const values = hud ? Array.from(hud.querySelectorAll("b"), item => Number(item.textContent)) : [];
+    if (values.length === 4 && values.every(Number.isFinite) && values[3] > 0) {
+      if (values[0] < 0 || values[0] > 100) throw new Error("Arena returned invalid health");
+      return "Native frames running at " + values[3] + " fps, hp=" + values[0];
+    }
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  throw new Error("Arena never advanced a native frame");
+})()'
 
 # ------------------------------------------------------------- wait-wuuut ---
 step "wait-wuuut: live source windows stream real files"
@@ -368,6 +407,36 @@ else
     })()'
 fi
 
+# --------------------------------------------------------------- packages ---
+step "packages: the index page settles into a list, an empty state or an error"
+open_page "$BASE_URL/packages"
+wait_for_text "published to the jac-index" 30
+package_state=""
+for _ in $(seq 1 30); do
+    package_state="$(jac browse eval '(() => {
+      const card = document.querySelector("main a[href^=\"/packages/\"], ul a[href^=\"/packages/\"]");
+      if (card) return "list:" + card.getAttribute("href");
+      const text = document.body.innerText;
+      if (text.includes("No packages have been published yet.")) return "empty";
+      if (text.includes("The package index is unavailable")) return "error";
+      return "";
+    })()' 2>/dev/null || true)"
+    [ -n "$package_state" ] && [ "$package_state" != '""' ] && break
+    sleep 2
+done
+echo "packages index: ${package_state:-<none>}"
+case "$package_state" in
+    *list:*)
+        package_href="$(printf '%s' "$package_state" | sed -E 's/.*list:([^"]*).*/\1/')"
+        step "packages: a package page renders its header and tabs"
+        open_page "$BASE_URL$package_href"
+        wait_for_text "All packages" 30
+        wait_for_text "Versions" 30
+        ;;
+    *empty*|*error*) ;;
+    *) fail "the packages page never settled" ;;
+esac
+
 # --------------------------------------------------------------- not found ---
 step "404: unmatched routes render the catch-all page"
 open_page "$BASE_URL/definitely-not-a-page-${RUN_TAG}"
@@ -387,4 +456,4 @@ fi
 
 step "done"
 echo "journey complete: landing, wait-wuuut, public Ninja Scores, JacYac"
-echo "(signup/repository validation/post/trend/like/comment/channels/reload), legacy routes, docs, 404, console"
+echo "(signup/repository validation/post/trend/like/comment/channels/reload), legacy routes, docs, packages, 404, console"

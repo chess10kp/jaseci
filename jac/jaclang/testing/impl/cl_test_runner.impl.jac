@@ -11,7 +11,9 @@ import from contextlib { suppress }
 import from pathlib { Path }
 import from jaclang.cli.console { console }
 
-impl compile_cl_module(filepath: str) -> tuple[str, list, dict, list] {
+impl compile_cl_module(
+    filepath: str
+) -> tuple[str, list[any], dict[str, any], list[any]] {
     import from jaclang.compiler.driver.program { JacProgram }
     prog = JacProgram();
     mod = prog.compile(str(filepath));
@@ -27,7 +29,7 @@ impl compile_cl_module(filepath: str) -> tuple[str, list, dict, list] {
 }
 
 impl _compile_runtime -> tuple[str, str] {
-    import from jaclang.compiler.driver.modresolver { resolve_jac_virtual_module_path }
+    import from jaclang.project.modresolver { resolve_jac_virtual_module_path }
 
     runtime_src = resolve_jac_virtual_module_path("@jac/runtime");
     if (not runtime_src) or (not Path(runtime_src).exists()) {
@@ -41,6 +43,11 @@ impl _point_at_staged_runtime(js: str) -> str {
     return js.replace('"@jac/runtime"', '"./jac_runtime.js"').replace(
         "'@jac/runtime'", "'./jac_runtime.js'"
     );
+}
+
+impl _point_at_staged_prelude(js: str) -> str {
+    import from jaclang.compiler.backends.es.jac_runtime_js { point_jac_prelude_at }
+    return point_jac_prelude_at(js);
 }
 
 impl _stub_npm_imports(
@@ -96,7 +103,10 @@ impl _stub_npm_imports(
 }
 
 impl _build_harness(
-    module_js: str, tests: list, api_base_url: str = "", storage: (dict | None) = None
+    module_js: str,
+    tests: list[any],
+    api_base_url: str = "",
+    storage: (dict[str, any] | None) = None
 ) -> str {
     imports = "\n".join([m.group(0).strip() for m in _IMPORT_LINE.finditer(module_js)]);
     body = _IMPORT_LINE.sub("", module_js);
@@ -129,10 +139,10 @@ impl _build_harness(
 
 impl _collect_local_imports(
     module_js: str, source_dir: str, entry_path: str, allow_runtime: bool = False
-) -> tuple[dict, dict] {
+) -> tuple[dict[str, any], dict[str, any]] {
     staged: dict[str, str] = {};
     merged_imports: dict[str, str] = {};
-    requested: dict = {};
+    requested: dict[str, set[str]] = {};
     pending: list[str] = [module_js];
     while pending {
         js = pending.pop(0);
@@ -278,7 +288,7 @@ impl _serve_in_background(server_entry: str, base_path: str) -> Iterator[int] {
     port = sock.getsockname()[1];
     sock.close();
 
-    env = dict(os.environ);
+    env: dict[str, str] = dict(os.environ);
     env["JAC_DATA_PATH"] = base_path;
 
     log_path = Path(base_path) / "cl_test_server.log";
@@ -358,10 +368,11 @@ impl run_cl_test_file(
     filepath: str,
     api_base_url: (str | None) = None,
     test_name: (str | None) = None,
-    storage: (dict | None) = None,
+    storage: (dict[str, any] | None) = None,
     serve: bool = True,
     timeout: float = 120.0
 ) -> list[ClTestResult] {
+    filepath = module_entry_for(filepath);
     (module_js, tests, imports, server_imports) = compile_cl_module(filepath);
     if test_name {
         tests = [
@@ -410,10 +421,10 @@ impl run_cl_test_file(
 
 impl _run_harness(
     module_js: str,
-    tests: list,
-    imports: dict,
+    tests: list[any],
+    imports: dict[str, any],
     api_base_url: str,
-    storage: (dict | None),
+    storage: (dict[str, any] | None),
     timeout: float,
     source_path: (str | None) = None
 ) -> list[ClTestResult] {
@@ -440,6 +451,16 @@ impl _run_harness(
 
         staged: dict[str, str] = {};
 
+        import from jaclang.compiler.backends.es.jac_runtime_js {
+            JAC_PRELUDE_BASENAME,
+            build_jac_prelude_module
+        }
+        staged[JAC_PRELUDE_BASENAME] = build_jac_prelude_module();
+        module_js = _point_at_staged_prelude(module_js);
+        for dep_name in list(dep_files.keys()) {
+            dep_files[dep_name] = _point_at_staged_prelude(dep_files[dep_name]);
+        }
+
         if ("@jac/runtime" in imports) or ("@jac/runtime" in dep_imports) {
             import from jaclang.client.client_surface { prepend_active_runtime_globals }
             module_js = _point_at_staged_runtime(
@@ -464,8 +485,11 @@ impl _run_harness(
                 runtime_src,
                 allow_runtime=True
             );
+            for support_name in list(support.keys()) {
+                support[support_name] = _point_at_staged_prelude(support[support_name]);
+            }
             staged.update(support);
-            staged["jac_runtime.js"] = runtime_js;
+            staged["jac_runtime.js"] = _point_at_staged_prelude(runtime_js);
         }
 
         for (dep_name, dep_js) in dep_files.items() {
@@ -513,7 +537,7 @@ impl _run_harness(
     }
 }
 
-impl _parse_results(stdout: str, tests: list) -> (list[ClTestResult] | None) {
+impl _parse_results(stdout: str, tests: list[any]) -> (list[ClTestResult] | None) {
     for line in stdout.splitlines() {
         if line.startswith(_RESULT_SENTINEL) {
             payload = json.loads(line[len(_RESULT_SENTINEL):]);
@@ -530,8 +554,18 @@ impl _parse_results(stdout: str, tests: list) -> (list[ClTestResult] | None) {
     return None;
 }
 
+impl module_entry_for(filepath: str) -> str {
+    import from jaclang.jac0core.ext_registry { is_annex }
+    path = str(filepath);
+    if not is_annex(os.path.basename(path)) {
+        return path;
+    }
+    import from jaclang.compiler.driver.bccache { discover_base_file }
+    return discover_base_file(path) or path;
+}
+
 impl module_is_client(filepath: str) -> bool {
-    path = os.path.abspath(str(filepath));
+    path = os.path.abspath(module_entry_for(str(filepath)));
     if path in _COLOR_CACHE {
         return _COLOR_CACHE[path];
     }
@@ -587,7 +621,7 @@ impl is_cl_test_file_for_discovery(filepath: str) -> bool {
     return module_is_client(filepath);
 }
 
-impl register_results_into_jactestcheck(filepath: str, results: list) -> None {
+impl register_results_into_jactestcheck(filepath: str, results: list[any]) -> None {
     import from jaclang.testing.test { JacTestCheck }
 
     for res in results {

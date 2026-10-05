@@ -1,5 +1,7 @@
+import from jaclang.compiler.frontend.roles { BodyRole, Kid }
+import from jaclang.compiler.passes.context { CompileContext, CompilerPass }
+import type from jaclang.compiler.types.types { TypeBase }
 import from enum { Enum }
-import from typing { TypeAlias }
 import from jaclang.compiler.frontend.unitree {
     Ability,
     AstElseBodyNode,
@@ -34,6 +36,7 @@ import from jaclang.compiler.frontend.unitree {
     ModuleCode,
     MultiString,
     Name,
+    Null,
     OpenStmt,
     ParamVar,
     RaiseStmt,
@@ -61,16 +64,14 @@ import from jaclang.compiler.frontend.constant {
     is_borrow_kind,
     is_mut_kind
 }
-import from jaclang.compiler.passes.transform { Transform }
+
 import from jaclang.compiler.passes.dataflow {
+    DataflowTransfer,
+    SymId,
     solve_backward,
     solve_forward,
     solve_forward_must
 }
-import type from jaclang.compiler.driver.program { JacProgram }
-
-glob SymId: TypeAlias = int,
-     DataflowTransfer: TypeAlias = Callable[[UniCFGNode, set[SymId]], set[SymId]];
 
 enum AccessKind {
     ASSIGN_TARGET = "assign_target",
@@ -92,21 +93,22 @@ obj BorrowMeta {
         owner: (SymId | None) = None,
         is_mut: bool = False,
         extra_owners: list[SymId] postinit,
-        field: str = "";
+        field: str = "",
+        managed: bool = False,
+        path_fields: set[str] postinit;
 
     def postinit {
         self.extra_owners = [];
+        self.path_fields = set();
     }
 }
 
-walker OwnershipCheckPass(Transform) {
-    has prog: JacProgram,
-        ir_in: Module,
-        cancel_token: any = None,
-        owned_decl: dict[SymId, Name] = {},
+walker OwnershipCheckPass(CompilerPass) {
+    has owned_decl: dict[SymId, Name] = {},
         linear_decl: dict[SymId, Name] = {},
         consumed_syms: set[SymId] = set(),
         borrow_meta: dict[SymId, BorrowMeta] = {},
+        declared_borrows: set[SymId] = set(),
         e1304_borrow_ids: set[SymId] = set(),
         in_consumed: dict[int, set[SymId]] = {},
         in_live_borrows: dict[int, set[SymId]] = {},
@@ -127,10 +129,6 @@ walker OwnershipCheckPass(Transform) {
         receiver_probe: set[int] = set(),
         arch_view_syms: set[SymId] = set();
 
-    static has HOST_PASS: bool = True;
-
-    def postinit -> None;
-    def transform(ir_in: Module) -> Module;
     def _run_impl(ir_in: Module) -> Module;
     can run_walk with Module entry;
     def _nogc_setup -> None;
@@ -164,6 +162,10 @@ walker OwnershipCheckPass(Transform) {
     def _stamp_view_call_results(scope: UniNode, seen_ids: set[int]) -> None;
     def _view_call_owner(call: FuncCall) -> (SymId | None);
     def _emit_view_diagnostics -> None;
+    def _is_c_view(expr: (UniNode | None)) -> bool;
+    def _mentions_c_view(t: (TypeBase | None), depth: int = 0) -> bool;
+    def _c_view_escape(site: UniNode, what: str) -> None;
+    def _emit_c_view_diagnostics -> None;
     def _nogc_str_elem_ok(expr: Expr | None, idx_ctx: bool = False) -> bool;
     def _nogc_tag_shape(tag: SubTag | None) -> str;
     def _nogc_local_shape(nm: Name) -> str;
@@ -195,8 +197,21 @@ walker OwnershipCheckPass(Transform) {
     def _self_method_callees(ability: Ability) -> list[Ability];
     def _stamp_receiver_modes -> None;
     def _stamp_raises_effects -> None;
+    def _stamp_write_effects -> None;
+    def _local_writes(ab: Ability) -> set[str];
+    def _owning_ability(nd: UniNode) -> (Ability | None);
+    def _store_fields(tgt: Expr, out: set[str]) -> None;
+    def _call_writes(call: FuncCall) -> set[str];
+    def _stamp_managed_borrows -> None;
+    def _is_place_borrow(nd: Assignment) -> bool;
+    def _is_null_bind(nd: Assignment) -> bool;
+    def _managed_start_ok(start: Name) -> bool;
+    def _path_fields(expr: Expr) -> set[str];
+    def _emit_shared_write_diagnostics -> None;
+    def _emit_managed_borrow_diagnostics(cfg_nodes: list[UniCFGNode]) -> None;
     def _raise_type_name(nd: RaiseStmt) -> (str | None);
     def _handled_by_enclosing_try(nd: UniNode, exc: str, stop: UniNode) -> bool;
+    def _raised_class_names(site: UniNode, exc: str, seen: set[int]) -> set[str];
     def _callee_ability(call: FuncCall) -> (Ability | None);
     def _local_raises(ab: UniNode) -> set[str];
     def _emit_raises_diagnostics -> None;
@@ -245,7 +260,7 @@ walker OwnershipCheckPass(Transform) {
     def _seal_connect_handle(bx: BinaryExpr) -> (Name | None);
     def _flow_for_stmts -> list[InForStmt];
     def _emit_flow_for_diagnostics -> None;
-    def _chunks_shape_of(expr: Expr | None) -> (tuple | None);
+    def _chunks_shape_of(expr: Expr | None) -> (tuple[Expr, Expr] | None);
     def _emit_chunk_view_diagnostics -> None;
     def _flow_reduce_shape(asgn: Assignment, sid: SymId) -> str;
     def _collect_flow_reductions(lp: InForStmt) -> dict[SymId, str];

@@ -131,7 +131,7 @@ test "fix placement migrates a template-shaped [project] into [apps] before addi
         root_path = Path(tmpdir);
         (root_path / "jac.toml").write_text(
             '[project]\nname = "shop"\nversion = "0.1.0"\nkind = "web-app"\n'
-            'entry-point = "main"\n\n[dependencies]\nrequests = ">=2"\n'
+            'entry-point = "main"\n\n[dependencies.pypi]\nrequests = ">=2"\n'
         );
         (root_path / "main.jac").write_text(
             "sv import from analytics { Track }\n\n"
@@ -144,7 +144,7 @@ test "fix placement migrates a template-shaped [project] into [apps] before addi
         assert "kind = \"web-app\"" not in text.split("[apps.")[0] , (
             "[project] kind must move onto the app table: " + text
         );
-        assert "[dependencies]\nrequests = \">=2\"" in text , text;
+        assert "[dependencies.pypi]\nrequests = \">=2\"" in text , text;
         cfg = JacConfig.load(root_path / "jac.toml");
         assert cfg.is_workspace;
         assert cfg.default_app == "shop" , cfg.default_app;
@@ -187,5 +187,22 @@ test "fix placement --dry-run leaves a template-shaped jac.toml untouched" {
         assert rc == 0 , rc;
         assert (root_path / "jac.toml").read_text() == toml_text , "dry-run must not write";
         assert "sv import" in (root_path / "main.jac").read_text();
+    }
+}
+
+
+test "fix placement verifies element markers and pins a claim that differs" {
+    import from pathlib { Path }
+    with tempfile.TemporaryDirectory() as tmpdir {
+        root_path = Path(tmpdir);
+        (root_path / "jac.toml").write_text('[project]\nname = "x"\n');
+        (root_path / "mod.jac").write_text(
+            "cl def helper(x: int) -> int {\n    return x;\n}\n"
+        );
+        rc = fix("placement", [str(root_path)]);
+        assert rc == 0 , rc;
+        assert "cl def" not in (root_path / "mod.jac").read_text();
+        toml = (root_path / "jac.toml").read_text();
+        assert '"mod.helper" = "client"' in toml , toml;
     }
 }

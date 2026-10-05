@@ -1,10 +1,12 @@
+import from jaclang.compiler.frontend.unitree { TreeWalker }
+import from jaclang.compiler.frontend.roles { Kid }
+import from jaclang.compiler.passes.context { CompileContext, TreePass }
 import jaclang.compiler.tools.doc_ir as doc;
 import jaclang.compiler.frontend.unitree as uni;
 import from jaclang.compiler.frontend.unitree { fstring_escape_interior }
 import from jaclang.compiler.frontend.constant { Tokens as Tok, is_mut_kind }
-import from jaclang.compiler.passes { UniPass }
 
-walker DocIRGenPass(UniPass) {
+walker DocIRGenPass(TreePass) {
     has _live_comment_ids: (set[int] | None) = None,
         _emitted_comment_ids: (set[int] | None) = None;
 
@@ -46,7 +48,10 @@ walker DocIRGenPass(UniPass) {
     def _child_docs(nd: uni.UniNode) -> list[doc.DocType];
     def _assign_group_concat(nd: uni.UniNode) -> None;
     def _assign_space_group(nd: uni.UniNode) -> None;
-    def _assign_operator_chain(nd: uni.UniNode, operands: list, ops: list) -> None;
+    def _assign_operator_chain(
+        nd: uni.UniNode, operands: list[uni.UniNode], ops: list[uni.UniNode]
+    ) -> None;
+
     def _assign_semi_stmt_doc_ir(nd: uni.UniNode) -> None;
     def _assign_compr_doc_ir(nd: uni.UniNode) -> None;
     def _assign_else_doc_ir(nd: uni.UniNode, body: Sequence[uni.UniNode]) -> None;
@@ -191,6 +196,12 @@ walker DocIRGenPass(UniPass) {
     can exit_jsx_expression with uni.JsxExpression exit;
     can exit_jsx_slot with uni.JsxSlot exit;
     can exit_jsx_comment with uni.JsxComment exit;
+    can exit_impl_import with uni.ImplImport exit;
+    can exit_import_wire with uni.ImportWire exit;
+    can exit_import_rule with uni.ImportRule exit;
+    can exit_module_pattern with uni.ModulePattern exit;
+    can exit_wire_item with uni.WireItem exit;
+    def _wiring_stmt_doc_ir(nd: uni.UniNode) -> doc.DocType;
     can doc_ir_default_exit with uni.UniNode exit;
     can finish_doc_comments with uni.UniNode exit;
 }

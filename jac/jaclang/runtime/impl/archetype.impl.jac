@@ -100,9 +100,8 @@ impl Anchor.__getstate__ -> dict[(str, any)] {
             'access': self.access,
             'persistent': self.persistent
         };
-    } else {
-        return {'id': self.ensure_id()};
     }
+    return {'id': self.ensure_id()};
 }
 
 impl Anchor.__setstate__(state: dict[(str, any)]) -> None {
@@ -164,7 +163,24 @@ impl Anchor.__eq__(other: object) -> bool {
 
 impl NodeAnchor.is_populated -> bool {
     d = self.__dict__;
-    return 'edges' in d and 'archetype' in d;
+    return ('edges' in d or '_edge_loader' in d) and 'archetype' in d;
+}
+
+impl NodeAnchor.__getattr__(name: str) -> object {
+    if name == 'edges' {
+        loader = self.__dict__.get('_edge_loader');
+        if loader is not None {
+            edges = loader();
+            self.__dict__['edges'] = edges;
+            self.__dict__.pop('_edge_loader', None);
+            return edges;
+        }
+    }
+    return super.__getattr__(name);
+}
+
+impl NodeAnchor.loaded_edges -> list[EdgeAnchor] {
+    return self.__dict__.get('edges') or [];
 }
 
 impl EdgeAnchor.is_populated -> bool {
@@ -249,8 +265,11 @@ impl Archetype.__init_subclass__(cls: any, **kwargs: object) -> None {
         import from jaclang { JacRuntimeInterface as _ }
         _.make_archetype(cls);
         if 'drop' in cls.__dict__ {
-            import from jaclang.runtime.builtin { _jac_region_instrument }
-            _jac_region_instrument(cls);
+            import from jaclang.runtime.region { is_drop_hook }
+            if is_drop_hook(cls.__dict__['drop']) {
+                import from jaclang.runtime.builtin { _jac_region_instrument }
+                _jac_region_instrument(cls);
+            }
         }
         for hook in Archetype._subclass_hooks {
             hook(cls);

@@ -1,26 +1,44 @@
+import hashlib;
 import os;
 import types;
-import from jaclang.runtime.object_model { field }
+import from jaclang.jac0core.ext_registry { base_stem }
+import type from jaclang.runtime.semantic { Info }
+import type from jaclang.client.compiler { ViteCompiler }
 
 obj PreparedApplication {
     has `root: str,
         `entry: str,
-        code: dict[str, types.CodeType] = field(default_factory=`dict),
-        manifests: dict[str, dict] = field(default_factory=`dict),
-        client_compiler: any = None,
+        code: dict[str, types.CodeType] = {},
+        manifests: dict[str, dict[str, any]] = {},
+        semantic: dict[str, dict[str, Info]] = {},
+        origins: dict[str, str] = {},
+        persistence_modules: dict[str, str] = {},
+        persistence_namespaces: set[str] = set(),
+        name: str = '',
+        namespace: str = '',
+        scope_imports: bool = True,
+        client_compiler: ViteCompiler | None = None,
         client_enabled: bool = False,
-        native: dict[str, tuple] = field(default_factory=`dict),
-        services: tuple = (),
+        native: dict[str, tuple[object | None, dict[str, object] | None]] = {},
+        services: tuple[str, ...] = (),
         dev: bool = True,
         client_dist: str = "",
-        applications: list[PreparedApplication] = field(default_factory=list);
+        applications: list[PreparedApplication] = [];
 }
 
 glob _applications: dict[str, PreparedApplication] = {};
 
 def publish(application: PreparedApplication) {
+    import sys;
+    import from jaclang.runtime.prepared_loader { PreparedFinder }
+    if not any(isinstance(finder, PreparedFinder) for finder in sys.meta_path) {
+        sys.meta_path.insert(0, PreparedFinder());
+    }
+    import from jaclang.data.type_identity { index_application }
+    index_application(application);
     _applications[os.path.realpath(application.entry)] = application;
     for child in application.applications {
+        index_application(child);
         _applications[os.path.realpath(child.entry)] = child;
     }
 }
@@ -48,12 +66,20 @@ def application_for(path: str, module_name: str = "") -> (PreparedApplication | 
     return None;
 }
 
+def application_of(target: object) -> PreparedApplication | None {
+    import sys;
+    name = getattr(target, '__module__', '');
+    module = sys.modules.get(name);
+    source = getattr(module, '__file__', '');
+    return application_for(source, name) if source else None;
+}
+
 def prepared_code(path: str) -> (types.CodeType | None) {
     application = application_for(path);
     return application.code.get(os.path.realpath(path)) if application else None;
 }
 
-def prepared_manifest(path: str) -> (dict | None) {
+def prepared_manifest(path: str) -> (dict[str, any] | None) {
     application = application_for(path);
     return application.manifests.get(os.path.realpath(path)) if application else None;
 }
@@ -90,59 +116,31 @@ def containing_application(
     return max(candidates, key=lambda (a: any) { len(a.root); }, `default=None);
 }
 
-def load_prepared_module(path: str) -> types.ModuleType {
+def load_prepared_module(
+    path: str, application: PreparedApplication | None = None, as_main: bool = False
+) -> types.ModuleType {
     import from jaclang.runtime.runtime { JacRuntime as Jac }
-    import from jaclang.jac0core.ext_registry { base_stem }
-    import from jaclang.jac0core.sealed { image_for_bundle_dir }
-    import from pathlib { Path }
-    import hashlib;
     import sys;
     path = os.path.realpath(path);
     if (prepared_code(path) is None) {
         raise RuntimeError(f'No prepared executable artifact for {path}');
     }
-    application = application_for(path);
-    base = os.path.dirname(path);
-    target = base_stem(path);
-    if application is not None and path != application.entry {
-        relative_dir = os.path.relpath(base, application.root);
-        if relative_dir != '.' {
-            target = relative_dir.replace(os.sep, '.') + '.' + target;
-        }
-        base = application.root;
+    application = application or application_for(path);
+    if application is None {
+        raise RuntimeError(f'No prepared application owns {path}');
     }
-    if application is not None {
-        image = image_for_bundle_dir(Path(application.root) / '_precompiled');
-        if image is None {
-            return import_prepared(path, application);
-        }
-        if image is not None {
-            relative = Path(path).relative_to(application.root).as_posix();
-            target = image.manifest['modules'][relative]['module'];
-            package = image.package;
-            loaded = sys.modules.get(package);
-            if loaded is not None
-                and application.root not in getattr(loaded, '__path__', ())
-                and not str(getattr(loaded, '__file__', '') or '').startswith(
-                    application.root + os.sep
-                ) {
-                namespace = '_jac_app_'
-                    + hashlib.sha256(application.root.encode()).hexdigest()[:16];
-                for (source, info) in image.manifest['modules'].items() {
-                    name = namespace + info['module'][len(package):];
-                    image.index[name] = (info, source);
-                }
-                ensure_namespace(application, namespace);
-                target = namespace + target[len(package):];
-            } elif package not in image.index {
-                ensure_namespace(application, package);
-            }
-        }
+    if not as_main {
+        return import_prepared(path, application);
     }
-    modules = Jac.jac_import(target=target, base_path=base, lng='jac');
+    ensure_namespace(application);
+    target = qualified_module(path, application);
+    modules = Jac.jac_import(
+        target=target, base_path=application.root, lng='jac', override_name='__main__'
+    );
     if not modules {
         raise RuntimeError(f'Prepared module did not initialize: {path}');
     }
+    sys.modules[target] = modules[0];
     return modules[0];
 }
 
@@ -152,7 +150,7 @@ def initialize_application(
     module = load_prepared_module(application.entry);
     if ((config is not None) and (served is not None)) {
         import from jaclang.server.assembly { assemble_served_program }
-        assemble_served_program(config, served, application.root);
+        assemble_served_program(config, served, application.root, application);
     }
     return module;
 }
@@ -163,7 +161,9 @@ def clear {
 
 
 def application_namespace(application: PreparedApplication) -> str {
-    import hashlib;
+    if application.namespace {
+        return application.namespace;
+    }
     return '_jac_app_' + hashlib.sha256(application.entry.encode()).hexdigest()[:16];
 }
 
@@ -173,10 +173,18 @@ def ensure_namespace(application: PreparedApplication, name: str = '') -> str {
     import importlib.util;
     name = name or application_namespace(application);
     if name not in sys.modules {
-        initializer = os.path.join(application.root, '__init__.jac');
-        if initializer in application.code {
-            import from jaclang.meta_importer { JacMetaImporter }
-            loader = JacMetaImporter();
+        initializer = next(
+            (
+                p
+                for p in application.code
+                if os.path.dirname(p) == application.root
+                    and os.path.basename(p).startswith('__init__.')
+            ),
+            ''
+        );
+        if initializer {
+            import from jaclang.runtime.prepared_loader { PreparedLoader }
+            loader = PreparedLoader(application);
             spec = importlib.util.spec_from_file_location(
                 name,
                 initializer,
@@ -209,7 +217,6 @@ def ensure_namespace(application: PreparedApplication, name: str = '') -> str {
 }
 
 def qualified_module(path: str, application: PreparedApplication) -> str {
-    import from jaclang.jac0core.ext_registry { base_stem }
     relative = os.path.relpath(os.path.dirname(path), application.root);
     stem = base_stem(path);
     parts = [] if relative == '.' else relative.split(os.sep);
@@ -238,7 +245,9 @@ def entry_alias(fullname: str) -> tuple[str, str] | None {
             if provider is consumer {
                 continue;
             }
-            local_name = qualified_module(provider.entry, consumer);
+            origin = provider.origins.get(provider.entry, '');
+            source = os.path.join(consumer.root, origin) if origin else provider.entry;
+            local_name = qualified_module(source, consumer);
             if fullname == local_name {
                 ensure_namespace(provider);
                 return (qualified_module(provider.entry, provider), provider.entry);
@@ -248,10 +257,12 @@ def entry_alias(fullname: str) -> tuple[str, str] | None {
     return None;
 }
 
-def module_builtins(application: PreparedApplication, source: str) -> dict {
+def module_builtins(application: PreparedApplication, source: str) -> dict[str, any] {
     import builtins;
     import importlib;
-    import from pathlib { Path }
+    if not application.scope_imports {
+        return dict(vars(builtins));
+    }
     original = builtins.__import__;
     def scoped_import(
         name: str,
@@ -265,15 +276,17 @@ def module_builtins(application: PreparedApplication, source: str) -> dict {
         }
         for base in dict.fromkeys([os.path.dirname(source), application.root]) {
             candidate = os.path.join(base, *name.split('.'));
-            module = candidate + '.jac';
-            package = os.path.join(candidate, '__init__.jac');
             selected = application;
-            declared = _applications.get(os.path.realpath(module));
-            if declared is not None {
-                selected = declared;
+            for suffix in ('.jac', '.py') {
+                declared = _applications.get(os.path.realpath(candidate + suffix));
+                if declared is not None {
+                    selected = declared;
+                    break;
+                }
             }
-            local = module in selected.code
-                or package in selected.code
+            local = any(
+                candidate + suffix in selected.code for suffix in ('.jac', '.py')
+            )
                 or any(p.startswith(candidate + os.sep) for p in selected.code);
             if not local {
                 continue;
@@ -293,4 +306,81 @@ def module_builtins(application: PreparedApplication, source: str) -> dict {
     result = dict(vars(builtins));
     result['__import__'] = scoped_import;
     return result;
+}
+
+def execute_module(module: types.ModuleType, application: PreparedApplication) {
+    filename = module.__file__;
+    if filename is None {
+        raise ImportError(f'Prepared module {module.__name__} has no source path');
+    }
+    source = os.path.realpath(filename);
+    if module.__name__ == '__main__' {
+        import from jaclang.runtime.runtime { JacRuntime as Jac }
+        Jac.load_module(qualified_module(source, application), module, force=True);
+    }
+    code = application.code.get(source);
+    if code is None {
+        raise ImportError(f'No prepared executable artifact for {source}');
+    }
+    if not module.__name__.startswith('jaclang.') {
+        import from jaclang.runtime.runtime { JacRuntime as Jac }
+        Jac.load_module(module.__name__, module);
+    }
+    (native_engine, callbacks) = application.native.get(source, (None, None));
+    if native_engine is not None {
+        import from jaclang.runtime.interop_bridge { NativeLibrary }
+        if isinstance(native_engine, NativeLibrary) {
+            native_engine.initialize();
+        }
+        module.__dict__['__jac_native_engine__'] = native_engine;
+    }
+    if callbacks is not None {
+        module.__dict__['__jac_interop_py_funcs__'] = callbacks;
+    }
+    facts = application.manifests.get(source, {}).get('persistence', ());
+    if facts {
+        module.__dict__['__jac_persistence__'] = tuple(facts);
+    }
+    module.__dict__['__builtins__'] = module_builtins(application, source);
+    exec(code, module.__dict__);
+}
+
+def semantic_for_scope(scope: str) -> Info | None {
+    import sys;
+    import from jaclang.jac0core.ext_registry { base_stem }
+    parts = scope.split('.');
+    for end in range(len(parts) - 1, 0, -1) {
+        name = '.'.join(parts[:end]);
+        module = sys.modules.get(name);
+        source = getattr(module, '__file__', '');
+        if not source {
+            continue;
+        }
+        application = application_for(source, name);
+        if application is None {
+            continue;
+        }
+        key = '.'.join([base_stem(source), *parts[end:]]);
+        return application.semantic.get(os.path.realpath(source), {}).get(key);
+    }
+    return None;
+}
+
+
+def origin_for_source(path: str) -> str {
+    application = application_for(path);
+    if application is None {
+        return path;
+    }
+    origin = application.origins.get(os.path.realpath(path));
+    return os.path.realpath(os.path.join(application.root, origin)) if origin else path;
+}
+
+def source_for_origin(application: PreparedApplication, origin: str) -> str {
+    for (path, original) in application.origins.items() {
+        if original == origin {
+            return path;
+        }
+    }
+    return os.path.realpath(os.path.join(application.root, origin));
 }

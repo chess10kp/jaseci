@@ -12,28 +12,28 @@ impl EsastGenPass._has_import(name: str) -> bool {
 }
 
 impl EsastGenPass._register_jac_virtual_import(module_id: str) -> None {
-    import from jaclang.compiler.driver.modresolver { resolve_jac_virtual_module_path }
     if not self.client_manifest or module_id in self.client_manifest.imports {
         return;
     }
-    source_path = resolve_jac_virtual_module_path(module_id);
+    source_path = active_host().jac_virtual_module_path(module_id);
     if source_path {
         self.client_manifest.imports[module_id] = source_path;
     }
 }
 
 impl EsastGenPass._register_jac_runtime_import -> None {
-    self._ensure_backend();
-    self._register_jac_virtual_import(self.backend.runtime_module());
+    self._register_jac_virtual_import(self.resolved_backend.runtime_module());
 }
 
-impl EsastGenPass._inject_runtime_import(name: str, nd: uni.UniNode) -> None {
+impl EsastGenPass._inject_runtime_import(
+    name: str, nd: uni.UniNode, src: str = ""
+) -> None {
     import from jaclang.client.client_surface { runtime_import_source }
-    self._ensure_backend();
+    import from jaclang.compiler.backends.es.jac_runtime_js { JAC_PRELUDE_MODULE }
     if name in self.injected_imports or self._has_import(name) {
         return;
     }
-    src = runtime_import_source(name, self.backend);
+    src = src or runtime_import_source(name, self.resolved_backend);
     specifier = self.sync_loc(
         es.ImportSpecifier(
             imported=es.Identifier(name=name), local=es.Identifier(name=name)
@@ -46,7 +46,7 @@ impl EsastGenPass._inject_runtime_import(name: str, nd: uni.UniNode) -> None {
     );
     self.imports.append(import_decl);
     self.injected_imports.add(name);
-    if src.startswith('@jac/') {
+    if src.startswith('@jac/') and (src != JAC_PRELUDE_MODULE) {
         self._register_jac_runtime_import();
     }
 }
@@ -72,7 +72,7 @@ impl EsastGenPass.exit_import with uni.Import exit {
         here.gen.es_ast = None;
         return;
     }
-    emit_items: list = list(here.items);
+    emit_items: list[uni.ModuleItem | uni.ModulePath] = list(here.items);
     if (here.from_loc and here.items) {
         resolved_path = here.from_loc.resolve_relative_path();
         partition = self._partition_client_import_items(here);
@@ -97,7 +97,7 @@ impl EsastGenPass.exit_import with uni.Import exit {
             and not import_path.startswith('.')
             and not is_jac_runtime {
             js_import_path = relative_js_specifier(
-                resolved_path, self.ir_in.loc.mod_path or here.loc.mod_path
+                resolved_path, self.module.loc.mod_path or here.loc.mod_path
             );
         } else {
             js_import_path = convert_to_js_import_path(import_path);
@@ -107,13 +107,13 @@ impl EsastGenPass.exit_import with uni.Import exit {
         first_item = here.items[0];
         if (isinstance(first_item, uni.ModulePath) and first_item.path) {
             path_elem = first_item.path[0];
-            import_key = path_elem.lit_value
+            import_key = str(path_elem.lit_value)
                 if isinstance(path_elem, uni.String)
                 else path_elem.value;
         } else {
             import_key = '';
         }
-        resolved_path = resolve_relative_path(
+        (resolved_path, _lang) = active_host().resolve_module(
             import_key,
             here.loc.mod_path,
             string_spec=isinstance(first_item, uni.ModulePath)
@@ -123,7 +123,7 @@ impl EsastGenPass.exit_import with uni.Import exit {
         import_path = import_key;
         if resolved_path.endswith('.jac') and not import_path.startswith('.') {
             js_import_path = relative_js_specifier(
-                resolved_path, self.ir_in.loc.mod_path or here.loc.mod_path
+                resolved_path, self.module.loc.mod_path or here.loc.mod_path
             );
         } else {
             js_import_path = convert_to_js_import_path(import_path);
@@ -147,7 +147,7 @@ impl EsastGenPass.exit_import with uni.Import exit {
                 );
                 local = self.sync_loc(
                     es.Identifier(
-                        name=item.alias.sym_name if item.alias else item.name.sym_name
+                        name=item.alias.sym_name if item.alias else item.name.value
                     ),
                     jac_node=item.alias or item.name
                 );
@@ -195,12 +195,13 @@ impl EsastGenPass.exit_import with uni.Import exit {
 
 impl EsastGenPass._partition_client_import_items(
     nd: uni.Import
-) -> (tuple[list, list] | None) {
+) -> (
+    tuple[list[uni.ModuleItem | uni.ModulePath], list[uni.ModuleItem | uni.ModulePath]]
+    | None
+) {
     import from jaclang.compiler.symbol_utils {
         ClientImportVerdict,
         classify_client_import_item,
-        decl_has_access,
-        import_target_pinned_server,
         is_client_boundary_import,
         report_dead_client_import
     }
@@ -208,39 +209,28 @@ impl EsastGenPass._partition_client_import_items(
         return None;
     }
     import from jaclang.compiler.driver.boundary_classify { import_crosses_apps }
-    pinned_server = import_target_pinned_server(nd);
     cross_app = import_crosses_apps(nd);
     source_mod = self._resolve_source_module(nd);
     if source_mod is None {
-        return ([], list(nd.items)) if pinned_server else None;
+        return None;
     }
-    kept: list = [];
-    bridged: list = [];
+    kept: list[uni.ModuleItem | uni.ModulePath] = [];
+    bridged: list[uni.ModuleItem | uni.ModulePath] = [];
     for item in nd.items {
         if isinstance(item, uni.ModuleItem) {
             local_name = item.alias.sym_name if item.alias else item.name.value;
-            binding = self.ir_in.gen.interop_manifest.bindings.get(local_name);
+            binding = self.module.gen.interop_manifest.bindings.get(local_name);
             if binding is not None and binding.kind == 'type' {
                 bridged.append(item);
                 continue;
             }
         }
         verdict = classify_client_import_item(source_mod, item);
-        if pinned_server and verdict != ClientImportVerdict.DEAD {
-            bridged.append(item);
-            continue;
-        }
-        if pinned_server
-            and verdict == ClientImportVerdict.DEAD
-            and decl_has_access(source_mod, item) {
-            bridged.append(item);
-            continue;
-        }
         if verdict == ClientImportVerdict.BRIDGED {
             bridged.append(item);
         } elif verdict == ClientImportVerdict.DEAD {
-            if not cross_app {
-                report_dead_client_import(self, nd, item);
+            if not cross_app and isinstance(item, uni.ModuleItem) {
+                report_dead_client_import(self, nd, item, self._unbound_reported);
             }
         } else {
             kept.append(item);
@@ -250,9 +240,9 @@ impl EsastGenPass._partition_client_import_items(
 }
 
 impl EsastGenPass._generate_sv_import_stubs(
-    nd: uni.Import, items: (Sequence[uni.ModuleItem] | None) = None
+    nd: uni.Import, items: (Sequence[uni.ModuleItem | uni.ModulePath] | None) = None
 ) -> None {
-    manifest = self.ir_in.gen.interop_manifest;
+    manifest = self.module.gen.interop_manifest;
     stubs: list[es.Statement] = [];
     for item in (items if items is not None else nd.items) {
         if not isinstance(item, uni.ModuleItem)
@@ -271,7 +261,7 @@ impl EsastGenPass._generate_sv_import_stubs(
             continue;
         }
         boundary_types = manifest.boundary_types_for(
-            binding.type_scope if binding is not None else self.ir_in.loc.mod_path
+            binding.type_scope if binding is not None else self.module.loc.mod_path
         );
         param_names: list[str] = [];
         param_type_map: dict[str, str] = {};
@@ -388,14 +378,15 @@ impl EsastGenPass._generate_sv_import_stubs(
 
 impl EsastGenPass._is_client_native_import(nd: uni.Import) -> bool {
     import from jaclang.compiler.driver.boundary_classify { import_binds_client_native }
-    return import_binds_client_native(nd, self.ir_in.gen.interop_manifest);
+    return import_binds_client_native(nd, self.module.gen.interop_manifest);
 }
 
 impl EsastGenPass._generate_na_import_binding(nd: uni.Import) -> None {
     import from jaclang.compiler.frontend.codeinfo { native_wasm_stem }
     import json;
-    contracts: dict = {};
-    host_imports: dict = {};
+    contracts: dict[str, dict[str, any]] = {};
+    host_imports: dict[str, any] = {};
+    assert nd.from_loc is not None;
     resolved_path = nd.from_loc.resolve_relative_path();
     stem = native_wasm_stem(resolved_path);
 
@@ -436,12 +427,12 @@ impl EsastGenPass._generate_na_import_binding(nd: uni.Import) -> None {
         }
         export_name = item.name.sym_name;
         local_name = item.alias.sym_name if item.alias else export_name;
-        binding = self.ir_in.gen.interop_manifest.bindings.get(local_name);
+        binding = self.module.gen.interop_manifest.bindings.get(local_name);
         if binding is None or not binding.native_contract {
             raise ValueError(f"Missing native contract for '{export_name}'");
         }
         contracts[export_name] = binding.native_contract;
-        host_imports = self.ir_in.gen.interop_manifest.native_host_imports[stem];
+        host_imports = self.module.gen.interop_manifest.native_host_imports[stem];
         props.append(
             self.sync_loc(
                 es.AssignmentProperty(
@@ -499,12 +490,12 @@ impl EsastGenPass._generate_na_import_binding(nd: uni.Import) -> None {
 impl EsastGenPass._sv_import_item_is_type(
     nd: uni.Import, item: uni.ModuleItem
 ) -> bool {
-    sym = item.name.sym;
+    sym = item.name.sym if isinstance(item.name, uni.Name) else None;
     if sym and sym.binding_kind.denotes_type() {
         return True;
     }
-    local_name = item.alias.sym_name if item.alias else item.name.sym_name;
-    binding = self.ir_in.gen.interop_manifest.bindings.get(local_name);
+    local_name = item.alias.sym_name if item.alias else item.name.value;
+    binding = self.module.gen.interop_manifest.bindings.get(local_name);
     return binding is not None and binding.kind == 'type';
 }
 
@@ -515,7 +506,7 @@ impl EsastGenPass.exit_sub_tag with uni.SubTag exit {
 }
 
 impl EsastGenPass._import_item_named(name: str) -> (uni.ModuleItem | None) {
-    for imp in self.ir_in.get_all_sub_nodes(uni.Import) {
+    for imp in self.module.get_all_sub_nodes(uni.Import) {
         if imp.from_loc is None {
             continue;
         }
@@ -548,7 +539,7 @@ impl EsastGenPass._finalize_runtime_imports(program: es.Program) -> None {
 
     import re;
     referenced: set[str] = set();
-    pending: list[any] = [value_body];
+    pending: list[object] = [value_body];
     while pending {
         value = pending.pop();
         if isinstance(value, (es.Identifier, es.JsxIdentifier)) {

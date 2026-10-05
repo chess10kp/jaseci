@@ -73,7 +73,7 @@ def _write_if_managed(
 
 def _project_native_deps(project_root: Path) -> dict[str, str] {
     import from jaclang.project.config { get_config_for_dir }
-    import from jaclang.client.targets.registry { client_workspace_app }
+    import from jaclang.project.client_paths { client_workspace_app }
     config = get_config_for_dir(str(project_root));
     if config is None {
         toml_path = project_root / "jac.toml";
@@ -182,6 +182,7 @@ def _build_metro_config -> str {
         "config.resolver.extraNodeModules = {\n"
         "  ...(config.resolver.extraNodeModules || {}),\n"
         "  '@jac/runtime': path.resolve(projectRoot, 'jac-src', 'client_runtime.js'),\n"
+        "  '@jac/prelude': path.resolve(projectRoot, 'jac-src', 'jac_prelude.js'),\n"
         "  // mobUI @jac/mobui primitives. On native `react-native` is the real\n"
         "  // package (no alias) so View/Text are RN components; only the web\n"
         "  // build rewrites react-native -> react-native-web.\n"

@@ -80,9 +80,18 @@ def _bootstrap_compile(
 
     if cache_file.is_file():
         try:
-            return marshal.loads(cache_file.read_bytes())  # noqa: S302
+            code = marshal.loads(cache_file.read_bytes())  # noqa: S302
         except Exception:
             cache_file.unlink(missing_ok=True)
+        else:
+            # A hit is a use: the `jir-bootstrap` bucket is swept by last use
+            # (`jaclang.cache`), and this tier cannot reach the Jac-side
+            # authority itself, so it refreshes the entry's mtime directly.
+            try:
+                os.utime(cache_file, None)
+            except OSError:
+                pass
+            return code
 
     # Cache miss — transpile with jac0, compile, and cache (best-effort).
     py_source = _jac0_compile(jac_source, file_path, impl_sources=impl_sources)
@@ -146,38 +155,25 @@ def _module_scoped_alerts(program: object, file_path: str) -> list:
 # frozen from the manifest; a missing/corrupt JIR falls back to the retained
 # source, which jac0 transpiles live.
 _modresolver_jac = os.path.join(
-    os.path.dirname(__file__), "compiler", "driver", "modresolver.jac"
+    os.path.dirname(__file__), "project", "modresolver.jac"
 )
 _modresolver_code = None
 _modresolver_origin = _modresolver_jac
-_frozen_modresolver = _sealed.find_module("jaclang.compiler.driver.modresolver")
+_frozen_modresolver = _sealed.find_module("jaclang.project.modresolver")
 if _frozen_modresolver is not None and _frozen_modresolver[1].get("bootstrap"):
     _mr_image = _frozen_modresolver[0]
-    _modresolver_code = _mr_image.bootstrap_code("jaclang.compiler.driver.modresolver")
+    _modresolver_code = _mr_image.bootstrap_code("jaclang.project.modresolver")
     if _modresolver_code is not None:
         _modresolver_origin = _mr_image.virtual_origin(_frozen_modresolver[2])
 if _modresolver_code is None:
     with open(_modresolver_jac, encoding="utf-8") as _f:
         _modresolver_code = _bootstrap_compile(_modresolver_jac, _f.read())
-_modresolver = types.ModuleType("jaclang.compiler.driver.modresolver")
+_modresolver = types.ModuleType("jaclang.project.modresolver")
 _modresolver.__file__ = _modresolver_origin
-_modresolver.__package__ = "jaclang.compiler.driver"
+_modresolver.__package__ = "jaclang.project"
 exec(_modresolver_code, _modresolver.__dict__)  # noqa: S102
-sys.modules["jaclang.compiler.driver.modresolver"] = _modresolver
+sys.modules["jaclang.project.modresolver"] = _modresolver
 get_jac_search_paths = _modresolver.get_jac_search_paths
-
-
-class _PreparedAliasLoader(Loader):
-    """A relative import of an app entry resolves to the provider instance."""
-
-    def __init__(self, target: str) -> None:
-        self.target = target
-
-    def create_module(self, spec: ModuleSpec) -> ModuleType:
-        return importlib.import_module(self.target)
-
-    def exec_module(self, module: ModuleType) -> None:
-        pass
 
 
 class JacMetaImporter(MetaPathFinder, Loader):
@@ -213,15 +209,6 @@ class JacMetaImporter(MetaPathFinder, Loader):
         target: ModuleType | None = None,
     ) -> ModuleSpec | None:
         """Find the spec for the module."""
-        registry = sys.modules.get("jaclang.runtime.prepared")
-        alias_for = getattr(registry, "entry_alias", None)
-        alias = alias_for(fullname) if alias_for is not None else None
-        if alias is not None:
-            target_name, origin = alias
-            return importlib.util.spec_from_loader(
-                fullname, _PreparedAliasLoader(target_name), origin=origin
-            )
-
         # Sealed image is authoritative: a sealed binary resolves its modules
         # from the manifest by name, with no filesystem probing for .jac. This
         # is the primary path (not a fallback) so a sealed runtime never touches
@@ -363,21 +350,34 @@ class JacMetaImporter(MetaPathFinder, Loader):
 
         from jaclang.runtime.runtime import JacRuntime as Jac
 
+        cache = Jac.get_compiler().selfhost
+        cache.enter_execution()
+        try:
+            self._exec_compiled_module(module, file_path)
+        finally:
+            cache.exit_execution()
+
+    def _exec_compiled_module(self, module: ModuleType, file_path: str) -> None:
+        from jaclang.runtime.runtime import JacRuntime as Jac
+
+        assert module.__spec__ is not None
         is_pkg = module.__spec__.submodule_search_locations is not None
 
         # Register module in JacRuntime's tracking (skip internal jaclang modules)
         if not module.__name__.startswith("jaclang."):
             Jac.load_module(module.__name__, module)
 
-        # Get and execute bytecode using the compiler singleton
-        compiler = Jac.get_compiler()
-        program = Jac.get_program()
         # The registry is itself Jac. Read it only after its import completes;
         # importing it here would recurse while bootstrapping the compiler.
         registry = sys.modules.get("jaclang.runtime.prepared")
         lookup = getattr(registry, "application_for", None)
         prepared = lookup(file_path, module.__name__) if lookup is not None else None
         prepared_path = os.path.realpath(file_path)
+        if prepared is not None and prepared_path in prepared.code:
+            registry.execute_module(module, prepared)
+            return
+        compiler = Jac.get_compiler()
+        program = Jac.get_program()
         if prepared is None:
             containing_lookup = getattr(registry, "containing_application", None)
             containing = (

@@ -75,7 +75,7 @@ The most important files to know:
 - **`driver/compiler.jac`** -- The pass pipeline orchestrator. It defines schedules like `get_ir_gen_sched()` and `get_py_code_gen()` that chain passes together. This is the authoritative source for pass ordering.
 - **`driver/jir.jac`** -- The JIR container: cached module bytecode plus typed sections (MTIR, placement, native objects, module interfaces, dependency hashes, diagnostics), keyed by source content and the running compiler's identity. Trees are never persisted; they are working state, re-derived per process -- what a module *exports* is persisted instead, as an interface section that dependency ingestion hydrates from (`driver/ifacecache.jac`).
 - **`frontend/diagnostics.jac`** -- Error and warning reporting infrastructure.
-- **`driver/modresolver.jac`** -- Module import and dependency resolution.
+- **`project/modresolver.jac`** -- Shared project and module import resolution.
 - **`frontend/parser/`** -- The Lark grammar definition and lexer that parse Jac source into the initial AST.
 - **`passes/`** -- The shared analysis passes: AST validation, symbol table construction, declaration-implementation matching, semantic analysis, and more (see the pass ordering below).
 
@@ -279,7 +279,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | `release-dev.yml` | Rolling `dev` prerelease binaries, rebuilt nightly from main |
 | `nightly.yml` | Cron canaries: notes-app CEF smoke and the live-release installer check |
 
-Local git hooks come from `jac precommit --install`: a pre-commit hook that formats and lints staged `.jac` files, and a commit-msg hook that blocks AI co-author attribution. Markdown lint and the em-dash ban run on every PR via pre-commit.ci (`.pre-commit-config.yaml`).
+Local git hooks come from `jac precommit --install`: a pre-commit hook that formats and lints staged `.jac` files, and a commit-msg hook that blocks AI co-author attribution. Manual `jac precommit` runs on staged `.jac` files by default; use `jac precommit --verify` for a check-only run or `jac precommit --all` for the whole project. Markdown lint and the em-dash ban run on every PR via pre-commit.ci (`.pre-commit-config.yaml`).
 
 ---
 

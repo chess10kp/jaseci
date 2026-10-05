@@ -40,7 +40,7 @@ node Todo {
     has title: str, done: bool = False;
 }
 
-def:pub add_todo(title: str) -> dict {
+def:pub add_todo(title: str) -> dict[str, any] {
     todo = root ++> Todo(title=title);
     return {"id": jid(todo), "title": todo.title};
 }
@@ -197,7 +197,7 @@ with entry {
 Edges can also be **typed** with their own data, modeling relationships like schedules, dependencies, or social connections:
 
 ```jac
-edge Scheduled {
+edge Scheduled: Root --> Task {
     has time: str;
     has priority: int = 1;
 }

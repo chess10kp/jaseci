@@ -7,6 +7,8 @@ cover the planner (`plan_app_run`) for every kind, kind inference
 (`resolve_app_kind`), entry-point resolution, error paths, and real execution
 of the two cheap runnable kinds (cli, cli-native)."""
 
+import from tests.support { jac_command }
+
 import io;
 import os;
 import sys;
@@ -231,7 +233,8 @@ test "infer cli from plain .jac entry" {
 
 test "infer web-app from plain .jac when jac-client is a dependency" {
     p = _plan(
-        "entry-point = \"main\"\n\n[dependencies]\njac-client = \"*\"\n", "main.jac"
+        "entry-point = \"main\"\n\n[dependencies.pypi]\njac-client = \"*\"\n",
+        "main.jac"
     );
     assert p.kind == "web-app";
 }
@@ -280,7 +283,8 @@ test "resolve_app_kind: an explicit kind wins for any app" {
 
 test "resolve_app_kind: only the implicit app infers; an [apps] entry is cli" {
     d = _mk_project(
-        "entry-point = \"main\"\n\n[dependencies]\njac-client = \"*\"\n", "main.jac"
+        "entry-point = \"main\"\n\n[dependencies.pypi]\njac-client = \"*\"\n",
+        "main.jac"
     );
     cfg = JacConfig.discover(start_path=Path(d));
     assert cfg is not None;
@@ -691,17 +695,14 @@ test "backend flag selects either executor and forwards program arguments" {
     );
     for backend in ["python", "native"] {
         result = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "jaclang",
+            jac_command(
                 "run",
                 "--backend",
                 backend,
                 os.path.join(d, "main.jac"),
                 "--",
                 "forwarded"
-            ],
+            ),
             capture_output=True,
             text=True,
             timeout=300
