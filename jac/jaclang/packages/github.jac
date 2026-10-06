@@ -58,17 +58,20 @@ obj GitHub {
         payload = data
             if data is not None
             else (json.dumps(body).encode("utf-8") if body is not None else None);
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "jac-publish",
+            "Content-Type": content_type
+        };
+        if self.token {
+            headers["Authorization"] = f"Bearer {self.token}";
+        }
         request = urllib.request.Request(
             url if url.startswith("http") else self.api + url,
             data=payload,
             method=method,
-            headers={
-                "Authorization": f"Bearer {self.token}",
-                "Accept": "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "jac-publish",
-                "Content-Type": content_type
-            }
+            headers=headers
         );
         try {
             with urllib.request.urlopen(request, timeout=120) as response {
@@ -153,6 +156,16 @@ obj GitHub {
             body["sha"] = sha;
         }
         self.call("PUT", f"/repos/{repo}/contents/{path}", body=body);
+    }
+
+    def release(repo: str, tag: str) -> (dict[str, any] | None) {
+        """The repo's latest release when `tag` is "", else the tagged release;
+        None when GitHub has no such release. Reads work without a token."""
+        path = (
+            f"/repos/{repo}/releases/latest" if not tag
+            else f"/repos/{repo}/releases/tags/{quote(tag)}"
+        );
+        return self.call("GET", path, allow_missing=True);
     }
 
     def release_for(repo: str, tag: str, target: str) -> dict[str, any] {
