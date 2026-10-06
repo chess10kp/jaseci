@@ -102,7 +102,7 @@ glob logger = logging.getLogger(__name__),
      _pyb_module_memo: dict[(str, object)] = {};
 
 def resolve_sv_callbacks(
-    callbacks: Iterable[dict], img_root: str
+    callbacks: Iterable[dict[str, any]], img_root: str
 ) -> dict[(str, Callable)] {
     import os;
     functions: dict[(str, Callable)] = {};

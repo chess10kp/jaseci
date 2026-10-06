@@ -512,6 +512,10 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
     manifest = ir_module.gen.interop_manifest if ir_module else None;
     bindings = list(manifest.native_imports) if manifest else [];
     plan.callback_bindings = bindings;
+    import from jaclang.compiler.backends.native.link_plan {
+        resolved_callback_bindings
+    }
+    (glue_bindings, _) = resolved_callback_bindings(plan);
     _interop_record = interop_record_path(lib_output);
     _proj_dir = os.path.dirname(os.path.abspath(filename));
     if manifest and manifest.native_imports {
@@ -532,14 +536,14 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
             json.dumps(
                 {
                     "interop": True,
-                    "unresolved": [b.name for b in bindings],
+                    "unresolved": [b.name for b in glue_bindings],
                     "callbacks": [
                         {
                             "name": b.name,
                             "ret_type": b.ret_type,
                             "param_types": list(b.param_types),
                             "source_module": _callback_source_path(b, _proj_dir)
-                        } for b in bindings
+                        } for b in glue_bindings
                     ]
                 },
                 sort_keys=True

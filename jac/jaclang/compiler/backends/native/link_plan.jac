@@ -612,11 +612,16 @@ def _target_machine(plan: LinkPlan, kind: ArtifactKind) -> TargetMachine {
     return tm;
 }
 
-def callback_glue_ir(plan: LinkPlan) -> str {
-    if not plan.callback_bindings {
-        return "";
-    }
-    import from jaclang.compiler.backends.native.link_glue { bind_shared_callbacks }
+def resolved_callback_bindings(
+    plan: LinkPlan
+) -> tuple[list[InteropBinding], dict[str, str]] {
+    """Resolve plan.callback_bindings against the units' bitcode.
+
+    Returns the bindings that need a host-provided bind slot (those with an IR
+    declaration in some unit) plus each one's declaration IR text. A binding
+    neither defined nor declared anywhere -- an imported-but-never-called
+    server fn has no call site -- gets no slot and is skipped with a warning.
+    """;
     wanted = {binding.name for binding in plan.callback_bindings};
     declarations: dict[str, str] = {};
     defined: set[str] = set();
@@ -642,11 +647,26 @@ def callback_glue_ir(plan: LinkPlan) -> str {
         for b in plan.callback_bindings
         if b.name not in defined
     ];
-    missing = {b.name for b in bindings} - set(declarations);
-    if missing {
-        raise LinkPlanError(
-            "Missing callback declarations: " + ", ".join(sorted(missing))
+    unreferenced = {b.name for b in bindings} - set(declarations);
+    if unreferenced {
+        sys.stderr.write(
+            f"[link plan] no IR references for na->sv callback(s) {
+                ', '.join(sorted(unreferenced))
+            }; skipping their bind slots\n"
         );
+        bindings = [b for b in bindings if b.name in declarations];
+    }
+    return (bindings, declarations);
+}
+
+def callback_glue_ir(plan: LinkPlan) -> str {
+    if not plan.callback_bindings {
+        return "";
+    }
+    import from jaclang.compiler.backends.native.link_glue { bind_shared_callbacks }
+    (bindings, declarations) = resolved_callback_bindings(plan);
+    if not bindings {
+        return "";
     }
     (text, _) = bind_shared_callbacks(
         "\n".join(declarations[b.name] for b in bindings), bindings
