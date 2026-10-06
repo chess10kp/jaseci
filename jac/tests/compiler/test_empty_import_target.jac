@@ -29,7 +29,7 @@ test "bare import yields a syntax diagnostic, never an internal error" {
         try {
             prog.compile(
                 file_path=str(target),
-                options=CompileOptions(no_cgen=True, force_target_program=True)
+                options=CompileOptions(no_cgen=True)
             );
         } except Exception as e {
             internal_error = f"{type(e).__name__}: {e}";
