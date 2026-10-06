@@ -1618,6 +1618,7 @@ export default function jacClientEvents() {
 }
 
 impl ViteBundler._ensure_dev_dependencies(self: ViteBundler, build_dir: Path) -> None {
+    self.create_package_json();
     self.install_packages(install_dir=build_dir);
 }
 
