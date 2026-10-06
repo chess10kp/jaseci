@@ -99,11 +99,11 @@ def _sidecar_digest(url: str, name: str) -> (str | None) {
 def update_self(release: str, current: str, verbose: bool) -> int {
     """Replace the running fused launcher with the release binary.
 
-    `release` pins a tag ("" = latest, a leading `v` is fine); `current` is
-    the running version (skips the download when it already has the
-    latest); `verbose` prints the checksum line. Returns a process exit
-    code and reports through the console."""
-    import from jaclang.dist.fused_binary { linked_source_dir, materialized_runtime_dir, running_executable, runtime_trailer };
+    `release` pins a tag: empty means latest, and a leading `v` is fine;
+    `current` is the running version (skips the download when it already
+    has the latest); `verbose` prints the checksum line. Returns a
+    process exit code and reports through the console."""
+    import from jaclang.dist.fused_binary { linked_source_dir, materialized_runtime_dir, running_executable, runtime_trailer }
 
     triple = platform_triple();
     if triple is None {
@@ -157,7 +157,7 @@ def update_self(release: str, current: str, verbose: bool) -> int {
 
     tag = release[1:] if release.startswith("v") else release;
     console.info("Fetching release info...");
-    import from jaclang.packages.github { GitHub, GitHubError, find_token };
+    import from jaclang.packages.github { GitHub, GitHubError, find_token }
     try {
         rel = GitHub(token=find_token()).release(SELF_UPDATE_REPO, tag);
     } except GitHubError as e {
@@ -221,7 +221,7 @@ def update_self(release: str, current: str, verbose: bool) -> int {
             return 1;
         }
         console.info(f"Downloading {name} ({rel_tag})...");
-        import from jaclang.toolchains.store { Artifact, fetch };
+        import from jaclang.toolchains.store { Artifact, fetch }
         try {
             fetch(
                 Artifact(
