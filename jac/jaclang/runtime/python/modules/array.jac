@@ -600,7 +600,7 @@ def:pub jacpy_array_pop(state: array_state, index: i64) -> ptr[PyObject] {
     try {
         if state.length == 0 {
             object_error("IndexError", "pop from empty array");
-            return 0;
+            return NULL;
         }
         if index < 0 {
             index += state.length;
