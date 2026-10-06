@@ -1,0 +1,262 @@
+"""`jac update --self`: the fused jac binary updates itself from GitHub
+Releases. The install.sh contract, ported beside the fused-binary seams it
+needs: resolve the latest (or a pinned) release, pick this platform's
+default-binary asset, verify it against the published sha256, and atomically
+replace the running launcher. Already-running processes keep their version;
+new invocations pick up the update. The guards refuse everything a release
+binary must not touch: a plain interpreter session, a linked dev build, an
+unwritable install."""
+
+import os;
+import platform;
+import re;
+import urllib.request;
+import from pathlib { Path }
+
+glob SELF_UPDATE_REPO: str = "jaseci-labs/jaseci";
+
+def platform_triple(system: str = "", machine: str = "") -> ((str, str) | None) {
+    """This host's (os, arch) in release-asset form, or None when releases
+    carry no binary for it (Windows ships via the installer page, not
+    assets). Mirrors scripts/install.sh's mapping; tests pin the values.""";
+    os_name = (system or platform.system()).lower();
+    cpu = (machine or platform.machine()).lower();
+    if os_name == "linux" {
+        plat = "linux";
+    } elif os_name == "darwin" {
+        plat = "macos";
+    } else {
+        return None;
+    }
+    if cpu in ("x86_64", "amd64") {
+        arch = "x86_64";
+    } elif cpu in ("aarch64", "arm64") {
+        arch = "aarch64";
+    } else {
+        return None;
+    }
+    return (plat, arch);
+}
+
+def release_asset(
+    assets: list[any], plat: str, arch: str
+) -> ((dict[str, any], str) | None) {
+    """The platform's default-binary asset on a release, plus its jac
+    version. Matches `jac-<semver>-<plat>-<arch>` exactly, so the rolling
+    `dev` prerelease's `jac-dev-*` assets and the experimental `-jacpython`
+    variants never answer for a release (the same rule install.sh applies).""";
+    pattern = re.compile(rf"^jac-(\d+\.\d+\.\d+)-{re.escape(plat)}-{re.escape(arch)}$");
+    for asset in assets {
+        m = pattern.match(str(asset.get("name", "")));
+        if m {
+            return (asset, m.group(1));
+        }
+    }
+    return None;
+}
+
+def up_to_date(current: str, latest: str) -> bool {
+    """True when the running version already has `latest`. A local version
+    the semver parser cannot rank (a dev tag) counts as old, so the download
+    goes ahead.""";
+    import from jaclang.packages.semver { SemverError, Version }
+    try {
+        return Version.parse(current) >= Version.parse(latest);
+    } except SemverError {
+        return False;
+    }
+}
+
+def _fetch_text(url: str) -> (str | None) {
+    """Small text GET (the release's `.sha256` sidecar). None on any
+    network failure; the binary itself goes through toolchains fetch.""";
+    request = urllib.request.Request(url, headers={"User-Agent": "jac-update"});
+    try {
+        with urllib.request.urlopen(request, timeout=60) as response {
+            return response.read().decode("utf-8");
+        }
+    } except OSError {
+        return None;
+    }
+}
+
+def _sidecar_digest(url: str, name: str) -> (str | None) {
+    """The sha256 published beside the asset, or None when the release
+    ships no usable checksum. A release binary is never installed
+    unverified -- unlike install.sh, the binary always has hashlib, so the
+    checksum is a hard requirement.""";
+    text = _fetch_text(f"{url}.sha256");
+    if text is None {
+        return None;
+    }
+    token = text.split()[0] if text.split() else "";
+    if re.fullmatch(r"[0-9a-f]{64}", token) {
+        return token;
+    }
+    return None;
+}
+
+def update_self(release: str, current: str, verbose: bool) -> int {
+    """Replace the running fused launcher with the release binary.
+
+    `release` pins a tag ("" = latest, a leading `v` is fine); `current` is
+    the running version (skips the download when it already has the
+    latest); `verbose` prints the checksum line. Returns a process exit
+    code and reports through the console."""
+    import from jaclang.dist.fused_binary {
+        linked_source_dir,
+        materialized_runtime_dir,
+        running_executable,
+        runtime_trailer
+    }
+
+    triple = platform_triple();
+    if triple is None {
+        console.error(
+            f"jac update --self has no binary for {platform.system()} {platform.machine()}.",
+            hint=(
+                "Watch https://github.com/"
+                f"{SELF_UPDATE_REPO}/releases for new platforms"
+            )
+        );
+        return 1;
+    }
+    (plat, arch) = triple;
+
+    target = Path(running_executable());
+    if runtime_trailer(str(target)) is None {
+        console.error(
+            "jac update --self only updates the self-contained jac binary.",
+            hint=(
+                "This session is not running from one (a plain interpreter or "
+                "a source checkout). Refresh with: curl -fsSL "
+                f"https://raw.githubusercontent.com/{SELF_UPDATE_REPO}/main/"
+                "scripts/install.sh | bash"
+            )
+        );
+        return 1;
+    }
+    linked = linked_source_dir(materialized_runtime_dir() or "");
+    if linked {
+        console.error(
+            "jac update --self refuses to replace a linked dev binary.",
+            hint=(
+                f"This launcher compiles the jaclang source at {linked}; "
+                "updating it would strand the dev loop. Pull and rebuild "
+                "instead: git pull && ./scripts/fresh_env.sh"
+            )
+        );
+        return 1;
+    }
+    if not os.access(str(target), os.W_OK)
+        or not os.access(str(target.parent), os.W_OK) {
+        console.error(
+            f"No write permission for {target} (or its directory).",
+            hint=(
+                "Fix the permissions, or reinstall to a writable location "
+                "such as ~/.local/bin with the install script."
+            )
+        );
+        return 1;
+    }
+
+    tag = release[1:] if release.startswith("v") else release;
+    console.info("Fetching release info...");
+    import from jaclang.packages.github { GitHub, GitHubError, find_token }
+    try {
+        rel = GitHub(token=find_token()).release(SELF_UPDATE_REPO, tag);
+    } except GitHubError as e {
+        console.error(
+            f"GitHub API failed: {e}",
+            hint="Rate limited? Set GITHUB_TOKEN (or GH_TOKEN), or retry in a moment."
+        );
+        return 1;
+    }
+    if rel is None {
+        if tag {
+            console.error(
+                f"No release v{tag} on {SELF_UPDATE_REPO}.",
+                hint=f"See https://github.com/{SELF_UPDATE_REPO}/releases"
+            );
+        } else {
+            console.error(f"No releases published on {SELF_UPDATE_REPO} yet.");
+        }
+        return 1;
+    }
+    rel_tag = str(rel.get("tag_name", "")) or f"v{tag}";
+    found = release_asset(rel.get("assets", []), plat, arch);
+    if found is None {
+        console.error(
+            f"Release {rel_tag} ships no jac binary for {plat}-{arch}.",
+            hint=(
+                "See https://github.com/"
+                f"{SELF_UPDATE_REPO}/releases for the platforms that built"
+            )
+        );
+        return 1;
+    }
+    (asset, asset_ver) = found;
+    name = str(asset.get("name", ""));
+    url = str(asset.get("browser_download_url", ""));
+    if not url {
+        console.error(f"Release asset '{name}' has no download URL.");
+        return 1;
+    }
+
+    if not tag and up_to_date(current, asset_ver) {
+        console.success(f"jac is up to date ({current}).");
+        return 0;
+    }
+
+    # Stage beside the target so the final rename stays on one filesystem.
+    # toolchains fetch writes a persistent pid-scoped `.lock` next to the
+    # destination while downloading (see jac0core FileLock); removed when
+    # this update finishes cleanly.
+    tmp = target.parent / f".{target.name}.update-{os.getpid()}.bin";
+    lock = tmp.with_suffix(".lock");
+    mode = os.stat(str(target)).st_mode & 0o777;
+    installed = False;
+    try {
+        digest = _sidecar_digest(url, name);
+        if digest is None {
+            console.error(
+                f"No usable sha256 published for {name}.",
+                hint="Refusing to install an unverified binary; try again later."
+            );
+            return 1;
+        }
+        console.info(f"Downloading {name} ({rel_tag})...");
+        import from jaclang.toolchains.store { Artifact, fetch }
+        try {
+            fetch(
+                Artifact(
+                    name="jac",
+                    version=rel_tag,
+                    platform=f"{plat}-{arch}",
+                    url=url,
+                    digest=digest
+                ),
+                destination=tmp
+            );
+        } except (ValueError, RuntimeError, OSError) as e {
+            console.error(f"Download failed: {e}", hint="Try again in a moment.");
+            return 1;
+        }
+        if verbose {
+            console.info(f"Checksum OK ({digest[:16]}...).");
+        }
+        os.chmod(str(tmp), mode);
+        os.replace(str(tmp), str(target));
+        installed = True;
+    } finally {
+        if not installed {
+            tmp.unlink(missing_ok=True);
+        }
+        lock.unlink(missing_ok=True);
+    }
+    console.success(f"Updated jac {current} -> {asset_ver} ({target}).");
+    console.info(
+        "Running jac processes keep their version; new invocations use the updated binary."
+    );
+    return 0;
+}
