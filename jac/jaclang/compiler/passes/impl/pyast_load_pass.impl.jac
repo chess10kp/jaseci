@@ -664,7 +664,7 @@ impl PyastBuildPass.proc_match_value(nd: py_ast.MatchValue) -> MatchValue {
         folded = None;
     }
     if isinstance(folded, complex) {
-        self.emit(E5044);
+        self.ctx.emit(E5044);
     }
     value = self.convert(nd.value);
     if isinstance(value, Expr) {
