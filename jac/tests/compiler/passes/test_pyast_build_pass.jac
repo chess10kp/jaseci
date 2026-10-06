@@ -18,6 +18,7 @@ import from jaclang.compiler.passes.pyast_load_pass {
     build_python_module
 }
 import from jaclang.compiler.tools.jac_formatter_pass { unparse_module }
+import from jaclang.compiler.passes.execution { new_context }
 import from jaclang.project.source { pascal_to_snake }
 import from jaclang.compiler.frontend.parser.lexer { tokenize_full }
 import from jaclang.compiler.driver.program { JacProgram }
@@ -25,6 +26,11 @@ import from jaclang.runtime.runtime { JacRuntime }
 import from jaclang.compiler.frontend.unitree { PythonModuleAst, Source }
 
 glob FIXTURES = os.path.join(JAC_ROOT, "tests", "compiler", "passes", "fixtures");
+
+def _pyast_unparse_ir(mod: PythonModuleAst) -> str {
+    bp = PyastBuildPass(module=mod, ctx=new_context(PyastBuildPass, mod));
+    return unparse_module(bp.ir_out);
+}
 
 def read_fixture(name: str) -> str {
     with open(os.path.join(FIXTURES, name)) as f {
@@ -236,12 +242,12 @@ bare (shadowable) `complex(...)` call or an ICE."""
 test "py2jac complex literals" {
     file_source = read_fixture("py2jac_complex.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_complex.py")
             ),
-        ).ir_out
+        )
     );
 
     # Shadow-proof qualified reference: a single aliased builtins-module import
@@ -299,12 +305,12 @@ imports and executes the converted module to guard against that regression.
 test "py2jac complex literals run in server codespace" {
     file_source = read_fixture("py2jac_complex.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_complex.py")
             ),
-        ).ir_out
+        )
     );
 
     tmp = tempfile.mkdtemp();
@@ -337,11 +343,11 @@ test "py2jac complex literals run in server codespace" {
 test "py2jac null constant" {
     source = "def f() -> None:\n    return None\n";
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(source), orig_src=Source(source, "py2jac_null.py")
             ),
-        ).ir_out
+        )
     );
     assert "return None" in code , f"Expected None literal in:\n{code}";
     prog = JacProgram.jac_str_formatter(
@@ -362,12 +368,12 @@ test "py2jac complex literals native lowering" {
     }
     file_source = read_fixture("py2jac_complex.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_complex.py")
             ),
-        ).ir_out
+        )
     );
     prog = JacProgram();
     mod = prog.compile(
@@ -404,11 +410,11 @@ test "py2jac builtin shadowing is resolved through the alias" {
         "    return 1 + 2j\n"
     );
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(source), orig_src=Source(source, "py2jac_shadow.py")
             ),
-        ).ir_out
+        )
     );
 
     # Collision-free suffix: the source stole the base alias, so a fresh one is used.
@@ -459,12 +465,12 @@ test "py2jac alias avoids match and except bindings" {
         "            return _jac_py2jac_builtins\n"
     );
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(match_source),
                 orig_src=Source(match_source, "py2jac_alias_match.py")
             ),
-        ).ir_out
+        )
     );
     assert "as _jac_py2jac_builtins;" not in code , (
         f"Must not collide with a match-captured name in:\n{code}"
@@ -483,12 +489,12 @@ test "py2jac alias avoids match and except bindings" {
         "        return None\n"
     );
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(except_source),
                 orig_src=Source(except_source, "py2jac_alias_except.py")
             ),
-        ).ir_out
+        )
     );
     assert "as _jac_py2jac_builtins;" not in code , (
         f"Must not collide with an except-bound name in:\n{code}"
@@ -510,9 +516,9 @@ test "py2jac nan lowers to aliased float call" {
     fn_def.body[0].value.value = float('nan');
     source = "def f():\n    return 0.0\n";
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(tree, orig_src=Source(source, "py2jac_nan.py")),
-        ).ir_out
+        _pyast_unparse_ir(
+            PythonModuleAst(tree, orig_src=Source(source, "py2jac_nan.py")),
+        )
     );
 
     assert "import builtins as" in code , (
@@ -538,11 +544,11 @@ test "py2jac nan lowers to aliased float call" {
 test "py2jac no builtins import for plain and inf numbers" {
     source = "def pos():\n    return 1e309\ndef neg():\n    return -1e309\ndef n():\n    return 7\n";
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(source), orig_src=Source(source, "py2jac_noinf.py")
             ),
-        ).ir_out
+        )
     );
     assert "import builtins" not in code , (
         f"Plain/inf-only module must not inject a builtins import in:\n{code}"
@@ -625,12 +631,12 @@ test "qualified builtin recognition is symbol-based" {
 test "py2jac fstring adjacent multiline" {
     file_source = read_fixture("py2jac_fstring_adjacent_multiline.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_fstring_adjacent_multiline.py")
             ),
-        ).ir_out,
+        ),
         requires_format=False
     );
 
@@ -658,12 +664,12 @@ test "py2jac fstring adjacent multiline" {
 test "py2jac fstring adjacent singleline" {
     file_source = read_fixture("py2jac_fstring_adjacent_singleline.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_fstring_adjacent_singleline.py")
             ),
-        ).ir_out,
+        ),
         requires_format=False
     );
 
@@ -686,12 +692,12 @@ test "py2jac fstring adjacent singleline" {
 test "py2jac lambda iife" {
     file_source = read_fixture("py2jac_lambda_iife.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_lambda_iife.py")
             ),
-        ).ir_out,
+        ),
         requires_format=False
     );
 
@@ -720,12 +726,12 @@ text directly.
 test "py2jac fstring hash survives formatter" {
     file_source = read_fixture("py2jac_fstring_hash.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_fstring_hash.py")
             ),
-        ).ir_out
+        )
     );
 
     prog = JacProgram.jac_str_formatter(
@@ -754,12 +760,12 @@ constant rather than a shadowable `float('inf')` call.
 test "py2jac complex inf imaginary" {
     file_source = read_fixture("py2jac_complex_inf.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_complex_inf.py")
             ),
-        ).ir_out
+        )
     );
 
     assert "complex(0, 1e309)" in code , (
@@ -783,12 +789,12 @@ name -- producing an undefined-name error instead of preserving the value.
 test "py2jac plain float inf" {
     file_source = read_fixture("py2jac_float_inf.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_float_inf.py")
             ),
-        ).ir_out
+        )
     );
 
     assert "return 1e309" in code , f"Expected 1e309 literal in:\n{code}";
@@ -846,12 +852,12 @@ expression kind (BinOp, BoolOp, Compare, Unary, Await) as a call target.
 test "py2jac ternary call target" {
     file_source = read_fixture("py2jac_ternary_call.py");
     code = unparse_module(
-        PyastBuildPass(
-            ir_in=PythonModuleAst(
+        _pyast_unparse_ir(
+            PythonModuleAst(
                 py_ast.parse(file_source),
                 orig_src=Source(file_source, "py2jac_ternary_call.py")
             ),
-        ).ir_out,
+        ),
         requires_format=False
     );
 
