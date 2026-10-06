@@ -3,7 +3,7 @@ import hashlib;
 import from jaclang.jac0core.sv_service_host { resolve_sv_service_host }
 import from jaclang.jac0core.host { HOST_BUN, HOST_TEST }
 import from jaclang.test_sv_host { prepare_test_sv_service, get_test_adapter }
-import from jaclang.bun_sv_spawn { spawn_bun_sv_service }
+import from jaclang.data.bun_sv_spawn { spawn_bun_sv_service }
 import from jaclang.server { sv_client }
 
 

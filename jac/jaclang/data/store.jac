@@ -110,7 +110,7 @@ glob logger = logging.getLogger(__name__),
         ON jac_docs (collection, (doc->>'user_id'))
     """
      ]
-     + OUTBOX_SCHEMA_SQL;
+         + OUTBOX_SCHEMA_SQL,
      _schema_ready: set[str] = set(),
      _schema_gate = threading.Lock(),
      __all__ = [
