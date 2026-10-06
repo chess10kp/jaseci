@@ -188,6 +188,7 @@ impl NaIRGenPass._emit_hash_core_helpers(
     bf.store(s0, slot_a);
     bf.store(ir.Constant(i64, -1), itomb_a);
 
+    cap0_bb = find_fn.append_basic_block("cap0");
     probe_bb = find_fn.append_basic_block("probe");
     empty_bb = find_fn.append_basic_block("empty");
     fp_bb = find_fn.append_basic_block("fp");
@@ -195,7 +196,9 @@ impl NaIRGenPass._emit_hash_core_helpers(
     tomb_bb = find_fn.append_basic_block("tomb");
     next_bb = find_fn.append_basic_block("next");
     found_bb = find_fn.append_basic_block("found");
-    bf.branch(probe_bb);
+    _cap_is0 = bf.icmp_unsigned("==", capf, ir.Constant(i64, 0), name="cap.is0");
+    bf.cbranch(_cap_is0, cap0_bb, probe_bb);
+    ir.IRBuilder(cap0_bb).ret(ir.Constant(i64, -1));
 
     bp = ir.IRBuilder(probe_bb);
     sl = bp.load(slot_a, name="sl");
@@ -276,7 +279,11 @@ impl NaIRGenPass._emit_hash_core_helpers(
     old_vals = brh.load(vals_prh, name="ovals") if has_vals else None;
     old_ctrl = brh.load(ctrl_prh, name="octrl");
     old_order = brh.load(ord_prh, name="oorder");
-    new_cap = brh.mul(old_cap, ir.Constant(i64, 2), name="ncap");
+    _ncap_dbl = brh.mul(old_cap, ir.Constant(i64, 2), name="ncap.dbl");
+    _ocap_is0 = brh.icmp_unsigned("==", old_cap, ir.Constant(i64, 0), name="ocap.is0");
+    new_cap = brh.select(
+        _ocap_is0, ir.Constant(i64, HASH_INIT_CAP), _ncap_dbl, name="ncap"
+    );
     new_mask = brh.sub(new_cap, ir.Constant(i64, 1), name="nmask");
 
     kgnr = brh.gep(
@@ -391,6 +398,57 @@ impl NaIRGenPass._emit_hash_core_helpers(
     }
     brf.ret_void();
 
+    mat_fn: any = ir.Function(
+        self.llvm_module, rehash_fnty, name=f"{_pre}_materialize_{_safe}"
+    );
+    mat_fn.linkage = "private";
+    mat_fn.args[0].name = "cont";
+    bm = ir.IRBuilder(mat_fn.append_basic_block("entry"));
+    d_m = mat_fn.args[0];
+    m_cap = ir.Constant(i64, HASH_INIT_CAP);
+    m_ksz = bm.ptrtoint(
+        bm.gep(
+            ir.Constant(key_type.as_pointer(), None),
+            [ir.Constant(i32, 1)],
+            name="mksz.p"
+        ),
+        i64,
+        name="mksz"
+    );
+    m_keys = bm.call(malloc_fn, [bm.mul(m_cap, m_ksz, name="mkb")], name="mkr");
+    bm.store(
+        bm.bitcast(m_keys, key_type.as_pointer(), name="mk"),
+        bm.gep(d_m, [ir.Constant(i32, 0), ir.Constant(i32, KEYS_F)], name="mkp")
+    );
+    if has_vals {
+        m_vsz = bm.ptrtoint(
+            bm.gep(
+                ir.Constant(_vt.as_pointer(), None),
+                [ir.Constant(i32, 1)],
+                name="mvsz.p"
+            ),
+            i64,
+            name="mvsz"
+        );
+        m_vals = bm.call(malloc_fn, [bm.mul(m_cap, m_vsz, name="mvb")], name="mvr");
+        bm.store(
+            bm.bitcast(m_vals, _vt.as_pointer(), name="mv"),
+            bm.gep(d_m, [ir.Constant(i32, 0), ir.Constant(i32, VALS_F)], name="mvp")
+        );
+    }
+    bm.store(
+        bm.call(calloc_fn, [m_cap, ir.Constant(i64, 1)], name="mc"),
+        bm.gep(d_m, [ir.Constant(i32, 0), ir.Constant(i32, CTRL_F)], name="mcp")
+    );
+    bm.store(
+        self._hash_order_alloc(bm, m_cap),
+        bm.gep(d_m, [ir.Constant(i32, 0), ir.Constant(i32, ORDER_F)], name="mop")
+    );
+    bm.store(
+        m_cap, bm.gep(d_m, [ir.Constant(i32, 0), ir.Constant(i32, CAP_F)], name="mcap")
+    );
+    bm.ret_void();
+
     _ins_op = "set" if has_vals else "add";
     _ins_args = [cont_ptr_type, key_type, val_type, i64]
         if has_vals
@@ -411,6 +469,21 @@ impl NaIRGenPass._emit_hash_core_helpers(
     k_s = ins_fn.args[1];
     v_s: any = ins_fn.args[2] if has_vals else None;
     h_ins: any = ins_fn.args[3 if has_vals else 2];
+    _sz_cap = bs.load(
+        bs.gep(d_s, [ir.Constant(i32, 0), ir.Constant(i32, CAP_F)], name="szc.p"),
+        name="szc"
+    );
+    _sz0_bb = ins_fn.append_basic_block("cap0.grow");
+    _sfind_bb = ins_fn.append_basic_block("find");
+    bs.cbranch(
+        bs.icmp_unsigned("==", _sz_cap, ir.Constant(i64, 0), name="szc.is0"),
+        _sz0_bb,
+        _sfind_bb
+    );
+    _bs0 = ir.IRBuilder(_sz0_bb);
+    _bs0.call(mat_fn, [d_s]);
+    _bs0.branch(_sfind_bb);
+    bs = ir.IRBuilder(_sfind_bb);
     res_s = bs.call(find_fn, [d_s, k_s, h_ins], name="res");
     is_fnd = bs.icmp_signed(">=", res_s, ir.Constant(i64, 0), name="found");
     upd_bb = ins_fn.append_basic_block("upd");
@@ -805,10 +878,22 @@ impl NaIRGenPass._emit_hash_core_helpers(
     order_cl = bdn_cl.load(
         bdn_cl.gep(d_cl, [ir.Constant(i32, 0), ir.Constant(i32, ORDER_F)])
     );
-    bdn_cl.store(
-        ir.Constant(i64, 0), self._hash_order_extent_ptr(bdn_cl, order_cl, cap_cl)
+    cl_ext = clear_fn.append_basic_block("extent");
+    cl_ret = clear_fn.append_basic_block("ret");
+
+    bdn_cl.cbranch(
+        bdn_cl.icmp_unsigned(
+            "==", order_cl, ir.Constant(order_cl.type, None), name="ord.none"
+        ),
+        cl_ret,
+        cl_ext
     );
-    bdn_cl.ret_void();
+    bex_cl = ir.IRBuilder(cl_ext);
+    bex_cl.store(
+        ir.Constant(i64, 0), self._hash_order_extent_ptr(bex_cl, order_cl, cap_cl)
+    );
+    bex_cl.branch(cl_ret);
+    ir.IRBuilder(cl_ret).ret_void();
 
     _gk_op = "get_key" if has_vals else "get";
     get_key_fnty = ir.FunctionType(key_type, [cont_ptr_type, i64]);
@@ -834,11 +919,17 @@ impl NaIRGenPass._emit_hash_core_helpers(
         bgk.gep(d_gk, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name="gk.cap0.p"),
         name="gk.cap0"
     );
+    _gk_need = get_key_fn.append_basic_block("gk.compact");
+    _gk_go = get_key_fn.append_basic_block("gk.go");
+    _gk_maybe = get_key_fn.append_basic_block("gk.maybe");
+    _gk_ord_null = bgk.icmp_unsigned(
+        "==", _gk_ord0, ir.Constant(_gk_ord0.type, None), name="gk.ord0"
+    );
+    bgk.cbranch(_gk_ord_null, _gk_go, _gk_maybe);
+    bgk = ir.IRBuilder(_gk_maybe);
     _gk_extent0 = bgk.load(
         self._hash_order_extent_ptr(bgk, _gk_ord0, _gk_cap0), name="gk.extent0"
     );
-    _gk_need = get_key_fn.append_basic_block("gk.compact");
-    _gk_go = get_key_fn.append_basic_block("gk.go");
     bgk.cbranch(
         bgk.icmp_unsigned("!=", _gk_extent0, _gk_len0, name="gk.holes"),
         _gk_need,
@@ -971,11 +1062,20 @@ impl NaIRGenPass._emit_hash_core_helpers(
             bgv.gep(d_gv, [ir.Constant(i32, 0), ir.Constant(i32, 1)], name="gv.cap0.p"),
             name="gv.cap0"
         );
+        _gv_need = get_val_fn.append_basic_block("gv.compact");
+        _gv_go = get_val_fn.append_basic_block("gv.go");
+        _gv_maybe = get_val_fn.append_basic_block("gv.maybe");
+        bgv.cbranch(
+            bgv.icmp_unsigned(
+                "==", _gv_ord0, ir.Constant(_gv_ord0.type, None), name="gv.ord0"
+            ),
+            _gv_go,
+            _gv_maybe
+        );
+        bgv = ir.IRBuilder(_gv_maybe);
         _gv_extent0 = bgv.load(
             self._hash_order_extent_ptr(bgv, _gv_ord0, _gv_cap0), name="gv.extent0"
         );
-        _gv_need = get_val_fn.append_basic_block("gv.compact");
-        _gv_go = get_val_fn.append_basic_block("gv.go");
         bgv.cbranch(
             bgv.icmp_unsigned("!=", _gv_extent0, _gv_len0, name="gv.holes"),
             _gv_need,
