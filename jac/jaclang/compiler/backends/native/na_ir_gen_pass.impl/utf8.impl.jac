@@ -464,11 +464,7 @@ impl NaIRGenPass._emit_one_char_str(
     result = b.phi(i8.as_pointer(), name="chr1.result");
     result.add_incoming(cached, ascii_end);
     result.add_incoming(buf, wide_end);
-    # Every single-character string is an immortal shared value: a .rodata
-    # table entry below 128, an interned table entry above. It is handed out
-    # borrowed in every memory mode -- nothing may free or eagerly drop it,
-    # so the fast path stays inline and no allocator call reaches the
-    # enclosing function body.
+
     return result;
 }
 
@@ -487,12 +483,6 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
     fn.args[0].name = "cp";
     point = fn.args[0];
 
-    # Wide single-character strings are interned in a 4096-slot open-addressed
-    # table, so iteration over non-ASCII text allocates once per distinct
-    # codepoint instead of once per character yielded. Key 0 marks a free slot;
-    # codepoints below 128 never reach this helper. Entries are immortal and
-    # never freed, so a benign first-touch race between threads can only waste
-    # the loser's duplicate buffer -- it cannot corrupt or reclaim a live one.
     entry_bb = fn.append_basic_block("entry");
     probe_bb = fn.append_basic_block("chrw.probe");
     wb = ir.IRBuilder(entry_bb);
@@ -552,12 +542,9 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
 
     cb = ir.IRBuilder(claim_bb);
     claim_buf = cb.call(encode, [point], name="chrw.encode");
+    cb.store(point, cb.gep(keys_gv, [ir.Constant(i32, 0), idx_v], name="chrw.key.set"));
     cb.store(
-        point, cb.gep(keys_gv, [ir.Constant(i32, 0), idx_v], name="chrw.key.set")
-    );
-    cb.store(
-        claim_buf,
-        cb.gep(vals_gv, [ir.Constant(i32, 0), idx_v], name="chrw.val.set")
+        claim_buf, cb.gep(vals_gv, [ir.Constant(i32, 0), idx_v], name="chrw.val.set")
     );
     cb.branch(done_bb);
 
@@ -663,14 +650,8 @@ impl NaIRGenPass._char_encode_immortal_fn -> ir.Function {
     }
     self._str_finish(wb, buf, width);
     if not self._nogc_headerless() {
-        # Immortalize the interned buffer: the rc header becomes the static
-        # sentinel, so retain/release and the cycle collector treat it like
-        # .rodata no matter where the value travels. Headerless mode has no
-        # header; there safety comes from the value never being owned.
         rc_slot = wb.gep(buf, [ir.Constant(i64, HDR_RC_OFF)], name="chre.rc");
-        wb.store(
-            ir.Constant(i64, RC_SENTINEL), wb.bitcast(rc_slot, i64.as_pointer())
-        );
+        wb.store(ir.Constant(i64, RC_SENTINEL), wb.bitcast(rc_slot, i64.as_pointer()));
     }
     wb.ret(buf);
     self.utf8_char_encode_fn = fn;

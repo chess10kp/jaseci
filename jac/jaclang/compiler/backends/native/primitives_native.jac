@@ -1741,8 +1741,7 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
         result = b.phi(i8.as_pointer(), name="chr.result");
         result.add_incoming(cached, ascii_end);
         result.add_incoming(buf, wide_end);
-        # Like s[i] and for-in yields: chr() hands out an immortal shared
-        # single-character string (cache entry or interned buffer) borrowed.
+
         return result;
     }
 
