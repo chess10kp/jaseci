@@ -428,13 +428,48 @@ impl NaIRGenPass._emit_norm_cp_region(
 impl NaIRGenPass._emit_one_char_str(
     cp: ir.Value, b: (ir.IRBuilder | None) = None
 ) -> ir.Value {
+    i8 = ir.IntType(8);
     i64 = ir.IntType(64);
     point = self._coerce_type(cp, i64);
     if b is None {
         b = self.builder;
     }
-    result = b.call(self._one_char_wide_fn(), [point], name="chr1.str");
-    return self._mark_owned(result);
+    func = b.basic_block.function;
+    ascii_bb = func.append_basic_block("chr1.ascii");
+    wide_bb = func.append_basic_block("chr1.wide");
+    done_bb = func.append_basic_block("chr1.done");
+    b.cbranch(b.icmp_unsigned("<", point, ir.Constant(i64, 128)), ascii_bb, wide_bb);
+    b.position_at_end(ascii_bb);
+    cached = b.bitcast(
+        b.gep(
+            self._get_char_cache_gv(),
+            [
+                ir.Constant(ir.IntType(32), 0),
+                point,
+                ir.Constant(ir.IntType(32), 2),
+                ir.Constant(ir.IntType(32), 0)
+            ],
+            name="chr1.cached"
+        ),
+        i8.as_pointer(),
+        name="chr1.cached.str"
+    );
+    ascii_end = b.basic_block;
+    b.branch(done_bb);
+    b.position_at_end(wide_bb);
+    buf = b.call(self._one_char_wide_fn(), [point], name="chr1.wide.str");
+    wide_end = b.basic_block;
+    b.branch(done_bb);
+    b.position_at_end(done_bb);
+    result = b.phi(i8.as_pointer(), name="chr1.result");
+    result.add_incoming(cached, ascii_end);
+    result.add_incoming(buf, wide_end);
+    # Every single-character string is an immortal shared value: a .rodata
+    # table entry below 128, an interned table entry above. It is handed out
+    # borrowed in every memory mode -- nothing may free or eagerly drop it,
+    # so the fast path stays inline and no allocator call reaches the
+    # enclosing function body.
+    return result;
 }
 
 impl NaIRGenPass._one_char_wide_fn -> ir.Function {
@@ -443,8 +478,111 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
     }
     i8 = ir.IntType(8);
     i64 = ir.IntType(64);
+    i8p = i8.as_pointer();
+    i32 = ir.IntType(32);
+    encode = self._char_encode_immortal_fn();
+    (keys_gv, vals_gv) = self._get_wide_char_intern();
+    fn = self._define_function("__jac_char_from_cp", ir.FunctionType(i8p, [i64]));
+    fn.linkage = "private";
+    fn.args[0].name = "cp";
+    point = fn.args[0];
+
+    # Wide single-character strings are interned in a 4096-slot open-addressed
+    # table, so iteration over non-ASCII text allocates once per distinct
+    # codepoint instead of once per character yielded. Key 0 marks a free slot;
+    # codepoints below 128 never reach this helper. Entries are immortal and
+    # never freed, so a benign first-touch race between threads can only waste
+    # the loser's duplicate buffer -- it cannot corrupt or reclaim a live one.
+    entry_bb = fn.append_basic_block("entry");
+    probe_bb = fn.append_basic_block("chrw.probe");
+    wb = ir.IRBuilder(entry_bb);
+    hash_v = wb.lshr(
+        wb.mul(point, ir.Constant(i64, -7046029254386353131), name="chrw.mul"),
+        ir.Constant(i64, 52),
+        name="chrw.hash"
+    );
+    wb.branch(probe_bb);
+
+    hit_bb = fn.append_basic_block("chrw.hit");
+    empty_bb = fn.append_basic_block("chrw.empty");
+    full_bb = fn.append_basic_block("chrw.full");
+    move_bb = fn.append_basic_block("chrw.move");
+    claim_bb = fn.append_basic_block("chrw.claim");
+    fresh_bb = fn.append_basic_block("chrw.fresh");
+    done_bb = fn.append_basic_block("chrw.done");
+    pb = ir.IRBuilder(probe_bb);
+    idx_v = pb.phi(i64, name="chrw.idx");
+    idx_v.add_incoming(hash_v, entry_bb);
+    count_v = pb.phi(i64, name="chrw.count");
+    count_v.add_incoming(ir.Constant(i64, 0), entry_bb);
+    key = pb.load(
+        pb.gep(keys_gv, [ir.Constant(i32, 0), idx_v], name="chrw.key.slot"),
+        name="chrw.key"
+    );
+    pb.cbranch(pb.icmp_unsigned("==", key, point, name="chrw.is.cp"), hit_bb, empty_bb);
+    pb.position_at_end(empty_bb);
+    pb.cbranch(
+        pb.icmp_unsigned("==", key, ir.Constant(i64, 0), name="chrw.is.free"),
+        claim_bb,
+        full_bb
+    );
+    pb.position_at_end(full_bb);
+    pb.cbranch(
+        pb.icmp_unsigned("==", count_v, ir.Constant(i64, 63), name="chrw.probe.end"),
+        fresh_bb,
+        move_bb
+    );
+    pb.position_at_end(move_bb);
+    next_idx = pb.and_(
+        pb.add(idx_v, ir.Constant(i64, 1), name="chrw.idx.next"),
+        ir.Constant(i64, 4095),
+        name="chrw.idx.mask"
+    );
+    next_count = pb.add(count_v, ir.Constant(i64, 1), name="chrw.count.next");
+    pb.branch(probe_bb);
+    idx_v.add_incoming(next_idx, move_bb);
+    count_v.add_incoming(next_count, move_bb);
+
+    hb = ir.IRBuilder(hit_bb);
+    hit_buf = hb.load(
+        hb.gep(vals_gv, [ir.Constant(i32, 0), idx_v], name="chrw.val.slot"),
+        name="chrw.val"
+    );
+    hb.branch(done_bb);
+
+    cb = ir.IRBuilder(claim_bb);
+    claim_buf = cb.call(encode, [point], name="chrw.encode");
+    cb.store(
+        point, cb.gep(keys_gv, [ir.Constant(i32, 0), idx_v], name="chrw.key.set")
+    );
+    cb.store(
+        claim_buf,
+        cb.gep(vals_gv, [ir.Constant(i32, 0), idx_v], name="chrw.val.set")
+    );
+    cb.branch(done_bb);
+
+    fb = ir.IRBuilder(fresh_bb);
+    fresh_buf = fb.call(encode, [point], name="chrw.encode.ovf");
+    fb.branch(done_bb);
+
+    db = ir.IRBuilder(done_bb);
+    result = db.phi(i8p, name="chrw.result");
+    result.add_incoming(hit_buf, hit_bb);
+    result.add_incoming(claim_buf, claim_bb);
+    result.add_incoming(fresh_buf, fresh_bb);
+    db.ret(result);
+    self.utf8_char_wide_fn = fn;
+    return fn;
+}
+
+impl NaIRGenPass._char_encode_immortal_fn -> ir.Function {
+    if self.utf8_char_encode_fn is not None {
+        return self.utf8_char_encode_fn;
+    }
+    i8 = ir.IntType(8);
+    i64 = ir.IntType(64);
     fn = self._define_function(
-        "__jac_char_from_cp", ir.FunctionType(i8.as_pointer(), [i64])
+        "__jac_char_encode", ir.FunctionType(i8.as_pointer(), [i64])
     );
     fn.linkage = "private";
     fn.args[0].name = "cp";
@@ -453,7 +591,7 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
     _saved = self._builder;
     self._builder = wb;
     self._set_rc_ctx("chr1", "");
-    buf = self._str_alloc(wb, ir.Constant(i64, 5), name="chrw.buf");
+    buf = self._str_alloc(wb, ir.Constant(i64, 5), name="chre.buf");
     self._clear_rc_ctx();
     self._builder = _saved;
     width = wb.select(
@@ -466,11 +604,11 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
                 wb.icmp_unsigned("<", point, ir.Constant(i64, 65536)),
                 ir.Constant(i64, 3),
                 ir.Constant(i64, 4),
-                name="chrw.width.far"
+                name="chre.width.far"
             ),
-            name="chrw.width.mid"
+            name="chre.width.mid"
         ),
-        name="chrw.width"
+        name="chre.width"
     );
     lead_prefix = wb.select(
         wb.icmp_signed("==", width, ir.Constant(i64, 2)),
@@ -482,51 +620,78 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
                 wb.icmp_signed("==", width, ir.Constant(i64, 4)),
                 ir.Constant(i64, 240),
                 ir.Constant(i64, 0),
-                name="chrw.lead.single"
+                name="chre.lead.single"
             ),
-            name="chrw.lead.wide"
+            name="chre.lead.wide"
         ),
-        name="chrw.lead.prefix"
+        name="chre.lead.prefix"
     );
-    continuation = wb.sub(width, ir.Constant(i64, 1), name="chrw.cont");
+    continuation = wb.sub(width, ir.Constant(i64, 1), name="chre.cont");
     lead = wb.or_(
         lead_prefix,
         wb.lshr(
-            point, wb.mul(continuation, ir.Constant(i64, 6)), name="chrw.lead.bits"
+            point, wb.mul(continuation, ir.Constant(i64, 6)), name="chre.lead.bits"
         ),
-        name="chrw.lead"
+        name="chre.lead"
     );
-    wb.store(wb.trunc(lead, i8, name="chrw.lead.byte"), buf);
+    wb.store(wb.trunc(lead, i8, name="chre.lead.byte"), buf);
     for offset in range(1, 4) {
         position = ir.Constant(i64, offset);
         shift = wb.select(
-            wb.icmp_unsigned("<", position, width, name=f"chrw.in.{offset}"),
+            wb.icmp_unsigned("<", position, width, name=f"chre.in.{offset}"),
             wb.mul(
-                wb.sub(continuation, position, name=f"chrw.rest.{offset}"),
+                wb.sub(continuation, position, name=f"chre.rest.{offset}"),
                 ir.Constant(i64, 6),
-                name=f"chrw.shift.{offset}"
+                name=f"chre.shift.{offset}"
             ),
             ir.Constant(i64, 0),
-            name=f"chrw.bits.{offset}"
+            name=f"chre.bits.{offset}"
         );
         payload = wb.and_(
-            wb.lshr(point, shift, name=f"chrw.part.{offset}"),
+            wb.lshr(point, shift, name=f"chre.part.{offset}"),
             ir.Constant(i64, 63),
-            name=f"chrw.low.{offset}"
+            name=f"chre.low.{offset}"
         );
         wb.store(
             wb.trunc(
-                wb.or_(payload, ir.Constant(i64, 128), name=f"chrw.byte.{offset}"),
+                wb.or_(payload, ir.Constant(i64, 128), name=f"chre.byte.{offset}"),
                 i8,
-                name=f"chrw.contb.{offset}"
+                name=f"chre.contb.{offset}"
             ),
-            wb.gep(buf, [position], name=f"chrw.slot.{offset}")
+            wb.gep(buf, [position], name=f"chre.slot.{offset}")
         );
     }
     self._str_finish(wb, buf, width);
+    if not self._nogc_headerless() {
+        # Immortalize the interned buffer: the rc header becomes the static
+        # sentinel, so retain/release and the cycle collector treat it like
+        # .rodata no matter where the value travels. Headerless mode has no
+        # header; there safety comes from the value never being owned.
+        rc_slot = wb.gep(buf, [ir.Constant(i64, HDR_RC_OFF)], name="chre.rc");
+        wb.store(
+            ir.Constant(i64, RC_SENTINEL), wb.bitcast(rc_slot, i64.as_pointer())
+        );
+    }
     wb.ret(buf);
-    self.utf8_char_wide_fn = fn;
+    self.utf8_char_encode_fn = fn;
     return fn;
+}
+
+impl NaIRGenPass._get_wide_char_intern -> (ir.GlobalVariable, ir.GlobalVariable) {
+    if self.wchr_keys_gv is not None {
+        return (self.wchr_keys_gv, self.wchr_vals_gv);
+    }
+    keys_ty = ir.ArrayType(ir.IntType(64), 4096);
+    vals_ty = ir.ArrayType(ir.IntType(8).as_pointer(), 4096);
+    keys = ir.GlobalVariable(self.llvm_module, keys_ty, name="__jac_wchr_keys");
+    keys.linkage = "private";
+    keys.initializer = ir.Constant(keys_ty, None);
+    vals = ir.GlobalVariable(self.llvm_module, vals_ty, name="__jac_wchr_vals");
+    vals.linkage = "private";
+    vals.initializer = ir.Constant(vals_ty, None);
+    self.wchr_keys_gv = keys;
+    self.wchr_vals_gv = vals;
+    return (keys, vals);
 }
 
 impl NaIRGenPass._emit_decode_cp(

@@ -1701,6 +1701,8 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
             return None;
         }
         p = ctx.pass_ref;
+        i8 = ir.IntType(8);
+        i32 = ir.IntType(32);
         i64 = ir.IntType(64);
         point = p._coerce_type(args[0], i64);
         b = get_builder(p);
@@ -1710,8 +1712,38 @@ class NativeBuiltinEmitter(BuiltinEmitter[(ir.Value, NativeEmitCtx)]) {
             "chr() arg not in range(0x110000)"
         );
         b = get_builder(p);
-        result = b.call(p._one_char_wide_fn(), [point], name="chr.str");
-        return p._mark_owned(result);
+        func = b.basic_block.function;
+        ascii_bb = func.append_basic_block("chr.ascii");
+        wide_bb = func.append_basic_block("chr.wide");
+        done_bb = func.append_basic_block("chr.done");
+        b.cbranch(
+            b.icmp_unsigned("<", point, ir.Constant(i64, 128), name="chr.is.ascii"),
+            ascii_bb,
+            wide_bb
+        );
+        b.position_at_end(ascii_bb);
+        cached = b.bitcast(
+            b.gep(
+                p._get_char_cache_gv(),
+                [ir.Constant(i32, 0), point, ir.Constant(i32, 2), ir.Constant(i32, 0)],
+                name="chr.cached"
+            ),
+            i8.as_pointer(),
+            name="chr.cached.str"
+        );
+        ascii_end = b.basic_block;
+        b.branch(done_bb);
+        b.position_at_end(wide_bb);
+        buf = b.call(p._one_char_wide_fn(), [point], name="chr.wide.str");
+        wide_end = b.basic_block;
+        b.branch(done_bb);
+        b.position_at_end(done_bb);
+        result = b.phi(i8.as_pointer(), name="chr.result");
+        result.add_incoming(cached, ascii_end);
+        result.add_incoming(buf, wide_end);
+        # Like s[i] and for-in yields: chr() hands out an immortal shared
+        # single-character string (cache entry or interned buffer) borrowed.
+        return result;
     }
 
     def emit_ord(

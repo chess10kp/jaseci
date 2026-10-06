@@ -451,6 +451,9 @@ walker NaIRGenPass(CompilerPass) {
         str_find_b_fn: (ir.Function | None) = None,
         str_rfind_b_fn: (ir.Function | None) = None,
         utf8_char_wide_fn: (ir.Function | None) = None,
+        utf8_char_encode_fn: (ir.Function | None) = None,
+        wchr_keys_gv: object = None,
+        wchr_vals_gv: object = None,
         str_unwrap_fn: (ir.Function | None) = None,
         str_materialize_fn: (ir.Function | None) = None,
         _str_desc_ty: (ir.IdentifiedStructType | None) = None,
@@ -701,6 +704,8 @@ walker NaIRGenPass(CompilerPass) {
 
     def _emit_one_char_str(cp: ir.Value, b: (ir.IRBuilder | None) = None) -> ir.Value;
     def _one_char_wide_fn -> ir.Function;
+    def _char_encode_immortal_fn -> ir.Function;
+    def _get_wide_char_intern -> (ir.GlobalVariable, ir.GlobalVariable);
     def _codegen_str_char_at(
         data: ir.Value,
         byte_off: ir.Value,
