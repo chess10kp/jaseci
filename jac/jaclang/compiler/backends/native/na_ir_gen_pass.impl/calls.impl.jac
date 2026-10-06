@@ -1548,12 +1548,12 @@ impl NaIRGenPass._emit_intrinsic_alloca(
         words = (n.constant + 7) // 8;
         slot = self._stack_entry_alloca(ir.ArrayType(i64, words), "alloca.buf");
     } else {
-        words = self.builder.sdiv(
+        words_dyn = self.builder.sdiv(
             self.builder.add(n, ir.Constant(i64, 7), name="alloca.pad"),
             ir.Constant(i64, 8),
             name="alloca.words"
         );
-        slot = self.builder.alloca(i64, size=words, name="alloca.buf");
+        slot = self.builder.alloca(i64, size=words_dyn, name="alloca.buf");
     }
     return self.builder.ptrtoint(slot, i64, name="alloca.i64");
 }
