@@ -96,7 +96,6 @@ def _headerless_opts -> any {
     import from jaclang.compiler.driver.compile_options { CompileOptions }
     return CompileOptions(
         force_codespace='native',
-        force_target_program=True,
         na_gc_mode="none",
         nogc_enforce_all=True
     );

@@ -3005,13 +3005,26 @@ impl NaIRGenPass._emit_malloc_null_guard(
     _oom_msg_ptr = _b_oom.gep(
         _oom_msg_gv, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="oom.msg"
     );
-    _write_fn = self._get_or_declare_extern("write", i64, [i32, i8_ptr, i64]);
     _abort_fn = self._get_or_declare_extern("abort", ir.VoidType(), []);
 
-    _b_oom.call(
-        _write_fn,
-        [ir.Constant(i32, 2), _oom_msg_ptr, ir.Constant(i64, len(_oom_msg.encode())), ]
-    );
+    """`write`'s size/return follow the target ABI: POSIX 64-bit on native
+    targets, but wasm32 libc imports are i32-typed and the wasm backend
+    lowers a mismatched direct call to `unreachable`, so declaring the
+    POSIX shape there traps every `puts` in the module.""";
+    _triple = str(self.llvm_module.triple or "").lower();
+    if "wasm" in _triple {
+        _write_fn = self._get_or_declare_extern("write", i32, [i32, i8_ptr, i32]);
+        _b_oom.call(
+            _write_fn,
+            [ir.Constant(i32, 2), _oom_msg_ptr, ir.Constant(i32, len(_oom_msg.encode()))]
+        );
+    } else {
+        _write_fn = self._get_or_declare_extern("write", i64, [i32, i8_ptr, i64]);
+        _b_oom.call(
+            _write_fn,
+            [ir.Constant(i32, 2), _oom_msg_ptr, ir.Constant(i64, len(_oom_msg.encode()))]
+        );
+    }
     _b_oom.call(_abort_fn, []);
     _b_oom.unreachable();
     return ir.IRBuilder(_ok_bb);
