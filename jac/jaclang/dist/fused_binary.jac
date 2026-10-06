@@ -170,7 +170,9 @@ def linked_source_dir(runtime_dir: str) -> str {
         return "";
     }
     try {
-        with open(os.path.join(runtime_dir, "site", LINKED_SOURCE_FILE), encoding="utf-8") as handle {
+        with open(
+            os.path.join(runtime_dir, "site", LINKED_SOURCE_FILE), encoding="utf-8"
+        ) as handle {
             return handle.read().strip();
         }
     } except OSError {

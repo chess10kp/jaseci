@@ -11,6 +11,7 @@ import os;
 import platform;
 import re;
 import urllib.request;
+import from jaclang.cli.console { console }
 import from pathlib { Path }
 
 glob SELF_UPDATE_REPO: str = "jaseci-labs/jaseci";
@@ -103,7 +104,12 @@ def update_self(release: str, current: str, verbose: bool) -> int {
     `current` is the running version (skips the download when it already
     has the latest); `verbose` prints the checksum line. Returns a
     process exit code and reports through the console.""";
-    import from jaclang.dist.fused_binary { linked_source_dir, materialized_runtime_dir, running_executable, runtime_trailer }
+    import from jaclang.dist.fused_binary {
+        linked_source_dir,
+        materialized_runtime_dir,
+        running_executable,
+        runtime_trailer
+    }
 
     triple = platform_triple();
     if triple is None {
