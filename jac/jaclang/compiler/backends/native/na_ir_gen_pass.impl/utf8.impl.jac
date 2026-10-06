@@ -428,43 +428,12 @@ impl NaIRGenPass._emit_norm_cp_region(
 impl NaIRGenPass._emit_one_char_str(
     cp: ir.Value, b: (ir.IRBuilder | None) = None
 ) -> ir.Value {
-    i8 = ir.IntType(8);
     i64 = ir.IntType(64);
     point = self._coerce_type(cp, i64);
     if b is None {
         b = self.builder;
     }
-    func = b.basic_block.function;
-    ascii_bb = func.append_basic_block("chr1.ascii");
-    wide_bb = func.append_basic_block("chr1.wide");
-    done_bb = func.append_basic_block("chr1.done");
-    b.cbranch(b.icmp_unsigned("<", point, ir.Constant(i64, 128)), ascii_bb, wide_bb);
-    b.position_at_end(ascii_bb);
-    cached = b.bitcast(
-        b.gep(
-            self._get_char_cache_gv(),
-            [
-                ir.Constant(ir.IntType(32), 0),
-                point,
-                ir.Constant(ir.IntType(32), 2),
-                ir.Constant(ir.IntType(32), 0)
-            ],
-            name="chr1.cached"
-        ),
-        i8.as_pointer(),
-        name="chr1.cached.str"
-    );
-    ascii_end = b.basic_block;
-    b.branch(done_bb);
-    b.position_at_end(wide_bb);
-
-    buf = b.call(self._one_char_wide_fn(), [point], name="chr1.wide.str");
-    wide_end = b.basic_block;
-    b.branch(done_bb);
-    b.position_at_end(done_bb);
-    result = b.phi(i8.as_pointer(), name="chr1.result");
-    result.add_incoming(cached, ascii_end);
-    result.add_incoming(buf, wide_end);
+    result = b.call(self._one_char_wide_fn(), [point], name="chr1.str");
     return self._mark_owned(result);
 }
 
@@ -488,13 +457,18 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
     self._clear_rc_ctx();
     self._builder = _saved;
     width = wb.select(
-        wb.icmp_unsigned("<", point, ir.Constant(i64, 2048)),
-        ir.Constant(i64, 2),
+        wb.icmp_unsigned("<", point, ir.Constant(i64, 128)),
+        ir.Constant(i64, 1),
         wb.select(
-            wb.icmp_unsigned("<", point, ir.Constant(i64, 65536)),
-            ir.Constant(i64, 3),
-            ir.Constant(i64, 4),
-            name="chrw.width.wide"
+            wb.icmp_unsigned("<", point, ir.Constant(i64, 2048)),
+            ir.Constant(i64, 2),
+            wb.select(
+                wb.icmp_unsigned("<", point, ir.Constant(i64, 65536)),
+                ir.Constant(i64, 3),
+                ir.Constant(i64, 4),
+                name="chrw.width.far"
+            ),
+            name="chrw.width.mid"
         ),
         name="chrw.width"
     );
@@ -504,7 +478,12 @@ impl NaIRGenPass._one_char_wide_fn -> ir.Function {
         wb.select(
             wb.icmp_signed("==", width, ir.Constant(i64, 3)),
             ir.Constant(i64, 224),
-            ir.Constant(i64, 240),
+            wb.select(
+                wb.icmp_signed("==", width, ir.Constant(i64, 4)),
+                ir.Constant(i64, 240),
+                ir.Constant(i64, 0),
+                name="chrw.lead.single"
+            ),
             name="chrw.lead.wide"
         ),
         name="chrw.lead.prefix"
