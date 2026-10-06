@@ -159,13 +159,6 @@ def materialized_runtime_dir(path: str = "") -> (str | None) {
 
 
 def linked_source_dir(runtime_dir: str) -> str {
-    """The compiler dir baked into a linked dev binary, or an empty string
-    on a normal
-    (self-contained) binary. `zig build -Ddev` ships no bundled jaclang and
-    writes the compiler path into LINKED_SOURCE_FILE beside the materialized
-    runtime's _jac_finder.py; replacing such a launcher would strand the dev
-    loop. Written by jaclang.dist.payload, read at boot by
-    _jac_finder._baked_source_dir (which cannot import this module).""";
     if not runtime_dir {
         return "";
     }

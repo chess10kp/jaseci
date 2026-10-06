@@ -159,9 +159,6 @@ obj GitHub {
     }
 
     def release(repo: str, tag: str) -> (dict[str, any] | None) {
-        """The repo's latest release when `tag` is empty, else the tagged
-        release. None when GitHub has no such release. Reads work without
-        a token.""";
         if not tag {
             path = f"/repos/{repo}/releases/latest";
         } else {

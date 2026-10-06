@@ -1,12 +1,3 @@
-"""`jac update --self`: the fused jac binary updates itself from GitHub
-Releases. The install.sh contract, ported beside the fused-binary seams it
-needs: resolve the latest (or a pinned) release, pick this platform's
-default-binary asset, verify it against the published sha256, and atomically
-replace the running launcher. Already-running processes keep their version;
-new invocations pick up the update. The guards refuse everything a release
-binary must not touch: a plain interpreter session, a linked dev build, an
-unwritable install."""
-
 import os;
 import platform;
 import re;
@@ -17,9 +8,6 @@ import from pathlib { Path }
 glob SELF_UPDATE_REPO: str = "jaseci-labs/jaseci";
 
 def platform_triple(system: str = "", machine: str = "") -> ((str, str) | None) {
-    """This host's (os, arch) in release-asset form, or None when releases
-    carry no binary for it (Windows ships via the installer page, not
-    assets). Mirrors scripts/install.sh's mapping; tests pin the values.""";
     os_name = (system or platform.system()).lower();
     cpu = (machine or platform.machine()).lower();
     if os_name == "linux" {
@@ -42,10 +30,6 @@ def platform_triple(system: str = "", machine: str = "") -> ((str, str) | None) 
 def release_asset(
     assets: list[any], plat: str, arch: str
 ) -> ((dict[str, any], str) | None) {
-    """The platform's default-binary asset on a release, plus its jac
-    version. Matches `jac-<semver>-<plat>-<arch>` exactly, so the rolling
-    `dev` prerelease's `jac-dev-*` assets and the experimental `-jacpython`
-    variants never answer for a release (the same rule install.sh applies).""";
     pattern = re.compile(rf"^jac-(\d+\.\d+\.\d+)-{re.escape(plat)}-{re.escape(arch)}$");
     for asset in assets {
         m = pattern.match(str(asset.get("name", "")));
@@ -57,9 +41,6 @@ def release_asset(
 }
 
 def up_to_date(current: str, latest: str) -> bool {
-    """True when the running version already has `latest`. A local version
-    the semver parser cannot rank (a dev tag) counts as old, so the download
-    goes ahead.""";
     import from jaclang.packages.semver { SemverError, Version }
     try {
         return Version.parse(current) >= Version.parse(latest);
@@ -69,8 +50,6 @@ def up_to_date(current: str, latest: str) -> bool {
 }
 
 def _fetch_text(url: str) -> (str | None) {
-    """Small text GET (the release's `.sha256` sidecar). None on any
-    network failure; the binary itself goes through toolchains fetch.""";
     request = urllib.request.Request(url, headers={"User-Agent": "jac-update"});
     try {
         with urllib.request.urlopen(request, timeout=60) as response {
@@ -82,10 +61,6 @@ def _fetch_text(url: str) -> (str | None) {
 }
 
 def _sidecar_digest(url: str, name: str) -> (str | None) {
-    """The sha256 published beside the asset, or None when the release
-    ships no usable checksum. A release binary is never installed
-    unverified -- unlike install.sh, the binary always has hashlib, so the
-    checksum is a hard requirement.""";
     text = _fetch_text(f"{url}.sha256");
     if text is None {
         return None;
@@ -98,12 +73,6 @@ def _sidecar_digest(url: str, name: str) -> (str | None) {
 }
 
 def update_self(release: str, current: str, verbose: bool) -> int {
-    """Replace the running fused launcher with the release binary.
-
-    `release` pins a tag: empty means latest, and a leading `v` is fine;
-    `current` is the running version (skips the download when it already
-    has the latest); `verbose` prints the checksum line. Returns a
-    process exit code and reports through the console.""";
     import from jaclang.dist.fused_binary {
         linked_source_dir,
         materialized_runtime_dir,
@@ -209,10 +178,6 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         return 0;
     }
 
-    # Stage beside the target so the final rename stays on one filesystem.
-    # toolchains fetch writes a persistent pid-scoped `.lock` next to the
-    # destination while downloading (see jac0core FileLock); removed when
-    # this update finishes cleanly.
     tmp = target.parent / f".{target.name}.update-{os.getpid()}.bin";
     lock = tmp.with_suffix(".lock");
     mode = os.stat(str(target)).st_mode & 0o777;
