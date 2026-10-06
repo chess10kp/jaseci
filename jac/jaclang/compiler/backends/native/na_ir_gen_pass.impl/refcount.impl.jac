@@ -921,7 +921,15 @@ impl NaIRGenPass._emit_str_len_helpers -> None {
             _l_slow
         );
         b = ir.IRBuilder(_l_fast);
-        b.ret(b.lshr(_l_dv, ir.Constant(i64, STR_LEN_TAG_SHIFT), name="sl.len"));
+        b.ret(
+            b.lshr(
+                b.and_(
+                    _l_dv, ir.Constant(i64, STR_LEN_PAYLOAD_MASK), name="sl.pay"
+                ),
+                ir.Constant(i64, STR_LEN_TAG_SHIFT),
+                name="sl.len"
+            )
+        );
         b = ir.IRBuilder(_l_slow);
         b.ret(b.call(strlen_fn, [len_fn.args[0]], name="sl.strlen"));
     }
@@ -981,7 +989,15 @@ impl NaIRGenPass._emit_str_len_helpers -> None {
         tb.ret(
             tb.icmp_unsigned(
                 "!=",
-                tb.lshr(_t_dv, ir.Constant(i64, STR_LEN_TAG_SHIFT), name="st.len"),
+                tb.lshr(
+                    tb.and_(
+                        _t_dv,
+                        ir.Constant(i64, STR_LEN_PAYLOAD_MASK),
+                        name="st.pay"
+                    ),
+                    ir.Constant(i64, STR_LEN_TAG_SHIFT),
+                    name="st.len"
+                ),
                 ir.Constant(i64, 0),
                 name="st.len.nz"
             )
@@ -1180,7 +1196,13 @@ impl NaIRGenPass._emit_str_stamp_and_new -> None {
         );
         _a_len_ok = b.icmp_unsigned(
             "==",
-            b.lshr(_a_dv, ir.Constant(i64, STR_LEN_TAG_SHIFT), name="ia.len"),
+            b.lshr(
+                b.and_(
+                    _a_dv, ir.Constant(i64, STR_LEN_PAYLOAD_MASK), name="ia.pay"
+                ),
+                ir.Constant(i64, STR_LEN_TAG_SHIFT),
+                name="ia.len"
+            ),
             ascii_fn.args[1],
             name="ia.len.ok"
         );
