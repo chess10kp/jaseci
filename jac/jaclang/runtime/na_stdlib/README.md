@@ -865,13 +865,7 @@ Mechanism B exists to avoid writing twice. Reaching for one through the flat
 - **A**: compiler intrinsics over libm/libc/syscalls (`os`, `random`,
   `struct`); native-host only. (`math` moved to Mechanism B, above, over the
   `_math_native` libm FFI floor; `time` is a bundled Mechanism-F surface over
-  `_time_native`, below.) The `struct` intercept covers
-  `pack`/`unpack`/`pack_into`/`unpack_from`/`calcsize` over
-  `x b B h H i I l L q Q f d ? c s p e P` with `< > = ! @` prefixes
-  (`e` uses software IEEE-754 half conversion -- the JIT cannot resolve
-  `__extendhfsf2`/`__truncdfhf2`; `@` is little-endian with no alignment
-  padding; `P` is accepted in every mode where CPython restricts it to
-  `@`). Pinned sv<->na congruent by `prim_struct.jac`.
+  `_time_native`, below.)
 - **F**: thin FFI wrappers over a system C library; native-host only. Examples:
   `_ssl_native.jac` -- the floor the verifying TLS client `ssl` is built on,
   over OpenSSL `libssl`/`libcrypto` (issue #6978 Phase 1); `_socket_native.jac`
