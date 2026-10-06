@@ -84,24 +84,30 @@ def run_flow(
         return ("0" * 64 if lying else digest) + "\n";
     }
 
-    def fake_fetch(artifact: any, destination: any = None, bucket_name: str = "") -> Path {
+    def fake_fetch(
+        artifact: any, destination: any = None, bucket_name: str = ""
+    ) -> Path {
         # The real fetch verifies the digest before the file lands.
         if artifact.digest != digest {
-            raise ValueError(f"Checksum mismatch for {artifact.name} {artifact.version}");
+            raise ValueError(
+                f"Checksum mismatch for {artifact.name} {artifact.version}"
+            );
         }
         Path(destination).write_bytes(payload);
         return Path(destination);
     }
 
-    fetchm = patch(
-        "jaclang.toolchains.store.fetch", side_effect=fake_fetch
-    ).start();
+    fetchm = patch("jaclang.toolchains.store.fetch", side_effect=fake_fetch).start();
     patch("jaclang.dist.self_update._fetch_text", side_effect=fake_sidecar).start();
     patch(
         "jaclang.packages.github.GitHub.release", side_effect=fake_release_call
     ).start();
-    patch("jaclang.dist.fused_binary.materialized_runtime_dir", return_value=None).start();
-    patch("jaclang.dist.fused_binary.running_executable", return_value=str(target)).start();
+    patch(
+        "jaclang.dist.fused_binary.materialized_runtime_dir", return_value=None
+    ).start();
+    patch(
+        "jaclang.dist.fused_binary.running_executable", return_value=str(target)
+    ).start();
     if linked is not None {
         patch(
             "jaclang.dist.fused_binary.linked_source_dir", return_value=linked
@@ -133,7 +139,9 @@ test "platform triple maps linux and macos hosts, rejects the rest" {
 
 test "asset match takes the default binary only, with its version" {
     hit = release_asset(fake_release("2.3.1")["assets"], "linux", "x86_64");
-    assert hit is not None and hit[0]["name"] == "jac-2.3.1-linux-x86_64" and hit[1] == "2.3.1";
+    assert hit is not None
+        and hit[0]["name"] == "jac-2.3.1-linux-x86_64"
+        and hit[1] == "2.3.1";
     near = [
         {"name": "jac-dev-linux-x86_64"},
         {"name": "jac-2.3.1-linux-x86_64-jacpython"},
