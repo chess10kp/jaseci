@@ -60,16 +60,13 @@ obj CompilerBuildServices(BuildServices) {
         );
     }
 
-    def client_runtime_basename(framework: str, module: any = None) -> str {
+    def client_runtime_basename(framework: str) -> str {
         import from jaclang.compiler.backends.es.backends.registry {
             resolve_framework_backend,
-            resolve_active_backend,
-            resolve_module_backend
+            resolve_active_backend
         }
         backend = resolve_framework_backend(framework)
             if framework
-            else resolve_module_backend(module)
-            if module is not None
             else resolve_active_backend();
         return backend.runtime_source_basename();
     }
