@@ -9,7 +9,13 @@ harness.
 
 import ctypes;
 import os;
-import from tests.support { TESTS_DIR, compile_native, get_func, native_force_opts }
+import from tests.support {
+    TESTS_DIR,
+    compile_native,
+    compile_native_ir,
+    get_func,
+    native_force_opts
+}
 import type from jaclang.compiler.frontend.unitree { Module }
 
 glob FIXTURES = os.path.join(
