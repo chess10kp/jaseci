@@ -498,7 +498,9 @@ impl NaIRGenPass._codegen_lambda(nd: uni.LambdaExpr) -> (ir.Value | None) {
         _lam_errs0 = len(self.ctx.errors_had);
         tail = body if isinstance(body, uni.Expr) else nd.tail_return_expr();
         if tail is None {
-            self._codegen_body(body);
+            if not isinstance(body, uni.Expr) {
+                self._codegen_body(body);
+            }
         } else {
             body_value = self._codegen_expr(tail);
             if isinstance(ret_type, ir.VoidType) {
