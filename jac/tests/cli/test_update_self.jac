@@ -1,10 +1,10 @@
 """`jac update --self`: offline tests for the self-update flow.
 
 GitHub and download calls are patched at their module boundaries
-(`GitHub.release`, the `.sha256` sidecar GET, toolchains `fetch` -- the fake
-fetch still enforces the digest contract); the update target is a throwaway
-file with a real JACBIN01 trailer, so the genuine trailer parser and the
-genuine atomic replace are exercised.
+(`GitHub.release`, the `.sha256` sidecar GET, toolchains `fetch`, the
+JacPython probe -- the fake fetch still enforces the digest contract); the update
+target is a throwaway file with a real JACBIN01 trailer, so the genuine trailer
+parser and the genuine atomic replace are exercised.
 """
 
 import os;
@@ -53,10 +53,11 @@ def run_flow(
     release: str = "",
     ver: str = "1.2.2",
     asset_ver: str = "1.2.3",
-    payload: bytes = b"new body",
+    payload: bytes = fake_bin(b"new body"),
     real_bin: bool = True,
     linked: str | None = None,
     readonly: bool = False,
+    jacpython: bool = False,
     sidecar: str = "ok"
 ) -> (int, Path, any, list[str], Path) {
     tmp = Path(tempfile.mkdtemp(prefix="upd_self_"));
@@ -99,6 +100,9 @@ def run_flow(
 
     fetchm = patch("jaclang.toolchains.store.fetch", side_effect=fake_fetch).start();
     patch("jaclang.dist.self_update._fetch_text", side_effect=fake_sidecar).start();
+    patch(
+        "jaclang.dist.self_update._running_jacpython", return_value=jacpython
+    ).start();
     patch(
         "jaclang.packages.github.GitHub.release", side_effect=fake_release_call
     ).start();
@@ -214,6 +218,18 @@ test "guard: readonly install refuses before any download" {
 }
 
 
+test "guard: JacPython install refuses before any download" {
+    (rc, target, fetchm, tags, tmp) = run_flow(jacpython=True);
+    try {
+        assert rc == 1 and fetchm.call_count == 0;
+        assert b"fake launcher" in target.read_bytes();
+        assert [p.name for p in tmp.iterdir()] == ["jac"];
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
 test "guard: release without a published checksum refuses" {
     (rc, target, fetchm, tags, tmp) = run_flow(sidecar="missing");
     try {
@@ -227,7 +243,7 @@ test "guard: release without a published checksum refuses" {
 
 
 test "flow: downloads, checksum-verifies, replaces atomically" {
-    payload = b"#!/bin/sh\necho new jac\n";
+    payload = fake_bin(b"#!/bin/sh\necho new jac\n");
     (rc, target, fetchm, tags, tmp) = run_flow(payload=payload);
     try {
         assert rc == 0;
@@ -248,6 +264,20 @@ test "flow: lying checksum keeps the old binary, cleans temp files" {
     (rc, target, fetchm, tags, tmp) = run_flow(sidecar="lying");
     try {
         assert rc == 1;
+        assert b"fake launcher" in target.read_bytes();
+        assert [p.name for p in tmp.iterdir()] == ["jac"];
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "flow: checksum-clean but trailer-less download refuses, keeps old binary" {
+    (rc, target, fetchm, tags, tmp) = run_flow(
+        payload=b"#!/bin/sh\necho not a jac binary\n"
+    );
+    try {
+        assert rc == 1 and fetchm.call_count == 1;
         assert b"fake launcher" in target.read_bytes();
         assert [p.name for p in tmp.iterdir()] == ["jac"];
     } finally {
@@ -281,7 +311,7 @@ test "flow: explicit --release reinstalls even when current" {
     (rc, target, fetchm, tags, tmp) = run_flow(release="1.2.3", ver="1.2.3");
     try {
         assert rc == 0 and fetchm.call_count == 1;
-        assert target.read_bytes() == b"new body";
+        assert target.read_bytes() == fake_bin(b"new body");
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }

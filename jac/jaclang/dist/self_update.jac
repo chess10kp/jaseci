@@ -1,6 +1,9 @@
+import ctypes;
 import os;
 import platform;
 import re;
+import shutil;
+import tempfile;
 import urllib.request;
 import from jaclang.cli.console { console }
 import from pathlib { Path }
@@ -60,7 +63,7 @@ def _fetch_text(url: str) -> (str | None) {
     }
 }
 
-def _sidecar_digest(url: str, name: str) -> (str | None) {
+def _sidecar_digest(url: str) -> (str | None) {
     text = _fetch_text(f"{url}.sha256");
     if text is None {
         return None;
@@ -70,6 +73,11 @@ def _sidecar_digest(url: str, name: str) -> (str | None) {
         return token;
     }
     return None;
+}
+
+def _running_jacpython() -> bool {
+    # Only JacPython builds bake in the compiler bridge (bootstrap/python/compiler_bridge.c).
+    return hasattr(ctypes.pythonapi, "_PyJac_CompilerBridgeVersion");
 }
 
 def update_self(release: str, current: str, verbose: bool) -> int {
@@ -114,6 +122,20 @@ def update_self(release: str, current: str, verbose: bool) -> int {
                 f"This launcher compiles the jaclang source at {linked}; "
                 "updating it would strand the dev loop. Pull and rebuild "
                 "instead: git pull && ./scripts/fresh_env.sh"
+            )
+        );
+        return 1;
+    }
+    if _running_jacpython() {
+        console.error(
+            "jac update --self refuses to downgrade a JacPython install.",
+            hint=(
+                "This session runs the experimental JacPython build, but the "
+                "release channel only ships the default CPython binary; "
+                "updating would silently lose the JacPython compiler. "
+                "Reinstall instead: curl -fsSL "
+                f"https://raw.githubusercontent.com/{SELF_UPDATE_REPO}/main/"
+                "scripts/install.sh | bash -s -- --jacpython"
             )
         );
         return 1;
@@ -178,12 +200,15 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         return 0;
     }
 
-    tmp = target.parent / f".{target.name}.update-{os.getpid()}.bin";
-    lock = tmp.with_suffix(".lock");
     mode = os.stat(str(target)).st_mode & 0o777;
-    installed = False;
+    # Stage inside a temp dir next to the target: keeps os.replace atomic on
+    # the same filesystem and lets store.fetch's lock/part siblings be swept
+    # wholesale instead of being named here.
+    stage = Path(
+        tempfile.mkdtemp(dir=str(target.parent), prefix=f".{target.name}.update-")
+    );
     try {
-        digest = _sidecar_digest(url, name);
+        digest = _sidecar_digest(url);
         if digest is None {
             console.error(
                 f"No usable sha256 published for {name}.",
@@ -192,6 +217,7 @@ def update_self(release: str, current: str, verbose: bool) -> int {
             return 1;
         }
         console.info(f"Downloading {name} ({rel_tag})...");
+        tmp = stage / target.name;
         import from jaclang.toolchains.store { Artifact, fetch }
         try {
             fetch(
@@ -211,14 +237,21 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         if verbose {
             console.info(f"Checksum OK ({digest[:16]}...).");
         }
+        if runtime_trailer(str(tmp)) is None {
+            console.error(
+                f"Downloaded {name} is not a jac binary (no runtime trailer).",
+                hint=(
+                    "Refusing to replace the launcher with an unrunnable "
+                    "artifact; the installed version is untouched. Report it "
+                    "at https://github.com/jaseci-labs/jaseci/issues"
+                )
+            );
+            return 1;
+        }
         os.chmod(str(tmp), mode);
         os.replace(str(tmp), str(target));
-        installed = True;
     } finally {
-        if not installed {
-            tmp.unlink(missing_ok=True);
-        }
-        lock.unlink(missing_ok=True);
+        shutil.rmtree(stage, ignore_errors=True);
     }
     console.success(f"Updated jac {current} -> {asset_ver} ({target}).");
     console.info(
