@@ -168,9 +168,7 @@ obj GitHub {
     }
 
     def release_for(repo: str, tag: str, target: str) -> dict[str, any] {
-        found = self.call(
-            "GET", f"/repos/{repo}/releases/tags/{quote(tag)}", allow_missing=True
-        );
+        found = self.release(repo, tag);
         if found is not None {
             return found;
         }
