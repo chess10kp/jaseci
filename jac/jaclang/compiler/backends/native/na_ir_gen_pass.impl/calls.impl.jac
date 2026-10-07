@@ -2485,9 +2485,7 @@ impl NaIRGenPass._codegen_call(nd: uni.FuncCall) -> (ir.Value | None) {
             ret_ir_type = self._resolve_jac_type(sig.return_type);
             _extern_sym = func_name;
             if binding.source_context.value == "server" {
-                import from jaclang.runtime.interop_bridge {
-                    interop_callback_symbol
-                }
+                import from jaclang.runtime.interop_bridge { interop_callback_symbol }
                 _extern_sym = interop_callback_symbol(binding);
             }
             if binding.source_context.value == "native" and _src_ab is not None {
