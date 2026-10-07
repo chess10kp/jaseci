@@ -659,7 +659,7 @@ impl NaIRGenPass._char_encode_immortal_fn -> ir.Function {
 }
 
 impl NaIRGenPass._get_wide_char_intern -> (ir.GlobalVariable, ir.GlobalVariable) {
-    if self.wchr_keys_gv is not None {
+    if self.wchr_keys_gv is not None and self.wchr_vals_gv is not None {
         return (self.wchr_keys_gv, self.wchr_vals_gv);
     }
     keys_ty = ir.ArrayType(ir.IntType(64), 4096);
