@@ -1324,7 +1324,7 @@ impl NaIRGenPass._codegen_str_strip_chars(
 
     final_start: ir.Value = ir.Constant(i64, 0);
     if do_left {
-        start_alloca = self.builder.alloca(i64, name="strip.start");
+        start_alloca = self._stack_entry_alloca(i64, "strip.start");
         self.builder.store(ir.Constant(i64, 0), start_alloca);
         start_check_bb = func.append_basic_block(name="strip.start.check");
         start_body_bb = func.append_basic_block(name="strip.start.body");
@@ -1352,7 +1352,7 @@ impl NaIRGenPass._codegen_str_strip_chars(
 
     final_end = slen;
     if do_right {
-        end_alloca = self.builder.alloca(i64, name="strip.end");
+        end_alloca = self._stack_entry_alloca(i64, "strip.end");
         self.builder.store(slen, end_alloca);
         end_check_bb = func.append_basic_block(name="strip.end.check");
         end_body_bb = func.append_basic_block(name="strip.end.body");
@@ -1594,7 +1594,7 @@ impl NaIRGenPass._emit_sys_argv -> (ir.Value | None) {
 
     memcpy_fn = self._get_or_declare_extern("memcpy", i8p, [i8p, i8p, i64]);
 
-    i_alloca = self.builder.alloca(i64, name="argv.i");
+    i_alloca = self._stack_entry_alloca(i64, "argv.i");
     self.builder.store(ir.Constant(i64, 0), i_alloca);
 
     loop_check = func.append_basic_block(name="argv.check");
