@@ -138,7 +138,7 @@ def service_call(
     adapter = _test_adapter(module_name);
     if adapter is not None {
         resp = adapter.post(f"/function/{func_name}", json=args);
-    } else if module_name in sv_client._test_clients {
+    } elif module_name in sv_client._test_clients {
         tc = sv_client._test_clients[module_name];
         resp = tc.post(
             f"/function/{func_name}", json=args, headers=_rpc_headers(headers)
@@ -201,7 +201,7 @@ def walker_call(
     adapter = _test_adapter(module_name);
     if adapter is not None {
         resp = adapter.post(f"/walker/{walker_name}", json=args);
-    } else if module_name in sv_client._test_clients {
+    } elif module_name in sv_client._test_clients {
         tc = sv_client._test_clients[module_name];
         resp = tc.post(
             f"/walker/{walker_name}", json=args, headers=_rpc_headers(headers)
