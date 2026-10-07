@@ -38,7 +38,7 @@ import from jaclang.compiler.driver.pipeline {
     get_boundary_analysis_sched,
     get_ir_gen_sched
 }
-import from jaclang.compiler.driver.pipeline_runner { get_py_code_gen }
+import from jaclang.compiler.driver.module_compile { get_py_code_gen }
 import from jaclang.compiler.driver.program { JacProgram }
 
 glob CORPUS: list[str] = [
