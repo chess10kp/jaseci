@@ -12,7 +12,7 @@ import sys;
 import tempfile;
 import from tests.support { JAC_ROOT }
 import jaclang;
-import from jaclang.compiler.driver.pass_driver { run_pass }
+import from jaclang.compiler.passes.execution { new_context, walk_pass }
 import from jaclang.compiler.passes.pyast_load_pass {
     PyastBuildPass,
     build_python_module
@@ -373,9 +373,7 @@ test "py2jac complex literals native lowering" {
     mod = prog.compile(
         file_path="py2jac_complex.jac",
         use_str=code,
-        options=CompileOptions(
-            force_codespace='native', force_target_program=True, skip_native_engine=True
-        )
+        options=CompileOptions(force_codespace='native', skip_native_engine=True)
     );
     assert not prog.errors_had , (
         f"Native lowering errors: {[e.pretty_print() for e in prog.errors_had]}\n"
@@ -818,21 +816,18 @@ would parse `complex(1, 2)` as a class pattern, so proc_match_value emits E5044.
 """
 test "py2jac match complex value emits E5044" {
     file_source = read_fixture("py2jac_match_complex.py");
-    prog = JacProgram();
-    run_pass(
-        PyastBuildPass,
-        PythonModuleAst(
-            py_ast.parse(file_source),
-            orig_src=Source(file_source, "py2jac_match_complex.py")
-        ),
-        prog
+    mod = PythonModuleAst(
+        py_ast.parse(file_source),
+        orig_src=Source(file_source, "py2jac_match_complex.py")
     );
+    bp = PyastBuildPass(module=mod, ctx=new_context(PyastBuildPass, mod));
+    walk_pass(bp);
 
     assert any(
-        (e.code is not None and e.code.code == "E5044") for e in prog.errors_had
+        (e.code is not None and e.code.code == "E5044") for e in bp.ctx.errors_had
     ) , (
         f"Expected E5044 for complex match value; got "
-        f"{[e.code.code if e.code else None for e in prog.errors_had]}"
+        f"{[e.code.code if e.code else None for e in bp.ctx.errors_had]}"
     );
 }
 
