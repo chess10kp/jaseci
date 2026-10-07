@@ -510,7 +510,6 @@ def native_application(
 glob CODEGEN_SCHED_DEPS: tuple[str, ...] = (
          'jaclang.compiler.passes.rc_facts_pass',
          'jaclang.compiler.backends.es',
-         'jaclang.compiler.backends.es.backends.registry',
          'jaclang.compiler.passes.freeze_structure_pass'
      ),
      NATIVE_CODEGEN_DEPS: tuple[str, ...] = ('jaclang.compiler.backends.native', ),

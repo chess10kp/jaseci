@@ -341,8 +341,6 @@ glob SYMTAB_SCHED_DEPS: tuple[str, ...] = ('jaclang.compiler.symbol_utils', ),
          'jaclang.compiler.passes.jsx_intrinsic_guard_pass',
          'jaclang.compiler.passes.mtir_gen_pass',
          'jaclang.compiler.passes.comptime_resolve_pass',
-         'jaclang.compiler.backends.es.framework_backend',
-         'jaclang.compiler.backends.es.backends.registry',
          'jaclang.project.mobui_scope'
      ),
      ANALYSIS_SCHED_DEPS: tuple[str, ...] = (
