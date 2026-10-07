@@ -58,6 +58,7 @@ def run_flow(
     linked: str | None = None,
     readonly: bool = False,
     jacpython: bool = False,
+    managed: bool = False,
     sidecar: str = "ok"
 ) -> (int, Path, any, list[str], Path) {
     tmp = Path(tempfile.mkdtemp(prefix="upd_self_"));
@@ -65,6 +66,15 @@ def run_flow(
     body = fake_bin() if real_bin else b"#!/bin/sh\necho nope\n";
     target.write_bytes(body);
     os.chmod(target, 0o755);
+    if managed {
+        (tmp / "metadata.json").write_text(
+            '{"installed_at":"2026-01-01T00:00:00Z","sha256":"'
+                + ("0" * 64)
+                + '","target":"linux-x86_64","url":"https://x.test/jac","version":"'
+                + ver
+                + '"}'
+        );
+    }
 
     digest = hashlib.sha256(payload).hexdigest();
     tags: list[str] = [];
@@ -224,6 +234,18 @@ test "guard: JacPython install refuses before any download" {
         assert rc == 1 and fetchm.call_count == 0;
         assert b"fake launcher" in target.read_bytes();
         assert [p.name for p in tmp.iterdir()] == ["jac"];
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "guard: jacup-managed install refuses before any download" {
+    (rc, target, fetchm, tags, tmp) = run_flow(managed=True);
+    try {
+        assert rc == 1 and fetchm.call_count == 0;
+        assert b"fake launcher" in target.read_bytes();
+        assert sorted(p.name for p in tmp.iterdir()) == ["jac", "metadata.json"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
