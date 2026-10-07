@@ -1019,7 +1019,7 @@ impl NaIRGenPass._codegen_list_slice(
 
     new_list = self.builder.call(helpers["new"], [], name="sl.new");
 
-    i_alloca = self.builder.alloca(i64, name="sl.i");
+    i_alloca = self._stack_entry_alloca(i64, "sl.i");
     self.builder.store(start_val, i_alloca);
     loop_check = func.append_basic_block(name="sl.check");
     loop_body = func.append_basic_block(name="sl.body");
@@ -1172,9 +1172,9 @@ impl NaIRGenPass._codegen_string_slice(
     new_str = self._str_alloc(self.builder, alloc_size, name="ss.new");
     self._clear_rc_ctx();
 
-    i_alloca = self.builder.alloca(i64, name="ss.i");
-    k_alloca = self.builder.alloca(i64, name="ss.k");
-    t_alloca = self.builder.alloca(i64, name="ss.t");
+    i_alloca = self._stack_entry_alloca(i64, "ss.i");
+    k_alloca = self._stack_entry_alloca(i64, "ss.k");
+    t_alloca = self._stack_entry_alloca(i64, "ss.t");
     self.builder.store(bstart, i_alloca);
     self.builder.store(zero, k_alloca);
     self.builder.store(zero, t_alloca);
@@ -1287,7 +1287,7 @@ impl NaIRGenPass._codegen_str_strip_chars(
 
     final_start: ir.Value = ir.Constant(i64, 0);
     if do_left {
-        start_alloca = self.builder.alloca(i64, name="strip.start");
+        start_alloca = self._stack_entry_alloca(i64, "strip.start");
         self.builder.store(ir.Constant(i64, 0), start_alloca);
         start_check_bb = func.append_basic_block(name="strip.start.check");
         start_body_bb = func.append_basic_block(name="strip.start.body");
@@ -1315,7 +1315,7 @@ impl NaIRGenPass._codegen_str_strip_chars(
 
     final_end = slen;
     if do_right {
-        end_alloca = self.builder.alloca(i64, name="strip.end");
+        end_alloca = self._stack_entry_alloca(i64, "strip.end");
         self.builder.store(slen, end_alloca);
         end_check_bb = func.append_basic_block(name="strip.end.check");
         end_body_bb = func.append_basic_block(name="strip.end.body");
@@ -1557,7 +1557,7 @@ impl NaIRGenPass._emit_sys_argv -> (ir.Value | None) {
 
     memcpy_fn = self._get_or_declare_extern("memcpy", i8p, [i8p, i8p, i64]);
 
-    i_alloca = self.builder.alloca(i64, name="argv.i");
+    i_alloca = self._stack_entry_alloca(i64, "argv.i");
     self.builder.store(ir.Constant(i64, 0), i_alloca);
 
     loop_check = func.append_basic_block(name="argv.check");
