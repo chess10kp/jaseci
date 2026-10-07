@@ -75,8 +75,7 @@ def _sidecar_digest(url: str) -> (str | None) {
     return None;
 }
 
-def _running_jacpython() -> bool {
-    # Only JacPython builds bake in the compiler bridge (bootstrap/python/compiler_bridge.c).
+def _running_jacpython -> bool {
     return hasattr(ctypes.pythonapi, "_PyJac_CompilerBridgeVersion");
 }
 
@@ -201,9 +200,7 @@ def update_self(release: str, current: str, verbose: bool) -> int {
     }
 
     mode = os.stat(str(target)).st_mode & 0o777;
-    # Stage inside a temp dir next to the target: keeps os.replace atomic on
-    # the same filesystem and lets store.fetch's lock/part siblings be swept
-    # wholesale instead of being named here.
+
     stage = Path(
         tempfile.mkdtemp(dir=str(target.parent), prefix=f".{target.name}.update-")
     );
