@@ -9,8 +9,10 @@ copies a typed container into the `any` family, boxing each element, and a
 bare `isinstance(v, dict)` narrow keeps the value boxed instead of adopting
 the default integer-keyed dict layout. The fixture covers a typed list and a
 typed dict through `any`, a nested list inside an any-dict, pointer, float
-and bool element families, a member narrow, a view taken in a loop, and a
-`json.dumps` / `json.loads` round trip, all against the Python backend.
+and bool element families, a member narrow, a view taken in a loop, a
+`json.dumps` / `json.loads` round trip, and raw-valued typed dicts
+(`dict[str, int]`, `dict[str, str]`) crossing into `any` by subscript and
+narrowing back to the concrete type, all against the Python backend.
 """
 import from pathlib { Path }
 import from tests.support { assert_native_identity }
@@ -24,5 +26,14 @@ test "typed containers narrowed from any to containers of any match Python" {
     assert lines[3] == "b=1,a=2" , out;
     assert lines[6] == "203" , out;
     assert '{"b": 1, "a": "x", "c": [1, 2]}' in lines , out;
+    assert lines[-6] == "True" , out;
+    # Raw-valued dict[str, int] boxed into `any`: any-subscript reads the
+    # jacval copy (not the raw i64 vals), and the narrow back rebuilds a
+    # real dict[str, int].
+    assert lines[-5] == "42" , out;
+    assert lines[-4] == "83" , out;
+    # dict[str, str] boxes through the pointer-retag path and back.
+    assert lines[-3] == "hiyo" , out;
+    assert lines[-2] == "yo!" , out;
     assert lines[-1] == "True" , out;
 }

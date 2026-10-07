@@ -116,3 +116,21 @@ with entry {
     print(json.dumps(back));
     print(json.dumps(back) == json.dumps(mixed));
 }
+
+# Raw-valued typed dicts crossing the `any` boundary: the box must copy the
+# dict into its `<key>:jacval` twin (the vals array is raw `i64`/`i8*` here,
+# not JacVal), and the narrow back to the concrete type must rebuild the
+# typed dict instead of reading JacVal bits as raw pointers.
+glob raw_i: dict[str, int] = {"x": 41, "y": 42};
+glob raw_s: dict[str, str] = {"greet": "hi", "name": "yo"};
+with entry {
+    a: any = raw_i;
+    print(a["y"]);
+    b: dict[str, int] = a;
+    print(b["x"] + b["y"]);
+    s: any = raw_s;
+    print(s["greet"] + s["name"]);
+    t: dict[str, str] = s;
+    print(t["name"] + "!");
+    print(json.dumps(b) == json.dumps({"x": 41, "y": 42}));
+}
