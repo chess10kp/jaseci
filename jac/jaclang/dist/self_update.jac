@@ -139,6 +139,17 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         );
         return 1;
     }
+    if (target.parent / "metadata.json").is_file() {
+        console.error(
+            "jac update --self refuses to replace a jacup-managed install.",
+            hint=(
+                f"{target.parent} is owned by jacup (metadata.json sits beside "
+                "the launcher); replacing the binary in place would desync "
+                "jacup's version records. Update with: jacup update"
+            )
+        );
+        return 1;
+    }
     if not os.access(str(target), os.W_OK)
         or not os.access(str(target.parent), os.W_OK) {
         console.error(
