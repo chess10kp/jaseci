@@ -622,7 +622,8 @@ def json_str_pairs(value: object) -> list[list[str]] {
 def json_str_map(value: object) -> dict[str, str] {
     out: dict[str, str] = {};
     if isinstance(value, dict) {
-        for (key, item) in value.items() {
+        src: dict[str, any] = value;
+        for (key, item) in src.items() {
             out[str(key)] = str(item);
         }
     }
@@ -632,7 +633,8 @@ def json_str_map(value: object) -> dict[str, str] {
 def json_bool_map(value: object) -> dict[str, bool] {
     out: dict[str, bool] = {};
     if isinstance(value, dict) {
-        for (key, item) in value.items() {
+        src: dict[str, any] = value;
+        for (key, item) in src.items() {
             out[str(key)] = bool(item);
         }
     }
@@ -642,7 +644,8 @@ def json_bool_map(value: object) -> dict[str, bool] {
 def json_map(value: object) -> dict[str, any] {
     out: dict[str, any] = {};
     if isinstance(value, dict) {
-        for (key, item) in value.items() {
+        src: dict[str, any] = value;
+        for (key, item) in src.items() {
             out[str(key)] = item;
         }
     }
