@@ -575,16 +575,14 @@ impl NaIRGenPass._unbox_any_container(
         ),
         name="jv.view.failed"
     );
-    _raw = b.inttoptr(_payload, target_type, name="jv.view.raw");
-    _chosen = b.select(_failed, _raw, _res, name="jv.view.chosen");
-    _fresh = b.and_(
-        b.icmp_unsigned("!=", _res, _raw, name="jv.view.fresh"),
-        b.not_(_failed, name="jv.view.not_failed"),
-        name="jv.view.fresh"
+    self._emit_runtime_raise(
+        _failed,
+        "TypeError",
+        "container elements cannot be viewed as any: unsupported element or key type"
     );
-    if not self._binding_function_active() {
-        return _chosen;
-    }
+    b = self.builder;
+    _raw = b.inttoptr(_payload, target_type, name="jv.view.raw");
+    _fresh = b.icmp_unsigned("!=", _res, _raw, name="jv.view.fresh");
     _name = f"any.view.{self._loop_coll_seq}";
     self._loop_coll_seq += 1;
     _slot = self._entry_alloca(target_type, _name);
@@ -595,7 +593,7 @@ impl NaIRGenPass._unbox_any_container(
     self.builder.store(
         self.builder.select(_fresh, _res, _null, name=f"{_name}.keep"), _slot
     );
-    return _chosen;
+    return _res;
 }
 
 impl NaIRGenPass._adopt_any_view(
@@ -610,17 +608,18 @@ impl NaIRGenPass._adopt_any_view(
         ),
         name="jv.adopt.failed"
     );
-    _raw = b.inttoptr(payload, target_type, name="jv.adopt.raw");
-    _chosen = b.select(_failed, _raw, view, name="jv.adopt.chosen");
-    _fresh = b.and_(
-        b.icmp_unsigned("!=", view, _raw, name="jv.adopt.fresh"),
-        b.not_(_failed, name="jv.adopt.not_failed"),
-        name="jv.adopt.fresh"
+    self._emit_runtime_raise(
+        _failed,
+        "TypeError",
+        "container elements cannot be viewed as any: unsupported element or key type"
     );
+    b = self.builder;
+    _raw = b.inttoptr(payload, target_type, name="jv.adopt.raw");
+    _fresh = b.icmp_unsigned("!=", view, _raw, name="jv.adopt.fresh");
     self._emit_rc_release_typed(
         b.select(_fresh, _raw, _null, name="jv.adopt.replaced"), op="any_view"
     );
-    return self._mark_owned(_chosen);
+    return self._mark_owned(view);
 }
 
 impl NaIRGenPass._binding_function_active -> bool {
@@ -767,19 +766,6 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
                 )
             );
         }
-        for (_spec, _src_h) in self.list_helpers.items() {
-            if _spec not in ("i64", "f64", "i1", "ptr", "jacval") {
-                _sources.append(
-                    (
-                        f"list_{_spec}",
-                        True,
-                        _spec,
-                        _src_h,
-                        self.list_types[_spec].as_pointer()
-                    )
-                );
-            }
-        }
     } else {
         _dst_h = self.dict_helpers[f"{key_spec}:jacval"];
         _key_type = _dst_h["key_type"];
@@ -795,29 +781,6 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
                     self.dict_types[f"{key_spec}:{_spec}"].as_pointer()
                 )
             );
-        }
-        for (_dk, _src_h) in self.dict_helpers.items() {
-            if (
-                _dk.startswith(key_spec + ":")
-                and not _dk.endswith(":jacval")
-                and _dk
-                    not in {
-                        f"{key_spec}:i64",
-                        f"{key_spec}:f64",
-                        f"{key_spec}:i1",
-                        f"{key_spec}:ptr"
-                    }
-            ) {
-                _sources.append(
-                    (
-                        f"dict_{_dk.replace(':', '_')}",
-                        True,
-                        _dk.split(":")[1],
-                        _src_h,
-                        self.dict_types[_dk].as_pointer()
-                    )
-                );
-            }
         }
     }
     _tag_fn = self._heap_ref_jacval_tag_fn();
@@ -954,7 +917,7 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
         ir.IRBuilder(_done_bb).ret(_out);
     }
     self._builder = _saved;
-    bc.ret(ir.Constant(target_type, None));
+    bc.ret(_as_is);
     return fn;
 }
 
