@@ -747,6 +747,7 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
     _scalars: list[tuple[str, ir.Type]] = [
         ("i64", i64),
         ("f64", ir.DoubleType()),
+        ("i1", ir.IntType(1)),
         ("ptr", i8p)
     ];
     _sources: list[tuple[str, bool, str, dict[str, any], ir.Type]] = [];
