@@ -1204,7 +1204,9 @@ impl NaIRGenPass._codegen_dict_access(
     );
     self._release_owned_args([key_val], op="dict_get");
     result = self._finish_borrowed_read(target_val, borrowed);
-    self._emit_runtime_raise(not_exists, "KeyError", "key not found");
+    if not (key_type_name == "ptr" and val_type_name == "jacval" and collection is None) {
+        self._emit_runtime_raise(not_exists, "KeyError", "key not found");
+    }
     return result;
 }
 
