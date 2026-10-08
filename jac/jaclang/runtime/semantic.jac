@@ -181,7 +181,8 @@ obj InfoGraphReader {
 
     def find(raw: any) -> (Info | TypeForm | None) {
         if isinstance(raw, dict) {
-            slot = raw.get("n");
+            rec: dict[str, any] = raw;
+            slot = rec.get("n");
             if isinstance(slot, int) and 0 <= slot < len(self.built) {
                 return self.built[slot];
             }
