@@ -264,22 +264,22 @@ def literal_from_json(raw: any) -> any {
     }
     if "l" in record {
         values: list[any] = json_any_list(record["l"]);
-        out: list[any] = [];
+        items_out: list[any] = [];
         for item in values {
-            out.append(literal_from_json(item));
+            items_out.append(literal_from_json(item));
         }
-        return out;
+        return items_out;
     }
     if "d" in record {
-        out: dict[str, any] = {};
+        dict_out: dict[str, any] = {};
         pairs: list[any] = json_any_list(record["d"]);
         for pair in pairs {
             parts: list[any] = json_any_list(pair);
             if len(parts) == 2 {
-                out[str(parts[0])] = literal_from_json(parts[1]);
+                dict_out[str(parts[0])] = literal_from_json(parts[1]);
             }
         }
-        return out;
+        return dict_out;
     }
     return record.get("v");
 }
