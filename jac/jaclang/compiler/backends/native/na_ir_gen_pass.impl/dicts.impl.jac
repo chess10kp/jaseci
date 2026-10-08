@@ -181,9 +181,13 @@ impl NaIRGenPass._emit_dict_box_fn(dict_key: str) -> (ir.Function | None) {
     key_type = src_helpers["key_type"];
     (_ks, _ksz) = self._hash_key_spec(key_type);
     self._emit_dict_helpers(_ks, "jacval", key_type, self.jacval_type, _ksz);
-    dest_helpers = self.dict_helpers[dest_key];
+    dest_helpers = self.dict_helpers.get(dest_key);
+    dest_struct = self.dict_types.get(dest_key);
+    if dest_helpers is None or dest_struct is None {
+        return None;
+    }
     src_ptr = src_struct.as_pointer();
-    dest_ptr = self.dict_types[dest_key].as_pointer();
+    dest_ptr = dest_struct.as_pointer();
 
     fnty = ir.FunctionType(dest_ptr, [src_ptr]);
     fn = ir.Function(self.llvm_module, fnty, name=fn_name);
@@ -776,14 +780,15 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
         for (_spec, _vt) in _scalars {
             self._emit_dict_helpers(key_spec, _spec, _key_type, _vt, _key_size);
             _src_h = self.dict_helpers.get(f"{key_spec}:{_spec}");
-            if _src_h is not None {
+            _src_ty = self.dict_types.get(f"{key_spec}:{_spec}");
+            if _src_h is not None and _src_ty is not None {
                 _sources.append(
                     (
                         f"dict_{key_spec}_{_spec}",
                         _spec != "ptr",
                         _spec,
                         _src_h,
-                        self.dict_types[f"{key_spec}:{_spec}"].as_pointer()
+                        _src_ty.as_pointer()
                     )
                 );
             }
@@ -994,7 +999,10 @@ impl NaIRGenPass._codegen_dict_val(nd: uni.DictVal) -> (ir.Value | None) {
 
     if _own_dk is not None and not use_jacval and _own_dk in self.dict_helpers {
         dict_key = _own_dk;
-        helpers = self.dict_helpers[dict_key];
+        helpers = self.dict_helpers.get(dict_key);
+        if helpers is None {
+            return None;
+        }
     } else {
         key_type = first_key.type;
         (key_type_name, key_size) = self._hash_key_spec(key_type);
@@ -1009,7 +1017,10 @@ impl NaIRGenPass._codegen_dict_val(nd: uni.DictVal) -> (ir.Value | None) {
         self._emit_dict_helpers(
             key_type_name, val_type_name, key_type, val_type, key_size
         );
-        helpers = self.dict_helpers[dict_key];
+        helpers = self.dict_helpers.get(dict_key);
+        if helpers is None {
+            return None;
+        }
     }
 
     key_type = helpers["key_type"];
