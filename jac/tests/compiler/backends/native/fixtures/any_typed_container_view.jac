@@ -134,3 +134,16 @@ with entry {
     print(t["name"] + "!");
     print(json.dumps(b) == json.dumps({"x": 41, "y": 42}));
 }
+
+def map_text(value: object) -> dict[str, str] {
+    out: dict[str, str] = {};
+    if isinstance(value, dict) {
+        for (k, v) in value.items() {
+            out[str(k)] = str(v);
+        }
+    }
+    return out;
+}
+with entry {
+    print(map_text({"a": "1", "b": "2"})["b"]);
+}

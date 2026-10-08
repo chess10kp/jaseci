@@ -26,14 +26,18 @@ test "typed containers narrowed from any to containers of any match Python" {
     assert lines[3] == "b=1,a=2" , out;
     assert lines[6] == "203" , out;
     assert '{"b": 1, "a": "x", "c": [1, 2]}' in lines , out;
-    assert lines[-6] == "True" , out;
+    assert lines[-7] == "True" , out;
     # Raw-valued dict[str, int] boxed into `any`: any-subscript reads the
     # jacval copy (not the raw i64 vals), and the narrow back rebuilds a
     # real dict[str, int].
-    assert lines[-5] == "42" , out;
-    assert lines[-4] == "83" , out;
+    assert lines[-6] == "42" , out;
+    assert lines[-5] == "83" , out;
     # dict[str, str] boxes through the pointer-retag path and back.
-    assert lines[-3] == "hiyo" , out;
-    assert lines[-2] == "yo!" , out;
-    assert lines[-1] == "True" , out;
+    assert lines[-4] == "hiyo" , out;
+    assert lines[-3] == "yo!" , out;
+    assert lines[-2] == "True" , out;
+    # `object`-narrowed dict unpacked via .items() into a typed dict build
+    # (the json_str_map shape): the loop reads the jacval twin the param
+    # boxing produced, and the rebuilt dict serves a correct store.
+    assert lines[-1] == "2" , out;
 }
