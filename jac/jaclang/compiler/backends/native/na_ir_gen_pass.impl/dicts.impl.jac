@@ -799,12 +799,13 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
             if (
                 _dk.startswith(key_spec + ":")
                 and not _dk.endswith(":jacval")
-                and _dk not in {
-                    f"{key_spec}:i64",
-                    f"{key_spec}:f64",
-                    f"{key_spec}:i1",
-                    f"{key_spec}:ptr"
-                }
+                and _dk
+                    not in {
+                        f"{key_spec}:i64",
+                        f"{key_spec}:f64",
+                        f"{key_spec}:i1",
+                        f"{key_spec}:ptr"
+                    }
             ) {
                 _sources.append(
                     (
