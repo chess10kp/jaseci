@@ -767,20 +767,26 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
             );
         }
     } else {
-        _dst_h = self.dict_helpers[f"{key_spec}:jacval"];
+        _dst_h = self.dict_helpers.get(f"{key_spec}:jacval");
+        if _dst_h is None {
+            return None;
+        }
         _key_type = _dst_h["key_type"];
         _key_size = self._hash_key_spec(_key_type)[1];
         for (_spec, _vt) in _scalars {
             self._emit_dict_helpers(key_spec, _spec, _key_type, _vt, _key_size);
-            _sources.append(
-                (
-                    f"dict_{key_spec}_{_spec}",
-                    _spec != "ptr",
-                    _spec,
-                    self.dict_helpers[f"{key_spec}:{_spec}"],
-                    self.dict_types[f"{key_spec}:{_spec}"].as_pointer()
-                )
-            );
+            _src_h = self.dict_helpers.get(f"{key_spec}:{_spec}");
+            if _src_h is not None {
+                _sources.append(
+                    (
+                        f"dict_{key_spec}_{_spec}",
+                        _spec != "ptr",
+                        _spec,
+                        _src_h,
+                        self.dict_types[f"{key_spec}:{_spec}"].as_pointer()
+                    )
+                );
+            }
         }
     }
     _tag_fn = self._heap_ref_jacval_tag_fn();
