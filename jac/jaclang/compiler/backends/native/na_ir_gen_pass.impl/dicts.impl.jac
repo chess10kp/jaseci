@@ -766,11 +766,24 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
                 )
             );
         }
+        for (_spec, _src_h) in self.list_helpers.items() {
+            if _spec not in ("i64", "f64", "i1", "ptr", "jacval") {
+                _sources.append(
+                    (
+                        f"list_{_spec}",
+                        True,
+                        _spec,
+                        _src_h,
+                        self.list_types[_spec].as_pointer()
+                    )
+                );
+            }
+        }
     } else {
         _dst_h = self.dict_helpers[f"{key_spec}:jacval"];
         _key_type = _dst_h["key_type"];
         _key_size = self._hash_key_spec(_key_type)[1];
-        for (_spec, _vt) in _scalars + [("i1", ir.IntType(1))] {
+        for (_spec, _vt) in _scalars {
             self._emit_dict_helpers(key_spec, _spec, _key_type, _vt, _key_size);
             _sources.append(
                 (
@@ -781,6 +794,28 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
                     self.dict_types[f"{key_spec}:{_spec}"].as_pointer()
                 )
             );
+        }
+        for (_dk, _src_h) in self.dict_helpers.items() {
+            if (
+                _dk.startswith(key_spec + ":")
+                and not _dk.endswith(":jacval")
+                and _dk not in {
+                    f"{key_spec}:i64",
+                    f"{key_spec}:f64",
+                    f"{key_spec}:i1",
+                    f"{key_spec}:ptr"
+                }
+            ) {
+                _sources.append(
+                    (
+                        f"dict_{_dk.replace(':', '_')}",
+                        True,
+                        _dk.split(":")[1],
+                        _src_h,
+                        self.dict_types[_dk].as_pointer()
+                    )
+                );
+            }
         }
     }
     _tag_fn = self._heap_ref_jacval_tag_fn();
