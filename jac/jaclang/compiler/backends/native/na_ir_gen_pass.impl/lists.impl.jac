@@ -650,7 +650,11 @@ impl NaIRGenPass._codegen_any_subscript(
     i8p = ir.IntType(8).as_pointer();
     if key_val.type == i8p {
         self._emit_dict_helpers("ptr", "jacval", i8p, self.jacval_type);
-        d = self._unbox_from_jacval(jacval, self.dict_types["ptr:jacval"].as_pointer());
+        _dict_ty = self.dict_types.get("ptr:jacval");
+        if _dict_ty is None {
+            return None;
+        }
+        d = self._unbox_from_jacval(jacval, _dict_ty.as_pointer());
         return self._codegen_dict_access(d, key_val, "ptr", "jacval");
     }
     if isinstance(key_val.type, ir.IntType) {
