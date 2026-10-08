@@ -575,14 +575,16 @@ impl NaIRGenPass._unbox_any_container(
         ),
         name="jv.view.failed"
     );
-    self._emit_runtime_raise(
-        _failed,
-        "TypeError",
-        "container elements cannot be viewed as any: unsupported element or key type"
-    );
-    b = self.builder;
     _raw = b.inttoptr(_payload, target_type, name="jv.view.raw");
-    _fresh = b.icmp_unsigned("!=", _res, _raw, name="jv.view.fresh");
+    _chosen = b.select(_failed, _raw, _res, name="jv.view.chosen");
+    _fresh = b.and_(
+        b.icmp_unsigned("!=", _res, _raw, name="jv.view.fresh"),
+        b.not_(_failed, name="jv.view.not_failed"),
+        name="jv.view.fresh"
+    );
+    if not self._binding_function_active() {
+        return _chosen;
+    }
     _name = f"any.view.{self._loop_coll_seq}";
     self._loop_coll_seq += 1;
     _slot = self._entry_alloca(target_type, _name);
@@ -593,7 +595,7 @@ impl NaIRGenPass._unbox_any_container(
     self.builder.store(
         self.builder.select(_fresh, _res, _null, name=f"{_name}.keep"), _slot
     );
-    return _res;
+    return _chosen;
 }
 
 impl NaIRGenPass._adopt_any_view(
@@ -608,18 +610,17 @@ impl NaIRGenPass._adopt_any_view(
         ),
         name="jv.adopt.failed"
     );
-    self._emit_runtime_raise(
-        _failed,
-        "TypeError",
-        "container elements cannot be viewed as any: unsupported element or key type"
-    );
-    b = self.builder;
     _raw = b.inttoptr(payload, target_type, name="jv.adopt.raw");
-    _fresh = b.icmp_unsigned("!=", view, _raw, name="jv.adopt.fresh");
+    _chosen = b.select(_failed, _raw, view, name="jv.adopt.chosen");
+    _fresh = b.and_(
+        b.icmp_unsigned("!=", view, _raw, name="jv.adopt.fresh"),
+        b.not_(_failed, name="jv.adopt.not_failed"),
+        name="jv.adopt.fresh"
+    );
     self._emit_rc_release_typed(
         b.select(_fresh, _raw, _null, name="jv.adopt.replaced"), op="any_view"
     );
-    return self._mark_owned(view);
+    return self._mark_owned(_chosen);
 }
 
 impl NaIRGenPass._binding_function_active -> bool {
