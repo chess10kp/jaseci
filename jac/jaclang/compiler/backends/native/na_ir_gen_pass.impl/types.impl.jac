@@ -2464,7 +2464,8 @@ impl NaIRGenPass._apply_flow_narrowing(nd: uni.UniNode, val: ir.Value) -> ir.Val
     if _canon is not None and not _is_ptr {
         _want = _canon;
     }
-    if _is_jv
+    if _canon is None
+        and _is_jv
         and _nt.shared.class_name == "dict"
         and not (_nt.private.type_args or []) {
         return val;
@@ -2553,7 +2554,9 @@ impl NaIRGenPass._unbox_narrowed_member(
         or isinstance(_want.pointee, ir.FunctionType) {
         return val;
     }
-    if _nt.shared.class_name == "dict" and not (_nt.private.type_args or []) {
+    if _canon is None
+        and _nt.shared.class_name == "dict"
+        and not (_nt.private.type_args or []) {
         return val;
     }
     return self._unbox_from_jacval(val, _want);
