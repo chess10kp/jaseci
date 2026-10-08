@@ -605,6 +605,16 @@ def json_str_list(value: object) -> list[str] {
     }
     return out;
 }
+def json_any_list(value: object) -> list[any] {
+    out: list[any] = [];
+    if isinstance(value, list) {
+        for item in value {
+            out.append(item);
+        }
+    }
+    return out;
+}
+
 
 def json_str_pairs(value: object) -> list[list[str]] {
     out: list[list[str]] = [];

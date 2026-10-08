@@ -242,15 +242,13 @@ def literal_to_json(value: any) -> dict[str, any] {
     }
     items: list[any] = [];
     if isinstance(value, tuple) {
-        typed: tuple[any, ...] = value;
-        for item in typed {
+        for item in value {
             items.append(literal_to_json(item));
         }
         return {"l": items};
     }
     if isinstance(value, list) {
-        typed: list[any] = value;
-        for item in typed {
+        for item in value {
             items.append(literal_to_json(item));
         }
         return {"l": items};
@@ -259,13 +257,13 @@ def literal_to_json(value: any) -> dict[str, any] {
 }
 
 def literal_from_json(raw: any) -> any {
-    import from jaclang.compiler.frontend.kernel_inputs { json_map }
+    import from jaclang.compiler.frontend.kernel_inputs { json_any_list, json_map }
     record = json_map(raw);
     if "b" in record {
         return base64.b64decode(str(record["b"]).encode("ascii"));
     }
     if "l" in record {
-        values: list[any] = record["l"];
+        values: list[any] = json_any_list(record["l"]);
         out: list[any] = [];
         for item in values {
             out.append(literal_from_json(item));
@@ -274,9 +272,9 @@ def literal_from_json(raw: any) -> any {
     }
     if "d" in record {
         out: dict[str, any] = {};
-        pairs: list[any] = record["d"];
+        pairs: list[any] = json_any_list(record["d"]);
         for pair in pairs {
-            parts: list[any] = pair;
+            parts: list[any] = json_any_list(pair);
             if len(parts) == 2 {
                 out[str(parts[0])] = literal_from_json(parts[1]);
             }
