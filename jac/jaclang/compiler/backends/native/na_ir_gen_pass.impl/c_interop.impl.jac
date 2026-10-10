@@ -303,13 +303,12 @@ impl NaIRGenPass._codegen_c_interop_trailer(
         }
     }
     if nd.is_attr and is_ptr_type(target_type) {
-        got = self._foreign_ptr_field_slot(
+        slot = self._foreign_ptr_field_slot(
             self._codegen_expr(nd.target), target_type, self._get_name(nd.right)
         );
-        if got is None {
+        if slot is None {
             return (False, None);
         }
-        (slot, _field_type) = got;
         if isinstance(slot.type, ir.IntType) {
             return (True, slot);
         }
@@ -342,13 +341,12 @@ impl NaIRGenPass._c_interop_store(
         sname = self._foreign_struct_name_of_type(elem);
         slot = box if sname is not None else self._pinned_value_slot(box);
     } elif target.is_attr and is_ptr_type(target_type) {
-        got = self._foreign_ptr_field_slot(
+        slot = self._foreign_ptr_field_slot(
             self._codegen_expr(target.target), target_type, self._get_name(target.right)
         );
-        if got is None {
+        if slot is None {
             return False;
         }
-        (slot, _field_type) = got;
         if isinstance(slot.type, ir.IntType) {
             self.ctx.emit(
                 E5092,
@@ -607,7 +605,7 @@ impl NaIRGenPass._codegen_c_fnfield_call(
 
 impl NaIRGenPass._foreign_ptr_field_slot(
     addr: (ir.Value | None), ptr_type: any, field_name: (str | None)
-) -> (tuple[ir.Value, any] | None) {
+) -> (ir.Value | None) {
     # `p.field` on `ptr[T]` where T is a C-layout struct. Returns the
     # field's slot (typed pointer) for scalar fields, or the field's raw
     # address (i64, no copy) for nested-struct fields. `None` when the
@@ -633,14 +631,13 @@ impl NaIRGenPass._foreign_ptr_field_slot(
         # A function-pointer field reads as its raw code address (i64), so
         # `p.fn == 0` tests the pointer; calls through it do not lower.
         fslot = self.builder.inttoptr(field_addr, i64.as_pointer(), name="c.fnfield.slot");
-        return (self.builder.load(fslot, name="c.fnfield"), None);
+        return self.builder.load(fslot, name="c.fnfield");
     }
     if llt is None
         or not isinstance(llt, (ir.IntType, ir.FloatType, ir.DoubleType)) {
-        return (field_addr, None);
+        return field_addr;
     }
-    slot = self.builder.inttoptr(field_addr, llt.as_pointer(), name="c.field.slot");
-    return (slot, None);
+    return self.builder.inttoptr(field_addr, llt.as_pointer(), name="c.field.slot");
 }
 
 impl NaIRGenPass._codegen_ptr_arith(

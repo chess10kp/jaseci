@@ -1011,7 +1011,7 @@ walker NaIRGenPass(CompilerPass) {
     ) -> (ir.Value | None);
     def _foreign_ptr_field_slot(
         addr: (ir.Value | None), ptr_type: any, field_name: (str | None)
-    ) -> (tuple[ir.Value, any] | None);
+    ) -> (ir.Value | None);
     def _c_release_temp(val: ir.Value) -> None;
     def _clib_param_info(p: uni.ParamVar) -> dict[str, any];
     def _clib_ret_is_cptr(sig: uni.FuncSignature) -> bool;
