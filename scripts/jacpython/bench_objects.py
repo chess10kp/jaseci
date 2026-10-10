@@ -25,6 +25,13 @@ B = {
  "bool_repr":       ("repr(a)", "a=True", 500000),
  "closure_cell":    ("f()", "def g():\n x=1\n def f(): return x\n return f\nf=g()", 500000),
  "namespace":       ("types.SimpleNamespace(a=1).a", "import types", 200000),
+ # Controls: C objects only (no ported code). A gap here is build-wide.
+ "ctl_list_index":  ("l[5]", "l=list(range(10))", 500000),
+ "ctl_int_add":     ("a + b", "a=1000; b=2000", 500000),
+ "ctl_dict_get":    ("d['k']", "d={'k': 1}", 500000),
+ "ctl_list_iter":   ("for x in l: pass", "l=list(range(1000))", 2000),
+ "ctl_call":        ("f()", "def f(): return 1", 500000),
+ "ctl_len_list":    ("len(l)", "l=[1]", 500000),
 }
 # timeit drives its loop with itertools.repeat, which is itself a port (and
 # not under test here); loop with range instead and subtract the empty loop.
