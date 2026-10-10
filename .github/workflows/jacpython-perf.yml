@@ -1,0 +1,88 @@
+name: JacPython object perf
+
+# Builds the stock C runtime and the JacPython runtime of the same pinned
+# CPython, runs the CPython test files that exercise the ported Objects/*.c
+# files under JacPython, and benchmarks both runtimes side by side.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [jacpython-perf]
+
+permissions:
+  contents: read
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Zig 0.16.0
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+          use-cache: false
+
+      - name: LLVMPY shim + typeshed
+        working-directory: jac
+        run: |
+          set -euo pipefail
+          zig build fetch-llvm --summary all
+          zig build jacllvm --summary all
+          zig build fetch-typeshed --summary all
+
+      - name: Build the stock C runtime
+        working-directory: jac
+        run: zig build build-python --summary all
+
+      - name: Build the JacPython runtime
+        working-directory: jac
+        env:
+          JACPYTHON: "1"
+        run: zig build build-python --summary all
+
+      - name: Locate interpreters
+        id: py
+        working-directory: jac
+        run: |
+          set -euo pipefail
+          c=$(ls -d "$PWD"/.python-build/cpython/*/python/install/bin/python3.14 | head -1)
+          j=$(ls -d "$PWD"/.python-build/jacpython/*/python/install/bin/python3.14 | head -1)
+          "$c" -c 'import sys; print(sys.version)'
+          "$j" -c 'import sys; print(sys.version)'
+          echo "c=$c" >> "$GITHUB_OUTPUT"
+          echo "j=$j" >> "$GITHUB_OUTPUT"
+
+      - name: CPython tests for the ported objects (JacPython)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          src=$(ls jac/.python-build/jacpython/sources/*.tar.gz | while read t; do
+            tar -tzf "$t" 2>/dev/null | grep -q '/Lib/test/test_range.py$' && echo "$t"; done | head -1)
+          mkdir -p "$RUNNER_TEMP/cpy"
+          tar -xzf "$src" -C "$RUNNER_TEMP/cpy" --wildcards '*/Lib/test'
+          lib=$(ls -d "$RUNNER_TEMP"/cpy/*/Lib)
+          PYTHONPATH="$lib" "${{ steps.py.outputs.j }}" -m test -j2 \
+            test_bool test_range test_slice test_enumerate test_iter test_iterlen \
+            test_types test_scope test_funcattrs test_itertools test_contains \
+            test_index test_int test_long test_list test_tuple test_builtin
+
+      - name: Benchmark C vs JacPython
+        run: |
+          set -euo pipefail
+          "${{ steps.py.outputs.c }}" -I scripts/jacpython/bench_objects.py > c.txt
+          "${{ steps.py.outputs.j }}" -I scripts/jacpython/bench_objects.py > j.txt
+          {
+            echo "| bench | C ns/op | JacPython ns/op | ratio |"
+            echo "|---|---:|---:|---:|"
+            join c.txt j.txt | awk '{printf "| %s | %.1f | %.1f | %.2f |\n", $1, $2, $3, $3/$2}'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jacpython-perf
+          path: |
+            c.txt
+            j.txt
