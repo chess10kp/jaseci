@@ -9,8 +9,7 @@ import from jaclang.runtime.python.boolobject { PyLongObject_Layout, PyNumberMet
 import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
-    obj PyObject;
-    obj PyObject_Layout {
+    obj PyObject;  obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
     }
@@ -29,8 +28,7 @@ import from c {
             tp_as_async: ptr = ptr(),
             tp_repr: ptr = ptr(),
             tp_as_number: ptr = ptr();
-    }
-    obj PySliceObject_Layout {
+    }  obj PySliceObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             start: ptr[PyObject] = ptr[PyObject](),
@@ -40,20 +38,18 @@ import from c {
     # A `PyObject **` out-param.
     obj PyObjectSlot {
         has v: ptr[PyObject] = ptr[PyObject]();
-    }
-
-    glob _Py_NoneStruct: PyObject_Layout;
-    glob PyExc_TypeError: ptr[PyObject];
-    glob PyExc_ValueError: ptr[PyObject];
-
-    def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
-    def PyObject_RichCompareBool(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> i32;
-    def PyLong_FromSsize_t(v: i64) -> ptr[PyObject];
-    def PyNumber_Index(o: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Add(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
+    }  glob _Py_NoneStruct: PyObject_Layout; glob PyExc_TypeError: ptr[PyObject]; glob PyExc_ValueError:
+             ptr[PyObject]; def PyErr_SetString(
+        exc: ptr[PyObject], msg: ptr[u8]
+    ) -> None;  def PyObject_RichCompareBool(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> i32;  def PyLong_FromSsize_t(v: i64) -> ptr[PyObject];  def PyNumber_Index(
+        o: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Add(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];
     # The cached small ints 0 and 1 (borrowed, immortal).
-    glob jacpy_small_zero: ptr[PyObject];
-    glob jacpy_small_one: ptr[PyObject];
+    glob jacpy_small_zero: ptr[PyObject]; glob jacpy_small_one: ptr[PyObject];
 }
 
 # lv_tag sign encoding: (1 - sign) in the low two bits.
@@ -63,7 +59,8 @@ def gli_long_sign(o: ptr[PyObject]) -> i64 {
 
 def gli_evaluate_index(v: ptr[PyObject]) -> ptr[PyObject] {
     ty = ptr[PyTypeHead_Layout](ptr[PyObject_Layout](v).ob_type);
-    if ty.tp_as_number != ptr() and ptr[PyNumberMethods](ty.tp_as_number).nb_index != 0 {
+    if ty.tp_as_number != ptr()
+        and ptr[PyNumberMethods](ty.tp_as_number).nb_index != 0 {
         return PyNumber_Index(v);
     }
     PyErr_SetString(
@@ -75,7 +72,9 @@ def gli_evaluate_index(v: ptr[PyObject]) -> ptr[PyObject] {
 
 # Clip an owned index: negative ones get `length` added and are raised to
 # `lower`; others are lowered to `upper`. Consumes `v`; NULL on error.
-def gli_clip(v: ptr[PyObject], length: ptr[PyObject], lower: ptr[PyObject], upper: ptr[PyObject]) -> ptr[PyObject] {
+def gli_clip(
+    v: ptr[PyObject], length: ptr[PyObject], lower: ptr[PyObject], upper: ptr[PyObject]
+) -> ptr[PyObject] {
     if gli_long_sign(v) < 0 {
         tmp = PyNumber_Add(v, length);
         py_decref(v);
@@ -108,8 +107,13 @@ def gli_clip(v: ptr[PyObject], length: ptr[PyObject], lower: ptr[PyObject], uppe
 }
 
 def gli_fail(
-    start_ptr: ptr, stop_ptr: ptr, step_ptr: ptr,
-    start: ptr[PyObject], step: ptr[PyObject], lower: ptr[PyObject], upper: ptr[PyObject]
+    start_ptr: ptr,
+    stop_ptr: ptr,
+    step_ptr: ptr,
+    start: ptr[PyObject],
+    step: ptr[PyObject],
+    lower: ptr[PyObject],
+    upper: ptr[PyObject]
 ) -> i32 {
     ptr[PyObjectSlot](start_ptr).v = ptr[PyObject]();
     ptr[PyObjectSlot](stop_ptr).v = ptr[PyObject]();
@@ -124,8 +128,7 @@ def gli_fail(
 # Compute slice indices given a slice and a nonnegative PyLong length.
 # Returns -1 on failure (all three out-params set to NULL).
 def:pub _PySlice_GetLongIndices(
-    self_op: ptr, length_op: ptr,
-    start_ptr: ptr, stop_ptr: ptr, step_ptr: ptr
+    self_op: ptr, length_op: ptr, start_ptr: ptr, stop_ptr: ptr, step_ptr: ptr
 ) -> i32 {
     self = ptr[PySliceObject_Layout](self_op);
     length = ptr[PyObject](length_op);

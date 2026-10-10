@@ -3779,9 +3779,7 @@ impl TypeEvaluator.assign_type(
                 return True;
             }
         }
-        # C address decay: a clib struct-typed global used where a pointer is
-        # expected denotes its address (extern struct object semantics), e.g.
-        # passing PyType_Type for a `tp` parameter.
+
         if (
             isinstance(src_type, ClassType)
             and src_type.is_class_instance()

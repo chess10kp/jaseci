@@ -10,12 +10,9 @@
 # each port declares its own opaque PyObject, which do not unify.
 
 import from c {
-    obj PyObject;
-    obj PyRefHead {
+    obj PyObject;  obj PyRefHead {
         has ob_refcnt: i64 = 0;
-    }
-
-    def _Py_Dealloc(o: ptr[PyObject]) -> None;
+    }  def _Py_Dealloc(o: ptr[PyObject]) -> None;
 }
 
 def py_incref(o: ptr) -> None {

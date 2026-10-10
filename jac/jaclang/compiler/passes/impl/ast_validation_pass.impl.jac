@@ -341,8 +341,6 @@ impl ASTValidationPass.enter_ctrl_stmt with CtrlStmt entry {
 }
 
 impl ASTValidationPass.enter_global_vars with GlobalVars entry {
-    # Module-level globs and extern C data symbols declared inside a clib
-    # `import from c { ... glob name: type; ... }` block.
     valid_parents = (Module, Import);
     if here.is_frozen and isinstance(here.parent, Archetype) {
         return;

@@ -135,7 +135,9 @@ impl NaIRGenPass._codegen_global_vars(nd: uni.GlobalVars) -> None {
                 if _static_sname is not None {
                     var_type = self._clib_c_type(_static_sname);
                 } else {
-                    _widened = self._widened_tuple_decl_type(assign.type_tag, assign.value);
+                    _widened = self._widened_tuple_decl_type(
+                        assign.type_tag, assign.value
+                    );
                     if (
                         _widened is None
                         and self._quiet_glob_type(assign.type_tag) is None
@@ -316,9 +318,7 @@ impl NaIRGenPass._static_struct_name_of_call(nd: uni.UniNode) -> (str | None) {
     if callee is None or callee not in self.clib_struct_names {
         return None;
     }
-    if callee not in self.struct_types
-        or not self.struct_field_order.get(callee)
-    {
+    if callee not in self.struct_types or not self.struct_field_order.get(callee) {
         return None;
     }
     return callee;
@@ -414,7 +414,6 @@ impl NaIRGenPass._build_static_field_const(
         return ir.Constant(ftype, None);
     }
     if isinstance(nd, uni.AtomUnit) {
-        # A parenthesized atom wraps the real constant expression.
         if isinstance(nd.value, uni.Expr) {
             return self._build_static_field_const(ftype, nd.value, depth);
         }
@@ -426,17 +425,12 @@ impl NaIRGenPass._build_static_field_const(
         }
     }
     if isinstance(nd, uni.FuncCall) {
-        # `ptr[T]()` / `ptr()` is the null-pointer constant; the generic form
-        # parses as an AtomTrailer over the `ptr` name.
         ptr_tgt = nd.target;
         if isinstance(ptr_tgt, uni.AtomTrailer) {
             ptr_tgt = ptr_tgt.target;
         }
         callee_name = self._get_name(ptr_tgt);
-        if (
-            callee_name == "ptr"
-            and (nd.params is None or not nd.params)
-        ) {
+        if (callee_name == "ptr" and (nd.params is None or not nd.params)) {
             if isinstance(ftype, ir.PointerType) or ftype == ir.IntType(64) {
                 return ir.Constant(ftype, None);
             }
@@ -455,7 +449,6 @@ impl NaIRGenPass._build_static_field_const(
         }
         if isinstance(cv, CtInt) and not cv.mag {
             if isinstance(ftype, ir.PointerType) {
-                # `= 0` on a pointer/function-pointer field is NULL.
                 if cv.small == 0 {
                     return ir.Constant(ftype, None);
                 }
@@ -552,9 +545,7 @@ impl NaIRGenPass._static_c_string_global(
     g = self._interned_strs.get(key);
     if g is None {
         arr = ir.ArrayType(ir.IntType(8), len(data));
-        g = ir.GlobalVariable(
-            self.llvm_module, arr, name=f".cstr.{self._str_count}"
-        );
+        g = ir.GlobalVariable(self.llvm_module, arr, name=f".cstr.{self._str_count}");
         self._str_count = self._str_count + 1;
         g.linkage = "private";
         g.global_constant = True;

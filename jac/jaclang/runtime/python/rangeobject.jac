@@ -1,29 +1,16 @@
-# Objects/rangeobject.c ported to native Jac.
-#
-# Range values and both iterator representations retain CPython's exact
-# layouts. The small-integer iterator is used when its state fits in long;
-# the arbitrary-precision iterator covers all remaining integer ranges.
-# Freelist operations are omitted; allocation and deallocation use CPython's
-# public object APIs.
-
 import from jaclang.runtime.python.boolobject { PyLongObject_Layout, PyNumberMethods }
 
 import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
-    obj PyObject;
-    # A vectorcall `PyObject *const *args` array (up to 3 positional args):
-    # read `args[i]` directly instead of a C helper call.
-    obj ArgVec3 {
+    obj PyObject;  obj ArgVec3 {
         has a0: ptr[PyObject] = ptr[PyObject](),
             a1: ptr[PyObject] = ptr[PyObject](),
             a2: ptr[PyObject] = ptr[PyObject]();
-    }
-    obj PyObject_Layout {
+    }  obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
-    }
-    obj PyTypeObject_Layout {
+    }  obj PyTypeObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             ob_size: i64 = 0,
@@ -40,16 +27,22 @@ import from c {
             tp_as_sequence: ptr = ptr(),
             tp_as_mapping: ptr = ptr(),
             tp_hash: Callable[[ptr[PyObject]], i64] = 0,
-            tp_call: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_call:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_str: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_getattro: Callable[[ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_setattro: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
+            tp_setattro:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_as_buffer: ptr = ptr(),
             tp_flags: u64 = 0,
             tp_doc: ptr[u8] = ptr[u8](),
             tp_traverse: Callable[[ptr[PyObject], ptr, ptr], i32] = 0,
             tp_clear: Callable[[ptr[PyObject]], i32] = 0,
-            tp_richcompare: Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
+            tp_richcompare:
+                Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
             tp_weaklistoffset: i64 = 0,
             tp_iter: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_iternext: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
@@ -58,12 +51,21 @@ import from c {
             tp_getset: ptr = ptr(),
             tp_base: ptr[PyTypeObject_Layout] = ptr[PyTypeObject_Layout](),
             tp_dict: ptr[PyObject] = ptr[PyObject](),
-            tp_descr_get: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_descr_set: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
+            tp_descr_get:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
+            tp_descr_set:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
             tp_dictoffset: i64 = 0,
             tp_init: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_alloc: Callable[[ptr[PyTypeObject_Layout], i64], ptr[PyObject]] = 0,
-            tp_new: Callable[[ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_new:
+                Callable[
+                    [ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_free: Callable[[ptr], None] = 0,
             tp_is_gc: Callable[[ptr[PyObject]], i32] = 0,
             tp_bases: ptr[PyObject] = ptr[PyObject](),
@@ -74,33 +76,33 @@ import from c {
             tp_del: Callable[[ptr[PyObject]], None] = 0,
             tp_version_tag: u32 = 0,
             tp_finalize: Callable[[ptr[PyObject]], None] = 0,
-            tp_vectorcall: Callable[[ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_vectorcall:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_watched: u8 = 0,
             tp_versions_used: u16 = 0;
-    }
-    obj PyRangeObject_Layout {
+    }  obj PyRangeObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             start: ptr[PyObject] = ptr[PyObject](),
             stop: ptr[PyObject] = ptr[PyObject](),
             step: ptr[PyObject] = ptr[PyObject](),
             length: ptr[PyObject] = ptr[PyObject]();
-    }
-    obj PyRangeIterObject_Layout {
+    }  obj PyRangeIterObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             start: i64 = 0,
             step: i64 = 0,
             len: i64 = 0;
-    }
-    obj PyLongRangeIterObject_Layout {
+    }  obj PyLongRangeIterObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             start: ptr[PyObject] = ptr[PyObject](),
             step: ptr[PyObject] = ptr[PyObject](),
             len: ptr[PyObject] = ptr[PyObject]();
-    }
-    obj PySequenceMethods_Layout {
+    }  obj PySequenceMethods_Layout {
         has sq_length: Callable[[ptr[PyObject]], i64] = 0,
             sq_concat: ptr = ptr(),
             sq_repeat: ptr = ptr(),
@@ -111,129 +113,130 @@ import from c {
             sq_contains: Callable[[ptr[PyObject], ptr[PyObject]], i32] = 0,
             sq_inplace_concat: ptr = ptr(),
             sq_inplace_repeat: ptr = ptr();
-    }
-    obj PyMappingMethods_Layout {
+    }  obj PyMappingMethods_Layout {
         has mp_length: Callable[[ptr[PyObject]], i64] = 0,
             mp_subscript: Callable[[ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
             mp_ass_subscript: ptr = ptr();
-    }
-    obj PyMethodDef_Layout {
+    }  obj PyMethodDef_Layout {
         has name: ptr[u8] = ptr[u8](),
-            ml_meth: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            ml_meth:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             ml_flags: i32 = 0,
             ml_doc: ptr[u8] = ptr[u8]();
-    }
-    obj PyMemberDef_Layout {
+    }  obj PyMemberDef_Layout {
         has name: ptr[u8] = ptr[u8](),
             type: i32 = 0,
             offset: i64 = 0,
             flags: i32 = 0,
             doc: ptr[u8] = ptr[u8]();
-    }
-    obj RangeMethods_Layout {
+    }  obj RangeMethods_Layout {
         has e0: PyMethodDef_Layout,
             e1: PyMethodDef_Layout,
             e2: PyMethodDef_Layout,
             e3: PyMethodDef_Layout,
             sentinel: PyMethodDef_Layout;
-    }
-    obj RangeIterMethods_Layout {
+    }  obj RangeIterMethods_Layout {
         has e0: PyMethodDef_Layout,
             e1: PyMethodDef_Layout,
             e2: PyMethodDef_Layout,
             sentinel: PyMethodDef_Layout;
-    }
-    obj RangeMembers_Layout {
+    }  obj RangeMembers_Layout {
         has e0: PyMemberDef_Layout,
             e1: PyMemberDef_Layout,
             e2: PyMemberDef_Layout,
             sentinel: PyMemberDef_Layout;
-    }
-
-    glob PyType_Type: PyTypeObject_Layout;
-    glob PyLong_Type: PyTypeObject_Layout;
-    glob PyBool_Type: PyTypeObject_Layout;
-    glob PyExc_TypeError: ptr[PyObject];
-    glob PyExc_ValueError: ptr[PyObject];
-    glob PyExc_IndexError: ptr[PyObject];
-    glob PyExc_OverflowError: ptr[PyObject];
-    # Py_None / Py_NotImplemented are macros over these exported structs.
-    glob _Py_NoneStruct: PyObject_Layout;
-    glob _Py_NotImplementedStruct: PyObject_Layout;
-
-    def PyObject_Free(o: ptr) -> None;
-    def PyObject_GenericGetAttr(o: ptr[PyObject], name: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_IsTrue(o: ptr[PyObject]) -> i32;
-    def PyObject_Not(o: ptr[PyObject]) -> i32;
-    def PyObject_Hash(o: ptr[PyObject]) -> i64;
-    def PyObject_RichCompare(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> ptr[PyObject];
-    def PyObject_RichCompareBool(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> i32;
-    def PyObject_SelfIter(o: ptr[PyObject]) -> ptr[PyObject];
-    def PyErr_Clear() -> None;
-    def PyErr_Occurred() -> ptr[PyObject];
-    def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
-    def PyNumber_Add(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Subtract(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Multiply(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_FloorDivide(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Remainder(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Negative(a: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Index(a: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_AsSsize_t(a: ptr[PyObject], exc: ptr[PyObject]) -> i64;
-    def PyLong_AsLong(a: ptr[PyObject]) -> i64;
-    def PyLong_AsLongAndOverflow(a: ptr[PyObject], overflow: &mut i32) -> i64;
-    def PyLong_FromLong(a: i64) -> ptr[PyObject];
-    def PyLong_FromSsize_t(a: i64) -> ptr[PyObject];
-    def PyLong_AsSsize_t(a: ptr[PyObject]) -> i64;
-    def PyTuple_New(n: i64) -> ptr[PyObject];
-    def PyTuple_Size(o: ptr[PyObject]) -> i64;
-    def _PySequence_IterSearch(seq: ptr[PyObject], item: ptr[PyObject], operation: i32) -> i64;
-    def _PyArg_NoKeywords(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
-    def _PyArg_NoKwnames(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
-    # The cached small ints 0 and 1 (borrowed, immortal).
-    glob jacpy_small_zero: ptr[PyObject];
-    glob jacpy_small_one: ptr[PyObject];
-    def jacpy_bool_true() -> ptr[PyObject];
-    def jacpy_bool_false() -> ptr[PyObject];
-    def jacpy_tuple_set_item(t: ptr[PyObject], index: i64, v: ptr[PyObject]) -> None;
-    def jacpy_range_alloc(tp: ptr[PyTypeObject_Layout], size: i64) -> ptr[PyObject];
-    # The `ranges` / `range_iters` freelists (per-thread interpreter state,
-    # reached through pycore_freelist.h's inline helpers).
-    def jacpy_range_obj_alloc(tp: ptr[PyTypeObject_Layout]) -> ptr[PyObject];
-    def jacpy_range_obj_free(o: ptr[PyObject]) -> None;
-    def jacpy_rangeiter_alloc() -> ptr[PyObject];
-    def jacpy_rangeiter_free(o: ptr[PyObject]) -> None;
-    # Defined natively in slicelongindices.jac. Called through its C symbol: `&mut`
-    # out-params lower to addresses for C externs, not for Jac `ptr` params.
-    def _PySlice_GetLongIndices(
+    }  glob PyType_Type: PyTypeObject_Layout; glob PyLong_Type:
+             PyTypeObject_Layout; glob PyBool_Type: PyTypeObject_Layout; glob PyExc_TypeError:
+             ptr[PyObject]; glob PyExc_ValueError: ptr[PyObject]; glob PyExc_IndexError:
+             ptr[PyObject]; glob PyExc_OverflowError: ptr[PyObject]; glob _Py_NoneStruct:
+             PyObject_Layout; glob _Py_NotImplementedStruct: PyObject_Layout; def PyObject_Free(
+        o: ptr
+    ) -> None;  def PyObject_GenericGetAttr(
+        o: ptr[PyObject], name: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyObject_IsTrue(o: ptr[PyObject]) -> i32;  def PyObject_Not(
+        o: ptr[PyObject]
+    ) -> i32;  def PyObject_Hash(o: ptr[PyObject]) -> i64;  def PyObject_RichCompare(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> ptr[PyObject];  def PyObject_RichCompareBool(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> i32;  def PyObject_SelfIter(o: ptr[PyObject]) -> ptr[PyObject];  def PyErr_Clear -> None;  def PyErr_Occurred -> ptr[
+        PyObject
+    ];  def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;  def PyNumber_Add(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Subtract(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Multiply(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_FloorDivide(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Remainder(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Negative(a: ptr[PyObject]) -> ptr[PyObject];  def PyNumber_Index(
+        a: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_AsSsize_t(
+        a: ptr[PyObject], exc: ptr[PyObject]
+    ) -> i64;  def PyLong_AsLong(a: ptr[PyObject]) -> i64;  def PyLong_AsLongAndOverflow(
+        a: ptr[PyObject], overflow: &mut i32
+    ) -> i64;  def PyLong_FromLong(a: i64) -> ptr[PyObject];  def PyLong_FromSsize_t(
+        a: i64
+    ) -> ptr[PyObject];  def PyLong_AsSsize_t(a: ptr[PyObject]) -> i64;  def PyTuple_New(
+        n: i64
+    ) -> ptr[PyObject];  def PyTuple_Size(o: ptr[PyObject]) -> i64;  def _PySequence_IterSearch(
+        seq: ptr[PyObject], item: ptr[PyObject], operation: i32
+    ) -> i64;  def _PyArg_NoKeywords(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;  def _PyArg_NoKwnames(
+        fname: ptr[u8], kwargs: ptr[PyObject]
+    ) -> i32;  glob jacpy_small_zero: ptr[PyObject]; glob jacpy_small_one:
+             ptr[PyObject]; def jacpy_bool_true -> ptr[PyObject];  def jacpy_bool_false -> ptr[
+        PyObject
+    ];  def jacpy_tuple_set_item(
+        t: ptr[PyObject], index: i64, v: ptr[PyObject]
+    ) -> None;  def jacpy_range_alloc(
+        tp: ptr[PyTypeObject_Layout], size: i64
+    ) -> ptr[PyObject];  def jacpy_range_obj_alloc(
+        tp: ptr[PyTypeObject_Layout]
+    ) -> ptr[PyObject];  def jacpy_range_obj_free(o: ptr[PyObject]) -> None;  def jacpy_rangeiter_alloc -> ptr[
+        PyObject
+    ];  def jacpy_rangeiter_free(o: ptr[PyObject]) -> None;  def _PySlice_GetLongIndices(
         self_op: ptr[PyObject],
         length: ptr[PyObject],
         start_ptr: &mut ptr[PyObject],
         stop_ptr: &mut ptr[PyObject],
         step_ptr: &mut ptr[PyObject]
-    ) -> i32;
-    def jacpy_range_index_check(item: ptr[PyObject]) -> i32;
-    def jacpy_range_new_too_many(nargs: i64) -> None;
-    def jacpy_range_bad_index(item: ptr[PyObject]) -> None;
-    def jacpy_range_repr(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject], include_step: i32) -> ptr[PyObject];
-    def jacpy_range_reduce(tp: ptr[PyObject], start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_range_iter_reduce(range: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_range_iter_bad_state(state: ptr[PyObject]) -> None;
+    ) -> i32;  def jacpy_range_index_check(item: ptr[PyObject]) -> i32;  def jacpy_range_new_too_many(
+        nargs: i64
+    ) -> None;  def jacpy_range_bad_index(item: ptr[PyObject]) -> None;  def jacpy_range_repr(
+        start: ptr[PyObject],
+        stop: ptr[PyObject],
+        step: ptr[PyObject],
+        include_step: i32
+    ) -> ptr[PyObject];  def jacpy_range_reduce(
+        tp: ptr[PyObject],
+        start: ptr[PyObject],
+        stop: ptr[PyObject],
+        step: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_range_iter_reduce(
+        range: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_range_iter_bad_state(state: ptr[PyObject]) -> None;
 }
 
 import from jaclang.runtime.python.sliceobject { slice_is_slice }
 
-glob Py_LT: i32 = 0;
-glob Py_LE: i32 = 1;
-glob Py_EQ: i32 = 2;
-glob Py_NE: i32 = 3;
-glob Py_GT: i32 = 4;
-glob Py_GE: i32 = 5;
-glob PY_ITERSEARCH_COUNT: i32 = 1;
-glob PY_ITERSEARCH_INDEX: i32 = 2;
-glob PY_ITERSEARCH_CONTAINS: i32 = 3;
+glob Py_LT: i32 = 0,
+     Py_LE: i32 = 1,
+     Py_EQ: i32 = 2,
+     Py_NE: i32 = 3,
+     Py_GT: i32 = 4,
+     Py_GE: i32 = 5,
+     PY_ITERSEARCH_COUNT: i32 = 1,
+     PY_ITERSEARCH_INDEX: i32 = 2,
+     PY_ITERSEARCH_CONTAINS: i32 = 3;
 
-def range_length_long(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> i64 {
+def range_length_long(
+    start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
+) -> i64 {
     overflow: i32 = 0;
     long_start = PyLong_AsLongAndOverflow(start, &mut overflow);
     if overflow != 0 {
@@ -263,7 +266,9 @@ def range_length_long(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObj
     return i64(count);
 }
 
-def range_length_value(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject] {
+def range_length_value(
+    start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
+) -> ptr[PyObject] {
     fast_length = range_length_long(start, stop, step);
     if fast_length >= 0 {
         return PyLong_FromLong(fast_length);
@@ -317,7 +322,12 @@ def range_length_value(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyOb
     return result;
 }
 
-def range_make(type_: ptr[PyTypeObject_Layout], start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject] {
+def range_make(
+    type_: ptr[PyTypeObject_Layout],
+    start: ptr[PyObject],
+    stop: ptr[PyObject],
+    step: ptr[PyObject]
+) -> ptr[PyObject] {
     length = range_length_value(start, stop, step);
     if length == ptr[PyObject]() {
         return ptr[PyObject]();
@@ -335,7 +345,9 @@ def range_make(type_: ptr[PyTypeObject_Layout], start: ptr[PyObject], stop: ptr[
     return allocated;
 }
 
-def range_item_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr[PyObject] {
+def range_item_value(
+    r: ptr[PyRangeObject_Layout], index: ptr[PyObject]
+) -> ptr[PyObject] {
     one = jacpy_small_one;
     if r.step == one {
         return PyNumber_Add(r.start, index);
@@ -349,7 +361,9 @@ def range_item_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr[
     return result;
 }
 
-def range_index_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr[PyObject] {
+def range_index_value(
+    r: ptr[PyRangeObject_Layout], index: ptr[PyObject]
+) -> ptr[PyObject] {
     zero = jacpy_small_zero;
     normalized = index;
     py_incref(normalized);
@@ -383,7 +397,9 @@ def range_index_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr
     return result;
 }
 
-def range_compute_slice(r: ptr[PyRangeObject_Layout], slice: ptr[PyObject]) -> ptr[PyObject] {
+def range_compute_slice(
+    r: ptr[PyRangeObject_Layout], slice: ptr[PyObject]
+) -> ptr[PyObject] {
     start: ptr[PyObject] = ptr[PyObject]();
     stop: ptr[PyObject] = ptr[PyObject]();
     step: ptr[PyObject] = ptr[PyObject]();
@@ -411,7 +427,9 @@ def range_compute_slice(r: ptr[PyRangeObject_Layout], slice: ptr[PyObject]) -> p
         py_decref(substep);
         return ptr[PyObject]();
     }
-    result = range_make(ptr[PyTypeObject_Layout](PyRange_Type), substart, substop, substep);
+    result = range_make(
+        ptr[PyTypeObject_Layout](PyRange_Type), substart, substop, substep
+    );
     if result == ptr[PyObject]() {
         py_decref(substart);
         py_decref(substop);
@@ -420,8 +438,6 @@ def range_compute_slice(r: ptr[PyRangeObject_Layout], slice: ptr[PyObject]) -> p
     return result;
 }
 
-# PyLong_CheckExact(o) / PyLong_CheckExact(o) || PyBool_Check(o) (bool has
-# no subclasses).
 def range_is_exact_long(o: ptr[PyObject]) -> bool {
     lt: ptr[PyObject] = PyLong_Type;
     return ptr[PyObject_Layout](o).ob_type == lt;
@@ -499,7 +515,9 @@ def range_equals(a: ptr[PyRangeObject_Layout], b: ptr[PyRangeObject_Layout]) -> 
     return PyObject_RichCompareBool(a.step, b.step, Py_EQ);
 }
 
-def range_richcompare(self: ptr[PyObject], other: ptr[PyObject], op: i32) -> ptr[PyObject] {
+def range_richcompare(
+    self: ptr[PyObject], other: ptr[PyObject], op: i32
+) -> ptr[PyObject] {
     notimpl_obj: ptr[PyObject] = _Py_NotImplementedStruct;
     range_type: ptr[PyObject] = PyRange_Type;
     if ptr[PyRangeObject_Layout](other).ob_type != range_type {
@@ -510,7 +528,9 @@ def range_richcompare(self: ptr[PyObject], other: ptr[PyObject], op: i32) -> ptr
         py_incref(notimpl_obj);
         return notimpl_obj;
     }
-    equal = range_equals(ptr[PyRangeObject_Layout](self), ptr[PyRangeObject_Layout](other));
+    equal = range_equals(
+        ptr[PyRangeObject_Layout](self), ptr[PyRangeObject_Layout](other)
+    );
     if equal < 0 {
         return ptr[PyObject]();
     }
@@ -561,7 +581,9 @@ def range_hash(self: ptr[PyObject]) -> i64 {
     return hash;
 }
 
-def range_count(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def range_count(
+    self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     r = ptr[PyRangeObject_Layout](self);
     if range_is_long_or_bool(value) {
         found = range_contains_long(r, value);
@@ -577,7 +599,9 @@ def range_count(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject])
     return PyLong_FromSsize_t(count);
 }
 
-def range_index(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def range_index(
+    self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     r = ptr[PyRangeObject_Layout](self);
     if not range_is_long_or_bool(value) {
         index = _PySequence_IterSearch(self, value, PY_ITERSEARCH_INDEX);
@@ -607,7 +631,6 @@ def range_index(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject])
 }
 
 
-# _PyIndex_Check (static inline): the type has an nb_index slot.
 def range_index_check(v: ptr[PyObject]) -> i32 {
     head = ptr[PyObject_Layout](v);
     ty = ptr[PyTypeObject_Layout](head.ob_type);
@@ -637,7 +660,7 @@ def range_subscript(self: ptr[PyObject], item: ptr[PyObject]) -> ptr[PyObject] {
     jacpy_range_bad_index(item);
     return ptr[PyObject]();
 }
- 
+
 def range_repr(self: ptr[PyObject]) -> ptr[PyObject] {
     r = ptr[PyRangeObject_Layout](self);
     step = PyNumber_AsSsize_t(r.step, ptr[PyObject]());
@@ -646,8 +669,10 @@ def range_repr(self: ptr[PyObject]) -> ptr[PyObject] {
     }
     return jacpy_range_repr(r.start, r.stop, r.step, i32(1 if step != 1 else 0));
 }
- 
-def range_reduce(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+
+def range_reduce(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     r = ptr[PyRangeObject_Layout](self);
     return jacpy_range_reduce(r.ob_type, r.start, r.stop, r.step);
 }
@@ -656,7 +681,7 @@ def range_bool(self: ptr[PyObject]) -> i32 {
     return PyObject_IsTrue(ptr[PyRangeObject_Layout](self).length);
 }
 
-def range_dealloc(self: ptr[PyObject]) -> None {
+def range_dealloc(self: ptr[PyObject]) {
     r = ptr[PyRangeObject_Layout](self);
     py_decref(r.start);
     py_decref(r.stop);
@@ -678,14 +703,15 @@ def range_item(self: ptr[PyObject], index: i64) -> ptr[PyObject] {
     py_decref(value);
     return result;
 }
-# _PyLong_IsZero: the sign bits of lv_tag (low two) are 1 for zero.
+
 def range_long_is_zero(o: ptr[PyObject]) -> bool {
     l = ptr[PyLongObject_Layout](o);
     return (l.lv_tag & 3) == 1;
 }
 
-# range_from_array: borrowed vectorcall args, owned start/stop/step.
-def range_from_args(type_: ptr[PyTypeObject_Layout], args: ptr, nargs: i64) -> ptr[PyObject] {
+def range_from_args(
+    type_: ptr[PyTypeObject_Layout], args: ptr, nargs: i64
+) -> ptr[PyObject] {
     argv = ptr[ArgVec3](args);
     start: ptr[PyObject] = ptr[PyObject]();
     stop: ptr[PyObject] = ptr[PyObject]();
@@ -700,7 +726,7 @@ def range_from_args(type_: ptr[PyTypeObject_Layout], args: ptr, nargs: i64) -> p
             py_decref(start);
             return ptr[PyObject]();
         }
-        # validate_step
+
         if nargs == 3 {
             step = PyNumber_Index(argv.a2);
             if step != ptr[PyObject]() and range_long_is_zero(step) {
@@ -760,70 +786,78 @@ def range_vectorcall(
 }
 
 glob range_methods: RangeMethods_Layout = RangeMethods_Layout(
-    e0=PyMethodDef_Layout(name="__reversed__", ml_meth=range_reverse_method, ml_flags=4, ml_doc="Return a reverse iterator."),
-    e1=PyMethodDef_Layout(name="__reduce__", ml_meth=range_reduce, ml_flags=4),
-    e2=PyMethodDef_Layout(name="count", ml_meth=range_count, ml_flags=8, ml_doc="rangeobject.count(value) -> integer -- return number of occurrences of value"),
-    e3=PyMethodDef_Layout(name="index", ml_meth=range_index, ml_flags=8, ml_doc="rangeobject.index(value) -> integer -- return index of value.\nRaise ValueError if the value is not present."),
-    sentinel=PyMethodDef_Layout()
-);
-
-glob range_members: RangeMembers_Layout = RangeMembers_Layout(
-    e0=PyMemberDef_Layout(name="start", type=16, offset=16, flags=1),
-    e1=PyMemberDef_Layout(name="stop", type=16, offset=24, flags=1),
-    e2=PyMemberDef_Layout(name="step", type=16, offset=32, flags=1),
-    sentinel=PyMemberDef_Layout()
-);
-
-glob range_as_sequence: PySequenceMethods_Layout = PySequenceMethods_Layout(
-    sq_length=range_length,
-    sq_item=range_item,
-    sq_contains=range_contains
-);
-
-glob range_as_mapping: PyMappingMethods_Layout = PyMappingMethods_Layout(
-    mp_length=range_length,
-    mp_subscript=range_subscript
-);
-
-glob range_as_number: PyNumberMethods = PyNumberMethods(nb_bool=range_bool);
+         e0=PyMethodDef_Layout(
+             name="__reversed__",
+             ml_meth=range_reverse_method,
+             ml_flags=4,
+             ml_doc="Return a reverse iterator."
+         ),
+         e1=PyMethodDef_Layout(name="__reduce__", ml_meth=range_reduce, ml_flags=4),
+         e2=PyMethodDef_Layout(
+             name="count",
+             ml_meth=range_count,
+             ml_flags=8,
+             ml_doc="rangeobject.count(value) -> integer -- return number of occurrences of value"
+         ),
+         e3=PyMethodDef_Layout(
+             name="index",
+             ml_meth=range_index,
+             ml_flags=8,
+             ml_doc="rangeobject.index(value) -> integer -- return index of value.\nRaise ValueError if the value is not present."
+         ),
+         sentinel=PyMethodDef_Layout()
+     ),
+     range_members: RangeMembers_Layout = RangeMembers_Layout(
+         e0=PyMemberDef_Layout(name="start", type=16, offset=16, flags=1),
+         e1=PyMemberDef_Layout(name="stop", type=16, offset=24, flags=1),
+         e2=PyMemberDef_Layout(name="step", type=16, offset=32, flags=1),
+         sentinel=PyMemberDef_Layout()
+     ),
+     range_as_sequence: PySequenceMethods_Layout = PySequenceMethods_Layout(
+         sq_length=range_length, sq_item=range_item, sq_contains=range_contains
+     ),
+     range_as_mapping: PyMappingMethods_Layout = PyMappingMethods_Layout(
+         mp_length=range_length, mp_subscript=range_subscript
+     ),
+     range_as_number: PyNumberMethods = PyNumberMethods(nb_bool=range_bool);
 
 glob:pub PyRange_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    tp_name="range",
-    tp_basicsize=48,
-    tp_dealloc=range_dealloc,
-    tp_repr=range_repr,
-    tp_as_number=range_as_number,
-    tp_as_sequence=range_as_sequence,
-    tp_as_mapping=range_as_mapping,
-    tp_hash=range_hash,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=32,
-    tp_doc=(
-        "range(stop) -> range object\n"
-        "range(start, stop[, step]) -> range object\n"
-        "\n"
-        "Return an object that produces a sequence of integers from start (inclusive)\n"
-        "to stop (exclusive) by step. range(i, j) produces i, i+1, ..., j-1.\n"
-        "start defaults to 0, and stop is omitted! range(4) produces 0, 1, 2, 3.\n"
-        "These are exactly the valid indices for a list of 4 elements.\n"
-        "When step is given, it specifies the increment (or decrement)."
-    ),
-    tp_richcompare=range_richcompare,
-    tp_iter=range_iter,
-    tp_methods=range_methods,
-    tp_members=range_members,
-    tp_new=range_new,
-    tp_vectorcall=range_vectorcall
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         tp_name="range",
+         tp_basicsize=48,
+         tp_dealloc=range_dealloc,
+         tp_repr=range_repr,
+         tp_as_number=range_as_number,
+         tp_as_sequence=range_as_sequence,
+         tp_as_mapping=range_as_mapping,
+         tp_hash=range_hash,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=32,
+         tp_doc=(
+             "range(stop) -> range object\n"
+             "range(start, stop[, step]) -> range object\n"
+             "\n"
+             "Return an object that produces a sequence of integers from start (inclusive)\n"
+             "to stop (exclusive) by step. range(i, j) produces i, i+1, ..., j-1.\n"
+             "start defaults to 0, and stop is omitted! range(4) produces 0, 1, 2, 3.\n"
+             "These are exactly the valid indices for a list of 4 elements.\n"
+             "When step is given, it specifies the increment (or decrement)."
+         ),
+         tp_richcompare=range_richcompare,
+         tp_iter=range_iter,
+         tp_methods=range_methods,
+         tp_members=range_members,
+         tp_new=range_new,
+         tp_vectorcall=range_vectorcall
+     );
 
-def range_reverse_method(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def range_reverse_method(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     return range_reverse(self);
 }
 
-# C computes these in unsigned long: u64.wrap and the wrapping_* builtins are
-# the same modular arithmetic.
 def get_len_of_range(lo: i64, hi: i64, step: i64) -> u64 {
     if step > 0 and lo < hi {
         span: u64 = wrapping_sub(wrapping_sub(u64.wrap(hi), u64(1)), u64.wrap(lo));
@@ -848,7 +882,9 @@ def fast_range_iter(start: i64, step: i64, length: i64) -> ptr[PyObject] {
     return allocated;
 }
 
-def long_range_iter(start: ptr[PyObject], step: ptr[PyObject], length: ptr[PyObject]) -> ptr[PyObject] {
+def long_range_iter(
+    start: ptr[PyObject], step: ptr[PyObject], length: ptr[PyObject]
+) -> ptr[PyObject] {
     allocated = jacpy_range_alloc(ptr[PyTypeObject_Layout](PyLongRangeIter_Type), 40);
     if allocated == ptr[PyObject]() {
         return ptr[PyObject]();
@@ -978,7 +1014,7 @@ def rangeiter_next(self: ptr[PyObject]) -> ptr[PyObject] {
         return ptr[PyObject]();
     }
     result = it.start;
-    # C wraps `start + step` past the last element.
+
     it.start = wrapping_add(result, it.step);
     it.len = wrapping_sub(it.len, 1);
     return PyLong_FromLong(result);
@@ -1007,16 +1043,19 @@ def longrangeiter_next(self: ptr[PyObject]) -> ptr[PyObject] {
 }
 
 
-def longrangeiter_length(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def longrangeiter_length(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     length = ptr[PyLongRangeIterObject_Layout](self).len;
     py_incref(length);
     return length;
 }
-def rangeiter_dealloc(self: ptr[PyObject]) -> None {
+
+def rangeiter_dealloc(self: ptr[PyObject]) {
     jacpy_rangeiter_free(self);
 }
 
-def longrangeiter_dealloc(self: ptr[PyObject]) -> None {
+def longrangeiter_dealloc(self: ptr[PyObject]) {
     it = ptr[PyLongRangeIterObject_Layout](self);
     py_decref(it.start);
     py_decref(it.step);
@@ -1024,15 +1063,21 @@ def longrangeiter_dealloc(self: ptr[PyObject]) -> None {
     PyObject_Free(ptr(self));
 }
 
-def rangeiter_length_hint(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def rangeiter_length_hint(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     return PyLong_FromLong(ptr[PyRangeIterObject_Layout](self).len);
 }
 
-def longrangeiter_length_hint(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def longrangeiter_length_hint(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     return longrangeiter_length(self, ignored, extra);
 }
 
-def rangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def rangeiter_setstate(
+    self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     it = ptr[PyRangeIterObject_Layout](self);
     index = PyLong_AsLong(state);
@@ -1050,7 +1095,9 @@ def rangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyO
     return none_obj;
 }
 
-def longrangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def longrangeiter_setstate(
+    self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     if not range_is_exact_long(state) {
         jacpy_range_iter_bad_state(state);
@@ -1098,7 +1145,9 @@ def longrangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr
     return none_obj;
 }
 
-def rangeiter_reduce(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def rangeiter_reduce(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     it = ptr[PyRangeIterObject_Layout](self);
     start = PyLong_FromLong(it.start);
     if start == ptr[PyObject]() {
@@ -1139,7 +1188,9 @@ def rangeiter_reduce(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyO
     return jacpy_range_iter_reduce(range);
 }
 
-def longrangeiter_reduce(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def longrangeiter_reduce(
+    self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     it = ptr[PyLongRangeIterObject_Layout](self);
     product = PyNumber_Multiply(it.len, it.step);
     if product == ptr[PyObject]() {
@@ -1163,41 +1214,69 @@ def longrangeiter_reduce(self: ptr[PyObject], ignored: ptr[PyObject], extra: ptr
 }
 
 glob rangeiter_methods: RangeIterMethods_Layout = RangeIterMethods_Layout(
-    e0=PyMethodDef_Layout(name="__length_hint__", ml_meth=rangeiter_length_hint, ml_flags=4, ml_doc="Private method returning an estimate of len(list(it))."),
-    e1=PyMethodDef_Layout(name="__reduce__", ml_meth=rangeiter_reduce, ml_flags=4, ml_doc="Return state information for pickling."),
-    e2=PyMethodDef_Layout(name="__setstate__", ml_meth=rangeiter_setstate, ml_flags=8, ml_doc="Set state information for unpickling."),
-    sentinel=PyMethodDef_Layout()
-);
-
-glob longrangeiter_methods: RangeIterMethods_Layout = RangeIterMethods_Layout(
-    e0=PyMethodDef_Layout(name="__length_hint__", ml_meth=longrangeiter_length_hint, ml_flags=4, ml_doc="Private method returning an estimate of len(list(it))."),
-    e1=PyMethodDef_Layout(name="__reduce__", ml_meth=longrangeiter_reduce, ml_flags=4, ml_doc="Return state information for pickling."),
-    e2=PyMethodDef_Layout(name="__setstate__", ml_meth=longrangeiter_setstate, ml_flags=8, ml_doc="Set state information for unpickling."),
-    sentinel=PyMethodDef_Layout()
-);
+         e0=PyMethodDef_Layout(
+             name="__length_hint__",
+             ml_meth=rangeiter_length_hint,
+             ml_flags=4,
+             ml_doc="Private method returning an estimate of len(list(it))."
+         ),
+         e1=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=rangeiter_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         ),
+         e2=PyMethodDef_Layout(
+             name="__setstate__",
+             ml_meth=rangeiter_setstate,
+             ml_flags=8,
+             ml_doc="Set state information for unpickling."
+         ),
+         sentinel=PyMethodDef_Layout()
+     ),
+     longrangeiter_methods: RangeIterMethods_Layout = RangeIterMethods_Layout(
+         e0=PyMethodDef_Layout(
+             name="__length_hint__",
+             ml_meth=longrangeiter_length_hint,
+             ml_flags=4,
+             ml_doc="Private method returning an estimate of len(list(it))."
+         ),
+         e1=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=longrangeiter_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         ),
+         e2=PyMethodDef_Layout(
+             name="__setstate__",
+             ml_meth=longrangeiter_setstate,
+             ml_flags=8,
+             ml_doc="Set state information for unpickling."
+         ),
+         sentinel=PyMethodDef_Layout()
+     );
 
 glob:pub PyRangeIter_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    tp_name="range_iterator",
-    tp_basicsize=40,
-    tp_dealloc=rangeiter_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=0,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=rangeiter_next,
-    tp_methods=rangeiter_methods
-);
-
-glob:pub PyLongRangeIter_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    tp_name="longrange_iterator",
-    tp_basicsize=40,
-    tp_dealloc=longrangeiter_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=0,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=longrangeiter_next,
-    tp_methods=longrangeiter_methods
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         tp_name="range_iterator",
+         tp_basicsize=40,
+         tp_dealloc=rangeiter_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=0,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=rangeiter_next,
+         tp_methods=rangeiter_methods
+     ),
+     PyLongRangeIter_Type: PyTypeObject_Layout = PyTypeObject_Layout(
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         tp_name="longrange_iterator",
+         tp_basicsize=40,
+         tp_dealloc=longrangeiter_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=0,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=longrangeiter_next,
+         tp_methods=longrangeiter_methods
+     );

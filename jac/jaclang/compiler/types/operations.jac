@@ -226,8 +226,6 @@ def get_complex_arith_result_type(
 def get_pointer_arith_result_type(
     evaluator: TypeEvaluator, left_type: TypeBase, right_type: TypeBase, op: str
 ) -> TypeBase | None {
-    # C parity: `p + n` and `p - n` stay `ptr[T]`; `p - q` is the integer
-    # offset; `n + p` is rejected (falls through to the magic-method lookup).
     l_ptr = _is_builtin_instance_named(left_type, "ptr");
     r_ptr = _is_builtin_instance_named(right_type, "ptr");
     if op == Tok.MINUS and l_ptr and r_ptr {

@@ -43,16 +43,22 @@ import from c {
             tp_as_sequence: ptr = ptr(),
             tp_as_mapping: ptr = ptr(),
             tp_hash: Callable[[ptr[PyObject]], i64] = 0,
-            tp_call: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_call:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_str: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_getattro: Callable[[ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_setattro: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
+            tp_setattro:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_as_buffer: ptr = ptr(),
             tp_flags: u64 = 0,
             tp_doc: ptr[u8] = ptr[u8](),
             tp_traverse: Callable[[ptr[PyObject], ptr, ptr], i32] = 0,
             tp_clear: Callable[[ptr[PyObject]], i32] = 0,
-            tp_richcompare: Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
+            tp_richcompare:
+                Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
             tp_weaklistoffset: i64 = 0,
             tp_iter: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_iternext: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
@@ -61,12 +67,21 @@ import from c {
             tp_getset: ptr = ptr(),
             tp_base: ptr[PyTypeObject_Layout] = ptr[PyTypeObject_Layout](),
             tp_dict: ptr[PyObject] = ptr[PyObject](),
-            tp_descr_get: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_descr_set: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
+            tp_descr_get:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
+            tp_descr_set:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
             tp_dictoffset: i64 = 0,
             tp_init: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_alloc: Callable[[ptr[PyTypeObject_Layout], i64], ptr[PyObject]] = 0,
-            tp_new: Callable[[ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_new:
+                Callable[
+                    [ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_free: Callable[[ptr], None] = 0,
             tp_is_gc: Callable[[ptr[PyObject]], i32] = 0,
             tp_bases: ptr[PyObject] = ptr[PyObject](),
@@ -77,49 +92,44 @@ import from c {
             tp_del: Callable[[ptr[PyObject]], None] = 0,
             tp_version_tag: u32 = 0,
             tp_finalize: Callable[[ptr[PyObject]], None] = 0,
-            tp_vectorcall: Callable[[ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_vectorcall:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_watched: u8 = 0,
             tp_versions_used: u16 = 0;
-    }
-
-    obj PyObject_Layout {
+    }  obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
-    }
-
-    obj PyMethodDef_Layout {
+    }  obj PyMethodDef_Layout {
         has name: ptr[u8] = ptr[u8](),
-            ml_meth: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            ml_meth:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             ml_flags: i32 = 0,
             ml_doc: ptr[u8] = ptr[u8]();
-    }
-
-    obj PyMemberDef_Layout {
+    }  obj PyMemberDef_Layout {
         has name: ptr[u8] = ptr[u8](),
             type: i32 = 0,
             offset: i64 = 0,
             flags: i32 = 0,
             doc: ptr[u8] = ptr[u8]();
-    }
-
-    obj _Slice_Methods {
+    }  obj _Slice_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout(),
             e2: PyMethodDef_Layout = PyMethodDef_Layout();
-    }
-
-    obj _Slice_Members {
+    }  obj _Slice_Members {
         has e0: PyMemberDef_Layout = PyMemberDef_Layout(),
             e1: PyMemberDef_Layout = PyMemberDef_Layout(),
             e2: PyMemberDef_Layout = PyMemberDef_Layout(),
             e3: PyMemberDef_Layout = PyMemberDef_Layout();
-    }
-
-    obj _Ellipsis_Methods {
+    }  obj _Ellipsis_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout();
     }
-
     # PySliceObject
     obj PySliceObject_Layout {
         has ob_refcnt: i64 = 0,
@@ -128,7 +138,6 @@ import from c {
             stop: ptr[PyObject] = ptr[PyObject](),
             step: ptr[PyObject] = ptr[PyObject]();
     }
-
     # A PyTupleObject (3.14: ob_hash precedes ob_item) read as up to three
     # positional args.
     obj PyTupleArgs3_Layout {
@@ -140,59 +149,66 @@ import from c {
             a1: ptr[PyObject] = ptr[PyObject](),
             a2: ptr[PyObject] = ptr[PyObject]();
     }
-
     # A `Py_ssize_t *` out-param.
     obj SsizeSlot {
         has v: i64 = 0;
-    }
-
-    glob PyType_Type: PyTypeObject_Layout;
-    glob PyLong_Type: PyTypeObject_Layout;
+    }  glob PyType_Type: PyTypeObject_Layout; glob PyLong_Type:
+             PyTypeObject_Layout;
     # Py_True/Py_False are C macros (no linkable symbol): the residue returns
     # new references to the singletons.
-    def jacpy_bool_true() -> ptr[PyObject];
-    def jacpy_bool_false() -> ptr[PyObject];
+    def jacpy_bool_true -> ptr[PyObject];  def jacpy_bool_false -> ptr[PyObject];
     # Py_None / Py_NotImplemented are macros over these exported structs.
-    glob _Py_NoneStruct: PyObject_Layout;
-    glob _Py_NotImplementedStruct: PyObject_Layout;
-    glob PyExc_TypeError: ptr[PyObject];
-    glob PyExc_ValueError: ptr[PyObject];
-
+    glob _Py_NoneStruct: PyObject_Layout; glob _Py_NotImplementedStruct:
+             PyObject_Layout; glob PyExc_TypeError: ptr[PyObject]; glob PyExc_ValueError:
+             ptr[PyObject];
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
-    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
-    def PyErr_Clear() -> None;
-    def PyErr_ExceptionMatches(exc: ptr[PyObject]) -> i32;
-    def _Py_SetImmortal(o: ptr[PyObject]) -> None;
-    def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;
-    def PyObject_GenericGetAttr(o: ptr[PyObject], name: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_RichCompare(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> ptr[PyObject];
-    def PyObject_RichCompareBool(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> i32;
-    def PyType_IsSubtype(a: ptr[PyTypeObject_Layout], b: ptr[PyTypeObject_Layout]) -> i32;
-    def PyUnicode_FromString(s: ptr[u8]) -> ptr[PyObject];
-    def PyLong_FromSsize_t(v: i64) -> ptr[PyObject];
-    def PyLong_AsSsize_t(v: ptr[PyObject]) -> i64;
-    def PyNumber_Index(o: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Add(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PyDict_Size(d: ptr[PyObject]) -> i64;
-    def PyTuple_Size(p: ptr[PyObject]) -> i64;
-    def PyTuple_GetItem(p: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def _PyEval_SliceIndex(v: ptr[PyObject], out: ptr[i64]) -> i32;
-    def _PyArg_NoKeywords(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
-    def jacpy_is_tuple(handle: ptr[PyObject]) -> i64;
-    def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];
-    def jacpy_capsule_track(o: ptr[PyObject]) -> None;
+    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;  def PyErr_SetString(
+        exc: ptr[PyObject], msg: ptr[u8]
+    ) -> None;  def PyErr_Clear -> None;  def PyErr_ExceptionMatches(
+        exc: ptr[PyObject]
+    ) -> i32;  def _Py_SetImmortal(o: ptr[PyObject]) -> None;  def PyObject_GC_UnTrack(
+        o: ptr[PyObject]
+    ) -> None;  def PyObject_GenericGetAttr(
+        o: ptr[PyObject], name: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyObject_RichCompare(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> ptr[PyObject];  def PyObject_RichCompareBool(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> i32;  def PyType_IsSubtype(
+        a: ptr[PyTypeObject_Layout], b: ptr[PyTypeObject_Layout]
+    ) -> i32;  def PyUnicode_FromString(s: ptr[u8]) -> ptr[PyObject];  def PyLong_FromSsize_t(
+        v: i64
+    ) -> ptr[PyObject];  def PyLong_AsSsize_t(v: ptr[PyObject]) -> i64;  def PyNumber_Index(
+        o: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Add(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyDict_Size(d: ptr[PyObject]) -> i64;  def PyTuple_Size(
+        p: ptr[PyObject]
+    ) -> i64;  def PyTuple_GetItem(p: ptr[PyObject], index: i64) -> ptr[PyObject];  def _PyEval_SliceIndex(
+        v: ptr[PyObject], out: ptr[i64]
+    ) -> i32;  def _PyArg_NoKeywords(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;  def jacpy_is_tuple(
+        handle: ptr[PyObject]
+    ) -> i64;  def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];  def jacpy_capsule_track(
+        o: ptr[PyObject]
+    ) -> None;
     # The `slices` freelist (per-thread interpreter state, reached through
     # pycore_freelist.h's inline helpers): pop or GC-allocate, push or free.
-    def jacpy_slice_alloc() -> ptr[PyObject];
-    def jacpy_slice_free(o: ptr[PyObject]) -> None;
-    def jacpy_slice_too_few(nargs: i64) -> None;
-    def jacpy_slice_too_many(nargs: i64) -> None;
-    def jacpy_slice_repr(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_slice_indices_tuple(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_slice_reduce_tuple(tp: ptr[PyObject], start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_slice_pack3(a: ptr[PyObject], b: ptr[PyObject], c: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_slice_hash(o: ptr[PyObject]) -> i64;
+    def jacpy_slice_alloc -> ptr[PyObject];  def jacpy_slice_free(
+        o: ptr[PyObject]
+    ) -> None;  def jacpy_slice_too_few(nargs: i64) -> None;  def jacpy_slice_too_many(
+        nargs: i64
+    ) -> None;  def jacpy_slice_repr(
+        start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_slice_indices_tuple(
+        start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_slice_reduce_tuple(
+        tp: ptr[PyObject],
+        start: ptr[PyObject],
+        stop: ptr[PyObject],
+        step: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_slice_pack3(
+        a: ptr[PyObject], b: ptr[PyObject], c: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_slice_hash(o: ptr[PyObject]) -> i64;
     # Defined natively in slicelongindices.jac.
     def _PySlice_GetLongIndices(
         self_op: ptr[PyObject],
@@ -203,7 +219,7 @@ import from c {
     ) -> i32;
 }
 
-def _ssize_store(p: ptr[i64], v: i64) -> None {
+def _ssize_store(p: ptr[i64], v: i64) {
     ptr[SsizeSlot](p).v = v;
 }
 
@@ -227,7 +243,10 @@ def _slice_is_long(v: ptr[PyObject]) -> i32 {
     if head.ob_type == lt {
         return 1;
     }
-    if PyType_IsSubtype(ptr[PyTypeObject_Layout](head.ob_type), ptr[PyTypeObject_Layout](lt)) != 0 {
+    if PyType_IsSubtype(
+        ptr[PyTypeObject_Layout](head.ob_type), ptr[PyTypeObject_Layout](lt)
+    )
+        != 0 {
         return 1;
     }
     return 0;
@@ -250,7 +269,7 @@ def ellipsis_new(
     return e;
 }
 
-def ellipsis_dealloc(ellipsis: ptr[PyObject]) -> None {
+def ellipsis_dealloc(ellipsis: ptr[PyObject]) {
     # Immortal: re-set the reference count instead of dying.
     _Py_SetImmortal(ellipsis);
 }
@@ -259,44 +278,41 @@ def ellipsis_repr(op: ptr[PyObject]) -> ptr[PyObject] {
     return PyUnicode_FromString("Ellipsis");
 }
 
-def ellipsis_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def ellipsis_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     return PyUnicode_FromString("Ellipsis");
 }
 
 glob ellipsis_methods: _Ellipsis_Methods = _Ellipsis_Methods(
-    e0=PyMethodDef_Layout(name="__reduce__", ml_meth=ellipsis_reduce, ml_flags=4)
-);
+         e0=PyMethodDef_Layout(name="__reduce__", ml_meth=ellipsis_reduce, ml_flags=4)
+     );
 
 glob:pub PyEllipsis_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="ellipsis",
-    tp_basicsize=0,
-    tp_itemsize=0,
-    tp_dealloc=ellipsis_dealloc,
-    tp_repr=ellipsis_repr,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=0,
-    tp_doc=(
-        "ellipsis()\n"
-        "--\n"
-        "\n"
-        "The type of the Ellipsis singleton."
-    ),
-    tp_methods=ellipsis_methods,
-    tp_new=ellipsis_new
-);
-
-glob:pub _Py_EllipsisObject: PyObject_Layout = PyObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyEllipsis_Type
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="ellipsis",
+         tp_basicsize=0,
+         tp_itemsize=0,
+         tp_dealloc=ellipsis_dealloc,
+         tp_repr=ellipsis_repr,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=0,
+         tp_doc=("ellipsis()\n" "--\n" "\n" "The type of the Ellipsis singleton."),
+         tp_methods=ellipsis_methods,
+         tp_new=ellipsis_new
+     ),
+     _Py_EllipsisObject: PyObject_Layout = PyObject_Layout(
+         ob_refcnt=1407378104778752, ob_type=PyEllipsis_Type
+     );
 
 # ------------------------------ slice object --------------------------------
 
 # _PyBuildSlice_Consume2: takes references (start/stop consumed on failure).
-def _PyBuildSlice_Consume2(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject] {
+def _PyBuildSlice_Consume2(
+    start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
+) -> ptr[PyObject] {
     allocated = jacpy_slice_alloc();
     if allocated == ptr[PyObject]() {
         py_decref(start);
@@ -312,7 +328,9 @@ def _PyBuildSlice_Consume2(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[
     return allocated;
 }
 
-def:pub PySlice_New(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject] {
+def:pub PySlice_New(
+    start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     if step == ptr[PyObject]() {
         step = none_obj;
@@ -328,7 +346,9 @@ def:pub PySlice_New(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObjec
     return _PyBuildSlice_Consume2(start, stop, step);
 }
 
-def:pub _PyBuildSlice_ConsumeRefs(start: ptr[PyObject], stop: ptr[PyObject]) -> ptr[PyObject] {
+def:pub _PyBuildSlice_ConsumeRefs(
+    start: ptr[PyObject], stop: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     n: ptr[PyObject] = none_obj;
     return _PyBuildSlice_Consume2(start, stop, n);
@@ -461,7 +481,9 @@ def:pub PySlice_Unpack(
     return 0;
 }
 
-def:pub PySlice_AdjustIndices(length: i64, start: ptr[i64], stop: ptr[i64], step: i64) -> i64 {
+def:pub PySlice_AdjustIndices(
+    length: i64, start: ptr[i64], stop: ptr[i64], step: i64
+) -> i64 {
     s = ptr[SsizeSlot](start).v;
     e = ptr[SsizeSlot](stop).v;
 
@@ -515,7 +537,11 @@ def:pub PySlice_AdjustIndices(length: i64, start: ptr[i64], stop: ptr[i64], step
 }
 
 def:pub PySlice_GetIndicesEx(
-    _r: ptr[PyObject], length: i64, start: ptr[i64], stop: ptr[i64], step: ptr[i64],
+    _r: ptr[PyObject],
+    length: i64,
+    start: ptr[i64],
+    stop: ptr[i64],
+    step: ptr[i64],
     slicelength: ptr[i64]
 ) -> i32 {
     if PySlice_Unpack(_r, start, stop, step) < 0 {
@@ -567,7 +593,7 @@ def slice_new(
     return PySlice_New(start, stop, step);
 }
 
-def slice_dealloc(op: ptr[PyObject]) -> None {
+def slice_dealloc(op: ptr[PyObject]) {
     r = ptr[PySliceObject_Layout](op);
     PyObject_GC_UnTrack(op);
     py_decref(r.step);
@@ -582,12 +608,14 @@ def slice_repr(op: ptr[PyObject]) -> ptr[PyObject] {
 }
 
 glob slice_members: _Slice_Members = _Slice_Members(
-    e0=PyMemberDef_Layout(name="start", type=6, offset=16, flags=1),
-    e1=PyMemberDef_Layout(name="stop", type=6, offset=24, flags=1),
-    e2=PyMemberDef_Layout(name="step", type=6, offset=32, flags=1)
-);
+         e0=PyMemberDef_Layout(name="start", type=6, offset=16, flags=1),
+         e1=PyMemberDef_Layout(name="stop", type=6, offset=24, flags=1),
+         e2=PyMemberDef_Layout(name="step", type=6, offset=32, flags=1)
+     );
 
-def slice_indices(op: ptr[PyObject], len: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def slice_indices(
+    op: ptr[PyObject], len: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     # Length to an integer; raise for negative length.
     length = PyNumber_Index(len);
     if length == ptr[PyObject]() {
@@ -611,28 +639,30 @@ def slice_indices(op: ptr[PyObject], len: ptr[PyObject], extra: ptr[PyObject]) -
 }
 
 glob slice_methods: _Slice_Methods = _Slice_Methods(
-    e0=PyMethodDef_Layout(
-        name="indices",
-        ml_meth=slice_indices,
-        ml_flags=8,
-        ml_doc=(
-            "S.indices(len) -> (start, stop, stride)\n"
-            "\n"
-            "Assuming a sequence of length len, calculate the start and stop\n"
-            "indices, and the stride length of the extended slice described by\n"
-            "S. Out of bounds indices are clipped in a manner consistent with the\n"
-            "handling of normal slices."
-        )
-    ),
-    e1=PyMethodDef_Layout(
-        name="__reduce__",
-        ml_meth=slice_reduce,
-        ml_flags=4,
-        ml_doc="Return state information for pickling."
-    )
-);
+         e0=PyMethodDef_Layout(
+             name="indices",
+             ml_meth=slice_indices,
+             ml_flags=8,
+             ml_doc=(
+                 "S.indices(len) -> (start, stop, stride)\n"
+                 "\n"
+                 "Assuming a sequence of length len, calculate the start and stop\n"
+                 "indices, and the stride length of the extended slice described by\n"
+                 "S. Out of bounds indices are clipped in a manner consistent with the\n"
+                 "handling of normal slices."
+             )
+         ),
+         e1=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=slice_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         )
+     );
 
-def slice_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def slice_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     self = ptr[PySliceObject_Layout](op);
     head = ptr[PyObject_Layout](op);
     return jacpy_slice_reduce_tuple(head.ob_type, self.start, self.stop, self.step);
@@ -679,11 +709,7 @@ def slice_is_slice(v: ptr) -> i32 {
     return 0;
 }
 
-def slice_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def slice_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     v = ptr[PySliceObject_Layout](op);
     if v.start != ptr[PyObject]() {
         vret = jacpy_visit(visitf, v.start, arg);
@@ -707,28 +733,28 @@ def slice_traverse(
 }
 
 glob:pub PySlice_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="slice",
-    tp_basicsize=40,
-    tp_itemsize=0,
-    tp_dealloc=slice_dealloc,
-    tp_repr=slice_repr,
-    tp_hash=jacpy_slice_hash,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=16384,
-    tp_doc=(
-        "slice(stop)\n"
-        "slice(start, stop[, step])\n"
-        "\n"
-        "Create a slice object.\n"
-        "\n"
-        "This is used for extended slicing (e.g. a[0:10:2])."
-    ),
-    tp_traverse=slice_traverse,
-    tp_richcompare=slice_richcompare,
-    tp_methods=slice_methods,
-    tp_members=slice_members,
-    tp_new=slice_new
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="slice",
+         tp_basicsize=40,
+         tp_itemsize=0,
+         tp_dealloc=slice_dealloc,
+         tp_repr=slice_repr,
+         tp_hash=jacpy_slice_hash,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=16384,
+         tp_doc=(
+             "slice(stop)\n"
+             "slice(start, stop[, step])\n"
+             "\n"
+             "Create a slice object.\n"
+             "\n"
+             "This is used for extended slicing (e.g. a[0:10:2])."
+         ),
+         tp_traverse=slice_traverse,
+         tp_richcompare=slice_richcompare,
+         tp_methods=slice_methods,
+         tp_members=slice_members,
+         tp_new=slice_new
+     );

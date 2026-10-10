@@ -19,7 +19,6 @@
 # (_PyEval_GetBuiltin(&_Py_ID(iter))); also the GC-track/untrack calls
 # stay C helpers beside the capsule ones.
 
-
 import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
@@ -45,16 +44,22 @@ import from c {
             tp_as_sequence: ptr = ptr(),
             tp_as_mapping: ptr = ptr(),
             tp_hash: Callable[[ptr[PyObject]], i64] = 0,
-            tp_call: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_call:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_str: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_getattro: Callable[[ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_setattro: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
+            tp_setattro:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_as_buffer: ptr = ptr(),
             tp_flags: u64 = 0,
             tp_doc: ptr[u8] = ptr[u8](),
             tp_traverse: Callable[[ptr[PyObject], ptr, ptr], i32] = 0,
             tp_clear: Callable[[ptr[PyObject]], i32] = 0,
-            tp_richcompare: Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
+            tp_richcompare:
+                Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
             tp_weaklistoffset: i64 = 0,
             tp_iter: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_iternext: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
@@ -63,12 +68,21 @@ import from c {
             tp_getset: ptr = ptr(),
             tp_base: ptr[PyTypeObject_Layout] = ptr[PyTypeObject_Layout](),
             tp_dict: ptr[PyObject] = ptr[PyObject](),
-            tp_descr_get: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_descr_set: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
+            tp_descr_get:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
+            tp_descr_set:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
             tp_dictoffset: i64 = 0,
             tp_init: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_alloc: Callable[[ptr[PyTypeObject_Layout], i64], ptr[PyObject]] = 0,
-            tp_new: Callable[[ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_new:
+                Callable[
+                    [ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_free: Callable[[ptr], None] = 0,
             tp_is_gc: Callable[[ptr[PyObject]], i32] = 0,
             tp_bases: ptr[PyObject] = ptr[PyObject](),
@@ -79,56 +93,51 @@ import from c {
             tp_del: Callable[[ptr[PyObject]], None] = 0,
             tp_version_tag: u32 = 0,
             tp_finalize: Callable[[ptr[PyObject]], None] = 0,
-            tp_vectorcall: Callable[[ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_vectorcall:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_watched: u8 = 0,
             tp_versions_used: u16 = 0;
-    }
-
-    obj PyObject_Layout {
+    }  obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
     }
-
     # PySequenceMethods, only the head we need: sq_length decides
     # _PyObject_HasLen.
     obj PySequenceMethods_Layout {
         has sq_length: Callable[[ptr[PyObject]], i64] = 0;
     }
-
     # PyAsyncMethods for the anext-awaitable type.
     obj PyAsyncMethods_Layout {
         has am_await: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             am_aiter: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             am_anext: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             am_send: Callable[[ptr[PyObject], ptr, ptr, ptr], i64] = 0;
-    }
-
-    obj PyMethodDef_Layout {
+    }  obj PyMethodDef_Layout {
         has name: ptr[u8] = ptr[u8](),
-            ml_meth: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            ml_meth:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             ml_flags: i32 = 0,
             ml_doc: ptr[u8] = ptr[u8]();
-    }
-
-    obj _SeqIter_Methods {
+    }  obj _SeqIter_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout(),
             e2: PyMethodDef_Layout = PyMethodDef_Layout(),
             e3: PyMethodDef_Layout = PyMethodDef_Layout();
-    }
-
-    obj _CallIter_Methods {
+    }  obj _CallIter_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout();
-    }
-
-    obj _AnextAwaitable_Methods {
+    }  obj _AnextAwaitable_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout(),
             e2: PyMethodDef_Layout = PyMethodDef_Layout(),
             e3: PyMethodDef_Layout = PyMethodDef_Layout();
     }
-
     # seqiterobject
     obj _SeqIter_Layout {
         has ob_refcnt: i64 = 0,
@@ -136,7 +145,6 @@ import from c {
             it_index: i64 = 0,
             it_seq: ptr[PyObject] = ptr[PyObject]();
     }
-
     # calliterobject
     obj _CallIter_Layout {
         has ob_refcnt: i64 = 0,
@@ -144,54 +152,53 @@ import from c {
             it_callable: ptr[PyObject] = ptr[PyObject](),
             it_sentinel: ptr[PyObject] = ptr[PyObject]();
     }
-
     # anextawaitableobject
     obj _AnextAwaitable_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             wrapped: ptr[PyObject] = ptr[PyObject](),
             default_value: ptr[PyObject] = ptr[PyObject]();
-    }
-
-    glob PyType_Type: PyTypeObject_Layout;
-    glob PyExc_OverflowError: ptr[PyObject];
-    glob PyExc_IndexError: ptr[PyObject];
-    glob PyExc_StopIteration: ptr[PyObject];
-    glob PyExc_StopAsyncIteration: ptr[PyObject];
-    glob PyExc_TypeError: ptr[PyObject];
+    }  glob PyType_Type: PyTypeObject_Layout; glob PyExc_OverflowError:
+             ptr[PyObject]; glob PyExc_IndexError: ptr[PyObject]; glob PyExc_StopIteration:
+             ptr[PyObject]; glob PyExc_StopAsyncIteration: ptr[PyObject]; glob PyExc_TypeError:
+             ptr[PyObject];
     # Py_None / Py_NotImplemented are macros over these exported structs.
-    glob _Py_NoneStruct: PyObject_Layout;
-    glob _Py_NotImplementedStruct: PyObject_Layout;
-
+    glob _Py_NoneStruct: PyObject_Layout; glob _Py_NotImplementedStruct:
+             PyObject_Layout;
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
-    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
-    def PyErr_BadInternalCall() -> None;
-    def PyErr_Clear() -> None;
-    def PyErr_ExceptionMatches(exc: ptr[PyObject]) -> i32;
-    def PyErr_Occurred() -> ptr[PyObject];
-    def _PyObject_GC_New(tp: ptr[PyTypeObject_Layout]) -> ptr[PyObject];
-    def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;
-    def PyObject_GC_Del(o: ptr[PyObject]) -> None;
-    def PyObject_SelfIter(self: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_GenericGetAttr(o: ptr[PyObject], name: ptr[PyObject]) -> ptr[PyObject];
-    def PySequence_Check(seq: ptr[PyObject]) -> i32;
-    def PySequence_GetItem(seq: ptr[PyObject], i: i64) -> ptr[PyObject];
-    def PySequence_Size(seq: ptr[PyObject]) -> i64;
-    def PyLong_FromSsize_t(v: i64) -> ptr[PyObject];
-    def PyLong_FromLong(v: i64) -> ptr[PyObject];
-    def PyLong_AsSsize_t(v: ptr[PyObject]) -> i64;
-    def PyObject_RichCompareBool(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> i32;
-    def PyObject_CallNoArgs(fn: ptr[PyObject]) -> ptr[PyObject];
-    def _PyCoro_GetAwaitableIter(o: ptr[PyObject]) -> ptr[PyObject];
-    def _PyGen_SetStopIterationValue(v: ptr[PyObject]) -> i32;
-    def jacpy_iter_builtin() -> ptr[PyObject];
-    def jacpy_iter_reduce_seq(iter: ptr[PyObject], seq: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def jacpy_iter_reduce_empty(iter: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_iter_reduce_pair(iter: ptr[PyObject], callable: ptr[PyObject], sentinel: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_iter_proxy(awaitable: ptr[PyObject], meth: ptr[u8], arg: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_capsule_is_tracked(o: ptr[PyObject]) -> i32;
-    def jacpy_capsule_track(o: ptr[PyObject]) -> None;
+    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;  def PyErr_SetString(
+        exc: ptr[PyObject], msg: ptr[u8]
+    ) -> None;  def PyErr_BadInternalCall -> None;  def PyErr_Clear -> None;  def PyErr_ExceptionMatches(
+        exc: ptr[PyObject]
+    ) -> i32;  def PyErr_Occurred -> ptr[PyObject];  def _PyObject_GC_New(
+        tp: ptr[PyTypeObject_Layout]
+    ) -> ptr[PyObject];  def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;  def PyObject_GC_Del(
+        o: ptr[PyObject]
+    ) -> None;  def PyObject_SelfIter(self: ptr[PyObject]) -> ptr[PyObject];  def PyObject_GenericGetAttr(
+        o: ptr[PyObject], name: ptr[PyObject]
+    ) -> ptr[PyObject];  def PySequence_Check(seq: ptr[PyObject]) -> i32;  def PySequence_GetItem(
+        seq: ptr[PyObject], i: i64
+    ) -> ptr[PyObject];  def PySequence_Size(seq: ptr[PyObject]) -> i64;  def PyLong_FromSsize_t(
+        v: i64
+    ) -> ptr[PyObject];  def PyLong_FromLong(v: i64) -> ptr[PyObject];  def PyLong_AsSsize_t(
+        v: ptr[PyObject]
+    ) -> i64;  def PyObject_RichCompareBool(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> i32;  def PyObject_CallNoArgs(fn: ptr[PyObject]) -> ptr[PyObject];  def _PyCoro_GetAwaitableIter(
+        o: ptr[PyObject]
+    ) -> ptr[PyObject];  def _PyGen_SetStopIterationValue(v: ptr[PyObject]) -> i32;  def jacpy_iter_builtin -> ptr[
+        PyObject
+    ];  def jacpy_iter_reduce_seq(
+        iter: ptr[PyObject], seq: ptr[PyObject], index: i64
+    ) -> ptr[PyObject];  def jacpy_iter_reduce_empty(
+        iter: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_iter_reduce_pair(
+        iter: ptr[PyObject], callable: ptr[PyObject], sentinel: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_iter_proxy(
+        awaitable: ptr[PyObject], meth: ptr[u8], arg: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_capsule_is_tracked(o: ptr[PyObject]) -> i32;  def jacpy_capsule_track(
+        o: ptr[PyObject]
+    ) -> None;
 }
 
 # ----------------------------- sequence iterator ----------------------------
@@ -213,7 +220,7 @@ def:pub PySeqIter_New(seq: ptr[PyObject]) -> ptr[PyObject] {
     return it;
 }
 
-def iter_dealloc(op: ptr[PyObject]) -> None {
+def iter_dealloc(op: ptr[PyObject]) {
     it = ptr[_SeqIter_Layout](op);
     PyObject_GC_UnTrack(op);
     if it.it_seq != ptr[PyObject]() {
@@ -222,11 +229,7 @@ def iter_dealloc(op: ptr[PyObject]) -> None {
     PyObject_GC_Del(op);
 }
 
-def iter_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def iter_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     it = ptr[_SeqIter_Layout](op);
     if it.it_seq != ptr[PyObject]() {
         vret = jacpy_visit(visitf, it.it_seq, arg);
@@ -252,7 +255,8 @@ def iter_iternext(iterator: ptr[PyObject]) -> ptr[PyObject] {
         it.it_index = it.it_index + 1;
         return result;
     }
-    if PyErr_ExceptionMatches(PyExc_IndexError) or PyErr_ExceptionMatches(PyExc_StopIteration) {
+    if PyErr_ExceptionMatches(PyExc_IndexError)
+        or PyErr_ExceptionMatches(PyExc_StopIteration) {
         PyErr_Clear();
         it.it_seq = ptr[PyObject]();
         py_decref(seq);
@@ -260,7 +264,9 @@ def iter_iternext(iterator: ptr[PyObject]) -> ptr[PyObject] {
     return ptr[PyObject]();
 }
 
-def iter_len(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def iter_len(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     notimpl_obj: ptr[PyObject] = _Py_NotImplementedStruct;
     it = ptr[_SeqIter_Layout](op);
     if it.it_seq != ptr[PyObject]() {
@@ -281,7 +287,9 @@ def iter_len(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) ->
     return PyLong_FromLong(0);
 }
 
-def iter_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def iter_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     it = ptr[_SeqIter_Layout](op);
     iter = jacpy_iter_builtin();
     # _PyEval_GetBuiltin can invoke arbitrary code, call must come before
@@ -292,7 +300,9 @@ def iter_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject])
     return jacpy_iter_reduce_empty(iter);
 }
 
-def iter_setstate(op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def iter_setstate(
+    op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     it = ptr[_SeqIter_Layout](op);
     index = PyLong_AsSsize_t(state);
@@ -323,45 +333,47 @@ def _iter_has_len(o: ptr[PyObject]) -> i32 {
 }
 
 glob iter_methods: _SeqIter_Methods = _SeqIter_Methods(
-    e0=PyMethodDef_Layout(
-        name="__length_hint__",
-        ml_meth=iter_len,
-        ml_flags=4,
-        ml_doc="Private method returning an estimate of len(list(it))."
-    ),
-    e1=PyMethodDef_Layout(
-        name="__reduce__",
-        ml_meth=iter_reduce,
-        ml_flags=4,
-        ml_doc="Return state information for pickling."
-    ),
-    e2=PyMethodDef_Layout(
-        name="__setstate__",
-        ml_meth=iter_setstate,
-        ml_flags=8,
-        ml_doc="Set state information for unpickling."
-    )
-);
+         e0=PyMethodDef_Layout(
+             name="__length_hint__",
+             ml_meth=iter_len,
+             ml_flags=4,
+             ml_doc="Private method returning an estimate of len(list(it))."
+         ),
+         e1=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=iter_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         ),
+         e2=PyMethodDef_Layout(
+             name="__setstate__",
+             ml_meth=iter_setstate,
+             ml_flags=8,
+             ml_doc="Set state information for unpickling."
+         )
+     );
 
 glob:pub PySeqIter_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="iterator",
-    tp_basicsize=32,
-    tp_itemsize=0,
-    tp_dealloc=iter_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=16384,
-    tp_traverse=iter_traverse,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=iter_iternext,
-    tp_methods=iter_methods
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="iterator",
+         tp_basicsize=32,
+         tp_itemsize=0,
+         tp_dealloc=iter_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=16384,
+         tp_traverse=iter_traverse,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=iter_iternext,
+         tp_methods=iter_methods
+     );
 
 # ------------------------------ call iterator -------------------------------
 
-def:pub PyCallIter_New(callable: ptr[PyObject], sentinel: ptr[PyObject]) -> ptr[PyObject] {
+def:pub PyCallIter_New(
+    callable: ptr[PyObject], sentinel: ptr[PyObject]
+) -> ptr[PyObject] {
     it = _PyObject_GC_New(PyCallIter_Type);
     if it == ptr[PyObject]() {
         return ptr[PyObject]();
@@ -375,7 +387,7 @@ def:pub PyCallIter_New(callable: ptr[PyObject], sentinel: ptr[PyObject]) -> ptr[
     return it;
 }
 
-def calliter_dealloc(op: ptr[PyObject]) -> None {
+def calliter_dealloc(op: ptr[PyObject]) {
     it = ptr[_CallIter_Layout](op);
     PyObject_GC_UnTrack(op);
     if it.it_callable != ptr[PyObject]() {
@@ -387,11 +399,7 @@ def calliter_dealloc(op: ptr[PyObject]) -> None {
     PyObject_GC_Del(op);
 }
 
-def calliter_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def calliter_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     it = ptr[_CallIter_Layout](op);
     if it.it_callable != ptr[PyObject]() {
         vret = jacpy_visit(visitf, it.it_callable, arg);
@@ -434,7 +442,9 @@ def calliter_iternext(op: ptr[PyObject]) -> ptr[PyObject] {
     return ptr[PyObject]();
 }
 
-def calliter_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def calliter_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     it = ptr[_CallIter_Layout](op);
     iter = jacpy_iter_builtin();
     if it.it_callable != ptr[PyObject]() and it.it_sentinel != ptr[PyObject]() {
@@ -444,33 +454,33 @@ def calliter_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObje
 }
 
 glob calliter_methods: _CallIter_Methods = _CallIter_Methods(
-    e0=PyMethodDef_Layout(
-        name="__reduce__",
-        ml_meth=calliter_reduce,
-        ml_flags=4,
-        ml_doc="Return state information for pickling."
-    )
-);
+         e0=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=calliter_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         )
+     );
 
 glob:pub PyCallIter_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="callable_iterator",
-    tp_basicsize=32,
-    tp_itemsize=0,
-    tp_dealloc=calliter_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=16384,
-    tp_traverse=calliter_traverse,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=calliter_iternext,
-    tp_methods=calliter_methods
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="callable_iterator",
+         tp_basicsize=32,
+         tp_itemsize=0,
+         tp_dealloc=calliter_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=16384,
+         tp_traverse=calliter_traverse,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=calliter_iternext,
+         tp_methods=calliter_methods
+     );
 
 # ---------------------------- anext-awaitable -------------------------------
 
-def anextawaitable_dealloc(op: ptr[PyObject]) -> None {
+def anextawaitable_dealloc(op: ptr[PyObject]) {
     aw = ptr[_AnextAwaitable_Layout](op);
     PyObject_GC_UnTrack(op);
     if aw.wrapped != ptr[PyObject]() {
@@ -482,11 +492,7 @@ def anextawaitable_dealloc(op: ptr[PyObject]) -> None {
     PyObject_GC_Del(op);
 }
 
-def anextawaitable_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def anextawaitable_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     aw = ptr[_AnextAwaitable_Layout](op);
     if aw.wrapped != ptr[PyObject]() {
         vret = jacpy_visit(visitf, aw.wrapped, arg);
@@ -552,7 +558,9 @@ def anextawaitable_iternext(op: ptr[PyObject]) -> ptr[PyObject] {
     return ptr[PyObject]();
 }
 
-def anextawaitable_proxy(aw: ptr[_AnextAwaitable_Layout], meth: ptr[u8], arg: ptr[PyObject]) -> ptr[PyObject] {
+def anextawaitable_proxy(
+    aw: ptr[_AnextAwaitable_Layout], meth: ptr[u8], arg: ptr[PyObject]
+) -> ptr[PyObject] {
     awaitable = anextawaitable_getiter(aw);
     if awaitable == ptr[PyObject]() {
         return ptr[PyObject]();
@@ -573,75 +581,82 @@ def anextawaitable_proxy(aw: ptr[_AnextAwaitable_Layout], meth: ptr[u8], arg: pt
     return ptr[PyObject]();
 }
 
-def anextawaitable_send(op: ptr[PyObject], arg: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def anextawaitable_send(
+    op: ptr[PyObject], arg: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     aw = ptr[_AnextAwaitable_Layout](op);
     return anextawaitable_proxy(aw, "send", arg);
 }
 
-def anextawaitable_throw(op: ptr[PyObject], args: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def anextawaitable_throw(
+    op: ptr[PyObject], args: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     aw = ptr[_AnextAwaitable_Layout](op);
     return anextawaitable_proxy(aw, "throw", args);
 }
 
-def anextawaitable_close(op: ptr[PyObject], dummy: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def anextawaitable_close(
+    op: ptr[PyObject], dummy: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     aw = ptr[_AnextAwaitable_Layout](op);
     return anextawaitable_proxy(aw, "close", ptr[PyObject]());
 }
 
 glob anextawaitable_methods: _AnextAwaitable_Methods = _AnextAwaitable_Methods(
-    e0=PyMethodDef_Layout(
-        name="send",
-        ml_meth=anextawaitable_send,
-        ml_flags=8,
-        ml_doc=(
-            "send(arg) -> send 'arg' into the wrapped iterator,\n"
-            "return next yielded value or raise StopIteration."
-        )
-    ),
-    e1=PyMethodDef_Layout(
-        name="throw",
-        ml_meth=anextawaitable_throw,
-        ml_flags=1,
-        ml_doc=(
-            "throw(value)\n"
-            "throw(typ[,val[,tb]])\n"
-            "\n"
-            "raise exception in the wrapped iterator, return next yielded value\n"
-            "or raise StopIteration.\n"
-            "the (type, val, tb) signature is deprecated, \n"
-            "and may be removed in a future version of Python."
-        )
-    ),
-    e2=PyMethodDef_Layout(
-        name="close",
-        ml_meth=anextawaitable_close,
-        ml_flags=4,
-        ml_doc="close() -> raise GeneratorExit inside generator."
-    )
-);
-
-glob anextawaitable_as_async: PyAsyncMethods_Layout = PyAsyncMethods_Layout(
-    am_await=PyObject_SelfIter
-);
+         e0=PyMethodDef_Layout(
+             name="send",
+             ml_meth=anextawaitable_send,
+             ml_flags=8,
+             ml_doc=(
+                 "send(arg) -> send 'arg' into the wrapped iterator,\n"
+                 "return next yielded value or raise StopIteration."
+             )
+         ),
+         e1=PyMethodDef_Layout(
+             name="throw",
+             ml_meth=anextawaitable_throw,
+             ml_flags=1,
+             ml_doc=(
+                 "throw(value)\n"
+                 "throw(typ[,val[,tb]])\n"
+                 "\n"
+                 "raise exception in the wrapped iterator, return next yielded value\n"
+                 "or raise StopIteration.\n"
+                 "the (type, val, tb) signature is deprecated, \n"
+                 "and may be removed in a future version of Python."
+             )
+         ),
+         e2=PyMethodDef_Layout(
+             name="close",
+             ml_meth=anextawaitable_close,
+             ml_flags=4,
+             ml_doc="close() -> raise GeneratorExit inside generator."
+         )
+     ),
+     anextawaitable_as_async: PyAsyncMethods_Layout = PyAsyncMethods_Layout(
+         am_await=PyObject_SelfIter
+     );
 
 glob:pub _PyAnextAwaitable_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="anext_awaitable",
-    tp_basicsize=32,
-    tp_itemsize=0,
-    tp_dealloc=anextawaitable_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_as_async=anextawaitable_as_async,
-    tp_flags=16384,
-    tp_traverse=anextawaitable_traverse,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=anextawaitable_iternext,
-    tp_methods=anextawaitable_methods
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="anext_awaitable",
+         tp_basicsize=32,
+         tp_itemsize=0,
+         tp_dealloc=anextawaitable_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_as_async=anextawaitable_as_async,
+         tp_flags=16384,
+         tp_traverse=anextawaitable_traverse,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=anextawaitable_iternext,
+         tp_methods=anextawaitable_methods
+     );
 
-def:pub PyAnextAwaitable_New(awaitable: ptr[PyObject], default_value: ptr[PyObject]) -> ptr[PyObject] {
+def:pub PyAnextAwaitable_New(
+    awaitable: ptr[PyObject], default_value: ptr[PyObject]
+) -> ptr[PyObject] {
     anext_obj = _PyObject_GC_New(_PyAnextAwaitable_Type);
     if anext_obj == ptr[PyObject]() {
         return ptr[PyObject]();

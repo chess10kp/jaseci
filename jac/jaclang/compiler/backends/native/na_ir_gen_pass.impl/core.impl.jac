@@ -1902,8 +1902,8 @@ impl NaIRGenPass._process_clib_imports(module: uni.Module) -> None {
                 for assign in decl.assignments {
                     targets = (
                         assign.target
-                        if isinstance(assign.target, (list, tuple))
-                        else [assign.target]
+                            if isinstance(assign.target, (list, tuple))
+                            else [assign.target]
                     );
                     for target in targets {
                         var_name = self._get_name(target);
@@ -1912,18 +1912,16 @@ impl NaIRGenPass._process_clib_imports(module: uni.Module) -> None {
                         }
                         tag_name = (
                             self._get_name(assign.type_tag.tag)
-                            if assign.type_tag.tag
-                            else None
+                                if assign.type_tag.tag
+                                else None
                         );
                         var_type: (ir.Type | None) = (
                             self.struct_types.get(tag_name)
-                            if tag_name is not None
-                            else None
+                                if tag_name is not None
+                                else None
                         );
                         if var_type is None {
-                            var_type = self._resolve_decl_type(
-                                assign.type_tag, None
-                            );
+                            var_type = self._resolve_decl_type(assign.type_tag, None);
                         }
                         if var_type is None {
                             continue;

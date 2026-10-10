@@ -22,7 +22,6 @@
 # C residue: the varargs formatters (jacpy_namespace_* below) and the
 # too-many-args TypeError; same residue rules as cellobject.jac.
 
-
 import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
@@ -48,16 +47,22 @@ import from c {
             tp_as_sequence: ptr = ptr(),
             tp_as_mapping: ptr = ptr(),
             tp_hash: Callable[[ptr[PyObject]], i64] = 0,
-            tp_call: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_call:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_str: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_getattro: Callable[[ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_setattro: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
+            tp_setattro:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_as_buffer: ptr = ptr(),
             tp_flags: u64 = 0,
             tp_doc: ptr[u8] = ptr[u8](),
             tp_traverse: Callable[[ptr[PyObject], ptr, ptr], i32] = 0,
             tp_clear: Callable[[ptr[PyObject]], i32] = 0,
-            tp_richcompare: Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
+            tp_richcompare:
+                Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
             tp_weaklistoffset: i64 = 0,
             tp_iter: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_iternext: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
@@ -66,12 +71,21 @@ import from c {
             tp_getset: ptr = ptr(),
             tp_base: ptr[PyTypeObject_Layout] = ptr[PyTypeObject_Layout](),
             tp_dict: ptr[PyObject] = ptr[PyObject](),
-            tp_descr_get: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_descr_set: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
+            tp_descr_get:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
+            tp_descr_set:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
             tp_dictoffset: i64 = 0,
             tp_init: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_alloc: Callable[[ptr[PyTypeObject_Layout], i64], ptr[PyObject]] = 0,
-            tp_new: Callable[[ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_new:
+                Callable[
+                    [ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_free: Callable[[ptr], None] = 0,
             tp_is_gc: Callable[[ptr[PyObject]], i32] = 0,
             tp_bases: ptr[PyObject] = ptr[PyObject](),
@@ -82,17 +96,19 @@ import from c {
             tp_del: Callable[[ptr[PyObject]], None] = 0,
             tp_version_tag: u32 = 0,
             tp_finalize: Callable[[ptr[PyObject]], None] = 0,
-            tp_vectorcall: Callable[[ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_vectorcall:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_watched: u8 = 0,
             tp_versions_used: u16 = 0;
     }
-
     # PyObject head only: enough to read ob_type of any object.
     obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
     }
-
     # PyObject head plus PyASCIIObject.length (offset 16): enough for
     # PyUnicode_GET_LENGTH on compact strings, which is what dict keys are.
     obj PyASCIIObject_Layout {
@@ -103,7 +119,6 @@ import from c {
             state: u32 = 0,
             wstr: ptr = ptr();
     }
-
     # PyMemberDef: {name, type, offset, flags, doc} — 32 bytes with padding.
     obj PyMemberDef_Layout {
         has name: ptr[u8] = ptr[u8](),
@@ -111,80 +126,83 @@ import from c {
             offset: i64 = 0,
             flags: i32 = 0,
             doc: ptr[u8] = ptr[u8]();
-    }
-
-    obj _PyNamespace_Members {
+    }  obj _PyNamespace_Members {
         has e0: PyMemberDef_Layout = PyMemberDef_Layout(),
             e1: PyMemberDef_Layout = PyMemberDef_Layout();
     }
-
     # PyMethodDef: {name, ml_meth, ml_flags, ml_doc} — 32 bytes with padding.
     obj PyMethodDef_Layout {
         has name: ptr[u8] = ptr[u8](),
-            ml_meth: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            ml_meth:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             ml_flags: i32 = 0,
             ml_doc: ptr[u8] = ptr[u8]();
-    }
-
-    obj _PyNamespace_Methods {
+    }  obj _PyNamespace_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout(),
             e2: PyMethodDef_Layout = PyMethodDef_Layout();
     }
-
     # _PyNamespaceObject: PyObject head + ns_dict.
     obj _PyNamespaceObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             ns_dict: ptr[PyObject] = ptr[PyObject]();
-    }
-
-    glob PyType_Type: PyTypeObject_Layout;
-    glob PyDict_Type: PyTypeObject_Layout;
-    glob PyUnicode_Type: PyTypeObject_Layout;
-    glob PyExc_TypeError: ptr[PyObject];
+    }  glob PyType_Type: PyTypeObject_Layout; glob PyDict_Type:
+             PyTypeObject_Layout; glob PyUnicode_Type: PyTypeObject_Layout; glob PyExc_TypeError:
+             ptr[PyObject];
     # Py_NotImplemented is a macro over this exported struct.
     glob _Py_NotImplementedStruct: PyObject_Layout;
-
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
-    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def PyType_IsSubtype(a: ptr[PyObject], b: ptr[PyObject]) -> i32;
-    def PyType_GenericAlloc(tp: ptr[PyTypeObject_Layout], nitems: i64) -> ptr[PyObject];
-    def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;
-    def PyObject_GenericGetAttr(o: ptr[PyObject], name: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_GenericSetAttr(o: ptr[PyObject], name: ptr[PyObject], value: ptr[PyObject]) -> i32;
-    def PyObject_GC_Del(o: ptr[PyObject]) -> None;
-    def PyObject_RichCompare(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> ptr[PyObject];
-    def PyObject_CallOneArg(fn: ptr[PyObject], arg: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_CallNoArgs(fn: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_GetIter(o: ptr[PyObject]) -> ptr[PyObject];
-    def PyIter_Next(o: ptr[PyObject]) -> ptr[PyObject];
-    def PyDict_New() -> ptr[PyObject];
-    def PyDict_Update(mp: ptr[PyObject], other: ptr[PyObject]) -> i32;
-    def PyDict_Keys(mp: ptr[PyObject]) -> ptr[PyObject];
-    def PyDict_GetItemWithError(mp: ptr[PyObject], key: ptr[PyObject]) -> ptr[PyObject];
-    def PyList_New(len: i64) -> ptr[PyObject];
-    def PyList_Append(l: ptr[PyObject], item: ptr[PyObject]) -> i32;
-    def PyTuple_New(len: i64) -> ptr[PyObject];
-    def PyTuple_Size(p: ptr[PyObject]) -> i64;
-    def PyTuple_GetItem(p: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def PyUnicode_FromString(s: ptr[u8]) -> ptr[PyObject];
-    def PyUnicode_Join(sep: ptr[PyObject], seq: ptr[PyObject]) -> ptr[PyObject];
-    def Py_ReprEnter(o: ptr[PyObject]) -> i32;
-    def Py_ReprLeave(o: ptr[PyObject]) -> None;
-    def PyErr_Occurred() -> ptr[PyObject];
-    def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
-    def PyArg_ValidateKeywordArguments(kw: ptr[PyObject]) -> i32;
-    def _PyArg_NoPositional(fname: ptr[u8], args: ptr[PyObject]) -> i32;
-    def _PyType_Name(tp: ptr[PyObject]) -> ptr[u8];
-    def jacpy_is_tuple(handle: ptr[PyObject]) -> i64;
-    def jacpy_namespace_too_many(name: ptr[u8], nargs: i64) -> None;
-    def jacpy_namespace_pair(key: ptr[PyObject], value: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_namespace_repr_closed(name: ptr[u8], pairs: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_namespace_repr_selfref(name: ptr[u8]) -> ptr[PyObject];
-    def jacpy_namespace_reduce_pack(tp: ptr[PyObject], args: ptr[PyObject], dict: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_namespace_replace_type_error(ns_type: ptr[PyObject], self: ptr[PyObject], result: ptr[PyObject]) -> None;
-    def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];
+    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;  def PyType_IsSubtype(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> i32;  def PyType_GenericAlloc(
+        tp: ptr[PyTypeObject_Layout], nitems: i64
+    ) -> ptr[PyObject];  def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;  def PyObject_GenericGetAttr(
+        o: ptr[PyObject], name: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyObject_GenericSetAttr(
+        o: ptr[PyObject], name: ptr[PyObject], value: ptr[PyObject]
+    ) -> i32;  def PyObject_GC_Del(o: ptr[PyObject]) -> None;  def PyObject_RichCompare(
+        a: ptr[PyObject], b: ptr[PyObject], op: i32
+    ) -> ptr[PyObject];  def PyObject_CallOneArg(
+        fn: ptr[PyObject], arg: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyObject_CallNoArgs(fn: ptr[PyObject]) -> ptr[PyObject];  def PyObject_GetIter(
+        o: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyIter_Next(o: ptr[PyObject]) -> ptr[PyObject];  def PyDict_New -> ptr[
+        PyObject
+    ];  def PyDict_Update(mp: ptr[PyObject], other: ptr[PyObject]) -> i32;  def PyDict_Keys(
+        mp: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyDict_GetItemWithError(
+        mp: ptr[PyObject], key: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyList_New(len: i64) -> ptr[PyObject];  def PyList_Append(
+        l: ptr[PyObject], item: ptr[PyObject]
+    ) -> i32;  def PyTuple_New(len: i64) -> ptr[PyObject];  def PyTuple_Size(
+        p: ptr[PyObject]
+    ) -> i64;  def PyTuple_GetItem(p: ptr[PyObject], index: i64) -> ptr[PyObject];  def PyUnicode_FromString(
+        s: ptr[u8]
+    ) -> ptr[PyObject];  def PyUnicode_Join(
+        sep: ptr[PyObject], seq: ptr[PyObject]
+    ) -> ptr[PyObject];  def Py_ReprEnter(o: ptr[PyObject]) -> i32;  def Py_ReprLeave(
+        o: ptr[PyObject]
+    ) -> None;  def PyErr_Occurred -> ptr[PyObject];  def PyErr_SetString(
+        exc: ptr[PyObject], msg: ptr[u8]
+    ) -> None;  def PyArg_ValidateKeywordArguments(kw: ptr[PyObject]) -> i32;  def _PyArg_NoPositional(
+        fname: ptr[u8], args: ptr[PyObject]
+    ) -> i32;  def _PyType_Name(tp: ptr[PyObject]) -> ptr[u8];  def jacpy_is_tuple(
+        handle: ptr[PyObject]
+    ) -> i64;  def jacpy_namespace_too_many(name: ptr[u8], nargs: i64) -> None;  def jacpy_namespace_pair(
+        key: ptr[PyObject], value: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_namespace_repr_closed(
+        name: ptr[u8], pairs: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_namespace_repr_selfref(
+        name: ptr[u8]
+    ) -> ptr[PyObject];  def jacpy_namespace_reduce_pack(
+        tp: ptr[PyObject], args: ptr[PyObject], dict: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_namespace_replace_type_error(
+        ns_type: ptr[PyObject], self: ptr[PyObject], result: ptr[PyObject]
+    ) -> None;  def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];
 }
 
 def ob_type_of(o: ptr[PyObject]) -> ptr[PyObject] {
@@ -274,7 +292,7 @@ def namespace_init(op: ptr[PyObject], args: ptr[PyObject], kwds: ptr[PyObject]) 
     return PyDict_Update(ns.ns_dict, kwds);
 }
 
-def namespace_dealloc(op: ptr[PyObject]) -> None {
+def namespace_dealloc(op: ptr[PyObject]) {
     ns = ptr[_PyNamespaceObject_Layout](op);
     PyObject_GC_UnTrack(op);
     # Py_CLEAR(ns->ns_dict)
@@ -381,11 +399,7 @@ def namespace_repr(ns: ptr[PyObject]) -> ptr[PyObject] {
     return rval;
 }
 
-def namespace_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def namespace_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     ns = ptr[_PyNamespaceObject_Layout](op);
     if ns.ns_dict != ptr[PyObject]() {
         vret = jacpy_visit(visitf, ns.ns_dict, arg);
@@ -406,7 +420,9 @@ def namespace_clear(op: ptr[PyObject]) -> i32 {
     return 0;
 }
 
-def namespace_richcompare(self: ptr[PyObject], other: ptr[PyObject], op: i32) -> ptr[PyObject] {
+def namespace_richcompare(
+    self: ptr[PyObject], other: ptr[PyObject], op: i32
+) -> ptr[PyObject] {
     notimpl_obj: ptr[PyObject] = _Py_NotImplementedStruct;
     if namespace_is_ns_sub(self) and namespace_is_ns_sub(other) {
         s = ptr[_PyNamespaceObject_Layout](self);
@@ -417,7 +433,9 @@ def namespace_richcompare(self: ptr[PyObject], other: ptr[PyObject], op: i32) ->
     return notimpl_obj;
 }
 
-def namespace_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def namespace_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     ns = ptr[_PyNamespaceObject_Layout](op);
     args = PyTuple_New(0);
     if args == ptr[PyObject]() {
@@ -429,7 +447,9 @@ def namespace_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObj
     return result;
 }
 
-def namespace_replace(self: ptr[PyObject], args: ptr[PyObject], kwargs: ptr[PyObject]) -> ptr[PyObject] {
+def namespace_replace(
+    self: ptr[PyObject], args: ptr[PyObject], kwargs: ptr[PyObject]
+) -> ptr[PyObject] {
     if args != ptr[PyObject]() and not _PyArg_NoPositional("__replace__", args) {
         return ptr[PyObject]();
     }
@@ -460,60 +480,59 @@ def namespace_replace(self: ptr[PyObject], args: ptr[PyObject], kwargs: ptr[PyOb
 }
 
 glob namespace_methods: _PyNamespace_Methods = _PyNamespace_Methods(
-    e0=PyMethodDef_Layout(
-        name="__reduce__",
-        ml_meth=namespace_reduce,
-        ml_flags=4,
-        ml_doc="Return state information for pickling"
-    ),
-    e1=PyMethodDef_Layout(
-        name="__replace__",
-        ml_meth=namespace_replace,
-        ml_flags=3,
-        ml_doc=(
-            "__replace__($self, /, **changes)\n"
-            "--\n"
-            "\n"
-            "Return a copy of the namespace object with new values for the specified attributes."
-        )
-    )
-    # e2 is the {NULL, NULL} sentinel.
-);
-
-glob namespace_members: _PyNamespace_Members = _PyNamespace_Members(
-    e0=PyMemberDef_Layout(name="__dict__", type=6, offset=16, flags=1)
-    # e1 is the NULL sentinel.
-);
+         e0=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=namespace_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling"
+         ),
+         e1=PyMethodDef_Layout(
+             name="__replace__",
+             ml_meth=namespace_replace,
+             ml_flags=3,
+             ml_doc=(
+                 "__replace__($self, /, **changes)\n"
+                 "--\n"
+                 "\n"
+                 "Return a copy of the namespace object with new values for the specified attributes."
+             )
+         )
+         # e2 is the {NULL, NULL} sentinel.
+     ),
+     namespace_members: _PyNamespace_Members = _PyNamespace_Members(
+         e0=PyMemberDef_Layout(name="__dict__", type=6, offset=16, flags=1)
+         # e1 is the NULL sentinel.
+     );
 
 glob:pub _PyNamespace_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,          # _Py_STATIC_IMMORTAL_INITIAL_REFCNT
-    ob_type=PyType_Type,                 # PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    ob_size=0,
-    tp_name="types.SimpleNamespace",
-    tp_basicsize=24,                     # sizeof(_PyNamespaceObject)
-    tp_itemsize=0,
-    tp_dealloc=namespace_dealloc,
-    tp_repr=namespace_repr,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_setattro=PyObject_GenericSetAttr,
-    tp_flags=17408,                      # Py_TPFLAGS_DEFAULT|HAVE_GC|BASETYPE
-    tp_doc=(
-        "SimpleNamespace(mapping_or_iterable=(), /, **kwargs)\n"
-        "--\n"
-        "\n"
-        "A simple attribute-based namespace."
-    ),
-    tp_traverse=namespace_traverse,
-    tp_clear=namespace_clear,
-    tp_richcompare=namespace_richcompare,
-    tp_methods=namespace_methods,
-    tp_members=namespace_members,
-    tp_dictoffset=16,                    # offsetof(_PyNamespaceObject, ns_dict)
-    tp_init=namespace_init,
-    tp_alloc=PyType_GenericAlloc,
-    tp_new=namespace_new,
-    tp_free=PyObject_GC_Del
-);
+         ob_refcnt=1407378104778752,  # _Py_STATIC_IMMORTAL_INITIAL_REFCNT
+         ob_type=PyType_Type,  # PyVarObject_HEAD_INIT(&PyType_Type, 0)
+         ob_size=0,
+         tp_name="types.SimpleNamespace",
+         tp_basicsize=24,  # sizeof(_PyNamespaceObject)
+         tp_itemsize=0,
+         tp_dealloc=namespace_dealloc,
+         tp_repr=namespace_repr,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_setattro=PyObject_GenericSetAttr,
+         tp_flags=17408,  # Py_TPFLAGS_DEFAULT|HAVE_GC|BASETYPE
+         tp_doc=(
+             "SimpleNamespace(mapping_or_iterable=(), /, **kwargs)\n"
+             "--\n"
+             "\n"
+             "A simple attribute-based namespace."
+         ),
+         tp_traverse=namespace_traverse,
+         tp_clear=namespace_clear,
+         tp_richcompare=namespace_richcompare,
+         tp_methods=namespace_methods,
+         tp_members=namespace_members,
+         tp_dictoffset=16,  # offsetof(_PyNamespaceObject, ns_dict)
+         tp_init=namespace_init,
+         tp_alloc=PyType_GenericAlloc,
+         tp_new=namespace_new,
+         tp_free=PyObject_GC_Del
+     );
 
 def:pub _PyNamespace_New(kwds: ptr[PyObject]) -> ptr[PyObject] {
     null = ptr[PyObject]();

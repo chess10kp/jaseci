@@ -16,7 +16,6 @@
 # "%.200s is not reversible"/"'%S' is an invalid keyword"/"(N given)"
 # formatters, and the (None, None) result tuple seed.
 
-
 import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
@@ -64,16 +63,22 @@ import from c {
             tp_as_sequence: ptr = ptr(),
             tp_as_mapping: ptr = ptr(),
             tp_hash: Callable[[ptr[PyObject]], i64] = 0,
-            tp_call: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_call:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_str: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_getattro: Callable[[ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_setattro: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
+            tp_setattro:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_as_buffer: ptr = ptr(),
             tp_flags: u64 = 0,
             tp_doc: ptr[u8] = ptr[u8](),
             tp_traverse: Callable[[ptr[PyObject], ptr, ptr], i32] = 0,
             tp_clear: Callable[[ptr[PyObject]], i32] = 0,
-            tp_richcompare: Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
+            tp_richcompare:
+                Callable[[ptr[PyObject], ptr[PyObject], i32], ptr[PyObject]] = 0,
             tp_weaklistoffset: i64 = 0,
             tp_iter: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
             tp_iternext: Callable[[ptr[PyObject]], ptr[PyObject]] = 0,
@@ -82,12 +87,21 @@ import from c {
             tp_getset: ptr = ptr(),
             tp_base: ptr[PyTypeObject_Layout] = ptr[PyTypeObject_Layout](),
             tp_dict: ptr[PyObject] = ptr[PyObject](),
-            tp_descr_get: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
-            tp_descr_set: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
+            tp_descr_get:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
+            tp_descr_set:
+                Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], None] = 0,
             tp_dictoffset: i64 = 0,
             tp_init: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], i32] = 0,
             tp_alloc: Callable[[ptr[PyTypeObject_Layout], i64], ptr[PyObject]] = 0,
-            tp_new: Callable[[ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_new:
+                Callable[
+                    [ptr[PyTypeObject_Layout], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_free: Callable[[ptr], None] = 0,
             tp_is_gc: Callable[[ptr[PyObject]], i32] = 0,
             tp_bases: ptr[PyObject] = ptr[PyObject](),
@@ -98,36 +112,35 @@ import from c {
             tp_del: Callable[[ptr[PyObject]], None] = 0,
             tp_version_tag: u32 = 0,
             tp_finalize: Callable[[ptr[PyObject]], None] = 0,
-            tp_vectorcall: Callable[[ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]], ptr[PyObject]] = 0,
+            tp_vectorcall:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], i64, ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             tp_watched: u8 = 0,
             tp_versions_used: u16 = 0;
-    }
-
-    obj PyObject_Layout {
+    }  obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
-    }
-
-    obj PyMethodDef_Layout {
+    }  obj PyMethodDef_Layout {
         has name: ptr[u8] = ptr[u8](),
-            ml_meth: Callable[[ptr[PyObject], ptr[PyObject], ptr[PyObject]], ptr[PyObject]] = 0,
+            ml_meth:
+                Callable[
+                    [ptr[PyObject], ptr[PyObject], ptr[PyObject]],
+                    ptr[PyObject]
+                ] = 0,
             ml_flags: i32 = 0,
             ml_doc: ptr[u8] = ptr[u8]();
-    }
-
-    obj _Enum_Methods {
+    }  obj _Enum_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout(),
             e2: PyMethodDef_Layout = PyMethodDef_Layout();
-    }
-
-    obj _ReversedIter_Methods {
+    }  obj _ReversedIter_Methods {
         has e0: PyMethodDef_Layout = PyMethodDef_Layout(),
             e1: PyMethodDef_Layout = PyMethodDef_Layout(),
             e2: PyMethodDef_Layout = PyMethodDef_Layout(),
             e3: PyMethodDef_Layout = PyMethodDef_Layout();
     }
-
     # enumobject
     obj _Enum_Layout {
         has ob_refcnt: i64 = 0,
@@ -138,78 +151,84 @@ import from c {
             en_longindex: ptr[PyObject] = ptr[PyObject](),
             one: ptr[PyObject] = ptr[PyObject]();
     }
-
     # reversedobject
     obj _Reversed_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject](),
             index: i64 = 0,
             seq: ptr[PyObject] = ptr[PyObject]();
-    }
-
-    glob PyType_Type: PyTypeObject_Layout;
-    glob PyExc_TypeError: ptr[PyObject];
-    glob PyExc_IndexError: ptr[PyObject];
-    glob PyExc_StopIteration: ptr[PyObject];
+    }  glob PyType_Type: PyTypeObject_Layout; glob PyExc_TypeError: ptr[PyObject]; glob PyExc_IndexError:
+             ptr[PyObject]; glob PyExc_StopIteration: ptr[PyObject];
     # Py_None / Py_NotImplemented are macros over these exported structs.
     glob _Py_NoneStruct: PyObject_Layout;
-
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
-    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
-    def PyErr_Clear() -> None;
-    def PyErr_Occurred() -> ptr[PyObject];
-    def PyErr_ExceptionMatches(exc: ptr[PyObject]) -> i32;
-    def _PyObject_GC_New(tp: ptr[PyTypeObject_Layout]) -> ptr[PyObject];
-    def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;
-    def PyObject_GC_Del(o: ptr[PyObject]) -> None;
-    def PyType_GenericAlloc(tp: ptr[PyTypeObject_Layout], nitems: i64) -> ptr[PyObject];
-    def PyObject_CallNoArgs(fn: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_SelfIter(self: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_GenericGetAttr(o: ptr[PyObject], name: ptr[PyObject]) -> ptr[PyObject];
-    def PyObject_GetIter(iterable: ptr[PyObject]) -> ptr[PyObject];
-    def PyLong_FromSsize_t(v: i64) -> ptr[PyObject];
-    def PyLong_AsSsize_t(v: ptr[PyObject]) -> i64;
-    def PyLong_FromLong(v: i64) -> ptr[PyObject];
-    def PyNumber_Index(o: ptr[PyObject]) -> ptr[PyObject];
-    def PyNumber_Add(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def PySequence_Check(seq: ptr[PyObject]) -> i32;
-    def PySequence_Size(seq: ptr[PyObject]) -> i64;
-    def PySequence_GetItem(seq: ptr[PyObject], i: i64) -> ptr[PyObject];
-    def PyTuple_New(len: i64) -> ptr[PyObject];
-    def PyTuple_Size(p: ptr[PyObject]) -> i64;
-    def PyTuple_GetItem(p: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def PyDict_Size(d: ptr[PyObject]) -> i64;
-    def _PyArg_NoKeywords(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
-    def _PyArg_NoKwnames(fname: ptr[u8], kwnames: ptr[PyObject]) -> i32;
-    def _PyArg_CheckPositional(fname: ptr[u8], nargs: i64, min: i64, max: i64) -> i32;
-    def jacpy_is_tuple(handle: ptr[PyObject]) -> i64;
-    def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];
-    def jacpy_enum_new_too_many(nargs: i64) -> None;
-    def jacpy_reversed_new_too_many(nargs: i64) -> None;
-    def _PyUnicode_EqualToASCIIString(u: ptr[PyObject], s: ptr[u8]) -> i32;
-    def Py_GenericAlias(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_tuple_recycle(op: ptr[PyObject]) -> None;
+    def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;  def PyErr_SetString(
+        exc: ptr[PyObject], msg: ptr[u8]
+    ) -> None;  def PyErr_Clear -> None;  def PyErr_Occurred -> ptr[PyObject];  def PyErr_ExceptionMatches(
+        exc: ptr[PyObject]
+    ) -> i32;  def _PyObject_GC_New(tp: ptr[PyTypeObject_Layout]) -> ptr[PyObject];  def PyObject_GC_UnTrack(
+        o: ptr[PyObject]
+    ) -> None;  def PyObject_GC_Del(o: ptr[PyObject]) -> None;  def PyType_GenericAlloc(
+        tp: ptr[PyTypeObject_Layout], nitems: i64
+    ) -> ptr[PyObject];  def PyObject_CallNoArgs(fn: ptr[PyObject]) -> ptr[PyObject];  def PyObject_SelfIter(
+        self: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyObject_GenericGetAttr(
+        o: ptr[PyObject], name: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyObject_GetIter(
+        iterable: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyLong_FromSsize_t(v: i64) -> ptr[PyObject];  def PyLong_AsSsize_t(
+        v: ptr[PyObject]
+    ) -> i64;  def PyLong_FromLong(v: i64) -> ptr[PyObject];  def PyNumber_Index(
+        o: ptr[PyObject]
+    ) -> ptr[PyObject];  def PyNumber_Add(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def PySequence_Check(seq: ptr[PyObject]) -> i32;  def PySequence_Size(
+        seq: ptr[PyObject]
+    ) -> i64;  def PySequence_GetItem(seq: ptr[PyObject], i: i64) -> ptr[PyObject];  def PyTuple_New(
+        len: i64
+    ) -> ptr[PyObject];  def PyTuple_Size(p: ptr[PyObject]) -> i64;  def PyTuple_GetItem(
+        p: ptr[PyObject], index: i64
+    ) -> ptr[PyObject];  def PyDict_Size(d: ptr[PyObject]) -> i64;  def _PyArg_NoKeywords(
+        fname: ptr[u8], kwargs: ptr[PyObject]
+    ) -> i32;  def _PyArg_NoKwnames(fname: ptr[u8], kwnames: ptr[PyObject]) -> i32;  def _PyArg_CheckPositional(
+        fname: ptr[u8], nargs: i64, min: i64, max: i64
+    ) -> i32;  def jacpy_is_tuple(handle: ptr[PyObject]) -> i64;  def jacpy_exception_type(
+        kind: ptr[u8]
+    ) -> ptr[PyObject];  def jacpy_enum_new_too_many(nargs: i64) -> None;  def jacpy_reversed_new_too_many(
+        nargs: i64
+    ) -> None;  def _PyUnicode_EqualToASCIIString(
+        u: ptr[PyObject], s: ptr[u8]
+    ) -> i32;  def Py_GenericAlias(
+        a: ptr[PyObject], b: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_tuple_recycle(op: ptr[PyObject]) -> None;
     # The cached small ints 0 and 1 (borrowed, immortal).
-    glob jacpy_small_zero: ptr[PyObject];
-    glob jacpy_small_one: ptr[PyObject];
-    def jacpy_tuple_borrow(t: ptr[PyObject], index: i64) -> ptr[PyObject];
+    glob jacpy_small_zero: ptr[PyObject]; glob jacpy_small_one: ptr[PyObject]; def jacpy_tuple_borrow(
+        t: ptr[PyObject], index: i64
+    ) -> ptr[PyObject];
     # (iterable,) or (iterable, start) from enumerate(*args, **kwargs).
-    def jacpy_enum_new_args(args: ptr[PyObject], kwargs: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_reversed_reject_kwargs(tp: ptr[PyTypeObject_Layout], kwargs: ptr[PyObject]) -> i32;
-    def jacpy_tuple_set_item(t: ptr[PyObject], index: i64, v: ptr[PyObject]) -> None;
-    def jacpy_enum_result_tuple() -> ptr[PyObject];
-    def jacpy_enum_bad_keyword(kw: ptr[PyObject]) -> None;
-    def jacpy_enum_too_many(nargs: i64) -> None;
-    def jacpy_enum_not_reversible(tp_name: ptr[u8]) -> None;
-    def jacpy_reversed_lookup(seq: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_iter_reduce_seq(iter: ptr[PyObject], seq: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def jacpy_enum_reduce_long(tp: ptr[PyObject], sit: ptr[PyObject], longindex: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_enum_reduce_plain(tp: ptr[PyObject], sit: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def jacpy_reversed_reduce_seq(tp: ptr[PyObject], seq: ptr[PyObject], index: i64) -> ptr[PyObject];
-    def jacpy_reversed_reduce_empty(tp: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_capsule_is_tracked(o: ptr[PyObject]) -> i32;
-    def jacpy_capsule_track(o: ptr[PyObject]) -> None;
+    def jacpy_enum_new_args(
+        args: ptr[PyObject], kwargs: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_reversed_reject_kwargs(
+        tp: ptr[PyTypeObject_Layout], kwargs: ptr[PyObject]
+    ) -> i32;  def jacpy_tuple_set_item(
+        t: ptr[PyObject], index: i64, v: ptr[PyObject]
+    ) -> None;  def jacpy_enum_result_tuple -> ptr[PyObject];  def jacpy_enum_bad_keyword(
+        kw: ptr[PyObject]
+    ) -> None;  def jacpy_enum_too_many(nargs: i64) -> None;  def jacpy_enum_not_reversible(
+        tp_name: ptr[u8]
+    ) -> None;  def jacpy_reversed_lookup(seq: ptr[PyObject]) -> ptr[PyObject];  def jacpy_iter_reduce_seq(
+        iter: ptr[PyObject], seq: ptr[PyObject], index: i64
+    ) -> ptr[PyObject];  def jacpy_enum_reduce_long(
+        tp: ptr[PyObject], sit: ptr[PyObject], longindex: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_enum_reduce_plain(
+        tp: ptr[PyObject], sit: ptr[PyObject], index: i64
+    ) -> ptr[PyObject];  def jacpy_reversed_reduce_seq(
+        tp: ptr[PyObject], seq: ptr[PyObject], index: i64
+    ) -> ptr[PyObject];  def jacpy_reversed_reduce_empty(
+        tp: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_capsule_is_tracked(o: ptr[PyObject]) -> i32;  def jacpy_capsule_track(
+        o: ptr[PyObject]
+    ) -> None;
 }
 
 # ------------------------------- enumerate ----------------------------------
@@ -241,8 +260,7 @@ def enum_new(
     nargs = PyTuple_Size(args);
     if nargs < 1 {
         PyErr_SetString(
-            PyExc_TypeError,
-            "enumerate() missing required argument 'iterable' (pos 1)"
+            PyExc_TypeError, "enumerate() missing required argument 'iterable' (pos 1)"
         );
         return ptr[PyObject]();
     }
@@ -335,7 +353,9 @@ def enumerate_vectorcall(
                 if not check_keyword(kwnames, 1, "iterable") {
                     return ptr[PyObject]();
                 }
-                return enum_new_impl(type_, ptr[ArgVec3](args).a1, ptr[ArgVec3](args).a0);
+                return enum_new_impl(
+                    type_, ptr[ArgVec3](args).a1, ptr[ArgVec3](args).a0
+                );
             }
             if not check_keyword(kwnames, 0, "iterable") {
                 return ptr[PyObject]();
@@ -355,7 +375,9 @@ def enumerate_vectorcall(
     }
 
     if nargs == 0 {
-        PyErr_SetString(PyExc_TypeError, "enumerate() missing required argument 'iterable'");
+        PyErr_SetString(
+            PyExc_TypeError, "enumerate() missing required argument 'iterable'"
+        );
         return ptr[PyObject]();
     }
 
@@ -363,7 +385,7 @@ def enumerate_vectorcall(
     return ptr[PyObject]();
 }
 
-def enum_dealloc(op: ptr[PyObject]) -> None {
+def enum_dealloc(op: ptr[PyObject]) {
     en = ptr[_Enum_Layout](op);
     PyObject_GC_UnTrack(op);
     if en.en_sit != ptr[PyObject]() {
@@ -380,11 +402,7 @@ def enum_dealloc(op: ptr[PyObject]) -> None {
     ty.tp_free(op);
 }
 
-def enum_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def enum_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     en = ptr[_Enum_Layout](op);
     if en.en_sit != ptr[PyObject]() {
         vret = jacpy_visit(visitf, en.en_sit, arg);
@@ -426,7 +444,7 @@ def increment_longindex_lock_held(en: ptr[_Enum_Layout]) -> ptr[PyObject] {
 
 # _PyTuple_Recycle: reset the hash cache and re-track the tuple if the GC
 # untracked it (bpo-42536); tracking itself stays C (rare path).
-def tuple_recycle(t: ptr[PyObject]) -> None {
+def tuple_recycle(t: ptr[PyObject]) {
     pair = ptr[PyTuple2_Layout](t);
     pair.ob_hash = -1;
     gc = ptr[PyGCHead_Layout](ptr(t) - 16);
@@ -520,7 +538,9 @@ def enum_next(op: ptr[PyObject]) -> ptr[PyObject] {
     return result;
 }
 
-def enum_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def enum_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     en = ptr[_Enum_Layout](op);
     head = ptr[PyObject_Layout](op);
     if en.en_longindex != ptr[PyObject]() {
@@ -530,54 +550,54 @@ def enum_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject])
 }
 
 glob enum_methods: _Enum_Methods = _Enum_Methods(
-    e0=PyMethodDef_Layout(
-        name="__reduce__",
-        ml_meth=enum_reduce,
-        ml_flags=4,
-        ml_doc="Return state information for pickling."
-    ),
-    e1=PyMethodDef_Layout(
-        name="__class_getitem__",
-        ml_meth=Py_GenericAlias,
-        ml_flags=24,
-        ml_doc="'enumerate' objects are generic over the type of their values"
-    )
-);
+         e0=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=enum_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         ),
+         e1=PyMethodDef_Layout(
+             name="__class_getitem__",
+             ml_meth=Py_GenericAlias,
+             ml_flags=24,
+             ml_doc="'enumerate' objects are generic over the type of their values"
+         )
+     );
 
 glob:pub PyEnum_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="enumerate",
-    tp_basicsize=56,
-    tp_itemsize=0,
-    tp_dealloc=enum_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=17408,
-    tp_doc=(
-        "enumerate(iterable, start=0)\n"
-        "--\n"
-        "\n"
-        "Return an enumerate object.\n"
-        "\n"
-        "  iterable\n"
-        "    an object supporting iteration\n"
-        "\n"
-        "The enumerate object yields pairs containing a count (from start, which\n"
-        "defaults to zero) and a value yielded by the iterable argument.\n"
-        "\n"
-        "enumerate is useful for obtaining an indexed list:\n"
-        "    (0, seq[0]), (1, seq[1]), (2, seq[2]), ..."
-    ),
-    tp_traverse=enum_traverse,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=enum_next,
-    tp_methods=enum_methods,
-    tp_alloc=PyType_GenericAlloc,
-    tp_new=enum_new,
-    tp_free=PyObject_GC_Del,
-    tp_vectorcall=enumerate_vectorcall
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="enumerate",
+         tp_basicsize=56,
+         tp_itemsize=0,
+         tp_dealloc=enum_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=17408,
+         tp_doc=(
+             "enumerate(iterable, start=0)\n"
+             "--\n"
+             "\n"
+             "Return an enumerate object.\n"
+             "\n"
+             "  iterable\n"
+             "    an object supporting iteration\n"
+             "\n"
+             "The enumerate object yields pairs containing a count (from start, which\n"
+             "defaults to zero) and a value yielded by the iterable argument.\n"
+             "\n"
+             "enumerate is useful for obtaining an indexed list:\n"
+             "    (0, seq[0]), (1, seq[1]), (2, seq[2]), ..."
+         ),
+         tp_traverse=enum_traverse,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=enum_next,
+         tp_methods=enum_methods,
+         tp_alloc=PyType_GenericAlloc,
+         tp_new=enum_new,
+         tp_free=PyObject_GC_Del,
+         tp_vectorcall=enumerate_vectorcall
+     );
 
 # ------------------------------- reversed -----------------------------------
 
@@ -599,8 +619,7 @@ def reversed_new(
     nargs = PyTuple_Size(args);
     if nargs < 1 {
         PyErr_SetString(
-            PyExc_TypeError,
-            "reversed() missing required argument 'sequence' (pos 1)"
+            PyExc_TypeError, "reversed() missing required argument 'sequence' (pos 1)"
         );
         return ptr[PyObject]();
     }
@@ -615,7 +634,9 @@ def reversed_new(
     return reversed_new_impl(type_, seq);
 }
 
-def reversed_new_impl(type_: ptr[PyTypeObject_Layout], seq: ptr[PyObject]) -> ptr[PyObject] {
+def reversed_new_impl(
+    type_: ptr[PyTypeObject_Layout], seq: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     reversed_meth = jacpy_reversed_lookup(seq);
     if reversed_meth == none_obj {
@@ -670,7 +691,7 @@ def reversed_vectorcall(
     return reversed_new_impl(type_, ptr[ArgVec3](args).a0);
 }
 
-def reversed_dealloc(op: ptr[PyObject]) -> None {
+def reversed_dealloc(op: ptr[PyObject]) {
     ro = ptr[_Reversed_Layout](op);
     PyObject_GC_UnTrack(op);
     if ro.seq != ptr[PyObject]() {
@@ -681,11 +702,7 @@ def reversed_dealloc(op: ptr[PyObject]) -> None {
     ty.tp_free(op);
 }
 
-def reversed_traverse(
-    op: ptr[PyObject],
-    visitf: ptr,
-    arg: ptr[PyObject]
-) -> i32 {
+def reversed_traverse(op: ptr[PyObject], visitf: ptr, arg: ptr[PyObject]) -> i32 {
     ro = ptr[_Reversed_Layout](op);
     if ro.seq != ptr[PyObject]() {
         vret = jacpy_visit(visitf, ro.seq, arg);
@@ -706,7 +723,8 @@ def reversed_next(op: ptr[PyObject]) -> ptr[PyObject] {
             ro.index = index - 1;
             return item;
         }
-        if PyErr_ExceptionMatches(PyExc_IndexError) or PyErr_ExceptionMatches(PyExc_StopIteration) {
+        if PyErr_ExceptionMatches(PyExc_IndexError)
+            or PyErr_ExceptionMatches(PyExc_StopIteration) {
             PyErr_Clear();
         }
     }
@@ -719,7 +737,9 @@ def reversed_next(op: ptr[PyObject]) -> ptr[PyObject] {
     return ptr[PyObject]();
 }
 
-def reversed_len(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def reversed_len(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     ro = ptr[_Reversed_Layout](op);
     index = ro.index;
 
@@ -737,7 +757,9 @@ def reversed_len(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
     return PyLong_FromSsize_t(position);
 }
 
-def reversed_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def reversed_reduce(
+    op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     ro = ptr[_Reversed_Layout](op);
     head = ptr[PyObject_Layout](op);
     index = ro.index;
@@ -747,7 +769,9 @@ def reversed_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObje
     return jacpy_reversed_reduce_empty(head.ob_type);
 }
 
-def reversed_setstate(op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
+def reversed_setstate(
+    op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]
+) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     ro = ptr[_Reversed_Layout](op);
     index = PyLong_AsSsize_t(state);
@@ -774,48 +798,48 @@ def reversed_setstate(op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObje
 }
 
 glob reversediter_methods: _ReversedIter_Methods = _ReversedIter_Methods(
-    e0=PyMethodDef_Layout(
-        name="__length_hint__",
-        ml_meth=reversed_len,
-        ml_flags=4,
-        ml_doc="Private method returning an estimate of len(list(it))."
-    ),
-    e1=PyMethodDef_Layout(
-        name="__reduce__",
-        ml_meth=reversed_reduce,
-        ml_flags=4,
-        ml_doc="Return state information for pickling."
-    ),
-    e2=PyMethodDef_Layout(
-        name="__setstate__",
-        ml_meth=reversed_setstate,
-        ml_flags=8,
-        ml_doc="Set state information for unpickling."
-    )
-);
+         e0=PyMethodDef_Layout(
+             name="__length_hint__",
+             ml_meth=reversed_len,
+             ml_flags=4,
+             ml_doc="Private method returning an estimate of len(list(it))."
+         ),
+         e1=PyMethodDef_Layout(
+             name="__reduce__",
+             ml_meth=reversed_reduce,
+             ml_flags=4,
+             ml_doc="Return state information for pickling."
+         ),
+         e2=PyMethodDef_Layout(
+             name="__setstate__",
+             ml_meth=reversed_setstate,
+             ml_flags=8,
+             ml_doc="Set state information for unpickling."
+         )
+     );
 
 glob:pub PyReversed_Type: PyTypeObject_Layout = PyTypeObject_Layout(
-    ob_refcnt=1407378104778752,
-    ob_type=PyType_Type,
-    ob_size=0,
-    tp_name="reversed",
-    tp_basicsize=32,
-    tp_itemsize=0,
-    tp_dealloc=reversed_dealloc,
-    tp_getattro=PyObject_GenericGetAttr,
-    tp_flags=17408,
-    tp_doc=(
-        "reversed(sequence, /)\n"
-        "--\n"
-        "\n"
-        "Return a reverse iterator over the values of the given sequence."
-    ),
-    tp_traverse=reversed_traverse,
-    tp_iter=PyObject_SelfIter,
-    tp_iternext=reversed_next,
-    tp_methods=reversediter_methods,
-    tp_alloc=PyType_GenericAlloc,
-    tp_new=reversed_new,
-    tp_free=PyObject_GC_Del,
-    tp_vectorcall=reversed_vectorcall
-);
+         ob_refcnt=1407378104778752,
+         ob_type=PyType_Type,
+         ob_size=0,
+         tp_name="reversed",
+         tp_basicsize=32,
+         tp_itemsize=0,
+         tp_dealloc=reversed_dealloc,
+         tp_getattro=PyObject_GenericGetAttr,
+         tp_flags=17408,
+         tp_doc=(
+             "reversed(sequence, /)\n"
+             "--\n"
+             "\n"
+             "Return a reverse iterator over the values of the given sequence."
+         ),
+         tp_traverse=reversed_traverse,
+         tp_iter=PyObject_SelfIter,
+         tp_iternext=reversed_next,
+         tp_methods=reversediter_methods,
+         tp_alloc=PyType_GenericAlloc,
+         tp_new=reversed_new,
+         tp_free=PyObject_GC_Del,
+         tp_vectorcall=reversed_vectorcall
+     );

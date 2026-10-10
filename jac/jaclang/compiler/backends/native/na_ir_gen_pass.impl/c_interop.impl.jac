@@ -271,16 +271,12 @@ impl NaIRGenPass._codegen_c_interop_trailer(
             ftype = self.struct_field_types.get(sname, {}).get(fname)
                 if fname is not None
                 else None;
-            # Function-pointer fields keep the generic path: loading one as a
-            # Jac Callable would wrap the C code address in a closure.
+
             fn_field = isinstance(ftype, ir.PointerType)
                 and isinstance(ftype.pointee, ir.FunctionType);
             if fname is not None and order and fname in order and not fn_field {
                 base = self._codegen_expr(nd.target);
-                if (
-                    base is not None
-                    and isinstance(base.type, ir.PointerType)
-                ) {
+                if (base is not None and isinstance(base.type, ir.PointerType)) {
                     idx = order.index(fname);
                     slot = self.builder.gep(
                         base,
@@ -297,10 +293,7 @@ impl NaIRGenPass._codegen_c_interop_trailer(
                         }
                         return (True, slot);
                     }
-                    return (
-                        True,
-                        self._c_load_scalar(slot, nd.right.type, "c.field")
-                    );
+                    return (True, self._c_load_scalar(slot, nd.right.type, "c.field"));
                 }
             }
         }
@@ -560,9 +553,6 @@ impl NaIRGenPass._codegen_c_fnfield_call(
     method: (str | None),
     params: list[uni.Expr | uni.KWPair]
 ) -> (ir.Value | None) {
-    # `p.field(args)` on `ptr[T]` where `field` is a C function pointer in
-    # the C-layout struct T: load the code address and call it directly,
-    # as C's `p->field(args)` does.
     import from jaclang.compiler.c_interop { c_type_arg }
     if method is None {
         return None;
@@ -609,10 +599,6 @@ impl NaIRGenPass._codegen_c_fnfield_call(
 impl NaIRGenPass._foreign_ptr_field_slot(
     addr: (ir.Value | None), ptr_type: any, field_name: (str | None)
 ) -> (ir.Value | None) {
-    # `p.field` on `ptr[T]` where T is a C-layout struct. Returns the
-    # field's slot (typed pointer) for scalar fields, or the field's raw
-    # address (i64, no copy) for nested-struct fields. `None` when the
-    # receiver is not a pointer to a known C-layout struct.
     import from jaclang.compiler.c_interop { c_type_arg }
     if addr is None or field_name is None {
         return None;
@@ -631,13 +617,12 @@ impl NaIRGenPass._foreign_ptr_field_slot(
     field_addr = self.builder.add(addr, ir.Constant(i64, offset), name="c.field.addr");
     llt = self.struct_field_types.get(sname, {}).get(field_name);
     if isinstance(llt, ir.PointerType) and isinstance(llt.pointee, ir.FunctionType) {
-        # A function-pointer field reads as its raw code address (i64), so
-        # `p.fn == 0` tests the pointer; calls through it do not lower.
-        fslot = self.builder.inttoptr(field_addr, i64.as_pointer(), name="c.fnfield.slot");
+        fslot = self.builder.inttoptr(
+            field_addr, i64.as_pointer(), name="c.fnfield.slot"
+        );
         return self.builder.load(fslot, name="c.fnfield");
     }
-    if llt is None
-        or not isinstance(llt, (ir.IntType, ir.FloatType, ir.DoubleType)) {
+    if llt is None or not isinstance(llt, (ir.IntType, ir.FloatType, ir.DoubleType)) {
         return field_addr;
     }
     return self.builder.inttoptr(field_addr, llt.as_pointer(), name="c.field.slot");
@@ -646,9 +631,6 @@ impl NaIRGenPass._foreign_ptr_field_slot(
 impl NaIRGenPass._codegen_ptr_arith(
     op: str, nd: uni.BinaryExpr, left: ir.Value, right: ir.Value
 ) -> (ir.Value | None) {
-    # `ptr[T]` values are addresses (i64). C parity: `p + n` and `p - n`
-    # scale by `sizeof(T)`; `p - q` is the element count between them. An
-    # untyped operand (bare `ptr`, unknown element) scales by one byte.
     import from jaclang.compiler.c_interop { c_type_arg, is_ptr_type }
     import from jaclang.compiler.frontend.constant { Tokens as Tok }
     i64 = ir.IntType(64);
