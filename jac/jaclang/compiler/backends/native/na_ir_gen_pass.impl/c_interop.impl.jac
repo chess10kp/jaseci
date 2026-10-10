@@ -303,16 +303,16 @@ impl NaIRGenPass._codegen_c_interop_trailer(
         }
     }
     if nd.is_attr and is_ptr_type(target_type) {
-        slot = self._foreign_ptr_field_slot(
+        fslot = self._foreign_ptr_field_slot(
             self._codegen_expr(nd.target), target_type, self._get_name(nd.right)
         );
-        if slot is None {
+        if fslot is None {
             return (False, None);
         }
-        if isinstance(slot.type, ir.IntType) {
-            return (True, slot);
+        if isinstance(fslot.type, ir.IntType) {
+            return (True, fslot);
         }
-        return (True, self._c_load_scalar(slot, nd.right.type, "c.ptr.field"));
+        return (True, self._c_load_scalar(fslot, nd.right.type, "c.ptr.field"));
     }
     return (False, None);
 }
