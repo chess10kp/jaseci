@@ -8,6 +8,12 @@ on:
   workflow_dispatch:
   push:
     branches: [jacpython-perf]
+  pull_request:
+    paths:
+      - "jac/jaclang/runtime/python/**"
+      - "jac/bootstrap/python/**"
+      - "scripts/jacpython/**"
+      - ".github/workflows/jacpython-perf.yml"
 
 permissions:
   contents: read
