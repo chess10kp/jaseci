@@ -532,7 +532,7 @@ def:pub PySlice_GetIndicesEx(
 def slice_new(
     type_: ptr[PyTypeObject_Layout], args: ptr[PyObject], kw: ptr[PyObject]
 ) -> ptr[PyObject] {
-    if not _PyArg_NoKeywords("slice", kw) {
+    if kw != ptr[PyObject]() and not _PyArg_NoKeywords("slice", kw) {
         return ptr[PyObject]();
     }
     if not jacpy_is_tuple(args) {

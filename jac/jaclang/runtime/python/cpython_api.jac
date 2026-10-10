@@ -704,9 +704,7 @@ import from c {
         value: ptr[PyObject], out: &mut u64, long_long: i64
     ) -> i64;  def jacpy_utf8(handle: ptr[PyObject]) -> ptr[PyObject];  def jacpy_value_kind(
         handle: ptr[PyObject]
-    ) -> i64;  def jacpy_vectorcall_arg(args: ptr, index: i64) -> ptr[PyObject];  def jacpy_visit(
-        visit_: ptr, o: ptr[PyObject], arg: ptr
-    ) -> i32;  def jacpy_wall_time -> i64;  def jacpy_warn(
+    ) -> i64;  def jacpy_visit(visit_: ptr, o: ptr[PyObject], arg: ptr) -> i32;  def jacpy_wall_time -> i64;  def jacpy_warn(
         category: str, message: str, stacklevel: i64
     ) -> i64;  def jacpy_warning(message: str, filename: str, line: i64) -> i64;  def jacpy_weakref_list(
         object_: ptr[PyObject]

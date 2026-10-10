@@ -12,6 +12,13 @@ import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
     obj PyObject;
+    # A vectorcall `PyObject *const *args` array (up to 3 positional args):
+    # read `args[i]` directly instead of a C helper call.
+    obj ArgVec3 {
+        has a0: ptr[PyObject] = ptr[PyObject](),
+            a1: ptr[PyObject] = ptr[PyObject](),
+            a2: ptr[PyObject] = ptr[PyObject]();
+    }
     obj PyObject_Layout {
         has ob_refcnt: i64 = 0,
             ob_type: ptr[PyObject] = ptr[PyObject]();
@@ -182,7 +189,6 @@ import from c {
     def _PyArg_NoKwnames(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
     def jacpy_is_exact_long(o: ptr[PyObject]) -> i32;
     def jacpy_is_bool(o: ptr[PyObject]) -> i32;
-    def jacpy_vectorcall_arg(args: ptr, index: i64) -> ptr[PyObject];
     def jacpy_long_zero() -> ptr[PyObject];
     def jacpy_long_one() -> ptr[PyObject];
     def jacpy_bool_true() -> ptr[PyObject];
@@ -585,8 +591,22 @@ def range_index(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject])
 }
 
 
+# _PyIndex_Check (static inline): the type has an nb_index slot.
+def range_index_check(v: ptr[PyObject]) -> i32 {
+    head = ptr[PyObject_Layout](v);
+    ty = ptr[PyTypeObject_Layout](head.ob_type);
+    if ty.tp_as_number == ptr() {
+        return 0;
+    }
+    num = ptr[PyNumberMethods](ty.tp_as_number);
+    if num.nb_index != 0 {
+        return 1;
+    }
+    return 0;
+}
+
 def range_subscript(self: ptr[PyObject], item: ptr[PyObject]) -> ptr[PyObject] {
-    if jacpy_range_index_check(item) != 0 {
+    if range_index_check(item) != 0 {
         index = PyNumber_Index(item);
         if index == ptr[PyObject]() {
             return ptr[PyObject]();
@@ -642,82 +662,72 @@ def range_item(self: ptr[PyObject], index: i64) -> ptr[PyObject] {
     py_decref(value);
     return result;
 }
-def range_from_args(type_: ptr[PyTypeObject_Layout], args: ptr, nargs: i64) -> ptr[PyObject] {
-    if nargs == 0 {
-        PyErr_SetString(PyExc_TypeError, "range expected at least 1 argument, got 0");
-        return ptr[PyObject]();
-    }
-    if nargs > 3 {
-        jacpy_range_new_too_many(nargs);
-        return ptr[PyObject]();
-    }
+# _PyLong_IsZero: the sign bits of lv_tag (low two) are 1 for zero.
+def range_long_is_zero(o: ptr[PyObject]) -> bool {
+    l = ptr[PyLongObject_Layout](o);
+    return (l.lv_tag & 3) == 1;
+}
 
-    start: ptr[PyObject] = jacpy_long_zero();
+# range_from_array: borrowed vectorcall args, owned start/stop/step.
+def range_from_args(type_: ptr[PyTypeObject_Layout], args: ptr, nargs: i64) -> ptr[PyObject] {
+    argv = ptr[ArgVec3](args);
+    start: ptr[PyObject] = ptr[PyObject]();
     stop: ptr[PyObject] = ptr[PyObject]();
-    step: ptr[PyObject] = jacpy_long_one();
-    if nargs == 1 {
-        stop = PyNumber_Index(jacpy_vectorcall_arg(args, 0));
-        if stop == ptr[PyObject]() {
-            return ptr[PyObject]();
-        }
-    } else {
-        start = PyNumber_Index(jacpy_vectorcall_arg(args, 0));
+    step: ptr[PyObject] = ptr[PyObject]();
+    if nargs == 2 or nargs == 3 {
+        start = PyNumber_Index(argv.a0);
         if start == ptr[PyObject]() {
             return ptr[PyObject]();
         }
-        stop = PyNumber_Index(jacpy_vectorcall_arg(args, 1));
+        stop = PyNumber_Index(argv.a1);
         if stop == ptr[PyObject]() {
             py_decref(start);
             return ptr[PyObject]();
         }
+        # validate_step
         if nargs == 3 {
-            step = PyNumber_Index(jacpy_vectorcall_arg(args, 2));
-            if step == ptr[PyObject]() {
-                py_decref(start);
-                py_decref(stop);
-                return ptr[PyObject]();
+            step = PyNumber_Index(argv.a2);
+            if step != ptr[PyObject]() and range_long_is_zero(step) {
+                PyErr_SetString(PyExc_ValueError, "range() arg 3 must not be zero");
+                py_decref(step);
+                step = ptr[PyObject]();
             }
+        } else {
+            step = PyLong_FromLong(1);
         }
-    }
-    is_zero = PyObject_RichCompareBool(step, jacpy_long_zero(), Py_EQ);
-    if is_zero < 0 {
-        if nargs != 1 {
+        if step == ptr[PyObject]() {
             py_decref(start);
+            py_decref(stop);
+            return ptr[PyObject]();
         }
-        py_decref(stop);
-        if nargs == 3 {
-            py_decref(step);
+    } elif nargs == 1 {
+        stop = PyNumber_Index(argv.a0);
+        if stop == ptr[PyObject]() {
+            return ptr[PyObject]();
         }
+        start = jacpy_long_zero();
+        step = jacpy_long_one();
+    } elif nargs == 0 {
+        PyErr_SetString(PyExc_TypeError, "range expected at least 1 argument, got 0");
         return ptr[PyObject]();
-    }
-    if is_zero != 0 {
-        PyErr_SetString(PyExc_ValueError, "range() arg 3 must not be zero");
-        if nargs != 1 {
-            py_decref(start);
-        }
-        py_decref(stop);
-        if nargs == 3 {
-            py_decref(step);
-        }
+    } else {
+        jacpy_range_new_too_many(nargs);
         return ptr[PyObject]();
     }
     result = range_make(type_, start, stop, step);
-    if result == ptr[PyObject]() {
-        if nargs != 1 {
-            py_decref(start);
-        }
-        py_decref(stop);
-        if nargs == 3 {
-            py_decref(step);
-        }
+    if result != ptr[PyObject]() {
+        return result;
     }
-    return result;
+    py_decref(start);
+    py_decref(stop);
+    py_decref(step);
+    return ptr[PyObject]();
 }
 
 def range_new(
     type_: ptr[PyTypeObject_Layout], args: ptr[PyObject], kwargs: ptr[PyObject]
 ) -> ptr[PyObject] {
-    if _PyArg_NoKeywords("range", kwargs) == 0 {
+    if kwargs != ptr[PyObject]() and _PyArg_NoKeywords("range", kwargs) == 0 {
         return ptr[PyObject]();
     }
     return range_from_args(type_, ptr(args), PyTuple_Size(args));
@@ -726,7 +736,7 @@ def range_new(
 def range_vectorcall(
     type_: ptr[PyObject], args: ptr[PyObject], nargsf: i64, kwnames: ptr[PyObject]
 ) -> ptr[PyObject] {
-    if _PyArg_NoKwnames("range", kwnames) == 0 {
+    if kwnames != ptr[PyObject]() and _PyArg_NoKwnames("range", kwnames) == 0 {
         return ptr[PyObject]();
     }
     nargs = i64(nargsf & 0x7FFFFFFFFFFFFFFF);

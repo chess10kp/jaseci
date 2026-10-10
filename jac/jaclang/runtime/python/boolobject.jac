@@ -19,6 +19,13 @@
 
 import from c {
     obj PyObject;
+    # A vectorcall `PyObject *const *args` array (up to 3 positional args):
+    # read `args[i]` directly instead of a C helper call.
+    obj ArgVec3 {
+        has a0: ptr[PyObject] = ptr[PyObject](),
+            a1: ptr[PyObject] = ptr[PyObject](),
+            a2: ptr[PyObject] = ptr[PyObject]();
+    }
     # Local copy of the 53-field type layout (cellobject.jac owns the
     # reference spelling): extern struct globals need a same-module
     # layout for native lowering; imported obj types only lower
@@ -156,7 +163,6 @@ import from c {
     def jacpy_bool_new_too_many(nargs: i64) -> None;
     # The interned "True"/"False" strings (_Py_ID static identifiers).
     def jacpy_bool_repr_str(value: i32) -> ptr[PyObject];
-    def jacpy_vectorcall_arg(args: ptr, index: i64) -> ptr[PyObject];
     def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];
 }
 
@@ -272,17 +278,19 @@ def bool_new(
 def bool_vectorcall(
     type_: ptr[PyTypeObject_Layout], args: ptr, nargsf: i64, kwnames: ptr[PyObject]
 ) -> ptr[PyObject] {
-    if not _PyArg_NoKwnames("bool", kwnames) {
+    # _PyArg_NoKwnames / _PyArg_CheckPositional are macros that only call
+    # out when the fast check fails.
+    if kwnames != ptr[PyObject]() and not _PyArg_NoKwnames("bool", kwnames) {
         return ptr[PyObject]();
     }
     # PyVectorcall_NARGS(nargsf): clear PY_VECTORCALL_ARGUMENTS_OFFSET.
     nargs = nargsf & 9223372036854775807;
-    if not _PyArg_CheckPositional("bool", nargs, 0, 1) {
+    if nargs > 1 and not _PyArg_CheckPositional("bool", nargs, 0, 1) {
         return ptr[PyObject]();
     }
     ok: i64 = 0;
     if nargs {
-        a0 = jacpy_vectorcall_arg(args, 0);
+        a0 = ptr[ArgVec3](args).a0;
         ok = PyObject_IsTrue(a0);
         if ok < 0 {
             return ptr[PyObject]();

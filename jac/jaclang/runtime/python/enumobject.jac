@@ -21,6 +21,13 @@ import from jaclang.runtime.python.refcount { py_incref, py_decref }
 
 import from c {
     obj PyObject;
+    # A vectorcall `PyObject *const *args` array (up to 3 positional args):
+    # read `args[i]` directly instead of a C helper call.
+    obj ArgVec3 {
+        has a0: ptr[PyObject] = ptr[PyObject](),
+            a1: ptr[PyObject] = ptr[PyObject](),
+            a2: ptr[PyObject] = ptr[PyObject]();
+    }
     # A 2-item PyTupleObject (3.14 caches ob_hash before ob_item): the
     # PyTuple_GET_ITEM / PyTuple_SET_ITEM macros on enumerate's result pair.
     obj PyTuple2_Layout {
@@ -190,7 +197,6 @@ import from c {
     def jacpy_reversed_reject_kwargs(tp: ptr[PyTypeObject_Layout], kwargs: ptr[PyObject]) -> i32;
     def jacpy_tuple_set_item(t: ptr[PyObject], index: i64, v: ptr[PyObject]) -> None;
     def jacpy_enum_result_tuple() -> ptr[PyObject];
-    def jacpy_vectorcall_arg(args: ptr, index: i64) -> ptr[PyObject];
     def jacpy_enum_bad_keyword(kw: ptr[PyObject]) -> None;
     def jacpy_enum_too_many(nargs: i64) -> None;
     def jacpy_enum_not_reversible(tp_name: ptr[u8]) -> None;
@@ -327,7 +333,7 @@ def enumerate_vectorcall(
                 if not check_keyword(kwnames, 1, "iterable") {
                     return ptr[PyObject]();
                 }
-                return enum_new_impl(type_, jacpy_vectorcall_arg(args, 1), jacpy_vectorcall_arg(args, 0));
+                return enum_new_impl(type_, ptr[ArgVec3](args).a1, ptr[ArgVec3](args).a0);
             }
             if not check_keyword(kwnames, 0, "iterable") {
                 return ptr[PyObject]();
@@ -336,14 +342,14 @@ def enumerate_vectorcall(
                 return ptr[PyObject]();
             }
         }
-        return enum_new_impl(type_, jacpy_vectorcall_arg(args, 0), jacpy_vectorcall_arg(args, 1));
+        return enum_new_impl(type_, ptr[ArgVec3](args).a0, ptr[ArgVec3](args).a1);
     }
 
     if nargs + nkwargs == 1 {
         if nkwargs == 1 and not check_keyword(kwnames, 0, "iterable") {
             return ptr[PyObject]();
         }
-        return enum_new_impl(type_, jacpy_vectorcall_arg(args, 0), ptr[PyObject]());
+        return enum_new_impl(type_, ptr[ArgVec3](args).a0, ptr[PyObject]());
     }
 
     if nargs == 0 {
@@ -484,7 +490,8 @@ def enum_next(op: ptr[PyObject]) -> ptr[PyObject] {
         py_decref(next_item);
         return ptr[PyObject]();
     }
-    en.en_index = en_index + 1;
+    # en_index < PY_SSIZE_T_MAX here (the max case took the long path).
+    en.en_index = wrapping_add(en_index, 1);
 
     head = ptr[PyObject_Layout](result);
     if head.ob_refcnt == 1 {
@@ -651,14 +658,14 @@ def reversed_new_impl(type_: ptr[PyTypeObject_Layout], seq: ptr[PyObject]) -> pt
 def reversed_vectorcall(
     type_: ptr[PyTypeObject_Layout], args: ptr, nargsf: i64, kwnames: ptr[PyObject]
 ) -> ptr[PyObject] {
-    if not _PyArg_NoKwnames("reversed", kwnames) {
+    if kwnames != ptr[PyObject]() and not _PyArg_NoKwnames("reversed", kwnames) {
         return ptr[PyObject]();
     }
     nargs = nargsf & 9223372036854775807;
-    if not _PyArg_CheckPositional("reversed", nargs, 1, 1) {
+    if nargs != 1 and not _PyArg_CheckPositional("reversed", nargs, 1, 1) {
         return ptr[PyObject]();
     }
-    return reversed_new_impl(type_, jacpy_vectorcall_arg(args, 0));
+    return reversed_new_impl(type_, ptr[ArgVec3](args).a0);
 }
 
 def reversed_dealloc(op: ptr[PyObject]) -> None {

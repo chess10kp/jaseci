@@ -5,7 +5,8 @@
 # The refcount is the low 32 bits of ob_refcnt. INCREF leaves objects at or
 # above _Py_IMMORTAL_INITIAL_REFCNT (3 << 30) alone; DECREF leaves immortal
 # objects (bit 31 set, i.e. the low half negative as int32) alone and
-# deallocates when the low half reaches zero. The parameter is a bare `ptr`:
+# deallocates when the low half reaches zero. The +1/-1 cannot overflow (a
+# live non-immortal refcount is in 1..3<<30), so they wrap like C's. The parameter is a bare `ptr`:
 # each port declares its own opaque PyObject, which do not unify.
 
 import from c {
@@ -26,7 +27,7 @@ def py_incref(o: ptr) -> None {
     if (rc & 4294967295) >= 3221225472 {
         return;
     }
-    h.ob_refcnt = rc + 1;
+    h.ob_refcnt = wrapping_add(rc, 1);
 }
 
 def py_decref(o: ptr) -> None {
@@ -38,7 +39,7 @@ def py_decref(o: ptr) -> None {
     if (rc & 2147483648) != 0 {
         return;
     }
-    rc = rc - 1;
+    rc = wrapping_sub(rc, 1);
     h.ob_refcnt = rc;
     if (rc & 4294967295) == 0 {
         _Py_Dealloc(ptr[PyObject](o));

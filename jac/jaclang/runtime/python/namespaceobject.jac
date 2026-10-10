@@ -430,7 +430,7 @@ def namespace_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObj
 }
 
 def namespace_replace(self: ptr[PyObject], args: ptr[PyObject], kwargs: ptr[PyObject]) -> ptr[PyObject] {
-    if not _PyArg_NoPositional("__replace__", args) {
+    if args != ptr[PyObject]() and not _PyArg_NoPositional("__replace__", args) {
         return ptr[PyObject]();
     }
     s = ptr[_PyNamespaceObject_Layout](self);
