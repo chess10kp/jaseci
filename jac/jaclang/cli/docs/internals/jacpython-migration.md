@@ -427,12 +427,20 @@ Running the `JACPYTHON=1` build surfaced further native-ABI rules for the
 ports. `tp_traverse` receives `visit` as a C function pointer, so every
 `Py_VISIT` goes through `jacpy_visit`; a `Callable` parameter would be called
 as a Jac closure. `&mut` locals passed to a Jac `def:pub` taking bare `ptr`
-do not lower to addresses, so `range` slicing reads
-`_PySlice_GetLongIndices` through `jacpy_slice_long_indices` (a new 3-tuple).
-Jac's `u64` casts and arithmetic are checked, so `get_len_of_range`,
-`range_reverse`'s guards and the iterator's end-of-range wrap are residue
-(`jacpy_range_len_of`, `jacpy_range_reverse_fits/start`,
-`jacpy_long_wrap_add`). A port's extern C declaration of a function another
+do not lower to addresses, so rangeobject declares `_PySlice_GetLongIndices`
+as a C extern with `&mut ptr[PyObject]` out-params, which do. Jac's `u64`
+casts and arithmetic are checked, so C's unsigned-wraparound code
+(`get_len_of_range`, `range_reverse`, the iterator's end-of-range step) uses
+`u64.wrap` and the `wrapping_*` builtins. Calls through a C struct's
+function-pointer field (`ty.tp_iternext(it)` on a `ptr[T]`) lower to a direct
+load and indirect call.
+
+Refcounting goes through `refcount.jac` (`py_incref`/`py_decref`, the
+3.14 64-bit logic) so it inlines: the native object is linked as machine
+code, so `Py_IncRef`/`Py_DecRef` would be real calls where C inlines its
+macros. The slice and range freelists are restored through small C helpers
+(`jacpy_slice_alloc/free`, `jacpy_range_obj_alloc/free`,
+`jacpy_rangeiter_alloc/free`). A port's extern C declaration of a function another
 port defines (`PyBool_FromLong`) must come from `cpython_api.jac`, never a
 local `import from c` block, and the name must not be in the compiler's
 reserved C symbols, or the definition is renamed `__jac_def_*`.

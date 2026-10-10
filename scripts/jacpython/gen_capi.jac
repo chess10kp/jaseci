@@ -363,6 +363,11 @@ def used_names(functions: dict[str, tuple[str, list[tuple[str, str]]]]) -> set[s
             text = re.sub(r'"(?:[^"\\\n]|\\.)*"', '""', text);
             names.update(re.findall(r"\b((?:_?Py|jacpy_)[A-Za-z0-9_]*)\b", text));
             calls = re.findall(r"\b((?:_?Py|jacpy_)[A-Za-z0-9_]*)\s*\(", text);
+            # A file that declares a C name in its own `import from c` block
+            # brings its own declaration.
+            local_decls = set(
+                re.findall(r"(?m)^ +def ((?:_?Py|jacpy_)[A-Za-z0-9_]*)\s*\(", text)
+            );
             CALLED.update(calls);
             jac_imported: set[str] = set();
             for (module, items) in re.findall(
@@ -373,7 +378,7 @@ def used_names(functions: dict[str, tuple[str, list[tuple[str, str]]]]) -> set[s
                 }
             }
             for name in calls {
-                if name not in jac_imported {
+                if name not in jac_imported and name not in local_decls {
                     called_by.setdefault(name, set()).add(path);
                 }
             }

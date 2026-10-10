@@ -17,8 +17,25 @@
 # formatters, and the (None, None) result tuple seed.
 
 
+import from jaclang.runtime.python.refcount { py_incref, py_decref }
+
 import from c {
     obj PyObject;
+    # A 2-item PyTupleObject (3.14 caches ob_hash before ob_item): the
+    # PyTuple_GET_ITEM / PyTuple_SET_ITEM macros on enumerate's result pair.
+    obj PyTuple2_Layout {
+        has ob_refcnt: i64 = 0,
+            ob_type: ptr[PyObject] = ptr[PyObject](),
+            ob_size: i64 = 0,
+            ob_hash: i64 = 0,
+            item0: ptr[PyObject] = ptr[PyObject](),
+            item1: ptr[PyObject] = ptr[PyObject]();
+    }
+    # PyGC_Head, the 16 bytes before a GC object.
+    obj PyGCHead_Layout {
+        has gc_next: i64 = 0,
+            gc_prev: i64 = 0;
+    }
     # Local copy of the 53-field type layout (cellobject.jac owns the
     # reference spelling): extern struct globals need a same-module
     # layout for native lowering; imported obj types only lower
@@ -130,13 +147,8 @@ import from c {
     # Py_None / Py_NotImplemented are macros over these exported structs.
     glob _Py_NoneStruct: PyObject_Layout;
 
-    def Py_DecRef(o: ptr[PyObject]) -> None;
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
     def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def jacpy_type_call_alloc(tp: ptr[PyTypeObject_Layout], nitems: i64) -> ptr[PyObject];
-    def jacpy_type_call_free(tp: ptr[PyTypeObject_Layout], op: ptr[PyObject]) -> None;
-    def jacpy_type_call_iternext(tp: ptr[PyTypeObject_Layout], o: ptr[PyObject]) -> ptr[PyObject];
-    def Py_IncRef(o: ptr[PyObject]) -> None;
     def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
     def PyErr_Clear() -> None;
     def PyErr_Occurred() -> ptr[PyObject];
@@ -208,7 +220,7 @@ def enum_new(
             kw_start = PyTuple_GetItem(parsed, 1);
         }
         result = enum_new_impl(type_, PyTuple_GetItem(parsed, 0), kw_start);
-        Py_DecRef(parsed);
+        py_decref(parsed);
         return result;
     }
     if not jacpy_is_tuple(args) {
@@ -247,7 +259,7 @@ def enum_new(
 def enum_new_impl(
     type_: ptr[PyTypeObject_Layout], iterable: ptr[PyObject], start: ptr[PyObject]
 ) -> ptr[PyObject] {
-    en_obj = jacpy_type_call_alloc(type_, 0);
+    en_obj = type_.tp_alloc(type_, 0);
     if en_obj == ptr[PyObject]() {
         return ptr[PyObject]();
     }
@@ -255,7 +267,7 @@ def enum_new_impl(
     if start != ptr[PyObject]() {
         start = PyNumber_Index(start);
         if start == ptr[PyObject]() {
-            Py_DecRef(en_obj);
+            py_decref(en_obj);
             return ptr[PyObject]();
         }
         en.en_index = PyLong_AsSsize_t(start);
@@ -265,7 +277,7 @@ def enum_new_impl(
             en.en_longindex = start;
         } else {
             en.en_longindex = ptr[PyObject]();
-            Py_DecRef(start);
+            py_decref(start);
         }
     } else {
         en.en_index = 0;
@@ -273,12 +285,12 @@ def enum_new_impl(
     }
     en.en_sit = PyObject_GetIter(iterable);
     if en.en_sit == ptr[PyObject]() {
-        Py_DecRef(en_obj);
+        py_decref(en_obj);
         return ptr[PyObject]();
     }
     en.en_result = jacpy_enum_result_tuple();
     if en.en_result == ptr[PyObject]() {
-        Py_DecRef(en_obj);
+        py_decref(en_obj);
         return ptr[PyObject]();
     }
     en.one = jacpy_long_one();
@@ -347,17 +359,17 @@ def enum_dealloc(op: ptr[PyObject]) -> None {
     en = ptr[_Enum_Layout](op);
     PyObject_GC_UnTrack(op);
     if en.en_sit != ptr[PyObject]() {
-        Py_DecRef(en.en_sit);
+        py_decref(en.en_sit);
     }
     if en.en_result != ptr[PyObject]() {
-        Py_DecRef(en.en_result);
+        py_decref(en.en_result);
     }
     if en.en_longindex != ptr[PyObject]() {
-        Py_DecRef(en.en_longindex);
+        py_decref(en.en_longindex);
     }
     head = ptr[PyObject_Layout](op);
     ty = ptr[PyTypeObject_Layout](head.ob_type);
-    jacpy_type_call_free(ty, op);
+    ty.tp_free(op);
 }
 
 def enum_traverse(
@@ -404,36 +416,49 @@ def increment_longindex_lock_held(en: ptr[_Enum_Layout]) -> ptr[PyObject] {
     return next_index;
 }
 
+# _PyTuple_Recycle: reset the hash cache and re-track the tuple if the GC
+# untracked it (bpo-42536); tracking itself stays C (rare path).
+def tuple_recycle(t: ptr[PyObject]) -> None {
+    pair = ptr[PyTuple2_Layout](t);
+    pair.ob_hash = -1;
+    gc = ptr[PyGCHead_Layout](ptr(t) - 16);
+    if gc.gc_next == 0 {
+        jacpy_tuple_recycle(t);
+    }
+}
+
 def enum_next_long(en: ptr[_Enum_Layout], next_item: ptr[PyObject]) -> ptr[PyObject] {
     result = en.en_result;
     next_index = increment_longindex_lock_held(en);
     if next_index == ptr[PyObject]() {
-        Py_DecRef(next_item);
+        py_decref(next_item);
         return ptr[PyObject]();
     }
 
     head = ptr[PyObject_Layout](result);
     if head.ob_refcnt == 1 {
-        Py_IncRef(result);
-        old_index = jacpy_tuple_borrow(result, 0);
-        old_item = jacpy_tuple_borrow(result, 1);
-        jacpy_tuple_set_item(result, 0, next_index);
-        jacpy_tuple_set_item(result, 1, next_item);
-        Py_DecRef(old_index);
-        Py_DecRef(old_item);
+        py_incref(result);
+        pair = ptr[PyTuple2_Layout](result);
+        old_index = pair.item0;
+        old_item = pair.item1;
+        pair.item0 = next_index;
+        pair.item1 = next_item;
+        py_decref(old_index);
+        py_decref(old_item);
         # The GC may have untracked this result tuple; since we're
         # recycling it, make sure it's tracked again.
-        jacpy_tuple_recycle(result);
+        tuple_recycle(result);
         return result;
     }
     result = PyTuple_New(2);
     if result == ptr[PyObject]() {
-        Py_DecRef(next_index);
-        Py_DecRef(next_item);
+        py_decref(next_index);
+        py_decref(next_item);
         return ptr[PyObject]();
     }
-    jacpy_tuple_set_item(result, 0, next_index);
-    jacpy_tuple_set_item(result, 1, next_item);
+    fresh = ptr[PyTuple2_Layout](result);
+    fresh.item0 = next_index;
+    fresh.item1 = next_item;
     return result;
 }
 
@@ -444,7 +469,7 @@ def enum_next(op: ptr[PyObject]) -> ptr[PyObject] {
 
     ihead = ptr[PyObject_Layout](it);
     ity = ptr[PyTypeObject_Layout](ihead.ob_type);
-    next_item = jacpy_type_call_iternext(ity, it);
+    next_item = ity.tp_iternext(it);
     if next_item == ptr[PyObject]() {
         return ptr[PyObject]();
     }
@@ -456,31 +481,33 @@ def enum_next(op: ptr[PyObject]) -> ptr[PyObject] {
 
     next_index = PyLong_FromSsize_t(en_index);
     if next_index == ptr[PyObject]() {
-        Py_DecRef(next_item);
+        py_decref(next_item);
         return ptr[PyObject]();
     }
     en.en_index = en_index + 1;
 
     head = ptr[PyObject_Layout](result);
     if head.ob_refcnt == 1 {
-        Py_IncRef(result);
-        old_index = jacpy_tuple_borrow(result, 0);
-        old_item = jacpy_tuple_borrow(result, 1);
-        jacpy_tuple_set_item(result, 0, next_index);
-        jacpy_tuple_set_item(result, 1, next_item);
-        Py_DecRef(old_index);
-        Py_DecRef(old_item);
-        jacpy_tuple_recycle(result);
+        py_incref(result);
+        pair = ptr[PyTuple2_Layout](result);
+        old_index = pair.item0;
+        old_item = pair.item1;
+        pair.item0 = next_index;
+        pair.item1 = next_item;
+        py_decref(old_index);
+        py_decref(old_item);
+        tuple_recycle(result);
         return result;
     }
     result = PyTuple_New(2);
     if result == ptr[PyObject]() {
-        Py_DecRef(next_index);
-        Py_DecRef(next_item);
+        py_decref(next_index);
+        py_decref(next_item);
         return ptr[PyObject]();
     }
-    jacpy_tuple_set_item(result, 0, next_index);
-    jacpy_tuple_set_item(result, 1, next_item);
+    fresh = ptr[PyTuple2_Layout](result);
+    fresh.item0 = next_index;
+    fresh.item1 = next_item;
     return result;
 }
 
@@ -583,7 +610,7 @@ def reversed_new_impl(type_: ptr[PyTypeObject_Layout], seq: ptr[PyObject]) -> pt
     none_obj: ptr[PyObject] = _Py_NoneStruct;
     reversed_meth = jacpy_reversed_lookup(seq);
     if reversed_meth == none_obj {
-        Py_DecRef(reversed_meth);
+        py_decref(reversed_meth);
         shead = ptr[PyObject_Layout](seq);
         sty = ptr[PyTypeObject_Layout](shead.ob_type);
         jacpy_enum_not_reversible(sty.tp_name);
@@ -591,7 +618,7 @@ def reversed_new_impl(type_: ptr[PyTypeObject_Layout], seq: ptr[PyObject]) -> pt
     }
     if reversed_meth != ptr[PyObject]() {
         res = PyObject_CallNoArgs(reversed_meth);
-        Py_DecRef(reversed_meth);
+        py_decref(reversed_meth);
         return res;
     }
     if PyErr_Occurred() != ptr[PyObject]() {
@@ -610,14 +637,14 @@ def reversed_new_impl(type_: ptr[PyTypeObject_Layout], seq: ptr[PyObject]) -> pt
         return ptr[PyObject]();
     }
 
-    ro_obj = jacpy_type_call_alloc(type_, 0);
+    ro_obj = type_.tp_alloc(type_, 0);
     if ro_obj == ptr[PyObject]() {
         return ptr[PyObject]();
     }
     ro = ptr[_Reversed_Layout](ro_obj);
     ro.index = n - 1;
     ro.seq = seq;
-    Py_IncRef(seq);
+    py_incref(seq);
     return ro_obj;
 }
 
@@ -638,11 +665,11 @@ def reversed_dealloc(op: ptr[PyObject]) -> None {
     ro = ptr[_Reversed_Layout](op);
     PyObject_GC_UnTrack(op);
     if ro.seq != ptr[PyObject]() {
-        Py_DecRef(ro.seq);
+        py_decref(ro.seq);
     }
     head = ptr[PyObject_Layout](op);
     ty = ptr[PyTypeObject_Layout](head.ob_type);
-    jacpy_type_call_free(ty, op);
+    ty.tp_free(op);
 }
 
 def reversed_traverse(
@@ -677,7 +704,7 @@ def reversed_next(op: ptr[PyObject]) -> ptr[PyObject] {
     ro.index = -1;
     # Py_CLEAR(ro->seq) (GIL build)
     if ro.seq != ptr[PyObject]() {
-        Py_DecRef(ro.seq);
+        py_decref(ro.seq);
         ro.seq = ptr[PyObject]();
     }
     return ptr[PyObject]();
@@ -733,7 +760,7 @@ def reversed_setstate(op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObje
         }
         ro.index = index;
     }
-    Py_IncRef(none_obj);
+    py_incref(none_obj);
     return none_obj;
 }
 

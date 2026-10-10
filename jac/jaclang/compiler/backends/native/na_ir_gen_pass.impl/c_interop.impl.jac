@@ -546,7 +546,63 @@ impl NaIRGenPass._codegen_c_interop_call(
         with_addr = b.insert_value(empty, addr, 0, name="c.view.addr");
         return (True, b.insert_value(with_addr, count, 1, name="c.view.n"));
     }
+    fn_call = self._codegen_c_fnfield_call(nd, recv, method, params);
+    if fn_call is not None {
+        return (True, fn_call);
+    }
     return (False, None);
+}
+
+impl NaIRGenPass._codegen_c_fnfield_call(
+    nd: uni.FuncCall,
+    recv: uni.Expr,
+    method: (str | None),
+    params: list[uni.Expr | uni.KWPair]
+) -> (ir.Value | None) {
+    # `p.field(args)` on `ptr[T]` where `field` is a C function pointer in
+    # the C-layout struct T: load the code address and call it directly,
+    # as C's `p->field(args)` does.
+    import from jaclang.compiler.c_interop { c_type_arg }
+    if method is None {
+        return None;
+    }
+    sname = self._foreign_struct_name_of_type(c_type_arg(recv.type));
+    if sname is None or sname not in self.struct_field_order {
+        return None;
+    }
+    order = self.struct_field_order[sname];
+    fty = self.struct_field_types.get(sname, {}).get(method);
+    if method not in order
+        or not isinstance(fty, ir.PointerType)
+        or not isinstance(fty.pointee, ir.FunctionType) {
+        return None;
+    }
+    fn_ty: ir.FunctionType = fty.pointee;
+    if len(params) != len(fn_ty.args)
+        or any(isinstance(p, uni.KWPair) for p in params) {
+        return None;
+    }
+    addr = self._codegen_expr(recv);
+    if addr is None or not isinstance(addr.type, ir.IntType) {
+        return None;
+    }
+    args: list[ir.Value] = [];
+    for (p, want) in zip(params, fn_ty.args) {
+        v = self._codegen_expr(p);
+        if v is None {
+            return None;
+        }
+        args.append(self._coerce_type(v, want));
+    }
+    b = self.builder;
+    i64 = ir.IntType(64);
+    offset = self._clib_struct_layout(sname)[2][order.index(method)][0];
+    field_addr = b.add(addr, ir.Constant(i64, offset), name=f"c.fn.{method}.addr");
+    slot = b.inttoptr(field_addr, fty.as_pointer(), name=f"c.fn.{method}.slot");
+    fn = b.load(slot, name=f"c.fn.{method}");
+    return b.call(fn, args, name=f"c.fn.{method}.ret")
+        if not isinstance(fn_ty.return_type, ir.VoidType)
+        else b.call(fn, args);
 }
 
 impl NaIRGenPass._foreign_ptr_field_slot(

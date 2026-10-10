@@ -289,11 +289,11 @@ import from c {
         str_: ptr[PyObject], start: i64, end: i64
     ) -> ptr[PyObject];  def PyVectorcall_NARGS(nargsf: u64) -> i64;  def PyWeakref_NewProxy(
         ob: ptr[PyObject], callback: ptr[PyObject]
-    ) -> ptr[PyObject];  def Py_DecRef(arg0: ptr[PyObject]);  def Py_GenericAlias(
+    ) -> ptr[PyObject];  def Py_GenericAlias(
         arg0: ptr[PyObject], arg1: ptr[PyObject]
     ) -> ptr[PyObject];  def Py_GetConstantBorrowed(
         constant_id: u32
-    ) -> ptr[PyObject];  def Py_IncRef(arg0: ptr[PyObject]);  def Py_LeaveRecursiveCall;  def Py_MakePendingCalls -> i32;  def Py_NewRef(
+    ) -> ptr[PyObject];  def Py_LeaveRecursiveCall;  def Py_MakePendingCalls -> i32;  def Py_NewRef(
         obj_: ptr[PyObject]
     ) -> ptr[PyObject];  def Py_ReprEnter(arg0: ptr[PyObject]) -> i32;  def Py_ReprLeave(
         arg0: ptr[PyObject]
@@ -337,7 +337,7 @@ import from c {
         obj_: ptr[PyObject]
     ) -> i64;  def _Py_CalculateSuggestions(
         dir: ptr[PyObject], name: ptr[PyObject]
-    ) -> ptr[PyObject];  def _Py_Mangle(
+    ) -> ptr[PyObject];  def _Py_Dealloc(arg0: ptr[PyObject]);  def _Py_Mangle(
         p: ptr[PyObject], name: ptr[PyObject]
     ) -> ptr[PyObject];  def _Py_SetImmortal(op: ptr[PyObject]);  def _Py_c_abs(
         arg0: Py_complex
@@ -552,9 +552,7 @@ import from c {
         value: ptr[PyObject], size: i64
     ) -> ptr[PyObject];  def jacpy_long_u64_checked(
         value: ptr[PyObject], out: &mut u64
-    ) -> i64;  def jacpy_long_wrap_add(a: i64, b: i64) -> i64;  def jacpy_long_zero -> ptr[
-        PyObject
-    ];  def jacpy_mapping_optional_item(
+    ) -> i64;  def jacpy_long_zero -> ptr[PyObject];  def jacpy_mapping_optional_item(
         mapping: ptr[PyObject], key: ptr[PyObject]
     ) -> ptr[PyObject];  def jacpy_marshal(handle: ptr[PyObject]) -> ptr[PyObject];  def jacpy_math_errno -> i64;  def jacpy_memory_byte(
         address: ptr, offset: i64
@@ -605,9 +603,11 @@ import from c {
         item: ptr[PyObject]
     );  def jacpy_range_index_check(item: ptr[PyObject]) -> i64;  def jacpy_range_iter_bad_state(
         state: ptr[PyObject]
-    );  def jacpy_range_iter_reduce(range: ptr[PyObject]) -> ptr[PyObject];  def jacpy_range_len_of(
-        lo: i64, hi: i64, step: i64
-    ) -> u64;  def jacpy_range_new_too_many(nargs: i64);  def jacpy_range_reduce(
+    );  def jacpy_range_iter_reduce(range: ptr[PyObject]) -> ptr[PyObject];  def jacpy_range_new_too_many(
+        nargs: i64
+    );  def jacpy_range_obj_alloc(type_: ptr[PyObject]) -> ptr[PyObject];  def jacpy_range_obj_free(
+        op: ptr[PyObject]
+    );  def jacpy_range_reduce(
         type_: ptr[PyObject],
         start: ptr[PyObject],
         stop: ptr[PyObject],
@@ -617,9 +617,9 @@ import from c {
         stop: ptr[PyObject],
         step: ptr[PyObject],
         include_step: i32
-    ) -> ptr[PyObject];  def jacpy_range_reverse_fits(start: i64, step: i64) -> i32;  def jacpy_range_reverse_start(
-        start: i64, step: i64, len_: u64
-    ) -> i64;  def jacpy_readline(
+    ) -> ptr[PyObject];  def jacpy_rangeiter_alloc -> ptr[PyObject];  def jacpy_rangeiter_free(
+        op: ptr[PyObject]
+    );  def jacpy_readline(
         reader: ptr[PyObject], encoding: str, decode: i64
     ) -> ptr[PyObject];  def jacpy_recursion_enter(context: str) -> i64;  def jacpy_release(
         handle: ptr[PyObject]
@@ -643,10 +643,10 @@ import from c {
         target: ptr[PyObject], field: i64, value: ptr[PyObject]
     ) -> i64;  def jacpy_slice_adjust(
         length: i64, bounds: SliceBounds
-    ) -> SliceBounds;  def jacpy_slice_hash(op: ptr[PyObject]) -> i64;  def jacpy_slice_indices_tuple(
+    ) -> SliceBounds;  def jacpy_slice_alloc -> ptr[PyObject];  def jacpy_slice_free(
+        op: ptr[PyObject]
+    );  def jacpy_slice_hash(op: ptr[PyObject]) -> i64;  def jacpy_slice_indices_tuple(
         start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]
-    ) -> ptr[PyObject];  def jacpy_slice_long_indices(
-        slice: ptr[PyObject], length: ptr[PyObject]
     ) -> ptr[PyObject];  def jacpy_slice_pack3(
         a: ptr[PyObject], b: ptr[PyObject], c: ptr[PyObject]
     ) -> ptr[PyObject];  def jacpy_slice_reduce_tuple(
@@ -688,15 +688,7 @@ import from c {
         t: ptr[PyObject], index: i64, v: ptr[PyObject]
     );  def jacpy_tuple_set_owned(
         handle: ptr[PyObject], index: i64, value: ptr[PyObject]
-    ) -> i64;  def jacpy_tuple_unique(value: ptr[PyObject]) -> i64;  def jacpy_type_call_alloc(
-        tp: ptr[PyObject], nitems: i64
-    ) -> ptr[PyObject];  def jacpy_type_call_am_await(
-        tp: ptr[PyObject], o: ptr[PyObject]
-    ) -> ptr[PyObject];  def jacpy_type_call_free(
-        tp: ptr[PyObject], op: ptr[PyObject]
-    );  def jacpy_type_call_iternext(
-        tp: ptr[PyObject], o: ptr[PyObject]
-    ) -> ptr[PyObject];  def jacpy_type_check(
+    ) -> i64;  def jacpy_tuple_unique(value: ptr[PyObject]) -> i64;  def jacpy_type_check(
         value: ptr[PyObject], type_: ptr[PyObject]
     ) -> i64;  def jacpy_type_name(value: ptr[PyObject]) -> ptr[PyObject];  def jacpy_type_new(
         type_: ptr[PyObject], args: ptr[PyObject], kwargs: ptr[PyObject]

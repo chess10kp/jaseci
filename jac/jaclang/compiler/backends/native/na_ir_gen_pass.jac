@@ -1003,6 +1003,12 @@ walker NaIRGenPass(CompilerPass) {
     def _codegen_ptr_arith(
         op: str, nd: uni.BinaryExpr, left: ir.Value, right: ir.Value
     ) -> (ir.Value | None);
+    def _codegen_c_fnfield_call(
+        nd: uni.FuncCall,
+        recv: uni.Expr,
+        method: (str | None),
+        params: list[uni.Expr | uni.KWPair]
+    ) -> (ir.Value | None);
     def _foreign_ptr_field_slot(
         addr: (ir.Value | None), ptr_type: any, field_name: (str | None)
     ) -> (tuple[ir.Value, any] | None);

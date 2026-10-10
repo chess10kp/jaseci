@@ -16,6 +16,8 @@
 # PyUnicode_FromFormat plus a tp_name read), jacpy_is_cell (PyCell_Check),
 # jacpy_not_implemented and jacpy_exception_type (data symbols).
 
+import from jaclang.runtime.python.refcount { py_incref, py_decref }
+
 import from c {
     obj PyObject;  obj PyUnicodeWriter;  obj PyModuleDef;
 
@@ -101,8 +103,6 @@ import from c {
     def PyObject_GC_Track(op: ptr[PyObject]) -> None;
     def PyObject_GC_UnTrack(op: ptr[PyObject]) -> None;
     def PyObject_GC_Del(op: ptr[PyObject]) -> None;
-    def Py_IncRef(o: ptr[PyObject]) -> None;
-    def Py_DecRef(o: ptr[PyObject]) -> None;
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
     def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
     # PyBool_FromLong is defined natively in boolobject.jac; declaring it as a
@@ -244,7 +244,7 @@ def:pub PyCell_New(ob: ptr[PyObject]) -> ptr[PyObject] {
     }
     cell = ptr[PyCellObject](op);
     if ob {
-        Py_IncRef(ob);
+        py_incref(ob);
     }
     cell.ob_ref = ob;
     PyObject_GC_Track(op);
@@ -259,7 +259,7 @@ def:pub PyCell_Get(op: ptr[PyObject]) -> ptr[PyObject] {
     cell = ptr[PyCellObject](op);
     res = cell.ob_ref;
     if res {
-        Py_IncRef(res);
+        py_incref(res);
     }
     return res;
 }
@@ -271,12 +271,12 @@ def:pub PyCell_Set(op: ptr[PyObject], value: ptr[PyObject]) -> i32 {
     }
     cell = ptr[PyCellObject](op);
     if value {
-        Py_IncRef(value);
+        py_incref(value);
     }
     old_value = cell.ob_ref;
     cell.ob_ref = value;
     if old_value {
-        Py_DecRef(old_value);
+        py_decref(old_value);
     }
     return 0;
 }
@@ -286,7 +286,7 @@ def cell_dealloc(self: ptr[PyObject]) -> None {
     cell = ptr[PyCellObject](self);
     old_ref = cell.ob_ref;
     if old_ref {
-        Py_DecRef(old_ref);
+        py_decref(old_ref);
     }
     PyObject_GC_Del(self);
 }
@@ -314,7 +314,7 @@ def cell_clear(self: ptr[PyObject]) -> i32 {
     old_value = cell.ob_ref;
     cell.ob_ref = ptr[PyObject]();
     if old_value {
-        Py_DecRef(old_value);
+        py_decref(old_value);
     }
     return 0;
 }
@@ -356,10 +356,10 @@ def cell_richcompare(
         }
     }
     if a_ref {
-        Py_DecRef(a_ref);
+        py_decref(a_ref);
     }
     if b_ref {
-        Py_DecRef(b_ref);
+        py_decref(b_ref);
     }
     return res;
 }
@@ -368,7 +368,7 @@ def cell_get_contents(self: ptr[PyObject], closure: ptr) -> ptr[PyObject] {
     cell = ptr[PyCellObject](self);
     res = cell.ob_ref;
     if res {
-        Py_IncRef(res);
+        py_incref(res);
         return res;
     }
     PyErr_SetString(
@@ -380,12 +380,12 @@ def cell_get_contents(self: ptr[PyObject], closure: ptr) -> ptr[PyObject] {
 def cell_set_contents(self: ptr[PyObject], value: ptr[PyObject], closure: ptr) -> i32 {
     cell = ptr[PyCellObject](self);
     if value {
-        Py_IncRef(value);
+        py_incref(value);
     }
     old_value = cell.ob_ref;
     cell.ob_ref = value;
     if old_value {
-        Py_DecRef(old_value);
+        py_decref(old_value);
     }
     return 0;
 }

@@ -13,6 +13,8 @@
 # those fields are opaque `ptr` here). strcmp/strlen stay extern libc calls.
 
 
+import from jaclang.runtime.python.refcount { py_incref, py_decref }
+
 import from c {
     obj PyObject;
     # Local copy of the 53-field type layout (cellobject.jac owns the
@@ -97,7 +99,6 @@ import from c {
     glob PyExc_ImportError: ptr[PyObject];
     glob PyExc_AttributeError: ptr[PyObject];
 
-    def Py_DecRef(o: ptr[PyObject]) -> None;
     def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
     def PyErr_NoMemory() -> ptr[PyObject];
     def _PyObject_GC_New(tp: ptr[PyTypeObject_Layout]) -> ptr[PyObject];
@@ -322,7 +323,7 @@ def:pub PyCapsule_Import(name: ptr[u8], no_block: i32) -> ptr {
         } else {
             object2 = PyObject_GetAttrString(mod, trace);
             # Py_SETREF(obj, object2)
-            Py_DecRef(mod);
+            py_decref(mod);
             mod = object2;
         }
         if mod == ptr[PyObject]() {
@@ -340,7 +341,7 @@ def:pub PyCapsule_Import(name: ptr[u8], no_block: i32) -> ptr {
         jacpy_capsule_import_attr_error(name);
     }
 
-    Py_DecRef(mod);
+    py_decref(mod);
     PyMem_Free(ptr(name_dup));
     return return_value;
 }

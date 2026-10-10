@@ -20,6 +20,8 @@
 # stay C helpers beside the capsule ones.
 
 
+import from jaclang.runtime.python.refcount { py_incref, py_decref }
+
 import from c {
     obj PyObject;
     # Local copy of the 53-field type layout (cellobject.jac owns the
@@ -161,12 +163,8 @@ import from c {
     glob _Py_NoneStruct: PyObject_Layout;
     glob _Py_NotImplementedStruct: PyObject_Layout;
 
-    def Py_DecRef(o: ptr[PyObject]) -> None;
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
     def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def jacpy_type_call_am_await(tp: ptr[PyTypeObject_Layout], o: ptr[PyObject]) -> ptr[PyObject];
-    def jacpy_type_call_iternext(tp: ptr[PyTypeObject_Layout], o: ptr[PyObject]) -> ptr[PyObject];
-    def Py_IncRef(o: ptr[PyObject]) -> None;
     def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
     def PyErr_BadInternalCall() -> None;
     def PyErr_Clear() -> None;
@@ -210,7 +208,7 @@ def:pub PySeqIter_New(seq: ptr[PyObject]) -> ptr[PyObject] {
     sit = ptr[_SeqIter_Layout](it);
     sit.it_index = 0;
     sit.it_seq = seq;
-    Py_IncRef(seq);
+    py_incref(seq);
     jacpy_capsule_track(it);
     return it;
 }
@@ -219,7 +217,7 @@ def iter_dealloc(op: ptr[PyObject]) -> None {
     it = ptr[_SeqIter_Layout](op);
     PyObject_GC_UnTrack(op);
     if it.it_seq != ptr[PyObject]() {
-        Py_DecRef(it.it_seq);
+        py_decref(it.it_seq);
     }
     PyObject_GC_Del(op);
 }
@@ -257,7 +255,7 @@ def iter_iternext(iterator: ptr[PyObject]) -> ptr[PyObject] {
     if PyErr_ExceptionMatches(PyExc_IndexError) or PyErr_ExceptionMatches(PyExc_StopIteration) {
         PyErr_Clear();
         it.it_seq = ptr[PyObject]();
-        Py_DecRef(seq);
+        py_decref(seq);
     }
     return ptr[PyObject]();
 }
@@ -272,7 +270,7 @@ def iter_len(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]) ->
                 return ptr[PyObject]();
             }
         } else {
-            Py_IncRef(notimpl_obj);
+            py_incref(notimpl_obj);
             return notimpl_obj;
         }
         len = seqsize - it.it_index;
@@ -307,7 +305,7 @@ def iter_setstate(op: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject])
         }
         it.it_index = index;
     }
-    Py_IncRef(none_obj);
+    py_incref(none_obj);
     return none_obj;
 }
 
@@ -371,8 +369,8 @@ def:pub PyCallIter_New(callable: ptr[PyObject], sentinel: ptr[PyObject]) -> ptr[
     cit = ptr[_CallIter_Layout](it);
     cit.it_callable = callable;
     cit.it_sentinel = sentinel;
-    Py_IncRef(callable);
-    Py_IncRef(sentinel);
+    py_incref(callable);
+    py_incref(sentinel);
     jacpy_capsule_track(it);
     return it;
 }
@@ -381,10 +379,10 @@ def calliter_dealloc(op: ptr[PyObject]) -> None {
     it = ptr[_CallIter_Layout](op);
     PyObject_GC_UnTrack(op);
     if it.it_callable != ptr[PyObject]() {
-        Py_DecRef(it.it_callable);
+        py_decref(it.it_callable);
     }
     if it.it_sentinel != ptr[PyObject]() {
-        Py_DecRef(it.it_sentinel);
+        py_decref(it.it_sentinel);
     }
     PyObject_GC_Del(op);
 }
@@ -431,7 +429,7 @@ def calliter_iternext(op: ptr[PyObject]) -> ptr[PyObject] {
         it.it_sentinel = ptr[PyObject]();
     }
     if result != ptr[PyObject]() {
-        Py_DecRef(result);
+        py_decref(result);
     }
     return ptr[PyObject]();
 }
@@ -476,10 +474,10 @@ def anextawaitable_dealloc(op: ptr[PyObject]) -> None {
     aw = ptr[_AnextAwaitable_Layout](op);
     PyObject_GC_UnTrack(op);
     if aw.wrapped != ptr[PyObject]() {
-        Py_DecRef(aw.wrapped);
+        py_decref(aw.wrapped);
     }
     if aw.default_value != ptr[PyObject]() {
-        Py_DecRef(aw.default_value);
+        py_decref(aw.default_value);
     }
     PyObject_GC_Del(op);
 }
@@ -515,18 +513,19 @@ def anextawaitable_getiter(aw: ptr[_AnextAwaitable_Layout]) -> ptr[PyObject] {
     if aty.tp_iternext == 0 {
         # _PyCoro_GetAwaitableIter returns a Coroutine, a Generator, or an
         # iterator; only coroutines lack tp_iternext.
-        new_awaitable = jacpy_type_call_am_await(aty, awaitable);
+        aasync = ptr[PyAsyncMethods_Layout](aty.tp_as_async);
+        new_awaitable = aasync.am_await(awaitable);
         if new_awaitable == ptr[PyObject]() {
-            Py_DecRef(awaitable);
+            py_decref(awaitable);
             return ptr[PyObject]();
         }
-        Py_DecRef(awaitable);
+        py_decref(awaitable);
         awaitable = new_awaitable;
         ahead = ptr[PyObject_Layout](awaitable);
         aty = ptr[PyTypeObject_Layout](ahead.ob_type);
         if aty.tp_iternext == 0 {
             PyErr_SetString(PyExc_TypeError, "__await__ returned a non-iterable");
-            Py_DecRef(awaitable);
+            py_decref(awaitable);
             return ptr[PyObject]();
         }
     }
@@ -541,8 +540,8 @@ def anextawaitable_iternext(op: ptr[PyObject]) -> ptr[PyObject] {
     }
     ahead = ptr[PyObject_Layout](awaitable);
     aty = ptr[PyTypeObject_Layout](ahead.ob_type);
-    result = jacpy_type_call_iternext(aty, awaitable);
-    Py_DecRef(awaitable);
+    result = aty.tp_iternext(awaitable);
+    py_decref(awaitable);
     if result != ptr[PyObject]() {
         return result;
     }
@@ -561,7 +560,7 @@ def anextawaitable_proxy(aw: ptr[_AnextAwaitable_Layout], meth: ptr[u8], arg: pt
     # arg may be a tuple (METH_VARARGS) or a single object (METH_O); NULL
     # means the method takes no arguments.
     ret = jacpy_iter_proxy(awaitable, meth, arg);
-    Py_DecRef(awaitable);
+    py_decref(awaitable);
     if ret != ptr[PyObject]() {
         return ret;
     }
@@ -650,8 +649,8 @@ def:pub PyAnextAwaitable_New(awaitable: ptr[PyObject], default_value: ptr[PyObje
     anext = ptr[_AnextAwaitable_Layout](anext_obj);
     anext.wrapped = awaitable;
     anext.default_value = default_value;
-    Py_IncRef(awaitable);
-    Py_IncRef(default_value);
+    py_incref(awaitable);
+    py_incref(default_value);
     jacpy_capsule_track(anext_obj);
     return anext_obj;
 }

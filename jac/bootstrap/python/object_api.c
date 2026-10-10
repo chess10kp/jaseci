@@ -832,65 +832,10 @@ int jacpy_capsule_call_clear(void *fn, PyObject *op) {
     return ((inquiry)fn)(op);
 }
 
-/* rangeobject: the unsigned-wraparound arithmetic of get_len_of_range and
- * range_reverse's fast path (Jac's u64 casts and ops are checked). */
-unsigned long jacpy_range_len_of(long lo, long hi, long step) {
-    if (step > 0 && lo < hi) {
-        return 1UL + (hi - 1UL - lo) / step;
-    }
-    if (step < 0 && lo > hi) {
-        return 1UL + (lo - 1UL - hi) / (0UL - step);
-    }
-    return 0UL;
-}
-
-int jacpy_range_reverse_fits(long start, long step) {
-    if (step > 0) {
-        return !((unsigned long)start - LONG_MIN < (unsigned long)step);
-    }
-    return !(LONG_MAX - (unsigned long)start < 0UL - step);
-}
-
-long jacpy_long_wrap_add(long a, long b) {
-    return (long)((unsigned long)a + (unsigned long)b);
-}
-
-long jacpy_range_reverse_start(long start, long step, unsigned long len) {
-    long new_stop = start - step;
-    return (long)(new_stop + len * (unsigned long)step);
-}
-
-/* rangeobject: _PySlice_GetLongIndices' out-params as a new 3-tuple. */
-PyObject *jacpy_slice_long_indices(PyObject *slice, PyObject *length) {
-    PyObject *start, *stop, *step;
-    if (_PySlice_GetLongIndices((PySliceObject *)slice, length, &start, &stop,
-                                &step) < 0) {
-        return NULL;
-    }
-    PyObject *result = PyTuple_Pack(3, start, stop, step);
-    Py_DECREF(start);
-    Py_DECREF(stop);
-    Py_DECREF(step);
-    return result;
-}
-
-/* Type-slot calls for the ported objects (no native indirect calls yet). */
+/* Py_VISIT: tp_traverse receives `visit` as a C function pointer, which a
+ * Jac Callable parameter cannot call. */
 int jacpy_visit(void *visit, PyObject *o, void *arg) {
     return ((visitproc)visit)(o, arg);
-}
-
-PyObject *jacpy_type_call_alloc(PyTypeObject *tp, Py_ssize_t nitems) {
-    return tp->tp_alloc(tp, nitems);
-}
-
-void jacpy_type_call_free(PyTypeObject *tp, PyObject *op) { tp->tp_free(op); }
-
-PyObject *jacpy_type_call_iternext(PyTypeObject *tp, PyObject *o) {
-    return tp->tp_iternext(o);
-}
-
-PyObject *jacpy_type_call_am_await(PyTypeObject *tp, PyObject *o) {
-    return tp->tp_as_async->am_await(o);
 }
 
 /* iterobject: Py_BuildValue formats and the PyObject_CallMethod proxy stay
@@ -1143,6 +1088,37 @@ PyObject *jacpy_bool_false(void) {
 
 /* rangeobject: APIs hidden in rangeobject.c include the exact index check,
  * fixed-format diagnostics/reprs/reductions, and type-aware allocation. */
+#include "internal/pycore_freelist.h"
+
+/* The slice and range freelists, exactly as sliceobject.c / rangeobject.c
+ * use them. */
+PyObject *jacpy_slice_alloc(void) {
+    PyObject *op = _PyFreeList_Pop(&_Py_freelists_GET()->slices);
+    return op ? op : _PyObject_GC_New(&PySlice_Type);
+}
+
+void jacpy_slice_free(PyObject *op) {
+    _Py_FREELIST_FREE(slices, op, PyObject_GC_Del);
+}
+
+PyObject *jacpy_range_obj_alloc(PyTypeObject *type) {
+    PyObject *op = _PyFreeList_Pop(&_Py_freelists_GET()->ranges);
+    return op ? op : _PyObject_New(type);
+}
+
+void jacpy_range_obj_free(PyObject *op) {
+    _Py_FREELIST_FREE(ranges, op, PyObject_Free);
+}
+
+PyObject *jacpy_rangeiter_alloc(void) {
+    PyObject *op = _PyFreeList_Pop(&_Py_freelists_GET()->range_iters);
+    return op ? op : _PyObject_New(&PyRangeIter_Type);
+}
+
+void jacpy_rangeiter_free(PyObject *op) {
+    _Py_FREELIST_FREE(range_iters, op, PyObject_Free);
+}
+
 PyObject *jacpy_range_alloc(PyTypeObject *type, Py_ssize_t size) {
     PyObject *op = PyObject_Malloc((size_t)size);
     if (op == NULL) return NULL;

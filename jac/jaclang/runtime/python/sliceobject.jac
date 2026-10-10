@@ -23,6 +23,8 @@
 
 import from jaclang.runtime.python.boolobject { PyLongObject_Layout, PyNumberMethods }
 
+import from jaclang.runtime.python.refcount { py_incref, py_decref }
+
 import from c {
     obj PyObject;
     # Local copy of the 53-field type layout (cellobject.jac owns the
@@ -152,17 +154,13 @@ import from c {
     glob PyExc_TypeError: ptr[PyObject];
     glob PyExc_ValueError: ptr[PyObject];
 
-    def Py_DecRef(o: ptr[PyObject]) -> None;
     # Py_VISIT: `visit` is a C function pointer, not a Jac Callable.
     def jacpy_visit(visitf: ptr, o: ptr[PyObject], arg: ptr) -> i32;
-    def Py_IncRef(o: ptr[PyObject]) -> None;
     def PyErr_SetString(exc: ptr[PyObject], msg: ptr[u8]) -> None;
     def PyErr_Clear() -> None;
     def PyErr_ExceptionMatches(exc: ptr[PyObject]) -> i32;
     def _Py_SetImmortal(o: ptr[PyObject]) -> None;
-    def _PyObject_GC_New(tp: ptr[PyTypeObject_Layout]) -> ptr[PyObject];
     def PyObject_GC_UnTrack(o: ptr[PyObject]) -> None;
-    def PyObject_GC_Del(o: ptr[PyObject]) -> None;
     def PyObject_GenericGetAttr(o: ptr[PyObject], name: ptr[PyObject]) -> ptr[PyObject];
     def PyObject_RichCompare(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> ptr[PyObject];
     def PyObject_RichCompareBool(a: ptr[PyObject], b: ptr[PyObject], op: i32) -> i32;
@@ -180,6 +178,10 @@ import from c {
     def jacpy_is_tuple(handle: ptr[PyObject]) -> i64;
     def jacpy_exception_type(kind: ptr[u8]) -> ptr[PyObject];
     def jacpy_capsule_track(o: ptr[PyObject]) -> None;
+    # The `slices` freelist (per-thread interpreter state, reached through
+    # pycore_freelist.h's inline helpers): pop or GC-allocate, push or free.
+    def jacpy_slice_alloc() -> ptr[PyObject];
+    def jacpy_slice_free(o: ptr[PyObject]) -> None;
     def jacpy_long_one() -> ptr[PyObject];
     def jacpy_long_zero() -> ptr[PyObject];
     def jacpy_slice_too_few(nargs: i64) -> None;
@@ -298,17 +300,17 @@ glob:pub _Py_EllipsisObject: PyObject_Layout = PyObject_Layout(
 
 # _PyBuildSlice_Consume2: takes references (start/stop consumed on failure).
 def _PyBuildSlice_Consume2(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject] {
-    allocated = _PyObject_GC_New(PySlice_Type);
+    allocated = jacpy_slice_alloc();
     if allocated == ptr[PyObject]() {
-        Py_DecRef(start);
-        Py_DecRef(stop);
+        py_decref(start);
+        py_decref(stop);
         return ptr[PyObject]();
     }
     r = ptr[PySliceObject_Layout](allocated);
     r.start = start;
     r.stop = stop;
     r.step = step;
-    Py_IncRef(step);
+    py_incref(step);
     jacpy_capsule_track(allocated);
     return allocated;
 }
@@ -324,8 +326,8 @@ def:pub PySlice_New(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObjec
     if stop == ptr[PyObject]() {
         stop = none_obj;
     }
-    Py_IncRef(start);
-    Py_IncRef(stop);
+    py_incref(start);
+    py_incref(stop);
     return _PyBuildSlice_Consume2(start, stop, step);
 }
 
@@ -342,12 +344,12 @@ def:pub _PySlice_FromIndices(istart: i64, istop: i64) -> ptr[PyObject] {
     }
     end = PyLong_FromSsize_t(istop);
     if end == ptr[PyObject]() {
-        Py_DecRef(start);
+        py_decref(start);
         return ptr[PyObject]();
     }
     slice = PySlice_New(start, end, ptr[PyObject]());
-    Py_DecRef(start);
-    Py_DecRef(end);
+    py_decref(start);
+    py_decref(end);
     return slice;
 }
 
@@ -578,10 +580,10 @@ def slice_new(
 def slice_dealloc(op: ptr[PyObject]) -> None {
     r = ptr[PySliceObject_Layout](op);
     PyObject_GC_UnTrack(op);
-    Py_DecRef(r.step);
-    Py_DecRef(r.start);
-    Py_DecRef(r.stop);
-    PyObject_GC_Del(op);
+    py_decref(r.step);
+    py_decref(r.start);
+    py_decref(r.stop);
+    jacpy_slice_free(op);
 }
 
 def slice_repr(op: ptr[PyObject]) -> ptr[PyObject] {
@@ -626,7 +628,7 @@ def _slice_gli_impl(self_op: ptr[PyObject], length: ptr[PyObject]) -> _GliResult
         sign = long_sign(res.step);
         if sign == 0 {
             PyErr_SetString(PyExc_ValueError, "slice step cannot be zero");
-            Py_DecRef(res.step);
+            py_decref(res.step);
             res.step = ptr[PyObject]();
             res.ok = -1;
             return res;
@@ -642,15 +644,15 @@ def _slice_gli_impl(self_op: ptr[PyObject], length: ptr[PyObject]) -> _GliResult
     if step_is_negative == 1 {
         lower = PyLong_FromSsize_t(-1);
         if lower == ptr[PyObject]() {
-            Py_DecRef(res.step);
+            py_decref(res.step);
             res.step = ptr[PyObject]();
             res.ok = -1;
             return res;
         }
         upper = PyNumber_Add(length, lower);
         if upper == ptr[PyObject]() {
-            Py_DecRef(lower);
-            Py_DecRef(res.step);
+            py_decref(lower);
+            py_decref(res.step);
             res.step = ptr[PyObject]();
             res.ok = -1;
             return res;
@@ -658,7 +660,7 @@ def _slice_gli_impl(self_op: ptr[PyObject], length: ptr[PyObject]) -> _GliResult
     } else {
         lower = jacpy_long_zero();
         upper = length;
-        Py_IncRef(upper);
+        py_incref(upper);
     }
 
     # Compute start.
@@ -668,16 +670,16 @@ def _slice_gli_impl(self_op: ptr[PyObject], length: ptr[PyObject]) -> _GliResult
         } else {
             res.start = lower;
         }
-        Py_IncRef(res.start);
+        py_incref(res.start);
     } else {
         res.start = evaluate_slice_index(self.start);
         if res.start != ptr[PyObject]() {
             res.start = _slice_clip_to_bound(res.start, length, lower, upper);
         }
         if res.start == ptr[PyObject]() {
-            Py_DecRef(lower);
-            Py_DecRef(upper);
-            Py_DecRef(res.step);
+            py_decref(lower);
+            py_decref(upper);
+            py_decref(res.step);
             res.step = ptr[PyObject]();
             res.ok = -1;
             return res;
@@ -691,26 +693,26 @@ def _slice_gli_impl(self_op: ptr[PyObject], length: ptr[PyObject]) -> _GliResult
         } else {
             res.stop = upper;
         }
-        Py_IncRef(res.stop);
+        py_incref(res.stop);
     } else {
         res.stop = evaluate_slice_index(self.stop);
         if res.stop != ptr[PyObject]() {
             res.stop = _slice_clip_to_bound(res.stop, length, lower, upper);
         }
         if res.stop == ptr[PyObject]() {
-            Py_DecRef(res.start);
+            py_decref(res.start);
             res.start = ptr[PyObject]();
-            Py_DecRef(lower);
-            Py_DecRef(upper);
-            Py_DecRef(res.step);
+            py_decref(lower);
+            py_decref(upper);
+            py_decref(res.step);
             res.step = ptr[PyObject]();
             res.ok = -1;
             return res;
         }
     }
 
-    Py_DecRef(upper);
-    Py_DecRef(lower);
+    py_decref(upper);
+    py_decref(lower);
     res.ok = 0;
     return res;
 }
@@ -723,16 +725,16 @@ def _slice_clip_to_bound(v: ptr[PyObject], length: ptr[PyObject], lower: ptr[PyO
         if tmp == ptr[PyObject]() {
             return ptr[PyObject]();
         }
-        Py_DecRef(v);
+        py_decref(v);
         v = tmp;
         cmp_result = PyObject_RichCompareBool(v, lower, 0);
         if cmp_result < 0 {
             return ptr[PyObject]();
         }
         if cmp_result != 0 {
-            Py_DecRef(v);
+            py_decref(v);
             v = lower;
-            Py_IncRef(v);
+            py_incref(v);
         }
         return v;
     }
@@ -741,9 +743,9 @@ def _slice_clip_to_bound(v: ptr[PyObject], length: ptr[PyObject], lower: ptr[PyO
         return ptr[PyObject]();
     }
     if cmp_result != 0 {
-        Py_DecRef(v);
+        py_decref(v);
         v = upper;
-        Py_IncRef(v);
+        py_incref(v);
     }
     return v;
 }
@@ -772,12 +774,12 @@ def slice_indices(op: ptr[PyObject], len: ptr[PyObject], extra: ptr[PyObject]) -
     }
     if long_is_negative(length) {
         PyErr_SetString(PyExc_ValueError, "length should not be negative");
-        Py_DecRef(length);
+        py_decref(length);
         return ptr[PyObject]();
     }
 
     res = _slice_gli_impl(op, length);
-    Py_DecRef(length);
+    py_decref(length);
     if res.ok == -1 {
         return ptr[PyObject]();
     }
@@ -815,7 +817,7 @@ def slice_reduce(op: ptr[PyObject], ignored: ptr[PyObject], extra: ptr[PyObject]
 def slice_richcompare(v: ptr[PyObject], w: ptr[PyObject], op: i32) -> ptr[PyObject] {
     notimpl_obj: ptr[PyObject] = _Py_NotImplementedStruct;
     if not slice_is_slice(v) or not slice_is_slice(w) {
-        Py_IncRef(notimpl_obj);
+        py_incref(notimpl_obj);
         return notimpl_obj;
     }
 
@@ -835,12 +837,12 @@ def slice_richcompare(v: ptr[PyObject], w: ptr[PyObject], op: i32) -> ptr[PyObje
     }
     t2 = jacpy_slice_pack3(s2.start, s2.stop, s2.step);
     if t2 == ptr[PyObject]() {
-        Py_DecRef(t1);
+        py_decref(t1);
         return ptr[PyObject]();
     }
     res = PyObject_RichCompare(t1, t2, op);
-    Py_DecRef(t1);
-    Py_DecRef(t2);
+    py_decref(t1);
+    py_decref(t2);
     return res;
 }
 
