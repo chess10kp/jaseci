@@ -182,29 +182,14 @@ def app_edges_record(edges: list[tuple[str, str]]) -> list[any] {
     return rows;
 }
 
-def _interop_context(value: str) -> InteropContext {
-    if value == 'server' {
-        return InteropContext.SERVER;
-    }
-    if value == 'native' {
-        return InteropContext.NATIVE;
-    }
-    return InteropContext.CLIENT;
-}
-
 def interop_manifest_of(record: dict[str, any]) -> InteropManifest {
     manifest = InteropManifest();
     bindings: dict[str, dict[str, any]] = record.get('bindings', {});
     for (name, data) in bindings.items() {
-        callers: set[InteropContext] = set();
-        raw_callers: list[any] = data.get('callers', []);
-        for c in raw_callers {
-            callers.add(_interop_context(str(c)));
-        }
         manifest.bindings[name] = InteropBinding(
             name=data['name'],
-            source_context=_interop_context(str(data['source_context'])),
-            callers=callers,
+            source_context=InteropContext(data['source_context']),
+            callers={InteropContext(c) for c in data.get('callers', [])},
             ret_type=data.get('ret_type', 'int'),
             param_types=data.get('param_types', []),
             param_names=data.get('param_names', []),
@@ -236,9 +221,8 @@ def literal_to_json(value: any) -> dict[str, any] {
         return {"b": base64.b64encode(value).decode("ascii")};
     }
     if isinstance(value, dict) {
-        typed: dict[str, any] = value;
         pairs: list[any] = [];
-        for (key, item) in typed.items() {
+        for (key, item) in value.items() {
             pair: list[any] = [str(key), literal_to_json(item)];
             pairs.append(pair);
         }
@@ -261,29 +245,23 @@ def literal_to_json(value: any) -> dict[str, any] {
 }
 
 def literal_from_json(raw: any) -> any {
-    import from jaclang.compiler.frontend.kernel_inputs { json_any_list, json_map }
+    import from jaclang.compiler.frontend.kernel_inputs { json_map }
     record = json_map(raw);
     if "b" in record {
         return base64.b64decode(str(record["b"]).encode("ascii"));
     }
     if "l" in record {
-        values: list[any] = json_any_list(record["l"]);
-        items_out: list[any] = [];
-        for item in values {
-            items_out.append(literal_from_json(item));
-        }
-        return items_out;
+        return [literal_from_json(item) for item in list(record["l"])];
     }
     if "d" in record {
-        dict_out: dict[str, any] = {};
-        pairs: list[any] = json_any_list(record["d"]);
-        for pair in pairs {
-            parts: list[any] = json_any_list(pair);
+        out: dict[str, any] = {};
+        for pair in list(record["d"]) {
+            parts = list(pair);
             if len(parts) == 2 {
-                dict_out[str(parts[0])] = literal_from_json(parts[1]);
+                out[str(parts[0])] = literal_from_json(parts[1]);
             }
         }
-        return dict_out;
+        return out;
     }
     return record.get("v");
 }

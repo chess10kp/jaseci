@@ -10,9 +10,9 @@ bare `isinstance(v, dict)` narrow keeps the value boxed instead of adopting
 the default integer-keyed dict layout. The fixture covers a typed list and a
 typed dict through `any`, a nested list inside an any-dict, pointer, float
 and bool element families, a member narrow, a view taken in a loop, a
-`json.dumps` / `json.loads` round trip, and raw-valued typed dicts
-(`dict[str, int]`, `dict[str, str]`) crossing into `any` by subscript and
-narrowing back to the concrete type, all against the Python backend.
+`json.dumps` / `json.loads` round trip, typed dicts crossing into `any` and
+narrowing back to their own type without a copy, and a `dict[str, any]`
+narrowed to `dict[str, str]`, all against the Python backend.
 """
 import from pathlib { Path }
 import from tests.support { assert_native_identity }
@@ -26,18 +26,16 @@ test "typed containers narrowed from any to containers of any match Python" {
     assert lines[3] == "b=1,a=2" , out;
     assert lines[6] == "203" , out;
     assert '{"b": 1, "a": "x", "c": [1, 2]}' in lines , out;
-    assert lines[-7] == "True" , out;
-    # Raw-valued dict[str, int] boxed into `any`: any-subscript reads the
-    # jacval copy (not the raw i64 vals), and the narrow back rebuilds a
-    # real dict[str, int].
-    assert lines[-6] == "42" , out;
-    assert lines[-5] == "83" , out;
-    # dict[str, str] boxes through the pointer-retag path and back.
-    assert lines[-4] == "hiyo" , out;
-    assert lines[-3] == "yo!" , out;
+    assert lines[-8] == "True" , out;
+    # A typed dict through `any`: an any-subscript reads it, and the narrow
+    # back to its own type is the same dict, so the write is shared.
+    assert lines[-7] == "42" , out;
+    assert lines[-6] == "83" , out;
+    assert lines[-5] == "hiyo" , out;
+    assert lines[-4] == "yo!" , out;
+    # A dict[str, any] narrowed to dict[str, str] is copied, values unboxed.
+    assert lines[-3] == "hiyo" , out;
     assert lines[-2] == "True" , out;
-    # `object`-narrowed dict unpacked via .items() into a typed dict build
-    # (the json_str_map shape): the loop reads the jacval twin the param
-    # boxing produced, and the rebuilt dict serves a correct store.
+    # An `object`-narrowed dict rebuilt through `.items()`.
     assert lines[-1] == "2" , out;
 }

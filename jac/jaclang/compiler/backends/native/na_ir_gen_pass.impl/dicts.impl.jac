@@ -7,10 +7,15 @@ impl NaIRGenPass._peer_dict_key -> (str | None) {
     the phi would erase both branches to `i8*`.
     """;
     _pt = self._peer_container_ty;
-    if _pt is None {
+    if _pt is None or not isinstance(_pt, ir.PointerType) {
         return None;
     }
-    return self._dict_key_of_ptr(_pt);
+    for (_spec, _dt) in self.dict_types.items() {
+        if _dt.as_pointer() == _pt {
+            return _spec;
+        }
+    }
+    return None;
 }
 
 impl NaIRGenPass._unwrap_opt_container(val: ir.Value) -> ir.Value {
@@ -139,233 +144,6 @@ impl NaIRGenPass._emit_dict_helpers(
     };
 }
 
-impl NaIRGenPass._dict_key_of_ptr(t: ir.Type) -> (str | None) {
-    for (_dk, _dt) in self.dict_types.items() {
-        if _dt.as_pointer() == t {
-            return _dk;
-        }
-    }
-    return None;
-}
-
-impl NaIRGenPass._emit_dict_box_fn(dict_key: str) -> (ir.Function | None) {
-    """`__dict_box_<key>_<val>`: copy a typed dict into its `<key>:jacval` twin.
-
-    A `dict[str, str]` stores raw `i8*` vals, but every `any` consumer -- a
-    subscript on an `any` receiver, the ctypes marshalling boundary -- reads
-    the vals array as JacVal. Boxing the pointer unchanged therefore turns
-    every value into garbage. The copy walks the source in insertion order
-    and re-inserts each entry with its value boxed, so the result honours the
-    `:jacval` contract `any` requires. An `i8*` slot no longer names its heap
-    kind, so each boxed value is retagged from the payload's allocation
-    header (the same read `_any_view_fn` does for pointer slots): without it
-    a nested container boxes as `str` and survives every later header check
-    as one. Null in, null out.
-    """;
-    if self.jacval_type is None {
-        return None;
-    }
-    src_struct = self.dict_types.get(dict_key);
-    src_helpers = self.dict_helpers.get(dict_key);
-    if src_struct is None or src_helpers is None {
-        return None;
-    }
-    dest_key = dict_key.split(":")[0] + ":jacval";
-    fn_name = "__dict_box_" + dict_key.replace(":", "_");
-    try {
-        _existing = self.llvm_module.get_global(fn_name);
-        if isinstance(_existing, ir.Function) {
-            return _existing;
-        }
-    } except KeyError {}
-    key_type = src_helpers["key_type"];
-    (_ks, _ksz) = self._hash_key_spec(key_type);
-    self._emit_dict_helpers(_ks, "jacval", key_type, self.jacval_type, _ksz);
-    dest_helpers = self.dict_helpers.get(dest_key);
-    dest_struct = self.dict_types.get(dest_key);
-    if dest_helpers is None or dest_struct is None {
-        return None;
-    }
-    src_ptr = src_struct.as_pointer();
-    dest_ptr = dest_struct.as_pointer();
-
-    fnty = ir.FunctionType(dest_ptr, [src_ptr]);
-    fn = ir.Function(self.llvm_module, fnty, name=fn_name);
-    fn.linkage = "private";
-    fn.args[0].name = "src";
-
-    i64 = ir.IntType(64);
-    entry_bb = fn.append_basic_block("entry");
-    work_bb = fn.append_basic_block("work");
-    null_bb = fn.append_basic_block("null");
-    loop_bb = fn.append_basic_block("loop");
-    body_bb = fn.append_basic_block("body");
-    done_bb = fn.append_basic_block("done");
-
-    saved_builder = self._builder;
-    self._builder = ir.IRBuilder(entry_bb);
-    src = fn.args[0];
-    self.builder.cbranch(
-        self.builder.icmp_unsigned(
-            "==", src, ir.Constant(src_ptr, None), name="box.isnull"
-        ),
-        null_bb,
-        work_bb
-    );
-    ir.IRBuilder(null_bb).ret(ir.Constant(dest_ptr, None));
-
-    self._builder = ir.IRBuilder(work_bb);
-    dest = self.builder.call(dest_helpers["new"], [], name="box.dst");
-    n = self.builder.call(src_helpers["len"], [src], name="box.len");
-    self.builder.branch(loop_bb);
-
-    self._builder = ir.IRBuilder(loop_bb);
-    i = self.builder.phi(i64, name="box.i");
-    i.add_incoming(ir.Constant(i64, 0), work_bb);
-    self.builder.cbranch(
-        self.builder.icmp_unsigned(">=", i, n, name="box.atend"), done_bb, body_bb
-    );
-
-    self._builder = ir.IRBuilder(body_bb);
-    k = self.builder.call(src_helpers["get_key"], [src, i], name="box.k");
-    v = self.builder.call(src_helpers["get_val"], [src, i], name="box.v");
-    jv = self._box_to_jacval(v);
-    if (
-        src_helpers["val_type"] == ir.IntType(8).as_pointer()
-        and not self._nogc_headerless()
-    ) {
-        jv = self.builder.insert_value(
-            jv,
-            self.builder.call(self._heap_ref_jacval_tag_fn(), [v], name="box.etag"),
-            0,
-            name="box.etagged"
-        );
-    }
-    self.builder.call(dest_helpers["set"], [dest, k, jv]);
-    i.add_incoming(
-        self.builder.add(i, ir.Constant(i64, 1), name="box.i1"), self.builder.block
-    );
-    self.builder.branch(loop_bb);
-
-    self._builder = ir.IRBuilder(done_bb);
-    _km = (
-        "str"
-            if key_type == ir.IntType(8).as_pointer()
-            else ("int" if isinstance(key_type, ir.IntType) else "")
-    );
-    self._nogc_stamp_elem_drops(dest, [_km, "any"]);
-    self.builder.ret(dest);
-    self._builder = saved_builder;
-    return fn;
-}
-
-impl NaIRGenPass._emit_dict_unbox_fn(dict_key: str) -> (ir.Function | None) {
-    """`__dict_unbox_<key>_<val>`: rebuild a typed dict from its `<key>:jacval` twin.
-
-    `_box_to_jacval` normalizes every dict that enters `any` to the `:jacval`
-    flavour, so unboxing back to a concrete `dict[K, V]` cannot reuse the
-    pointer -- the vals array is JacVal now, not V. The copy walks the boxed
-    dict in insertion order, unboxes each value with `_unbox_from_jacval`,
-    and re-inserts into a fresh typed dict. Null payload in, null out.
-    """;
-    if self.jacval_type is None {
-        return None;
-    }
-    dest_struct = self.dict_types.get(dict_key);
-    dest_helpers = self.dict_helpers.get(dict_key);
-    if dest_struct is None or dest_helpers is None {
-        return None;
-    }
-    src_key = dict_key.split(":")[0] + ":jacval";
-    fn_name = "__dict_unbox_" + dict_key.replace(":", "_");
-    try {
-        _existing = self.llvm_module.get_global(fn_name);
-        if isinstance(_existing, ir.Function) {
-            return _existing;
-        }
-    } except KeyError {}
-    key_type = dest_helpers["key_type"];
-    val_type = dest_helpers["val_type"];
-    (_ks, _ksz) = self._hash_key_spec(key_type);
-    self._emit_dict_helpers(_ks, "jacval", key_type, self.jacval_type, _ksz);
-    src_helpers = self.dict_helpers.get(src_key);
-    _src_struct = self.dict_types.get(src_key);
-    if src_helpers is None or _src_struct is None {
-        return None;
-    }
-    src_ptr = _src_struct.as_pointer();
-    dest_ptr = dest_struct.as_pointer();
-
-    i64 = ir.IntType(64);
-    fnty = ir.FunctionType(dest_ptr, [self.jacval_type]);
-    fn = ir.Function(self.llvm_module, fnty, name=fn_name);
-    fn.linkage = "private";
-    fn.args[0].name = "jv";
-
-    entry_bb = fn.append_basic_block("entry");
-    work_bb = fn.append_basic_block("work");
-    null_bb = fn.append_basic_block("null");
-    loop_bb = fn.append_basic_block("loop");
-    body_bb = fn.append_basic_block("body");
-    done_bb = fn.append_basic_block("done");
-
-    saved_builder = self._builder;
-    self._builder = ir.IRBuilder(entry_bb);
-    src = self.builder.inttoptr(
-        self.builder.extract_value(fn.args[0], 1, name="ub.pay"), src_ptr, name="ub.src"
-    );
-    self.builder.cbranch(
-        self.builder.icmp_unsigned(
-            "==", src, ir.Constant(src_ptr, None), name="ub.isnull"
-        ),
-        null_bb,
-        work_bb
-    );
-    ir.IRBuilder(null_bb).ret(ir.Constant(dest_ptr, None));
-
-    self._builder = ir.IRBuilder(work_bb);
-    dest = self.builder.call(dest_helpers["new"], [], name="ub.dst");
-    n = self.builder.call(src_helpers["len"], [src], name="ub.len");
-    self.builder.branch(loop_bb);
-
-    self._builder = ir.IRBuilder(loop_bb);
-    i = self.builder.phi(i64, name="ub.i");
-    i.add_incoming(ir.Constant(i64, 0), work_bb);
-    self.builder.cbranch(
-        self.builder.icmp_unsigned(">=", i, n, name="ub.atend"), done_bb, body_bb
-    );
-
-    self._builder = ir.IRBuilder(body_bb);
-    k = self.builder.call(src_helpers["get_key"], [src, i], name="ub.k");
-    jvv = self.builder.call(src_helpers["get_val"], [src, i], name="ub.jv");
-    v = self._unbox_from_jacval(jvv, val_type);
-    self.builder.call(dest_helpers["set"], [dest, k, v]);
-    i.add_incoming(
-        self.builder.add(i, ir.Constant(i64, 1), name="ub.i1"), self.builder.block
-    );
-    self.builder.branch(loop_bb);
-
-    self._builder = ir.IRBuilder(done_bb);
-    _km = (
-        "str"
-            if key_type == ir.IntType(8).as_pointer()
-            else ("int" if isinstance(key_type, ir.IntType) else "")
-    );
-    _vm = (
-        "str"
-            if val_type == ir.IntType(8).as_pointer()
-            else (
-                "int"
-                    if isinstance(val_type, ir.IntType)
-                    else ("float" if isinstance(val_type, ir.DoubleType) else "")
-            )
-    );
-    self._nogc_stamp_elem_drops(dest, [_km, _vm]);
-    self.builder.ret(dest);
-    self._builder = saved_builder;
-    return fn;
-}
-
 impl NaIRGenPass._box_to_jacval(value: ir.Value) -> ir.Value {
     value = self._str_norm(value);
     if self.jacval_type is not None and value.type == self.jacval_type {
@@ -392,13 +170,6 @@ impl NaIRGenPass._box_to_jacval(value: ir.Value) -> ir.Value {
         tag = ir.Constant(i8, 1);
         payload = b.bitcast(value, i64, name="jv.f2i");
     } elif isinstance(value.type, ir.PointerType) {
-        _dk = self._dict_key_of_ptr(value.type);
-        if _dk is not None and not _dk.endswith(":jacval") {
-            _box_fn = self._emit_dict_box_fn(_dk);
-            if _box_fn is not None {
-                value = b.call(_box_fn, [value], name="dict.box");
-            }
-        }
         payload = b.ptrtoint(value, i64, name="jv.p2i");
         tag = b.select(
             b.icmp_unsigned("==", payload, ir.Constant(i64, 0), name="jv.isnone"),
@@ -488,13 +259,6 @@ impl NaIRGenPass._unbox_from_jacval(jv: ir.Value, target_type: ir.Type) -> ir.Va
         return b.fptrunc(_d, target_type, name="jv.unbox.f32");
     }
     if isinstance(target_type, ir.PointerType) {
-        _udk = self._dict_key_of_ptr(target_type);
-        if _udk is not None and not _udk.endswith(":jacval") {
-            _unb = self._emit_dict_unbox_fn(_udk);
-            if _unb is not None {
-                return b.call(_unb, [jv], name="dict.unbox");
-            }
-        }
         _viewed = self._unbox_any_container(jv, target_type);
         if _viewed is not None {
             return _viewed;
@@ -506,24 +270,33 @@ impl NaIRGenPass._unbox_from_jacval(jv: ir.Value, target_type: ir.Type) -> ir.Va
     return ir.Constant(target_type, None);
 }
 
-impl NaIRGenPass._any_view_target(target_type: ir.Type) -> (tuple[str, str] | None) {
-    """The container-of-`any` family a pointer unbox target names, if any.
+impl NaIRGenPass._any_view_target(
+    target_type: ir.Type
+) -> (tuple[str, str, str] | None) {
+    """The container family a pointer unbox target names, if any.
 
-    `("list", "")` for `list[any]`, `("dict", K)` for a `dict[K, any]` whose
-    keys hash as spec `K`. Those are the targets whose element slots hold
+    `("list", "", "jacval")` for `list[any]`, `("dict", K, "jacval")` for a
+    `dict[K, any]` whose keys hash as spec `K`: their element slots hold
     boxed values, so a typed container arriving through `any` cannot be
-    reinterpreted as one: its slots hold raw payloads.
+    reinterpreted as one. `("dict", K, V)` for a typed `dict[K, V]` whose
+    values are a raw scalar or pointer slot: a `dict[K, any]` arriving
+    through `any` cannot be reinterpreted as one either, its slots hold
+    JacVals.
     """;
     if not self?.jacval_type or not isinstance(target_type, ir.PointerType) {
         return None;
     }
     _lt = self.list_types.get("jacval");
     if _lt is not None and target_type == _lt.as_pointer() {
-        return ("list", "");
+        return ("list", "", "jacval");
     }
     for (_dk, _dt) in self.dict_types.items() {
-        if _dk.endswith(":jacval") and target_type == _dt.as_pointer() {
-            return ("dict", _dk[:-len(":jacval")]);
+        if target_type != _dt.as_pointer() {
+            continue;
+        }
+        (_key_spec, _, _val_spec) = _dk.rpartition(":");
+        if _val_spec in ("jacval", "i64", "f64", "i1", "ptr") {
+            return ("dict", _key_spec, _val_spec);
         }
     }
     return None;
@@ -544,11 +317,19 @@ impl NaIRGenPass._unbox_any_container(
     function, released when that local is overwritten or at scope exit, so
     the result stays a borrow like every other unbox. A headerless build has
     no tag to read and refuses the site.
+
+    A typed `dict[K, V]` target is the reverse view: only a `dict[K, any]`
+    payload is copied (each value unboxed), and any other payload comes back
+    as is, so a typed dict that went through `any` keeps its identity.
     """;
-    if self._any_view_target(target_type) is None {
+    _tgt = self._any_view_target(target_type);
+    if _tgt is None {
         return None;
     }
     if self._nogc_headerless() {
+        if _tgt[2] != "jacval" {
+            return None;
+        }
         self.emit(
             E5092,
             kind="expression",
@@ -736,8 +517,11 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
     if _tgt is None {
         return None;
     }
-    (kind, key_spec) = _tgt;
-    _tgt_tag = "list_jacval" if kind == "list" else f"dict_{key_spec}_jacval";
+    (kind, key_spec, elem_spec) = _tgt;
+    _to_typed = elem_spec != "jacval";
+    _tgt_tag = f"list_{elem_spec}"
+        if kind == "list"
+        else f"dict_{key_spec}_{elem_spec}";
     _name = f"__jac_any_view_{_tgt_tag}";
     _cached = self.extern_funcs.get(_name);
     if _cached is not None {
@@ -750,11 +534,32 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
     _scalars: list[tuple[str, ir.Type]] = [
         ("i64", i64),
         ("f64", ir.DoubleType()),
-        ("i1", ir.IntType(1)),
         ("ptr", i8p)
     ];
     _sources: list[tuple[str, bool, str, dict[str, any], ir.Type]] = [];
-    if kind == "list" {
+    if _to_typed {
+        _dst_h = self.dict_helpers.get(f"{key_spec}:{elem_spec}");
+        if _dst_h is None {
+            return None;
+        }
+        _key_type = _dst_h["key_type"];
+        self._emit_dict_helpers(
+            key_spec,
+            "jacval",
+            _key_type,
+            self.jacval_type,
+            self._hash_key_spec(_key_type)[1]
+        );
+        _sources.append(
+            (
+                f"dict_{key_spec}_jacval",
+                True,
+                "jacval",
+                self.dict_helpers[f"{key_spec}:jacval"],
+                self.dict_types[f"{key_spec}:jacval"].as_pointer()
+            )
+        );
+    } elif kind == "list" {
         self._emit_list_helpers("jacval", self.jacval_type);
         _dst_h = self.list_helpers["jacval"];
         for (_spec, _et) in _scalars {
@@ -770,27 +575,20 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
             );
         }
     } else {
-        _dst_h = self.dict_helpers.get(f"{key_spec}:jacval");
-        if _dst_h is None {
-            return None;
-        }
+        _dst_h = self.dict_helpers[f"{key_spec}:jacval"];
         _key_type = _dst_h["key_type"];
         _key_size = self._hash_key_spec(_key_type)[1];
-        for (_spec, _vt) in _scalars {
+        for (_spec, _vt) in _scalars + [("i1", ir.IntType(1))] {
             self._emit_dict_helpers(key_spec, _spec, _key_type, _vt, _key_size);
-            _src_h = self.dict_helpers.get(f"{key_spec}:{_spec}");
-            _src_ty = self.dict_types.get(f"{key_spec}:{_spec}");
-            if _src_h is not None and _src_ty is not None {
-                _sources.append(
-                    (
-                        f"dict_{key_spec}_{_spec}",
-                        _spec != "ptr",
-                        _spec,
-                        _src_h,
-                        _src_ty.as_pointer()
-                    )
-                );
-            }
+            _sources.append(
+                (
+                    f"dict_{key_spec}_{_spec}",
+                    _spec != "ptr",
+                    _spec,
+                    self.dict_helpers[f"{key_spec}:{_spec}"],
+                    self.dict_types[f"{key_spec}:{_spec}"].as_pointer()
+                )
+            );
         }
     }
     _tag_fn = self._heap_ref_jacval_tag_fn();
@@ -862,24 +660,26 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
     _next_bb = fn.append_basic_block("next");
     bc.cbranch(_tag_is(bc, _tgt_tag, True), _as_is_bb, _next_bb);
     bc = ir.IRBuilder(_next_bb);
-    _empty_bb = fn.append_basic_block("empty");
-    _next_bb = fn.append_basic_block("next");
-    bc.cbranch(
-        bc.and_(
-            _tag_is(bc, f"{kind}_", False),
-            bc.icmp_signed(
-                "==",
-                bc.load(bc.bitcast(_raw, i64.as_pointer()), name="view.len0"),
-                ir.Constant(i64, 0)
+    if not _to_typed {
+        _empty_bb = fn.append_basic_block("empty");
+        _next_bb = fn.append_basic_block("next");
+        bc.cbranch(
+            bc.and_(
+                _tag_is(bc, f"{kind}_", False),
+                bc.icmp_signed(
+                    "==",
+                    bc.load(bc.bitcast(_raw, i64.as_pointer()), name="view.len0"),
+                    ir.Constant(i64, 0)
+                ),
+                name="view.empty"
             ),
-            name="view.empty"
-        ),
-        _empty_bb,
-        _next_bb
-    );
-    be = ir.IRBuilder(_empty_bb);
-    be.ret(be.call(_dst_h["new"], [], name="view.fresh"));
-    bc = ir.IRBuilder(_next_bb);
+            _empty_bb,
+            _next_bb
+        );
+        be = ir.IRBuilder(_empty_bb);
+        be.ret(be.call(_dst_h["new"], [], name="view.fresh"));
+        bc = ir.IRBuilder(_next_bb);
+    }
     _saved = self._builder;
     for (_text, _exact, _spec, _src_h, _src_ty) in _sources {
         _conv_bb = fn.append_basic_block(f"from.{_spec}");
@@ -904,7 +704,9 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
             _src_h["get_val" if kind == "dict" else "get"], [_src, _i], name="view.elem"
         );
         self._builder = bb;
-        _boxed = self._box_to_jacval(_elem);
+        _boxed = self._unbox_from_jacval(_elem, _dst_h["val_type"])
+            if _to_typed
+            else self._box_to_jacval(_elem);
         bb = self._builder;
         if _spec == "ptr" {
             _boxed = bb.insert_value(
@@ -927,7 +729,7 @@ impl NaIRGenPass._any_view_fn(target_type: ir.Type) -> (ir.Function | None) {
         ir.IRBuilder(_done_bb).ret(_out);
     }
     self._builder = _saved;
-    bc.ret(_as_is);
+    bc.ret(_as_is if _to_typed else ir.Constant(target_type, None));
     return fn;
 }
 
@@ -998,10 +800,7 @@ impl NaIRGenPass._codegen_dict_val(nd: uni.DictVal) -> (ir.Value | None) {
 
     if _own_dk is not None and not use_jacval and _own_dk in self.dict_helpers {
         dict_key = _own_dk;
-        helpers = self.dict_helpers.get(dict_key);
-        if helpers is None {
-            return None;
-        }
+        helpers = self.dict_helpers[dict_key];
     } else {
         key_type = first_key.type;
         (key_type_name, key_size) = self._hash_key_spec(key_type);
@@ -1016,10 +815,7 @@ impl NaIRGenPass._codegen_dict_val(nd: uni.DictVal) -> (ir.Value | None) {
         self._emit_dict_helpers(
             key_type_name, val_type_name, key_type, val_type, key_size
         );
-        helpers = self.dict_helpers.get(dict_key);
-        if helpers is None {
-            return None;
-        }
+        helpers = self.dict_helpers[dict_key];
     }
 
     key_type = helpers["key_type"];
@@ -1203,9 +999,7 @@ impl NaIRGenPass._codegen_dict_access(
     );
     self._release_owned_args([key_val], op="dict_get");
     result = self._finish_borrowed_read(target_val, borrowed);
-    if not (key_type_name == "ptr" and val_type_name == "jacval" and collection is None) {
-        self._emit_runtime_raise(not_exists, "KeyError", "key not found");
-    }
+    self._emit_runtime_raise(not_exists, "KeyError", "key not found");
     return result;
 }
 

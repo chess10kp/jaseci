@@ -181,8 +181,7 @@ obj InfoGraphReader {
 
     def find(raw: any) -> (Info | TypeForm | None) {
         if isinstance(raw, dict) {
-            rec: dict[str, any] = raw;
-            slot = rec.get("n");
+            slot = raw.get("n");
             if isinstance(slot, int) and 0 <= slot < len(self.built) {
                 return self.built[slot];
             }
@@ -268,28 +267,27 @@ obj InfoGraphReader {
     def build -> list[(Info | TypeForm)] {
         self.built = [self.shell(record) for record in self.records];
         for (item, record) in zip(self.built, self.records) {
-            rec: dict[str, any] = record;
             if isinstance(item, TypeForm) {
-                item.args = self.type_refs(rec.get("args"));
+                item.args = self.type_refs(record.get("args"));
             } elif isinstance(item, ClassInfo) {
-                item.fields = self.fields(rec.get("fields"));
-                item.base_classes = self.classes(rec.get("bases"));
-                item.methods = self.methods(rec.get("methods"));
+                item.fields = self.fields(record.get("fields"));
+                item.base_classes = self.classes(record.get("bases"));
+                item.methods = self.methods(record.get("methods"));
             } elif isinstance(item, EnumInfo) {
-                item.members = self.fields(rec.get("members"));
+                item.members = self.fields(record.get("members"));
             } elif isinstance(item, FunctionInfo) {
-                item.params = self.params(rec.get("params"));
-                item.return_type = self.type_ref(rec.get("returns"));
-                item.tools = self.functions(rec.get("tools"));
-                item.by_call = bool(rec.get("by_call", False));
+                item.params = self.params(record.get("params"));
+                item.return_type = self.type_ref(record.get("returns"));
+                item.tools = self.functions(record.get("tools"));
+                item.by_call = bool(record.get("by_call", False));
                 if isinstance(item, MethodInfo) {
-                    parent = self.find(rec.get("parent"));
+                    parent = self.find(record.get("parent"));
                     item.parent_class = parent
                         if isinstance(parent, ClassInfo)
                         else None;
                 }
             } elif isinstance(item, VarInfo) {
-                item.type_info = self.type_ref(rec.get("type"));
+                item.type_info = self.type_ref(record.get("type"));
             }
         }
         return self.built;

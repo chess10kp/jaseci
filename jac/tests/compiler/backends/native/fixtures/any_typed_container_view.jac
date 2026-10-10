@@ -117,21 +117,28 @@ with entry {
     print(json.dumps(back) == json.dumps(mixed));
 }
 
-# Raw-valued typed dicts crossing the `any` boundary: the box must copy the
-# dict into its `<key>:jacval` twin (the vals array is raw `i64`/`i8*` here,
-# not JacVal), and the narrow back to the concrete type must rebuild the
-# typed dict instead of reading JacVal bits as raw pointers.
+# The reverse view: a `dict[K, any]` narrowed out of `any` to a typed
+# `dict[K, V]` holds JacVals, not raw `V` slots, so it is copied with each
+# value unboxed. A typed dict that went through `any` and comes back to its
+# own type is the same dict, so writes through either name are shared.
 glob raw_i: dict[str, int] = {"x": 41, "y": 42};
 glob raw_s: dict[str, str] = {"greet": "hi", "name": "yo"};
+glob boxed_s: dict[str, any] = {"greet": "hi", "name": "yo"};
 with entry {
     a: any = raw_i;
     print(a["y"]);
     b: dict[str, int] = a;
     print(b["x"] + b["y"]);
     s: any = raw_s;
-    print(s["greet"] + s["name"]);
+    greet: str = s["greet"];
+    name: str = s["name"];
+    print(greet + name);
     t: dict[str, str] = s;
-    print(t["name"] + "!");
+    t["name"] = "yo!";
+    print(raw_s["name"]);
+    u_any: any = boxed_s;
+    u: dict[str, str] = u_any;
+    print(u["greet"] + u["name"]);
     print(json.dumps(b) == json.dumps({"x": 41, "y": 42}));
 }
 
@@ -145,5 +152,6 @@ def map_text(value: object) -> dict[str, str] {
     return out;
 }
 with entry {
-    print(map_text({"a": "1", "b": "2"})["b"]);
+    text = map_text({"a": "1", "b": "2"});
+    print(text["b"]);
 }
