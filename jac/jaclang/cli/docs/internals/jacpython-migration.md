@@ -119,9 +119,9 @@ The ports so far needed these, each worked around in C or by a pattern:
    fn-pointer FIELDS (`obj ops { has do_it: def(i32) -> i32 }`) are already
    callable: the generic call path evaluates a non-name callee and
    `_codegen_callable_value` (calls.impl.jac) calls any `ptr→FunctionType`
-   value with coercion — pending runtime smoke
+   value with coercion; a runtime smoke test is pending
    (`/tmp/gap4test/gap3_smoke.jac`). Still missing: calling an ERASED address
-   (`p: ptr`, i64) — atexit's case — which needs explicit cast syntax to a
+   (`p: ptr`, i64), as atexit does, which needs explicit cast syntax to a
    function type (e.g. the gap-1 conversion form against a `def` target);
    design when gap 3 activates.
 4. **Exporting data symbols.** A static `PyTypeObject` is a C variable other C
@@ -149,7 +149,7 @@ Status of the gap closures (2026-10-06, branch-local, uncommitted):
   (`/tmp/gap4test/gap3_smoke.jac` prints `15` / `gap3 done`): a
   `Callable[[i32], i32]` field is assigned a named function and called
   through the instance. Still missing: calling an ERASED address
-  (`p: ptr`, i64) — atexit's case — which needs explicit cast syntax to a
+  (`p: ptr`, i64), as atexit does, which needs explicit cast syntax to a
   function type (e.g. the gap-1 conversion form against a `def` target);
   design when gap 3 activates.
 - **Gap 4 (export data symbols): done.**
@@ -161,7 +161,7 @@ Status of the gap closures (2026-10-06, branch-local, uncommitted):
   ptr/i64 fields), named functions bitcast/ptrtoint into fn-ptr fields,
   static-glob references relocate by address, nested ctor calls inline by
   value, `None`/omitted members zero. Non-constant members raise E5092.
-  Struct-typed globs are used as pointers (no load) in `expr.impl.jac` —
+  Struct-typed globs are used as pointers (no load) in `expr.impl.jac`,
   ABI-identical to boxed globs. Runtime-boxed `my_struct()` globs (the
   `shared_glob_struct.jac` fixture path) keep `__jac_glob_init`. Files:
   `na_ir_gen_pass.jac` (state + decls), `globals.impl.jac` (builders),
@@ -203,7 +203,7 @@ Status of the gap closures (2026-10-06, branch-local, uncommitted):
   is free.
 - **Long remote jobs must run server-side under `nohup`** writing a done
   sentinel; poll with short ssh. Never pipe a live `jac` build/check into
-  `head` — after head exits, the writer gets SIGPIPE and `jac` dies
+  `head`: after head exits, the writer gets SIGPIPE and `jac` dies
   mid-build with the cache half-written (redirect to a file, then grep).
   Killed sessions can leave orphaned `build_kernel` processes burning a
   core for hours; check `ps aux | grep build_kernel` and kill them.
@@ -214,12 +214,12 @@ Status of the gap closures (2026-10-06, branch-local, uncommitted):
   "/usr/lib/x86_64-linux-gnu/libc.so.6"` crashes before any output, the
   same body with `import from "libc.so.6"` runs green). Use the soname in
   fixtures; file upstream against the ELF/link lane. Output lost to
-  buffering on a crash looks like "no output" — run `stdbuf -o0`.
+  buffering on a crash looks like "no output"; run `stdbuf -o0`.
 - The `opt_level=0` kernel also links in ~100 s (was ~30 min at O2), so
   backend-edit rebuilds are cheap enough for bisection again. A reboot
   wipes `/tmp` (keep fixture copies on the workstation) and leaves `git`
   crashing under the `~/g/jacpy` LD_LIBRARY_PATH wrapper (kernel derivation
-  falls back to a full rebuild — noisy but harmless).
+  falls back to a full rebuild, noisy but harmless).
 - `-j16` locally OOMs 14 GB and the workstation disk has no headroom; the
   full compiler suite (`JAC_TEST_JOBS=auto jac test tests`) is ~90 min there
   and has no clean baseline yet (500 failed / 295 error on the first-ever
@@ -227,7 +227,7 @@ Status of the gap closures (2026-10-06, branch-local, uncommitted):
 - **The 11 pointer/clib subset failures are environmental, not code**
   (2026-10-07): the 5 subset files give `15 passed, 11 failed, 1 skipped`
   and every failure is `/usr/bin/cc: symbol lookup error: sysroot libc
-  _dl_audit_symbind_alt` — tests that shell out to `cc` inherit the
+  _dl_audit_symbind_alt`: tests that shell out to `cc` inherit the
   `~/g/jacpy` focal-sysroot `LD_LIBRARY_PATH` and the noble `cc` refuses
   it. Same failures at HEAD; identical under a baseline tree. A CI-style
   container would not see them.
@@ -254,7 +254,7 @@ A Jac object model keeps these byte for byte. It needs:
   the machine-code object; `build.sh` folds the bitcode into the
   `--with-lto=thin` link (`zig cc -c -x ir -flto=thin -fPIC`) only when zig's
   clang major equals Jac's LLVM major, else keeps machine code. Today they do
-  NOT agree (Jac shim LLVM 22.1.8 vs zig 0.16.0 clang 21.1.8 — bitcode is
+  NOT agree (Jac shim LLVM 22.1.8 vs zig 0.16.0 clang 21.1.8, and bitcode is
   forward-incompatible), so the build falls back; upgrading zig past LLVM 22
   flips the path automatically with no further edits.
 
@@ -269,8 +269,8 @@ allocator.
 
 `cellobject.c` is the first port. `runtime/python/cellobject.jac` declares
 the extern C data symbol inside the clib import (`glob PyType_Type:
-PyTypeObject_Layout;`) — `GlobalVars` under an `Import` is now a legal
-parent in the AST validator — and exports `PyCell_Type` as a `glob:pub`
+PyTypeObject_Layout;`; `GlobalVars` under an `Import` is now a legal
+parent in the AST validator) and exports `PyCell_Type` as a `glob:pub`
 static type object with the full 53-field `PyTypeObject` layout initialized
 positionally. Assigning a clib-struct-typed global where a pointer is
 expected is the C address-decay rule and is accepted by the checker in
@@ -297,7 +297,7 @@ static-initializer constant builder.
 `struct _longobject` layout (`PyLongObject_Layout`: PyObject head, `lv_tag`,
 one digit) for the `_Py_FalseStruct`/`_Py_TrueStruct` singletons, exported
 with the exact immortal initial refcount (`(3 << 30) | (5 << 48)` on GIL
-builds) and `_PyLong_FALSE_TAG`/`_PyLong_TRUE_TAG` (`lv_tag` 1 and 8 — sign
+builds) and `_PyLong_FALSE_TAG`/`_PyLong_TRUE_TAG` (`lv_tag` 1 and 8: sign
 in the low two bits, digit count in bit 3). `PyBool_Type` uses named-field
 initialization of the same 53-field layout (`tp_base=PyLong_Type`,
 `tp_as_number=bool_as_number`, `tp_vectorcall=bool_vectorcall`). The number
@@ -307,8 +307,9 @@ uninitialized slots default to `0`, `nb_reserved` to a null pointer);
 `PyLong_Type.tp_as_number` cast to the typed struct (typed field-call idiom),
 and `bool_and`/`bool_or`/`bool_xor` compare the operands' `ob_type` against
 `PyBool_Type`'s address and return the singletons. `PyBool_FromLong` is a
-`def:pub` in Jac, so gen_capi stops declaring it for other modules — the
-first defined-API handoff between two ported modules. `PyVectorcall_NARGS`
+`def:pub` in Jac, the first defined-API handoff between two ported modules;
+gen_capi still declares it in `cpython_api.jac` for the modules that call it
+through C. `PyVectorcall_NARGS`
 is a C static inline, so `bool_vectorcall` inlines the argument-count mask
 (`nargsf & 0x7FFFFFFFFFFFFFFF`). Extern declarations verified against the
 pinned headers before use: `_Py_SetImmortal` (pycore_object.h),
@@ -318,7 +319,7 @@ residue: `jacpy_bool_new_too_many` (formatted TypeError, same rule as cell).
 
 `namespaceobject.c` is the third port. `runtime/python/namespaceobject.jac`
 adds `PyMemberDef`/`PyMethodDef` layouts and byte-identical record structs
-for their C arrays (`_PyNamespace_Members`, `_PyNamespace_Methods` — the
+for their C arrays (`_PyNamespace_Members`, `_PyNamespace_Methods`; the
 sentinel entry is the defaulted record), the `_PyNamespaceObject` layout
 (`tp_basicsize` 24, `tp_dictoffset` 16), and a `PyASCIIObject_Layout` head
 for the `PyUnicode_GET_LENGTH` read on compact strings. `_PyNamespace_Type`
@@ -336,7 +337,7 @@ unpack error. New residue: `jacpy_namespace_too_many`, `jacpy_namespace_pair`
 (`%U=%R`), `jacpy_namespace_repr_closed` (`%s(%S)`),
 `jacpy_namespace_repr_selfref` (`%s(...)`), `jacpy_namespace_reduce_pack`
 (`PyTuple_Pack(3, …)`), `jacpy_namespace_replace_type_error` (`%N`/`%T`),
-and `jacpy_vectorcall_arg` (bool's `PyObject *const *` element load — the
+and `jacpy_vectorcall_arg` (bool's `PyObject *const *` element load; the
 native checker does not type pointer-to-pointer subscripts yet, E1001).
 
 `capsule.c` is the fourth port (`runtime/python/capsule.jac`). The
@@ -346,7 +347,7 @@ the whole API surface (`PyCapsule_New/IsValid/Get*/Set*/Import`,
 `_PyCapsule_SetTraverse`) is `def:pub` in Jac, so gen_capi stops declaring
 them. `_PyCapsule_SetTraverse` stores a `traverseproc`/`inquiry` pair and
 tracks the object through two C residue helpers
-(`jacpy_capsule_is_tracked`/`jacpy_capsule_track` — the GC macros write GC
+(`jacpy_capsule_is_tracked`/`jacpy_capsule_track`, because the GC macros write GC
 header bits). `PyCapsule_Import` walks dotted names over a `PyMem_Malloc`ed
 copy; the in-place `*dot++ = 0` split is residue
 (`jacpy_capsule_split`), as are the repr (`%p`) and the two PyErr_Format
@@ -356,7 +357,7 @@ layout (same C ABI) and are invoked through `jacpy_capsule_call_destructor`,
 calls do not lower natively. `strcmp`/`strlen`/`memcpy` are plain libc
 externs.
 
-`iterobject.c` is the fifth port (`runtime/python/iterobject.jac`) — three
+`iterobject.c` is the fifth port (`runtime/python/iterobject.jac`), with three
 GC iterator types: `PySeqIter_Type` ("iterator"), `PyCallIter_Type`
 ("callable_iterator"), and `_PyAnextAwaitable_Type` ("anext_awaitable",
 which carries a defined static `PyAsyncMethods` record decayed into
@@ -367,11 +368,11 @@ family for `tp_alloc`/`tp_free`), `_PyObject_HasLen` reads `tp_as_sequence->sq_l
 cast, and the GC track/untrack reuse the capsule residue helpers. Residue:
 the `Py_BuildValue` formats for `__reduce__`, the `PyObject_CallMethod`
 proxy for send/throw/close, and `jacpy_iter_builtin`
-(`_PyEval_GetBuiltin(&_Py_ID(iter))` — the static-identifier machinery
+(`_PyEval_GetBuiltin(&_Py_ID(iter))`; the static-identifier machinery
 stays beside its consumer). `_PyGen_SetStopIterationValue` is declared as a
 plain extern (real symbol, pycore_genobject).
 
-`enumobject.c` is the sixth port (`runtime/python/enumobject.jac`) —
+`enumobject.c` is the sixth port (`runtime/python/enumobject.jac`):
 `PyEnum_Type` ("enumerate", 56-byte `enumobject`, flags 17408) and
 `PyReversed_Type` ("reversed", 32-byte `reversedobject`), both with the
 clinic `__new__` wrappers re-expressed as Jac arg parsing plus
@@ -388,7 +389,7 @@ inline), the `__class_getitem__` = `Py_GenericAlias` method, the
 (`jacpy_enum_*`, `jacpy_reversed_*`, `jacpy_long_one`,
 `jacpy_tuple_item/set_item`, `jacpy_enum_result_tuple`).
 
-`sliceobject.c` is the seventh port (`runtime/python/sliceobject.jac`) —
+`sliceobject.c` is the seventh port (`runtime/python/sliceobject.jac`):
 the Ellipsis singleton (`PyEllipsis_Type` + `_Py_EllipsisObject`, the
 `Py_Ellipsis` macro target, immortal head with flags 0) and
 `PySlice_Type` (40-byte `PySliceObject`, flags 16384, `tp_hash`/
@@ -398,13 +399,13 @@ through the caller's `Py_ssize_t` pointers via `jacpy_isize_store/load`
 residue; `_PySlice_GetLongIndices` computes into an internal record and
 the pub wrapper stores through the callers' `PyObject **` via
 `jacpy_ptr_store3`. `PySlice_Check` is exact-type (no subclasses in the
-check, matching the C macro). The freelist is dropped — allocations go
-straight through `PyObject_GC_New`/`Del` (a later perf pass can restore it
-beside the residue). Long sign/tag logic (`lv_tag & 3`) is shared logic
+check, matching the C macro). The freelist was first dropped (allocations went
+straight through `PyObject_GC_New`/`Del`; the perf pass below restored it
+through C helpers). Long sign/tag logic (`lv_tag & 3`) is shared logic
 with boolobject.jac; residue: the `%R`/`%O` formatters, the UnpackTuple
 arg-count errors, `jacpy_long_zero` (static inline), and `jacpy_slice_hash`
-(the u64 xxHash rotation — scalar u64 casts are not proven in the checker
-yet).
+(the u64 xxHash rotation; `u64.wrap` and the `wrapping_*` builtins could
+now express it in Jac).
 
 `rangeobject.c` is the eighth port (`runtime/python/rangeobject.jac`).
 `PyRange_Type` keeps the four owned `PyLong` fields and exact 48-byte layout;
@@ -413,9 +414,9 @@ pickling, and sequence/mapping/number slots are Jac. Length and reverse
 iteration take overflow-checked C-long fast paths before falling back to
 arbitrary-precision arithmetic. The 40-byte `range_iterator` and
 `longrange_iterator` layouts cover both representations, including
-`__length_hint__`, `__reduce__`, and `__setstate__`. Iterators allocate
-directly with their exact type and size; CPython's freelists are omitted. C
-residue is limited to allocation, `_PyIndex_Check`, formatted range
+`__length_hint__`, `__reduce__`, and `__setstate__`. Range objects and
+range iterators allocate through the `ranges` / `range_iters` freelists, as
+in C. C residue is limited to allocation, `_PyIndex_Check`, formatted range
 errors/repr/reduce, and the `iter` builtin lookup/reduction formatter.
 
 `Py_None` and `Py_NotImplemented` are macros with no exported symbol of their
