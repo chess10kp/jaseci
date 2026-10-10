@@ -151,6 +151,8 @@ import from c {
     }
 
     glob PyType_Type: PyTypeObject_Layout;
+    glob PyLong_Type: PyTypeObject_Layout;
+    glob PyBool_Type: PyTypeObject_Layout;
     glob PyExc_TypeError: ptr[PyObject];
     glob PyExc_ValueError: ptr[PyObject];
     glob PyExc_IndexError: ptr[PyObject];
@@ -188,8 +190,6 @@ import from c {
     def _PySequence_IterSearch(seq: ptr[PyObject], item: ptr[PyObject], operation: i32) -> i64;
     def _PyArg_NoKeywords(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
     def _PyArg_NoKwnames(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
-    def jacpy_is_exact_long(o: ptr[PyObject]) -> i32;
-    def jacpy_is_bool(o: ptr[PyObject]) -> i32;
     # The cached small ints 0 and 1 (borrowed, immortal).
     glob jacpy_small_zero: ptr[PyObject];
     glob jacpy_small_one: ptr[PyObject];
@@ -420,6 +420,20 @@ def range_compute_slice(r: ptr[PyRangeObject_Layout], slice: ptr[PyObject]) -> p
     return result;
 }
 
+# PyLong_CheckExact(o) / PyLong_CheckExact(o) || PyBool_Check(o) (bool has
+# no subclasses).
+def range_is_exact_long(o: ptr[PyObject]) -> bool {
+    lt: ptr[PyObject] = PyLong_Type;
+    return ptr[PyObject_Layout](o).ob_type == lt;
+}
+
+def range_is_long_or_bool(o: ptr[PyObject]) -> bool {
+    lt: ptr[PyObject] = PyLong_Type;
+    bt: ptr[PyObject] = PyBool_Type;
+    ty = ptr[PyObject_Layout](o).ob_type;
+    return ty == lt or ty == bt;
+}
+
 def range_contains_long(r: ptr[PyRangeObject_Layout], value: ptr[PyObject]) -> i32 {
     zero = jacpy_small_zero;
     positive = PyObject_RichCompareBool(r.step, zero, Py_GT);
@@ -455,7 +469,7 @@ def range_contains_long(r: ptr[PyRangeObject_Layout], value: ptr[PyObject]) -> i
 
 def range_contains(self: ptr[PyObject], value: ptr[PyObject]) -> i32 {
     r = ptr[PyRangeObject_Layout](self);
-    if jacpy_is_exact_long(value) != 0 or jacpy_is_bool(value) != 0 {
+    if range_is_long_or_bool(value) {
         return range_contains_long(r, value);
     }
     return i32(_PySequence_IterSearch(self, value, PY_ITERSEARCH_CONTAINS));
@@ -549,7 +563,7 @@ def range_hash(self: ptr[PyObject]) -> i64 {
 
 def range_count(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
     r = ptr[PyRangeObject_Layout](self);
-    if jacpy_is_exact_long(value) != 0 or jacpy_is_bool(value) != 0 {
+    if range_is_long_or_bool(value) {
         found = range_contains_long(r, value);
         if found < 0 {
             return ptr[PyObject]();
@@ -565,7 +579,7 @@ def range_count(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject])
 
 def range_index(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
     r = ptr[PyRangeObject_Layout](self);
-    if jacpy_is_exact_long(value) == 0 and jacpy_is_bool(value) == 0 {
+    if not range_is_long_or_bool(value) {
         index = _PySequence_IterSearch(self, value, PY_ITERSEARCH_INDEX);
         if index < 0 {
             return ptr[PyObject]();
@@ -1038,7 +1052,7 @@ def rangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyO
 
 def longrangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
     none_obj: ptr[PyObject] = _Py_NoneStruct;
-    if jacpy_is_exact_long(state) == 0 {
+    if not range_is_exact_long(state) {
         jacpy_range_iter_bad_state(state);
         return ptr[PyObject]();
     }
