@@ -3,7 +3,7 @@
 Run the same file under the stock C build and the JacPython build of one
 CPython version and compare line by line (jacpython-perf.yml does this).
 """
-import timeit, sys, types
+import sys, time, types
 B = {
  "range_iter":      ("for i in r: pass", "r=range(1000)", 2000),
  "range_neg_iter":  ("for i in r: pass", "r=range(1000,0,-1)", 2000),
@@ -19,15 +19,32 @@ B = {
  "enumerate":       ("for i,x in enumerate(l): pass", "l=list(range(1000))", 2000),
  "reversed_list":   ("for x in reversed(l): pass", "l=list(range(1000))", 2000),
  "seqiter":         ("for x in S(): pass", "class S:\n def __getitem__(s,i):\n  if i>=200: raise IndexError\n  return i", 2000),
- "calliter":        ("for x in iter(f, 200): pass", "c=[0]\ndef f():\n c[0]+=1\n return c[0]", 2000),
+ "calliter":        ("c[0] = 0\nfor x in iter(f, 200): pass", "c=[0]\ndef f():\n c[0]+=1\n return c[0]", 2000),
  "bool_ops":        ("a & b; a | b; a ^ b", "a=True; b=False", 500000),
  "bool_new":        ("bool(x)", "x=5", 500000),
  "bool_repr":       ("repr(a)", "a=True", 500000),
  "closure_cell":    ("f()", "def g():\n x=1\n def f(): return x\n return f\nf=g()", 500000),
  "namespace":       ("types.SimpleNamespace(a=1).a", "import types", 200000),
 }
+# timeit drives its loop with itertools.repeat, which is itself a port (and
+# not under test here); loop with range instead and subtract the empty loop.
+def per_op(stmt, setup, n):
+    body = "\n".join("        " + line for line in stmt.split("\n"))
+    src = (
+        "def _bench(_n):\n"
+        + "\n".join("    " + line for line in setup.split("\n") if line) + "\n"
+        + "    _t = _perf()\n"
+        + "    for _ in range(_n):\n"
+        + body + "\n"
+        + "    return _perf() - _t\n"
+    )
+    ns = {"_perf": time.perf_counter}
+    exec(src, ns)
+    return min(ns["_bench"](n) for _ in range(5)) / n * 1e9
+
+
 only = sys.argv[1:] or list(B)
+empty = per_op("pass", "", 200000)
 for k in only:
     stmt, setup, n = B[k]
-    t = min(timeit.repeat(stmt, setup, number=n, repeat=5))
-    print(f"{k} {t/n*1e9:.1f}")
+    print(f"{k} {max(per_op(stmt, setup, n) - empty, 0.0):.1f}", flush=True)
