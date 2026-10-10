@@ -290,8 +290,11 @@ impl NaIRGenPass._codegen_c_interop_trailer(
                         ],
                         name=f"c.field.{fname}.ptr"
                     );
-                    if self._foreign_struct_name_of_type(nd.right.type)
-                        is not None {
+                    fsname = self._foreign_struct_name_of_type(nd.right.type);
+                    if fsname is not None {
+                        if foreign_read_copies(nd) {
+                            return (True, self._foreign_copy_box(slot, fsname));
+                        }
                         return (True, slot);
                     }
                     return (
