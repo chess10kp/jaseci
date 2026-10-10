@@ -316,7 +316,6 @@ pinned headers before use: `_Py_SetImmortal` (pycore_object.h),
 `_PyArg_NoKwnames`/`_PyArg_CheckPositional` (pycore_modsupport.h). C
 residue: `jacpy_bool_new_too_many` (formatted TypeError, same rule as cell).
 
-
 `namespaceobject.c` is the third port. `runtime/python/namespaceobject.jac`
 adds `PyMemberDef`/`PyMethodDef` layouts and byte-identical record structs
 for their C arrays (`_PyNamespace_Members`, `_PyNamespace_Methods` — the
