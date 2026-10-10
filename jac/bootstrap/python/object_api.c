@@ -747,12 +747,6 @@ void jacpy_bool_new_too_many(Py_ssize_t nargs) {
                  "bool expected at most 1 arguments, got %zd", nargs);
 }
 
-/* bool_vectorcall: args is PyObject *const * in C; the element load stays C
- * (native checker does not type pointer-to-pointer subscripts yet). */
-PyObject *jacpy_vectorcall_arg(void *args, Py_ssize_t index) {
-    return ((PyObject *const *)args)[index];
-}
-
 /* namespaceobject: varargs formatters (PyUnicode_FromFormat/PyErr_Format
  * with %U/%R/%s/%S/%N/%T specifiers) stay C; see the residue table in the
  * migration doc. */
@@ -869,7 +863,10 @@ PyObject *jacpy_iter_proxy(PyObject *awaitable, const char *meth,
 
 /* enumobject: _PyLong_GetOne is static inline; borrowed tuple item access
  * is macro field access; the formatters carry %S/%.200s/%zd. */
-PyObject *jacpy_long_one(void) { return _PyLong_GetOne(); }
+/* The cached small ints 0 and 1 as link-time constants: the native ports
+   read them with one load, as _PyLong_GetZero/_PyLong_GetOne inline do. */
+PyObject *const jacpy_small_zero = (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS];
+PyObject *const jacpy_small_one = (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS + 1];
 
 PyObject *jacpy_enum_new_args(PyObject *args, PyObject *kwargs) {
     static char *kwlist[] = {"iterable", "start", NULL};
@@ -983,19 +980,6 @@ PyObject *jacpy_slice_reduce_tuple(PyObject *tp, PyObject *start,
 
 PyObject *jacpy_slice_pack3(PyObject *a, PyObject *b, PyObject *c) {
     return PyTuple_Pack(3, a, b, c);
-}
-
-PyObject *jacpy_long_zero(void) { return _PyLong_GetZero(); }
-
-void jacpy_isize_store(Py_ssize_t *p, Py_ssize_t v) { *p = v; }
-
-Py_ssize_t jacpy_isize_load(Py_ssize_t *p) { return *p; }
-
-void jacpy_ptr_store3(PyObject **a, PyObject **b, PyObject **c,
-                      PyObject *s, PyObject *t, PyObject *u) {
-    if (a) *a = s;
-    if (b) *b = t;
-    if (c) *c = u;
 }
 
 Py_hash_t jacpy_slice_hash(PyObject *op) {

@@ -394,11 +394,11 @@ the Ellipsis singleton (`PyEllipsis_Type` + `_Py_EllipsisObject`, the
 `Py_Ellipsis` macro target, immortal head with flags 0) and
 `PySlice_Type` (40-byte `PySliceObject`, flags 16384, `tp_hash`/
 `tp_richcompare`/`tp_methods`/`tp_members`). The four C-API index helpers
-keep their exact ABI (`def:pub`): `PySlice_GetIndices`/`Unpack` write
-through the caller's `Py_ssize_t` pointers via `jacpy_isize_store/load`
-residue; `_PySlice_GetLongIndices` computes into an internal record and
-the pub wrapper stores through the callers' `PyObject **` via
-`jacpy_ptr_store3`. `PySlice_Check` is exact-type (no subclasses in the
+keep their exact ABI (`def:pub`) and write through the caller's
+`Py_ssize_t` / `PyObject **` pointers natively (a one-field layout cast).
+`_PySlice_GetLongIndices` lives in `slicelongindices.jac` so that
+`slice.indices` and `range[slice]` can both call it as a C extern with
+`&mut` locals. `PySlice_Check` is exact-type (no subclasses in the
 check, matching the C macro). The freelist was first dropped (allocations went
 straight through `PyObject_GC_New`/`Del`; the perf pass below restored it
 through C helpers). Long sign/tag logic (`lv_tag & 3`) is shared logic

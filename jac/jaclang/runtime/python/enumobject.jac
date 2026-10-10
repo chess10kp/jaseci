@@ -190,7 +190,9 @@ import from c {
     def _PyUnicode_EqualToASCIIString(u: ptr[PyObject], s: ptr[u8]) -> i32;
     def Py_GenericAlias(a: ptr[PyObject], b: ptr[PyObject]) -> ptr[PyObject];
     def jacpy_tuple_recycle(op: ptr[PyObject]) -> None;
-    def jacpy_long_one() -> ptr[PyObject];
+    # The cached small ints 0 and 1 (borrowed, immortal).
+    glob jacpy_small_zero: ptr[PyObject];
+    glob jacpy_small_one: ptr[PyObject];
     def jacpy_tuple_borrow(t: ptr[PyObject], index: i64) -> ptr[PyObject];
     # (iterable,) or (iterable, start) from enumerate(*args, **kwargs).
     def jacpy_enum_new_args(args: ptr[PyObject], kwargs: ptr[PyObject]) -> ptr[PyObject];
@@ -299,7 +301,7 @@ def enum_new_impl(
         py_decref(en_obj);
         return ptr[PyObject]();
     }
-    en.one = jacpy_long_one();
+    en.one = jacpy_small_one;
     return en_obj;
 }
 

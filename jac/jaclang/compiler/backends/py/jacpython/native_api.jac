@@ -20,6 +20,7 @@ import from jaclang.runtime.python.capsule { PyCapsule_New }
 import from jaclang.runtime.python.iterobject { PySeqIter_New, PyCallIter_New }
 import from jaclang.runtime.python.enumobject { PyEnum_Type, PyReversed_Type }
 import from jaclang.runtime.python.sliceobject { PySlice_New, PyEllipsis_Type }
+import from jaclang.runtime.python.slicelongindices { _PySlice_GetLongIndices }
 import from jaclang.runtime.python.rangeobject {
     PyRange_Type,
     PyRangeIter_Type,

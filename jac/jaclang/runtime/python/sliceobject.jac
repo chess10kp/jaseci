@@ -5,21 +5,16 @@
 # (PySlice_Type over PySliceObject: head + start + stop + step = 40 bytes).
 #
 # The C-API index helpers keep their exact C ABI (def:pub, called from
-# ceval/containers): PySlice_Unpack/GetIndices/GetIndicesEx write through
-# the caller's Py_ssize_t pointers — pointer writes and the u64 hash mixing
-# are C residue for now (jacpy_slice_* helpers below). The freelist is
-# dropped: allocations go straight through PyObject_GC_New/Del.
+# ceval/containers) and write through the caller's Py_ssize_t pointers
+# natively. Allocation goes through the C freelist (jacpy_slice_alloc/free).
+# _PySlice_GetLongIndices lives in slicelongindices.jac.
 #
 # Long sign/tag facts (from boolobject.jac): lv_tag low two bits encode the
 # sign as (1 - sign) → 0: positive, 1: zero, 2: negative.
 #
 # Residue: jacpy_slice_repr/indices_tuple/reduce_tuple/pack3 (%R/%O
 # formatters), jacpy_slice_too_few/too_many (UnpackTuple arg-count errors),
-# jacpy_long_zero (static inline), jacpy_ptr_store3 (pointer out-param
-# stores), jacpy_slice_hash (u64 xxHash rotation), and the
-# _PySlice_GetLongIndices implementation detail: the C ABI out-pointers are
-# served from an internal record; the pub wrapper stores through the
-# callers' pointers with residue.
+# and jacpy_slice_hash (u64 xxHash rotation).
 
 import from jaclang.runtime.python.boolobject { PyLongObject_Layout, PyNumberMethods }
 
@@ -134,12 +129,21 @@ import from c {
             step: ptr[PyObject] = ptr[PyObject]();
     }
 
-    # Internal result record for the long-indices computation.
-    obj _GliResult {
-        has start: ptr[PyObject] = ptr[PyObject](),
-            stop: ptr[PyObject] = ptr[PyObject](),
-            step: ptr[PyObject] = ptr[PyObject](),
-            ok: i32 = 0;
+    # A PyTupleObject (3.14: ob_hash precedes ob_item) read as up to three
+    # positional args.
+    obj PyTupleArgs3_Layout {
+        has ob_refcnt: i64 = 0,
+            ob_type: ptr[PyObject] = ptr[PyObject](),
+            ob_size: i64 = 0,
+            ob_hash: i64 = 0,
+            a0: ptr[PyObject] = ptr[PyObject](),
+            a1: ptr[PyObject] = ptr[PyObject](),
+            a2: ptr[PyObject] = ptr[PyObject]();
+    }
+
+    # A `Py_ssize_t *` out-param.
+    obj SsizeSlot {
+        has v: i64 = 0;
     }
 
     glob PyType_Type: PyTypeObject_Layout;
@@ -182,8 +186,6 @@ import from c {
     # pycore_freelist.h's inline helpers): pop or GC-allocate, push or free.
     def jacpy_slice_alloc() -> ptr[PyObject];
     def jacpy_slice_free(o: ptr[PyObject]) -> None;
-    def jacpy_long_one() -> ptr[PyObject];
-    def jacpy_long_zero() -> ptr[PyObject];
     def jacpy_slice_too_few(nargs: i64) -> None;
     def jacpy_slice_too_many(nargs: i64) -> None;
     def jacpy_slice_repr(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject];
@@ -191,9 +193,18 @@ import from c {
     def jacpy_slice_reduce_tuple(tp: ptr[PyObject], start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyObject]) -> ptr[PyObject];
     def jacpy_slice_pack3(a: ptr[PyObject], b: ptr[PyObject], c: ptr[PyObject]) -> ptr[PyObject];
     def jacpy_slice_hash(o: ptr[PyObject]) -> i64;
-    def jacpy_isize_load(p: ptr[i64]) -> i64;
-    def jacpy_isize_store(p: ptr[i64], v: i64) -> None;
-    def jacpy_ptr_store3(a: ptr[ptr[PyObject]], b: ptr[ptr[PyObject]], c: ptr[ptr[PyObject]], s: ptr[PyObject], t: ptr[PyObject], u: ptr[PyObject]) -> None;
+    # Defined natively in slicelongindices.jac.
+    def _PySlice_GetLongIndices(
+        self_op: ptr[PyObject],
+        length: ptr[PyObject],
+        start_ptr: &mut ptr[PyObject],
+        stop_ptr: &mut ptr[PyObject],
+        step_ptr: &mut ptr[PyObject]
+    ) -> i32;
+}
+
+def _ssize_store(p: ptr[i64], v: i64) -> None {
+    ptr[SsizeSlot](p).v = v;
 }
 
 # lv_tag sign encoding: (1 - sign) in the low two bits.
@@ -217,20 +228,6 @@ def _slice_is_long(v: ptr[PyObject]) -> i32 {
         return 1;
     }
     if PyType_IsSubtype(ptr[PyTypeObject_Layout](head.ob_type), ptr[PyTypeObject_Layout](lt)) != 0 {
-        return 1;
-    }
-    return 0;
-}
-
-# _PyIndex_Check: type has an nb_index slot.
-def index_check(v: ptr[PyObject]) -> i32 {
-    head = ptr[PyObject_Layout](v);
-    ty = ptr[PyTypeObject_Layout](head.ob_type);
-    if ty.tp_as_number == ptr() {
-        return 0;
-    }
-    num = ptr[PyNumberMethods](ty.tp_as_number);
-    if num.nb_index != 0 {
         return 1;
     }
     return 0;
@@ -360,18 +357,18 @@ def:pub PySlice_GetIndices(
     r = ptr[PySliceObject_Layout](_r);
     nn: ptr[PyObject] = none_obj;
     if r.step == nn {
-        jacpy_isize_store(step, 1);
+        _ssize_store(step, 1);
     } else {
         if not _slice_is_long(r.step) {
             return -1;
         }
-        jacpy_isize_store(step, PyLong_AsSsize_t(r.step));
+        _ssize_store(step, PyLong_AsSsize_t(r.step));
     }
     if r.start == nn {
-        if jacpy_isize_load(step) < 0 {
-            jacpy_isize_store(start, length - 1);
+        if ptr[SsizeSlot](step).v < 0 {
+            _ssize_store(start, length - 1);
         } else {
-            jacpy_isize_store(start, 0);
+            _ssize_store(start, 0);
         }
     } else {
         if not _slice_is_long(r.start) {
@@ -381,13 +378,13 @@ def:pub PySlice_GetIndices(
         if v < 0 {
             v = v + length;
         }
-        jacpy_isize_store(start, v);
+        _ssize_store(start, v);
     }
     if r.stop == nn {
-        if jacpy_isize_load(step) < 0 {
-            jacpy_isize_store(stop, -1);
+        if ptr[SsizeSlot](step).v < 0 {
+            _ssize_store(stop, -1);
         } else {
-            jacpy_isize_store(stop, length);
+            _ssize_store(stop, length);
         }
     } else {
         if not _slice_is_long(r.stop) {
@@ -397,15 +394,15 @@ def:pub PySlice_GetIndices(
         if v < 0 {
             v = v + length;
         }
-        jacpy_isize_store(stop, v);
+        _ssize_store(stop, v);
     }
-    if jacpy_isize_load(stop) > length {
+    if ptr[SsizeSlot](stop).v > length {
         return -1;
     }
-    if jacpy_isize_load(start) >= length {
+    if ptr[SsizeSlot](start).v >= length {
         return -1;
     }
-    if jacpy_isize_load(step) == 0 {
+    if ptr[SsizeSlot](step).v == 0 {
         return -1;
     }
     return 0;
@@ -421,27 +418,27 @@ def:pub PySlice_Unpack(
     min_ssize = -9223372036854775807 - 1;
 
     if r.step == nn {
-        jacpy_isize_store(step, 1);
+        _ssize_store(step, 1);
     } else {
         if not _PyEval_SliceIndex(r.step, step) {
             return -1;
         }
-        if jacpy_isize_load(step) == 0 {
+        if ptr[SsizeSlot](step).v == 0 {
             PyErr_SetString(PyExc_ValueError, "slice step cannot be zero");
             return -1;
         }
         # Replace -PY_SSIZE_T_MAX-1 with -PY_SSIZE_T_MAX; semantics are
         # unchanged and it guards later `step = -step` reversal overflow.
-        if jacpy_isize_load(step) < -max_ssize {
-            jacpy_isize_store(step, -max_ssize);
+        if ptr[SsizeSlot](step).v < -max_ssize {
+            _ssize_store(step, -max_ssize);
         }
     }
 
     if r.start == nn {
-        if jacpy_isize_load(step) < 0 {
-            jacpy_isize_store(start, max_ssize);
+        if ptr[SsizeSlot](step).v < 0 {
+            _ssize_store(start, max_ssize);
         } else {
-            jacpy_isize_store(start, 0);
+            _ssize_store(start, 0);
         }
     } else {
         if not _PyEval_SliceIndex(r.start, start) {
@@ -450,10 +447,10 @@ def:pub PySlice_Unpack(
     }
 
     if r.stop == nn {
-        if jacpy_isize_load(step) < 0 {
-            jacpy_isize_store(stop, min_ssize);
+        if ptr[SsizeSlot](step).v < 0 {
+            _ssize_store(stop, min_ssize);
         } else {
-            jacpy_isize_store(stop, max_ssize);
+            _ssize_store(stop, max_ssize);
         }
     } else {
         if not _PyEval_SliceIndex(r.stop, stop) {
@@ -465,8 +462,8 @@ def:pub PySlice_Unpack(
 }
 
 def:pub PySlice_AdjustIndices(length: i64, start: ptr[i64], stop: ptr[i64], step: i64) -> i64 {
-    s = jacpy_isize_load(start);
-    e = jacpy_isize_load(stop);
+    s = ptr[SsizeSlot](start).v;
+    e = ptr[SsizeSlot](stop).v;
 
     if s < 0 {
         s = s + length;
@@ -502,8 +499,8 @@ def:pub PySlice_AdjustIndices(length: i64, start: ptr[i64], stop: ptr[i64], step
         }
     }
 
-    jacpy_isize_store(start, s);
-    jacpy_isize_store(stop, e);
+    _ssize_store(start, s);
+    _ssize_store(stop, e);
 
     if step < 0 {
         if e < s {
@@ -524,8 +521,8 @@ def:pub PySlice_GetIndicesEx(
     if PySlice_Unpack(_r, start, stop, step) < 0 {
         return -1;
     }
-    v = PySlice_AdjustIndices(length, start, stop, jacpy_isize_load(step));
-    jacpy_isize_store(slicelength, v);
+    v = PySlice_AdjustIndices(length, start, stop, ptr[SsizeSlot](step).v);
+    _ssize_store(slicelength, v);
     return 0;
 }
 
@@ -535,14 +532,16 @@ def slice_new(
     if kw != ptr[PyObject]() and not _PyArg_NoKeywords("slice", kw) {
         return ptr[PyObject]();
     }
-    if not jacpy_is_tuple(args) {
+    targs = ptr[PyTupleArgs3_Layout](args);
+    ty = ptr[PyTypeObject_Layout](targs.ob_type);
+    if (ty.tp_flags & u64(67108864)) == u64(0) {
         PyErr_SetString(
             jacpy_exception_type("TypeError"),
             "PyArg_UnpackTuple() argument list is not a tuple"
         );
         return ptr[PyObject]();
     }
-    nargs = PyTuple_Size(args);
+    nargs = targs.ob_size;
     if nargs < 1 {
         jacpy_slice_too_few(nargs);
         return ptr[PyObject]();
@@ -551,23 +550,14 @@ def slice_new(
         jacpy_slice_too_many(nargs);
         return ptr[PyObject]();
     }
-    start = PyTuple_GetItem(args, 0);
-    if start == ptr[PyObject]() {
-        return ptr[PyObject]();
-    }
+    start = targs.a0;
     stop = ptr[PyObject]();
     step = ptr[PyObject]();
     if nargs >= 2 {
-        stop = PyTuple_GetItem(args, 1);
-        if stop == ptr[PyObject]() {
-            return ptr[PyObject]();
-        }
+        stop = targs.a1;
     }
     if nargs >= 3 {
-        step = PyTuple_GetItem(args, 2);
-        if step == ptr[PyObject]() {
-            return ptr[PyObject]();
-        }
+        step = targs.a2;
     }
     # This swapping of stop and start is to maintain similarity with range().
     if stop == ptr[PyObject]() {
@@ -597,175 +587,6 @@ glob slice_members: _Slice_Members = _Slice_Members(
     e2=PyMemberDef_Layout(name="step", type=6, offset=32, flags=1)
 );
 
-def evaluate_slice_index(v: ptr[PyObject]) -> ptr[PyObject] {
-    if index_check(v) {
-        return PyNumber_Index(v);
-    }
-    PyErr_SetString(
-        PyExc_TypeError,
-        "slice indices must be integers or None or have an __index__ method"
-    );
-    return ptr[PyObject]();
-}
-
-# Compute start/stop as PyLongs for slice.indices; -1 on error (partials
-# cleaned internally, mirroring the C error path).
-def _slice_gli_impl(self_op: ptr[PyObject], length: ptr[PyObject]) -> _GliResult {
-    none_obj: ptr[PyObject] = _Py_NoneStruct;
-    res = _GliResult();
-    self = ptr[PySliceObject_Layout](self_op);
-    nn: ptr[PyObject] = none_obj;
-
-    if self.step == nn {
-        res.step = jacpy_long_one();
-        step_is_negative = 0;
-    } else {
-        res.step = evaluate_slice_index(self.step);
-        if res.step == ptr[PyObject]() {
-            res.ok = -1;
-            return res;
-        }
-        sign = long_sign(res.step);
-        if sign == 0 {
-            PyErr_SetString(PyExc_ValueError, "slice step cannot be zero");
-            py_decref(res.step);
-            res.step = ptr[PyObject]();
-            res.ok = -1;
-            return res;
-        }
-        if sign < 0 {
-            step_is_negative = 1;
-        } else {
-            step_is_negative = 0;
-        }
-    }
-
-    # Find lower and upper bounds for start and stop.
-    if step_is_negative == 1 {
-        lower = PyLong_FromSsize_t(-1);
-        if lower == ptr[PyObject]() {
-            py_decref(res.step);
-            res.step = ptr[PyObject]();
-            res.ok = -1;
-            return res;
-        }
-        upper = PyNumber_Add(length, lower);
-        if upper == ptr[PyObject]() {
-            py_decref(lower);
-            py_decref(res.step);
-            res.step = ptr[PyObject]();
-            res.ok = -1;
-            return res;
-        }
-    } else {
-        lower = jacpy_long_zero();
-        upper = length;
-        py_incref(upper);
-    }
-
-    # Compute start.
-    if self.start == nn {
-        if step_is_negative == 1 {
-            res.start = upper;
-        } else {
-            res.start = lower;
-        }
-        py_incref(res.start);
-    } else {
-        res.start = evaluate_slice_index(self.start);
-        if res.start != ptr[PyObject]() {
-            res.start = _slice_clip_to_bound(res.start, length, lower, upper);
-        }
-        if res.start == ptr[PyObject]() {
-            py_decref(lower);
-            py_decref(upper);
-            py_decref(res.step);
-            res.step = ptr[PyObject]();
-            res.ok = -1;
-            return res;
-        }
-    }
-
-    # Compute stop.
-    if self.stop == nn {
-        if step_is_negative == 1 {
-            res.stop = lower;
-        } else {
-            res.stop = upper;
-        }
-        py_incref(res.stop);
-    } else {
-        res.stop = evaluate_slice_index(self.stop);
-        if res.stop != ptr[PyObject]() {
-            res.stop = _slice_clip_to_bound(res.stop, length, lower, upper);
-        }
-        if res.stop == ptr[PyObject]() {
-            py_decref(res.start);
-            res.start = ptr[PyObject]();
-            py_decref(lower);
-            py_decref(upper);
-            py_decref(res.step);
-            res.step = ptr[PyObject]();
-            res.ok = -1;
-            return res;
-        }
-    }
-
-    py_decref(upper);
-    py_decref(lower);
-    res.ok = 0;
-    return res;
-}
-
-def _slice_clip_to_bound(v: ptr[PyObject], length: ptr[PyObject], lower: ptr[PyObject], upper: ptr[PyObject]) -> ptr[PyObject] {
-    # Negative: v += length, clip against lower. Non-negative: clip against
-    # upper. Errors propagate as NULL.
-    if long_is_negative(v) {
-        tmp = PyNumber_Add(v, length);
-        if tmp == ptr[PyObject]() {
-            return ptr[PyObject]();
-        }
-        py_decref(v);
-        v = tmp;
-        cmp_result = PyObject_RichCompareBool(v, lower, 0);
-        if cmp_result < 0 {
-            return ptr[PyObject]();
-        }
-        if cmp_result != 0 {
-            py_decref(v);
-            v = lower;
-            py_incref(v);
-        }
-        return v;
-    }
-    cmp_result = PyObject_RichCompareBool(v, upper, 4);
-    if cmp_result < 0 {
-        return ptr[PyObject]();
-    }
-    if cmp_result != 0 {
-        py_decref(v);
-        v = upper;
-        py_incref(v);
-    }
-    return v;
-}
-
-def:pub _PySlice_GetLongIndices(
-    self_op: ptr, length: ptr,
-    start_ptr: ptr, stop_ptr: ptr, step_ptr: ptr
-) -> i32 {
-    res = _slice_gli_impl(ptr[PyObject](self_op), ptr[PyObject](length));
-    jacpy_ptr_store3(
-        ptr[ptr[PyObject]](start_ptr),
-        ptr[ptr[PyObject]](stop_ptr),
-        ptr[ptr[PyObject]](step_ptr),
-        res.start,
-        res.stop,
-        res.step
-    );
-    return res.ok;
-}
-
 def slice_indices(op: ptr[PyObject], len: ptr[PyObject], extra: ptr[PyObject]) -> ptr[PyObject] {
     # Length to an integer; raise for negative length.
     length = PyNumber_Index(len);
@@ -778,12 +599,15 @@ def slice_indices(op: ptr[PyObject], len: ptr[PyObject], extra: ptr[PyObject]) -
         return ptr[PyObject]();
     }
 
-    res = _slice_gli_impl(op, length);
+    start: ptr[PyObject] = ptr[PyObject]();
+    stop: ptr[PyObject] = ptr[PyObject]();
+    step: ptr[PyObject] = ptr[PyObject]();
+    error = _PySlice_GetLongIndices(op, length, &mut start, &mut stop, &mut step);
     py_decref(length);
-    if res.ok == -1 {
+    if error == -1 {
         return ptr[PyObject]();
     }
-    return jacpy_slice_indices_tuple(res.start, res.stop, res.step);
+    return jacpy_slice_indices_tuple(start, stop, step);
 }
 
 glob slice_methods: _Slice_Methods = _Slice_Methods(

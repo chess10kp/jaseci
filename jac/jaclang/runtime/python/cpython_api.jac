@@ -498,9 +498,7 @@ import from c {
         value: ptr[PyObject]
     ) -> i64;  def jacpy_is_tuple(handle: ptr[PyObject]) -> i64;  def jacpy_is_type(
         value: ptr[PyObject]
-    ) -> i64;  def jacpy_is_unicode(a: ptr[PyObject]) -> i64;  def jacpy_isize_load(
-        p: &mut i64
-    ) -> i64;  def jacpy_isize_store(p: &mut i64, v: i64);  def jacpy_iter_builtin -> ptr[
+    ) -> i64;  def jacpy_is_unicode(a: ptr[PyObject]) -> i64;  def jacpy_iter_builtin -> ptr[
         PyObject
     ];  def jacpy_iter_proxy(
         awaitable: ptr[PyObject], meth: str, arg: ptr[PyObject]
@@ -544,15 +542,13 @@ import from c {
         handle: ptr[PyObject]
     ) -> ptr[PyObject];  def jacpy_long_from_signed_bytes(
         value: ptr[PyObject]
-    ) -> ptr[PyObject];  def jacpy_long_one -> ptr[PyObject];  def jacpy_long_repr(
-        value: ptr[PyObject]
-    ) -> ptr[PyObject];  def jacpy_long_shift(
+    ) -> ptr[PyObject];  def jacpy_long_repr(value: ptr[PyObject]) -> ptr[PyObject];  def jacpy_long_shift(
         value: ptr[PyObject], count: i64, left: i64
     ) -> ptr[PyObject];  def jacpy_long_sign(value: ptr[PyObject]) -> i64;  def jacpy_long_signed_bytes(
         value: ptr[PyObject], size: i64
     ) -> ptr[PyObject];  def jacpy_long_u64_checked(
         value: ptr[PyObject], out: &mut u64
-    ) -> i64;  def jacpy_long_zero -> ptr[PyObject];  def jacpy_mapping_optional_item(
+    ) -> i64;  def jacpy_mapping_optional_item(
         mapping: ptr[PyObject], key: ptr[PyObject]
     ) -> ptr[PyObject];  def jacpy_marshal(handle: ptr[PyObject]) -> ptr[PyObject];  def jacpy_math_errno -> i64;  def jacpy_memory_byte(
         address: ptr, offset: i64
@@ -588,14 +584,9 @@ import from c {
         source: str, size: i64
     ) -> ptr[PyObject];  def jacpy_power(
         a: ptr[PyObject], b: ptr[PyObject], inplace: i64
-    ) -> ptr[PyObject];  def jacpy_process_id -> i64;  def jacpy_ptr_store3(
-        a: &mut ptr[PyObject],
-        b: &mut ptr[PyObject],
-        c: &mut ptr[PyObject],
-        s: ptr[PyObject],
-        t: ptr[PyObject],
-        u: ptr[PyObject]
-    );  def jacpy_qualified_type_name(value: ptr[PyObject]) -> ptr[PyObject];  def jacpy_raise_compiler_error(
+    ) -> ptr[PyObject];  def jacpy_process_id -> i64;  def jacpy_qualified_type_name(
+        value: ptr[PyObject]
+    ) -> ptr[PyObject];  def jacpy_raise_compiler_error(
         kind: str, message: ptr[PyObject], location: ptr[PyObject]
     );  def jacpy_raise_error(kind: str, message: str, size: i64);  def jacpy_raise_value(
         kind: str, value: ptr[PyObject]

@@ -182,6 +182,7 @@ import from c {
     def PyLong_AsLongAndOverflow(a: ptr[PyObject], overflow: &mut i32) -> i64;
     def PyLong_FromLong(a: i64) -> ptr[PyObject];
     def PyLong_FromSsize_t(a: i64) -> ptr[PyObject];
+    def PyLong_AsSsize_t(a: ptr[PyObject]) -> i64;
     def PyTuple_New(n: i64) -> ptr[PyObject];
     def PyTuple_Size(o: ptr[PyObject]) -> i64;
     def _PySequence_IterSearch(seq: ptr[PyObject], item: ptr[PyObject], operation: i32) -> i64;
@@ -189,8 +190,9 @@ import from c {
     def _PyArg_NoKwnames(fname: ptr[u8], kwargs: ptr[PyObject]) -> i32;
     def jacpy_is_exact_long(o: ptr[PyObject]) -> i32;
     def jacpy_is_bool(o: ptr[PyObject]) -> i32;
-    def jacpy_long_zero() -> ptr[PyObject];
-    def jacpy_long_one() -> ptr[PyObject];
+    # The cached small ints 0 and 1 (borrowed, immortal).
+    glob jacpy_small_zero: ptr[PyObject];
+    glob jacpy_small_one: ptr[PyObject];
     def jacpy_bool_true() -> ptr[PyObject];
     def jacpy_bool_false() -> ptr[PyObject];
     def jacpy_tuple_set_item(t: ptr[PyObject], index: i64, v: ptr[PyObject]) -> None;
@@ -201,7 +203,7 @@ import from c {
     def jacpy_range_obj_free(o: ptr[PyObject]) -> None;
     def jacpy_rangeiter_alloc() -> ptr[PyObject];
     def jacpy_rangeiter_free(o: ptr[PyObject]) -> None;
-    # Defined natively in sliceobject.jac. Called through its C symbol: `&mut`
+    # Defined natively in slicelongindices.jac. Called through its C symbol: `&mut`
     # out-params lower to addresses for C externs, not for Jac `ptr` params.
     def _PySlice_GetLongIndices(
         self_op: ptr[PyObject],
@@ -269,8 +271,8 @@ def range_length_value(start: ptr[PyObject], stop: ptr[PyObject], step: ptr[PyOb
     if fast_length == -1 {
         return ptr[PyObject]();
     }
-    zero = jacpy_long_zero();
-    one = jacpy_long_one();
+    zero = jacpy_small_zero;
+    one = jacpy_small_one;
     positive = PyObject_RichCompareBool(step, zero, Py_GT);
     if positive < 0 {
         return ptr[PyObject]();
@@ -334,7 +336,7 @@ def range_make(type_: ptr[PyTypeObject_Layout], start: ptr[PyObject], stop: ptr[
 }
 
 def range_item_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr[PyObject] {
-    one = jacpy_long_one();
+    one = jacpy_small_one;
     if r.step == one {
         return PyNumber_Add(r.start, index);
     }
@@ -348,7 +350,7 @@ def range_item_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr[
 }
 
 def range_index_value(r: ptr[PyRangeObject_Layout], index: ptr[PyObject]) -> ptr[PyObject] {
-    zero = jacpy_long_zero();
+    zero = jacpy_small_zero;
     normalized = index;
     py_incref(normalized);
     negative = PyObject_RichCompareBool(index, zero, Py_LT);
@@ -419,7 +421,7 @@ def range_compute_slice(r: ptr[PyRangeObject_Layout], slice: ptr[PyObject]) -> p
 }
 
 def range_contains_long(r: ptr[PyRangeObject_Layout], value: ptr[PyObject]) -> i32 {
-    zero = jacpy_long_zero();
+    zero = jacpy_small_zero;
     positive = PyObject_RichCompareBool(r.step, zero, Py_GT);
     if positive < 0 {
         return -1;
@@ -475,7 +477,7 @@ def range_equals(a: ptr[PyRangeObject_Layout], b: ptr[PyRangeObject_Layout]) -> 
     if cmp != 1 {
         return cmp;
     }
-    one = jacpy_long_one();
+    one = jacpy_small_one;
     cmp = PyObject_RichCompareBool(a.length, one, Py_EQ);
     if cmp != 0 {
         return cmp;
@@ -526,7 +528,7 @@ def range_hash(self: ptr[PyObject]) -> i64 {
     } else {
         py_incref(r.start);
         jacpy_tuple_set_item(tuple, 1, r.start);
-        one = jacpy_long_one();
+        one = jacpy_small_one;
         single = PyObject_RichCompareBool(r.length, one, Py_EQ);
         if single < 0 {
             py_decref(tuple);
@@ -582,7 +584,7 @@ def range_index(self: ptr[PyObject], value: ptr[PyObject], extra: ptr[PyObject])
     if delta == ptr[PyObject]() {
         return ptr[PyObject]();
     }
-    if r.step == jacpy_long_one() {
+    if r.step == jacpy_small_one {
         return delta;
     }
     index_result = PyNumber_FloorDivide(delta, r.step);
@@ -650,7 +652,7 @@ def range_dealloc(self: ptr[PyObject]) -> None {
 }
 
 def range_length(self: ptr[PyObject]) -> i64 {
-    return PyNumber_AsSsize_t(ptr[PyRangeObject_Layout](self).length, PyExc_OverflowError);
+    return PyLong_AsSsize_t(ptr[PyRangeObject_Layout](self).length);
 }
 
 def range_item(self: ptr[PyObject], index: i64) -> ptr[PyObject] {
@@ -705,8 +707,8 @@ def range_from_args(type_: ptr[PyTypeObject_Layout], args: ptr, nargs: i64) -> p
         if stop == ptr[PyObject]() {
             return ptr[PyObject]();
         }
-        start = jacpy_long_zero();
-        step = jacpy_long_one();
+        start = jacpy_small_zero;
+        step = jacpy_small_one;
     } elif nargs == 0 {
         PyErr_SetString(PyExc_TypeError, "range expected at least 1 argument, got 0");
         return ptr[PyObject]();
@@ -922,7 +924,7 @@ def range_reverse(self: ptr[PyObject]) -> ptr[PyObject] {
 }
 
 def range_reverse_long(r: ptr[PyRangeObject_Layout]) -> ptr[PyObject] {
-    one = jacpy_long_one();
+    one = jacpy_small_one;
     n_minus_one = PyNumber_Subtract(r.length, one);
     if n_minus_one == ptr[PyObject]() {
         return ptr[PyObject]();
@@ -970,14 +972,14 @@ def rangeiter_next(self: ptr[PyObject]) -> ptr[PyObject] {
 
 def longrangeiter_next(self: ptr[PyObject]) -> ptr[PyObject] {
     it = ptr[PyLongRangeIterObject_Layout](self);
-    if PyObject_RichCompareBool(it.len, jacpy_long_zero(), Py_GT) != 1 {
+    if PyObject_RichCompareBool(it.len, jacpy_small_zero, Py_GT) != 1 {
         return ptr[PyObject]();
     }
     next_start = PyNumber_Add(it.start, it.step);
     if next_start == ptr[PyObject]() {
         return ptr[PyObject]();
     }
-    next_len = PyNumber_Subtract(it.len, jacpy_long_one());
+    next_len = PyNumber_Subtract(it.len, jacpy_small_one);
     if next_len == ptr[PyObject]() {
         py_decref(next_start);
         return ptr[PyObject]();
@@ -1041,7 +1043,7 @@ def longrangeiter_setstate(self: ptr[PyObject], state: ptr[PyObject], extra: ptr
         return ptr[PyObject]();
     }
     it = ptr[PyLongRangeIterObject_Layout](self);
-    zero = jacpy_long_zero();
+    zero = jacpy_small_zero;
     negative = PyObject_RichCompareBool(state, zero, Py_LT);
     if negative < 0 {
         return ptr[PyObject]();
