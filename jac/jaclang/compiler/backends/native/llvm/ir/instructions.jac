@@ -617,7 +617,8 @@ class CastInstr(Instruction) {
 }
 
 class LoadInstr(Instruction) {
-    has align: int | None = None;
+    has align: int | None = None,
+        volatile: bool = False;
 
     def init(
         self: LoadInstr,
