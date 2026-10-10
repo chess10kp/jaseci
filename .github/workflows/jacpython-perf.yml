@@ -54,8 +54,12 @@ jobs:
         working-directory: jac
         run: |
           set -euo pipefail
-          c=$(ls -d "$PWD"/.python-build/cpython/*/python/install/bin/python3.14 | head -1)
-          j=$(ls -d "$PWD"/.python-build/jacpython/*/python/install/bin/python3.14 | head -1)
+          # The JacPython build also leaves a stock build-host CPython under
+          # jacpython/<os-arch>.host; take the runtime itself.
+          osarch=$(ls .python-build/jacpython | grep -v '\.' | grep -v '^sources$' | head -1)
+          c="$PWD/.python-build/cpython/$osarch/python/install/bin/python3.14"
+          j="$PWD/.python-build/jacpython/$osarch/python/install/bin/python3.14"
+          test -x "$c" && test -x "$j"
           "$c" -c 'import sys; print(sys.version)'
           "$j" -c 'import sys; print(sys.version)'
           echo "c=$c" >> "$GITHUB_OUTPUT"
@@ -65,8 +69,12 @@ jobs:
         continue-on-error: true
         run: |
           set -euo pipefail
-          src=$(ls jac/.python-build/jacpython/sources/*.tar.gz | while read t; do
-            tar -tzf "$t" 2>/dev/null | grep -q '/Lib/test/test_range.py$' && echo "$t"; done | head -1)
+          src=
+          for t in jac/.python-build/jacpython/sources/*.tar.gz; do
+            first=$(tar -tzf "$t" 2>/dev/null | head -1 || true)
+            case "$first" in Python-*) src=$t ;; esac
+          done
+          test -n "$src"
           mkdir -p "$RUNNER_TEMP/cpy"
           tar -xzf "$src" -C "$RUNNER_TEMP/cpy" --wildcards '*/Lib/test'
           lib=$(ls -d "$RUNNER_TEMP"/cpy/*/Lib)
