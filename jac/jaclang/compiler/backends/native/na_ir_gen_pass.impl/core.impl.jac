@@ -423,7 +423,14 @@ impl NaIRGenPass._symbol_for(
     }
     module = owner if owner is not None else self.module;
     name = native_unit_spelling(name, module.loc.mod_path);
-    bundled_library = native_unit_identity(module.loc.mod_path).startswith(
+    unit_id = native_unit_identity(module.loc.mod_path);
+    if is_pub and unit_id.startswith("jaclang/runtime/python/") {
+        # A JacPython runtime port is the C definition of its CPython name
+        # (boolobject.jac's PyBool_FromLong); hijack-renaming it would break
+        # the link against the bare symbol other C code expects.
+        return name;
+    }
+    bundled_library = unit_id.startswith(
         "jaclang/runtime/na_stdlib/"
     );
     if is_pub and not bundled_library {

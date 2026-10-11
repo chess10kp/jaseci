@@ -188,27 +188,10 @@ test "every C symbol the backend or a bundled module declares is reserved" {
         }
     }
     assert "floor" in declared and "strlen" in declared , "drift scan found nothing";
-    # The JacPython runtime's `def:pub` ports are the C definitions of their
-    # CPython names (e.g. PyBool_FromLong), so they must keep the bare symbol.
-    runtime_defs: set[str] = set();
-    runtime = os.path.join(package_dir, "runtime", "python");
-    if os.path.isdir(runtime) {
-        for file_name in os.listdir(runtime) {
-            if file_name.endswith(".jac") {
-                with open(os.path.join(runtime, file_name)) as handle {
-                    for found in re.finditer(
-                        r'\bdef:pub\s+([A-Za-z_]\w*)\s*\(', handle.read()
-                    ) {
-                        runtime_defs.add(found.group(1));
-                    }
-                }
-            }
-        }
-    }
     missing = sorted(
         f"{name} ({os.path.relpath(path, package_dir)})"
         for (name, path) in declared.items()
-        if name not in NATIVE_RESERVED_C_SYMBOLS and name not in runtime_defs
+        if name not in NATIVE_RESERVED_C_SYMBOLS
     );
     assert not missing , (
         "C symbols missing from NATIVE_RESERVED_C_SYMBOLS: " + ", ".join(missing)

@@ -443,8 +443,11 @@ macros. The slice and range freelists are restored through small C helpers
 (`jacpy_slice_alloc/free`, `jacpy_range_obj_alloc/free`,
 `jacpy_rangeiter_alloc/free`). A port's extern C declaration of a function another
 port defines (`PyBool_FromLong`) must come from `cpython_api.jac`, never a
-local `import from c` block, and the name must not be in the compiler's
-reserved C symbols, or the definition is renamed `__jac_def_*`.
+local `import from c` block. The name stays on the compiler's reserved C
+symbol list (so user modules cannot hijack the pyb bootstrap's call);
+`_symbol_for` exempts `jaclang/runtime/python/` from the hijack rename,
+because a port's `def:pub` IS the C definition and must keep the bare
+symbol.
 `compiler-bridge.patch` drops each removed object's `Objects/*.o` from
 `OBJECT_OBJS`.
 

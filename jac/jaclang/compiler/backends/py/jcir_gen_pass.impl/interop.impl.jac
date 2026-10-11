@@ -7,6 +7,7 @@ impl JcirGenPass._gen_native_interop_stubs(nd: UniNode) -> None {
         import from jaclang.compiler.frontend.codeinfo {
             native_def_symbol,
             native_symbol_name,
+            native_unit_identity,
             native_unit_prefix
         }
         import from jaclang.compiler.frontend.constant { Tokens as _NsTok }
@@ -23,9 +24,19 @@ impl JcirGenPass._gen_native_interop_stubs(nd: UniNode) -> None {
             is_pub = isinstance(decl, AstAccessNode)
                 and decl.access is not None
                 and decl.access.tag.name == _NsTok.KW_PUB;
-            symbol = native_def_symbol(binding.name)
-                if (is_pub or not prefix)
-                else native_symbol_name(prefix, binding.name);
+            decl_path = decl.loc.mod_path if decl is not None and decl.loc else "";
+            jacpython_runtime = (
+                native_unit_identity(decl_path).startswith("jaclang/runtime/python/")
+                if decl_path
+                else False
+            );
+            symbol = binding.name
+                if jacpython_runtime
+                else (
+                    native_def_symbol(binding.name)
+                    if (is_pub or not prefix)
+                    else native_symbol_name(prefix, binding.name)
+                );
             parts.append(
                 f"def {binding.name}({params}):\n"
                     + f"    import ctypes\n"
