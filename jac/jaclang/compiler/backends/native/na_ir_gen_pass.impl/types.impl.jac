@@ -3581,6 +3581,11 @@ impl NaIRGenPass._emit_binary_op(
     }
     i8p_type = ir.IntType(8).as_pointer();
     if op == Tok.PLUS and left.type == i8p_type and right.type == i8p_type {
+        _i8p_cc = ir.IntType(8).as_pointer();
+        _i64_cc = ir.IntType(64);
+        memcpy_cc = self._get_or_declare_extern(
+            "memcpy", _i8p_cc, [_i8p_cc, _i8p_cc, _i64_cc]
+        );
         len1 = self._call_str_len(self.builder, left, name="len1");
         len2 = self._call_str_len(self.builder, right, name="len2");
         total = self.builder.add(len1, len2, name="total_len");
