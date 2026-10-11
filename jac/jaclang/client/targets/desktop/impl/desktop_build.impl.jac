@@ -283,28 +283,26 @@ impl serving_app_for(config: any, entry_file: Path, backend: str) -> str {
     if config is None or not config.is_workspace or not config.apps {
         return "";
     }
+    import from jaclang.project.app_kinds { kind_has_server }
     selected_app = config.app_for_path(str(entry_file.resolve()));
-    if selected_app is not None {
-        return selected_app.name;
-    }
     if backend != "embedded" {
-        return "";
+        return selected_app.name if selected_app is not None else "";
     }
     try {
         chosen = config.resolve_app("");
     } except ValueError {
         chosen = None;
     }
-    serving = config.serving_apps();
-    if chosen is not None and any(app.name == chosen.name for app in serving) {
+    if chosen is not None and kind_has_server(chosen.kind) {
         return chosen.name;
     }
+    serving = config.serving_apps();
     for app in serving {
         if app.kind == "web-app" {
             return app.name;
         }
     }
-    return "";
+    return selected_app.name if selected_app is not None else "";
 }
 
 impl stage_program(
