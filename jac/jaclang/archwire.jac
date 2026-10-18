@@ -5499,6 +5499,9 @@ graph import compiler {
         driver.compiler.JacCompiler._load_native_from_cache { jit_engine_for_cached },
         driver.nativecache.NativeUnitRegistry.compile_unit { build_link_plan },
         driver.pipeline_runner.wasm_ir_units { build_link_plan, wasm_program_ir },
+        cli.commands.native_build.native_build_sealed_pair {
+            resolved_callback_bindings
+        },
     ]
     backends.native.llvm.binding as llvm --> driver.compiler.JacCompiler._load_native_from_cache;
     type backends.native.llvm.binding ++> driver.compiler.JacCompiler._load_native_from_cache
