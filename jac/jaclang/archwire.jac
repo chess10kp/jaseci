@@ -3832,6 +3832,7 @@ graph import {
         cli.commands.execution._jab_native_bin
             | dist.precompile_bytecode.seal_native
             | dist.seal.bake_native_payloads { NATIVE_DIR_REL },
+        cli.commands.native_build.native_build_sealed_pair { interop_record_path },
         client.artifact.client_output_dir { client_dist_for },
         client.artifact.prebuilt_bundle { client_dist_for, serve_manifest_for },
         compiler.driver.application._prepare_sealed {
@@ -5499,10 +5500,15 @@ graph import compiler {
         driver.compiler.JacCompiler._load_native_from_cache { jit_engine_for_cached },
         driver.nativecache.NativeUnitRegistry.compile_unit { build_link_plan },
         driver.pipeline_runner.wasm_ir_units { build_link_plan, wasm_program_ir },
-        cli.commands.native_build.native_build_sealed_pair {
-            resolved_callback_bindings
-        },
     ]
+    backends.native.link_plan ++> cli.commands.native_build.native_build_sealed_pair {
+        resolved_callback_bindings
+    }
+    compiler.backends.native.link_plan --> cli.commands.native_build.native_build_sealed_pair {
+        ArtifactKind,
+        LinkPlanError,
+        link_artifact
+    }
     backends.native.llvm.binding as llvm --> driver.compiler.JacCompiler._load_native_from_cache;
     type backends.native.llvm.binding ++> driver.compiler.JacCompiler._load_native_from_cache
         | frontend.codeinfo { ExecutionEngine }
