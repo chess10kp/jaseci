@@ -314,6 +314,10 @@ impl link_glue_ir(spec: GlueSpec) -> tuple[str, list[str]] {
         parts.append(rc_ir);
     }
     parts.append(platform_entry_ir(spec));
+    if spec.entry_lib {
+        parts.append(entry_lib_protocol_ir(spec));
+        exports.extend(["jac_entry", "__jac_argc", "__jac_argv"]);
+    }
     if spec.needs_region_hook {
         parts.append(region_hook_ir());
     }
