@@ -79,7 +79,11 @@ import from engine.src.runtime.jsstring {
     u16ix_byte_to_unit,
     u16ix_unit_to_byte,
     U16Index,
-    utf8_encode_scalar
+    utf8_encode_scalar,
+    str_byte_substr,
+    _raw_byte_at,
+    _str_utf8_bytes,
+    utf8_byte_len
 }
 import from engine.src.runtime.jsobject {
     js_object_create_null,
@@ -2913,7 +2917,7 @@ def _build_match_array(
     # §22.2.7.2 step 24: ArrayCreate → [[Prototype]] is %Array.prototype%. The
     # elements are collected first and handed to js_array_create in one go
     # (dense storage, no per-index key interning, no length re-sets).
-    elems: list[JSValue] = [_mk_jstr(str_substr(s3, match_start, match_end))];
+    elems: list[JSValue] = [_mk_jstr(str_byte_substr(s3, match_start, match_end))];
 
     # Capture groups: ov[2], ov[3] = group 1; ov[4], ov[5] = group 2; …
     names4: list[str] = re4.group_names;
@@ -2946,7 +2950,7 @@ def _build_match_array(
         gv: JSValue = js_undefined();
         # PCRE2_UNSET becomes -1 (i64 all-ones).  Any negative value = unset.
         if cap_s >= 0 and cap_e >= 0 {
-            gv = _mk_jstr(str_substr(s3, cap_s, cap_e));
+            gv = _mk_jstr(str_byte_substr(s3, cap_s, cap_e));
         }
         elems.append(gv);
         if has_named and gi < len(names4) and names4[gi] != "" {
@@ -3125,15 +3129,15 @@ def _expand_replacement(repl: str, s: str, ov: list[int], re_st: JSRegExpState) 
         if c == "$" and i + 1 < n {
             nc: str = repl[i + 1];
             if nc == "&" {
-                out = out + str_substr(s, ov[0], ov[1]);
+                out = out + str_byte_substr(s, ov[0], ov[1]);
                 i = i + 2;
                 continue;
             } elif nc == "`" {
-                out = out + str_substr(s, 0, ov[0]);
+                out = out + str_byte_substr(s, 0, ov[0]);
                 i = i + 2;
                 continue;
             } elif nc == "'" {
-                out = out + str_substr(s, ov[1], len(s));
+                out = out + str_byte_substr(s, ov[1], utf8_byte_len(s));
                 i = i + 2;
                 continue;
             } elif nc >= "0" and nc <= "9" {
@@ -3153,7 +3157,7 @@ def _expand_replacement(repl: str, s: str, ov: list[int], re_st: JSRegExpState) 
                     cs: int = ov[2 + (gn - 1) * 2];
                     ce: int = ov[2 + (gn - 1) * 2 + 1];
                     if cs >= 0 and ce >= 0 {
-                        out = out + str_substr(s, cs, ce);
+                        out = out + str_byte_substr(s, cs, ce);
                     }
                     i = i + 2;
                     if consumed2 {
@@ -3176,7 +3180,7 @@ def _expand_replacement(repl: str, s: str, ov: list[int], re_st: JSRegExpState) 
                             csn: int = ov[2 + gi_name * 2];
                             cen: int = ov[2 + gi_name * 2 + 1];
                             if csn >= 0 and cen >= 0 {
-                                out = out + str_substr(s, csn, cen);
+                                out = out + str_byte_substr(s, csn, cen);
                             }
                             break;
                         }
@@ -3219,14 +3223,14 @@ def:pub js_str_match_re(s_val: JSValue, re_val: JSValue) -> JSValue {
     # Global: collect all full-match strings into a real Array.
     elems_m: list[JSValue] = [];
     pos: int = 0;
-    slen: int = len(s);
+    slen: int = utf8_byte_len(s);
     _DM_ASCII = _dm_subject_ascii(s_val);
     while pos <= slen {
         res: list[int] = _do_match(re7, s, pos);
         if res[0] < 0 {
             break;
         }
-        elems_m.append(_mk_jstr(str_substr(s, res[0], res[1])));
+        elems_m.append(_mk_jstr(str_byte_substr(s, res[0], res[1])));
         # lastIndex = e; an empty match then advances one character (§22.2.6.8
         # step 6.e.iii — AdvanceStringIndex; the subject is UTF-8)
         if res[1] > res[0] {
@@ -3268,7 +3272,7 @@ def:pub js_str_matchAll_re(s_val: JSValue, re_val: JSValue) -> JSValue {
     out: JSValue = js_array_create([]);
     pos: int = 0;
     cnt: int = 0;
-    slen: int = len(s);
+    slen: int = utf8_byte_len(s);
     _DM_ASCII = _dm_subject_ascii(s_val);
     asc_m: bool = _DM_ASCII;
     while pos <= slen {
@@ -3360,7 +3364,7 @@ def:pub js_str_replace_re(
     } else {
         r7 = js_to_string_prim(repl3);
     }
-    slen7: int = len(s7);
+    slen7: int = utf8_byte_len(s7);
     _DM_ASCII = _dm_subject_ascii(s_val3);
 
     if not re10.flag_g {
@@ -3370,9 +3374,9 @@ def:pub js_str_replace_re(
         }
         # All pieces inline: a named owned str local would never be released.
         return _mk_jstr(
-            str_substr(s7, 0, res7[0])
+            str_byte_substr(s7, 0, res7[0])
                 + _expand_replacement(r7, s7, res7, re10)
-                + str_substr(s7, res7[1], slen7)
+                + str_byte_substr(s7, res7[1], slen7)
         );
     }
     return _mk_jstr(_re_replace_global_build(re10, s7, r7, _DM_ASCII));
@@ -3383,7 +3387,7 @@ def:pub js_str_replace_re(
 def _re_replace_global_build(re10: JSRegExpState, s7: str, r7: str, asc: bool) -> str {
     parts: list[str] = [];
     has_dollar: bool = r7.find("$") >= 0;
-    slen7: int = len(s7);
+    slen7: int = utf8_byte_len(s7);
     pos7: int = 0;
     # nextSourcePosition (§22.2.6.11 step 14): the subject copied up to each
     # match, the replacement for it, then from the match's end.
@@ -3394,7 +3398,7 @@ def _re_replace_global_build(re10: JSRegExpState, s7: str, r7: str, asc: bool) -
         if res8[0] < 0 {
             break;
         }
-        parts.append(str_substr(s7, nsp7, res8[0]));
+        parts.append(str_byte_substr(s7, nsp7, res8[0]));
         if has_dollar {
             parts.append(_expand_replacement(r7, s7, res8, re10));
         } else {
@@ -3408,17 +3412,22 @@ def _re_replace_global_build(re10: JSRegExpState, s7: str, r7: str, asc: bool) -
             pos7 = res8[1] + _re_char_len(s7, res8[1]);
         }
     }
-    parts.append(str_substr(s7, nsp7, slen7));
+    parts.append(str_byte_substr(s7, nsp7, slen7));
     return "".join(parts);
 }
 
 """Byte length of the UTF-8 character at byte `i` of `s` (1 past the end):
 the matchers' AdvanceStringIndex step."""
 def _re_char_len(s: str, i: int) -> int {
-    if i >= len(s) {
+    if s.isascii() {
         return 1;
     }
-    cl_b: int = ord(s[i]);
+    raw: bytes = _str_utf8_bytes(s);
+    n: int = len(raw);
+    if i >= n {
+        return 1;
+    }
+    cl_b: int = _raw_byte_at(raw, i);
     if cl_b < 192 {
         return 1;
     }
@@ -3468,7 +3477,7 @@ def:pub js_str_split_re(s_val4: JSValue, sep4: JSValue, limit_v4: JSValue) -> JS
     # RegExp.prototype[@@split] — ECMAScript §22.2.5.11. Build a real Array via
     # js_array_create so it inherits Array.prototype.
     elems10: list[JSValue] = [];
-    slen10: int = len(s9);
+    slen10: int = utf8_byte_len(s9);
 
     # lim == 0 → empty array (spec step 12).
     if lim9 == 0 {
@@ -3520,7 +3529,7 @@ def:pub js_str_split_re(s_val4: JSValue, sep4: JSValue, limit_v4: JSValue) -> JS
             continue;
         }
         # Emit the piece [p, mstart) and any captures, then resume after the match.
-        elems10.append(_mk_jstr(str_substr(s9, p10, mstart)));
+        elems10.append(_mk_jstr(str_byte_substr(s9, p10, mstart)));
         if len(elems10) >= lim9 {
             return js_array_create(elems10);
         }
@@ -3530,7 +3539,7 @@ def:pub js_str_split_re(s_val4: JSValue, sep4: JSValue, limit_v4: JSValue) -> JS
             cap_e: int = res10[2 + gi10 * 2 + 1];
             gv10: JSValue = js_undefined();
             if cap_s >= 0 and cap_e >= 0 {
-                gv10 = _mk_jstr(str_substr(s9, cap_s, cap_e));
+                gv10 = _mk_jstr(str_byte_substr(s9, cap_s, cap_e));
             }
             elems10.append(gv10);
             if len(elems10) >= lim9 {
@@ -3541,7 +3550,7 @@ def:pub js_str_split_re(s_val4: JSValue, sep4: JSValue, limit_v4: JSValue) -> JS
         p10 = e10;
         q10 = p10;
     }
-    elems10.append(_mk_jstr(str_substr(s9, p10, slen10)));
+    elems10.append(_mk_jstr(str_byte_substr(s9, p10, slen10)));
     return js_array_create(elems10);
 }
 
