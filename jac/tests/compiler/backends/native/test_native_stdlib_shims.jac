@@ -186,3 +186,10 @@ test "a program's own Token lives beside the contextvars shim's token" {
     _same_lines(py_out, na_out, "contextvars own token");
     assert py_out.split() == ["ab=AB!@1", "3", "3", "cd=CD!@7", "3", "9", "0"] , py_out;
 }
+
+
+test "native unicodedata answers what CPython answers" {
+    (sv_out, _sv_err) = _sv_run("unicodedata_probe.jac");
+    (na_out, _na_err) = _na_run("unicodedata_probe.jac");
+    _same_lines(sv_out, na_out, "unicodedata");
+}
