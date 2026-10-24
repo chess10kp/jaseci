@@ -193,3 +193,15 @@ test "native unicodedata answers what CPython answers" {
     (na_out, _na_err) = _na_run("unicodedata_probe.jac");
     _same_lines(sv_out, na_out, "unicodedata");
 }
+
+
+test "native unicodedata uses pinned Unicode 16 properties at range edges" {
+    (na_out, _na_err) = _na_run("unicodedata_unicode16_probe.jac");
+    actual = [
+        line
+        for line in na_out.split("\n")
+        if line.strip()
+    ];
+    expected = ["Cn W", "Lo W", "Lo W", "Cn W", "Lo H", "Lu F"];
+    assert actual == expected , f"Unicode 16 property mismatch: {actual!r}";
+}
