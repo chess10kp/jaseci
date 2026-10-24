@@ -5,7 +5,6 @@ import re;
 import shutil;
 import tempfile;
 import urllib.request;
-import from jaclang.cli.console { console }
 import from pathlib { Path }
 
 glob SELF_UPDATE_REPO: str = "jaseci-labs/jaseci";
