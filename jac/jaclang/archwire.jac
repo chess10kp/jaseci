@@ -6258,6 +6258,15 @@ graph import compiler.frontend {
     type srcloc --> project.source { Span }
     unitree --> cli.commands.analysis._check_file_job { Source as _Src }
     unitree --> cli.commands.native_build._callback_source_path { Module }
+    unitree --> cli.commands.native_build._type_name_of { Name, Token }
+    unitree --> cli.commands.native_build._callback_binding_from_module {
+        Ability,
+        FuncSignature
+    }
+    codeinfo --> cli.commands.native_build._callback_binding_from_module {
+        InteropBinding,
+        InteropContext
+    }
     unitree --> cli.commands.architecture {
         GraphImport,
         Import,
@@ -9385,6 +9394,7 @@ graph import compiler.placement {
     placement_facts --> compiler.symbol_utils.import_target_pinned_server {
         pinned_module_space
     }
+    placement_facts --> cli.commands.native_build._record_proj_dir { project_root_of }
     placement --> cli.commands.fix._verify_claims { element_display_name }
     placement --> compiler.driver.compiler.JacCompiler._restore_sections {
         summary_store
