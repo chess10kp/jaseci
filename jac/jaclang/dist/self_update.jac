@@ -43,7 +43,6 @@ def release_asset(
 }
 
 def up_to_date(current: str, latest: str) -> bool {
-    import from jaclang.packages.semver { SemverError, Version }
     try {
         return Version.parse(current) >= Version.parse(latest);
     } except SemverError {
@@ -79,13 +78,6 @@ def _running_jacpython -> bool {
 }
 
 def update_self(release: str, current: str, verbose: bool) -> int {
-    import from jaclang.dist.fused_binary {
-        linked_source_dir,
-        materialized_runtime_dir,
-        running_executable,
-        runtime_trailer
-    }
-
     triple = platform_triple();
     if triple is None {
         console.error(
@@ -163,7 +155,6 @@ def update_self(release: str, current: str, verbose: bool) -> int {
 
     tag = release[1:] if release.startswith("v") else release;
     console.info("Fetching release info...");
-    import from jaclang.packages.github { GitHub, GitHubError, find_token }
     try {
         rel = GitHub(token=find_token()).release(SELF_UPDATE_REPO, tag);
     } except GitHubError as e {
@@ -225,7 +216,6 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         }
         console.info(f"Downloading {name} ({rel_tag})...");
         tmp = stage / target.name;
-        import from jaclang.toolchains.store { Artifact, fetch }
         try {
             fetch(
                 Artifact(

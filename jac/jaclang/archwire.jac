@@ -14660,6 +14660,16 @@ graph import data.storage {
 }
 
 graph import dist {
+    cli.console ++> self_update { console }
+    fused_binary ++> self_update.update_self {
+        linked_source_dir,
+        materialized_runtime_dir,
+        running_executable,
+        runtime_trailer
+    }
+    packages.github ++> self_update.update_self { GitHub, GitHubError, find_token }
+    packages.semver ++> self_update.up_to_date { SemverError, Version }
+    toolchains.store ++> self_update.update_self { Artifact, fetch }
     archive ++> seal.build_jab { tar_gz_dir }
     jab ++> seal.build_jab { jab_app_meta }
     jab_vendor ++> [
