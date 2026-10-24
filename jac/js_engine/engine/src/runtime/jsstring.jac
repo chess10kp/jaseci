@@ -1710,12 +1710,17 @@ def:pub _utf8_bytes_to_codepoints(raw: list[int]) -> list[int] {
 }
 
 """True when s[i..i+1] is the NUL code-unit sentinel (bytes C0 80)."""
-def:pub str_is_nul_escape(s: str, i: int) -> bool {
+def _str_is_nul_escape(s: str, i: int) -> bool {
     raw: bytes = _str_utf8_bytes(s);
     return i >= 0
         and i + 1 < len(raw)
         and _raw_byte_at(raw, i) == 192
         and _raw_byte_at(raw, i + 1) == 128;
+}
+
+"""Public NUL-sentinel predicate for builtin modules outside runtime."""
+def:pub str_is_nul_escape(s: str, i: int) -> bool {
+    return _str_is_nul_escape(s, i);
 }
 
 """Convert a raw BYTE offset in `s` into a UTF-16 code-unit offset.
