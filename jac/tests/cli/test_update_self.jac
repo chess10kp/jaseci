@@ -237,7 +237,7 @@ test "guard: JacPython install refuses before any download" {
     try {
         assert rc == 1 and fetchm.call_count == 0;
         assert b"fake launcher" in target.read_bytes();
-        assert [p.name for p in tmp.iterdir()] == ["jac"];
+        assert sorted(p.name for p in tmp.iterdir()) == [".jac-install", "jac"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -273,7 +273,7 @@ test "guard: release without a published checksum refuses" {
     try {
         assert rc == 1 and fetchm.call_count == 0;
         assert b"fake launcher" in target.read_bytes();
-        assert [p.name for p in tmp.iterdir()] == ["jac"];
+        assert sorted(p.name for p in tmp.iterdir()) == [".jac-install", "jac"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -291,7 +291,7 @@ test "flow: downloads, checksum-verifies, replaces atomically" {
         sent = fetchm.call_args[0][0];
         assert sent.digest == hashlib.sha256(payload).hexdigest();
         assert tags == [""];  # latest-release lookup
-        assert [p.name for p in tmp.iterdir()] == ["jac"];
+        assert sorted(p.name for p in tmp.iterdir()) == [".jac-install", "jac"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -303,7 +303,7 @@ test "flow: lying checksum keeps the old binary, cleans temp files" {
     try {
         assert rc == 1;
         assert b"fake launcher" in target.read_bytes();
-        assert [p.name for p in tmp.iterdir()] == ["jac"];
+        assert sorted(p.name for p in tmp.iterdir()) == [".jac-install", "jac"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
@@ -317,7 +317,7 @@ test "flow: checksum-clean but trailer-less download refuses, keeps old binary" 
     try {
         assert rc == 1 and fetchm.call_count == 1;
         assert b"fake launcher" in target.read_bytes();
-        assert [p.name for p in tmp.iterdir()] == ["jac"];
+        assert sorted(p.name for p in tmp.iterdir()) == [".jac-install", "jac"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
