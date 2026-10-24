@@ -12,7 +12,7 @@ import hashlib;
 import tempfile;
 import shutil;
 import from pathlib { Path }
-import from unittest.mock { patch }
+import from unittest.mock { MagicMock, patch }
 
 import from jaclang.cli.commands { project as cmds }
 import from jaclang.dist.fused.trailer { MAGIC, build_trailer }
@@ -21,6 +21,7 @@ import from jaclang.dist.self_update {
     platform_triple,
     release_asset,
     update_self,
+    _fetch_text,
     up_to_date
 }
 
@@ -329,10 +330,11 @@ test "flow: already-current short-circuits without downloading" {
 }
 
 
-test "flow: explicit --release reinstalls even when current" {
+test "flow: explicit --release resolves the v-prefixed GitHub tag" {
     (rc, target, fetchm, tags, tmp) = run_flow(release="1.2.3", ver="1.2.3");
     try {
         assert rc == 0 and fetchm.call_count == 1;
+        assert tags == ["v1.2.3"];
         assert target.read_bytes() == fake_bin(b"new body");
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
@@ -340,11 +342,30 @@ test "flow: explicit --release reinstalls even when current" {
 }
 
 
-test "flow: v-prefixed --release pins the stripped tag" {
+test "flow: v-prefixed --release preserves the GitHub tag" {
     (rc, target, fetchm, tags, tmp) = run_flow(release="v1.2.3");
     try {
-        assert rc == 0 and tags == ["1.2.3"];
+        assert rc == 0 and tags == ["v1.2.3"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "checksum text rejects non-HTTPS URLs and HTTPS downgrades" {
+    opened = patch("jaclang.dist.self_update.urllib.request.urlopen").start();
+    try {
+        assert _fetch_text("http://example.test/checksum") is None;
+        assert opened.call_count == 0;
+
+        response = MagicMock();
+        response.__enter__.return_value.geturl.return_value = (
+            "http://example.test/checksum"
+        );
+        opened.return_value = response;
+        assert _fetch_text("https://example.test/checksum") is None;
+        assert opened.call_count == 1;
+    } finally {
+        patch.stopall();
     }
 }

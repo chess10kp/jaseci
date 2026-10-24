@@ -5,6 +5,7 @@ import re;
 import shutil;
 import tempfile;
 import urllib.request;
+import from urllib.parse { urlsplit }
 import from jaclang.cli.console { console }
 import from pathlib { Path }
 
@@ -53,9 +54,15 @@ def up_to_date(current: str, latest: str) -> bool {
 }
 
 def _fetch_text(url: str) -> (str | None) {
+    if urlsplit(url).scheme != "https" {
+        return None;
+    }
     request = urllib.request.Request(url, headers={"User-Agent": "jac-update"});
     try {
         with urllib.request.urlopen(request, timeout=60) as response {
+            if urlsplit(response.geturl()).scheme != "https" {
+                return None;
+            }
             return response.read().decode("utf-8");
         }
     } except OSError {
@@ -162,7 +169,8 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         return 1;
     }
 
-    tag = release[1:] if release.startswith("v") else release;
+    version = release[1:] if release.startswith("v") else release;
+    tag = f"v{version}" if version else "";
     console.info("Fetching release info...");
     import from jaclang.packages.github { GitHub, GitHubError, find_token }
     try {
@@ -177,7 +185,7 @@ def update_self(release: str, current: str, verbose: bool) -> int {
     if rel is None {
         if tag {
             console.error(
-                f"No release v{tag} on {SELF_UPDATE_REPO}.",
+                f"No release {tag} on {SELF_UPDATE_REPO}.",
                 hint=f"See https://github.com/{SELF_UPDATE_REPO}/releases"
             );
         } else {
@@ -185,7 +193,7 @@ def update_self(release: str, current: str, verbose: bool) -> int {
         }
         return 1;
     }
-    rel_tag = str(rel.get("tag_name", "")) or f"v{tag}";
+    rel_tag = str(rel.get("tag_name", "")) or tag;
     found = release_asset(rel.get("assets", []), plat, arch);
     if found is None {
         console.error(
