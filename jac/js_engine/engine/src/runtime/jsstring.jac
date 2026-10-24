@@ -596,7 +596,9 @@ glob U16IX_STEP: int = 64,
      U16IX_SLOTS: int = 256,
      _U16IX: list[U16Index] = [],
      _U16IX_NEXT: int = 0,
-     _U16IX_POS: dict[int, int] = {};
+     _U16IX_POS: dict[int, int] = {},
+     _U16RAW_ID: int = -1,
+     _U16RAW: bytes = bytes([]);
 
 # string id -> its slot in _U16IX: lookups and the per-allocation invalidation
 # in _heap_slot_alloc used to scan all U16IX_SLOTS entries (the scan alone was
@@ -645,6 +647,9 @@ def _heap_slot_alloc(s: str, rl: int, rr: int, rlen: int, asc: int) -> int {
         # now stale — drop the memo. (Any other slot leaves the memo valid.)
         if (HEAP_STRING_BASE + idx) == _U16MEMO_ID {
             _U16MEMO_ID = -1;
+        }
+        if (HEAP_STRING_BASE + idx) == _U16RAW_ID {
+            _U16RAW_ID = -1;
         }
         u16_slot: int = _U16IX_POS.get(HEAP_STRING_BASE + idx, -1);
         if u16_slot >= 0 {
@@ -1852,8 +1857,8 @@ per-character step (~40 instructions; these builds were 29% of the jac_client
 render phase). Any byte >= 128 ends the run, including the NUL sentinel C0 80
 (one UTF-16 unit), which _u16_step measures."""
 def _u16ix_build(id: int, s: str) -> U16Index {
-    ix: U16Index = U16Index(id=id, bytes=[0], units=[0], total=0, regular=True);
     raw: bytes = _str_utf8_bytes(s);
+    ix: U16Index = U16Index(id=id, bytes=[0], units=[0], total=0, regular=True);
     n: int = len(raw);
     i: int = 0;
     u: int = 0;
@@ -1897,13 +1902,34 @@ def _u16ix_build(id: int, s: str) -> U16Index {
     return ix;
 }
 
+"""The raw UTF-8 byte view behind a cached U16Index.
+
+u16ix_unit_to_byte / u16ix_byte_to_unit used to re-encode the whole subject on
+EVERY call (each exec()'s index/lastIndex conversion on a large non-ASCII
+subject paid a full copy even though the checkpoint index was cached). Keep a
+one-slot raw view keyed by the index's string id, refreshed by
+js_string_u16ix, and reused by the walkers. Invalidated with the other
+per-id memos when a heap slot is recycled (see _heap_slot_alloc)."""
+def _u16ix_raw(ix: U16Index, s: str) -> bytes {
+    if _U16RAW_ID == ix.id {
+        return _U16RAW;
+    }
+    return _str_utf8_bytes(s);
+}
+
 """The U16Index of string `id` (whose text is `s`), built on first use."""
 def:pub js_string_u16ix(id: int, s: str) -> U16Index {
     hit: int = _U16IX_POS.get(id, -1);
     if hit >= 0 {
+        if _U16RAW_ID != id {
+            _U16RAW = _str_utf8_bytes(s);
+            _U16RAW_ID = id;
+        }
         return _U16IX[hit];
     }
     built: U16Index = _u16ix_build(id, s);
+    _U16RAW = _str_utf8_bytes(s);
+    _U16RAW_ID = id;
     if len(_U16IX) < U16IX_SLOTS {
         _U16IX_POS[id] = len(_U16IX);
         _U16IX.append(built);
@@ -1922,7 +1948,7 @@ def:pub js_string_u16ix(id: int, s: str) -> U16Index {
 """Byte offset of UTF-16 unit `t` (0 <= t <= ix.total) in `s`, or -1 when `t`
 falls between the two halves of a surrogate pair (no byte boundary there)."""
 def:pub u16ix_unit_to_byte(ix: U16Index, s: str, t: int) -> int {
-    raw: bytes = _str_utf8_bytes(s);
+    raw: bytes = _u16ix_raw(ix, s);
     n: int = len(raw);
     if t <= 0 {
         return 0;
@@ -1967,7 +1993,7 @@ def:pub u16ix_byte_to_unit(ix: U16Index, s: str, b: int) -> int {
     }
     i: int = ix.bytes[lo];
     u: int = ix.units[lo];
-    raw: bytes = _str_utf8_bytes(s);
+    raw: bytes = _u16ix_raw(ix, s);
     n: int = len(raw);
     while i < b and i < n {
         cw: int = _u16_step(raw, i, n);
