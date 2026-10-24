@@ -1606,6 +1606,12 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          "Parameter name mismatch: declaration has '{decl_name}' but implementation has '{impl_name}'.",
          help="An `impl` must use the same parameter names as its declaration: callers bind keyword arguments by the declared names, and the server, bridge stubs and tool schemas are generated from the declaration."
      ),
+     E2030 = _err(
+         "E2030",
+         Category.SEMANTIC,
+         "Type parameter mismatch: declaration has [{decl_params}] but implementation has [{impl_params}].",
+         help="An `impl` that restates type parameters must restate the declaration's, in order: `def first[T](items: list[T]) -> T;` is implemented by `impl first[T](items: list[T]) -> T { ... }`. Leave the brackets off to inherit them."
+     ),
      W2014 = _warn(
          "W2014",
          Category.SEMANTIC,
@@ -2632,13 +2638,4 @@ glob E0001 = _err("E0001", Category.SYNTAX, "Expected '{expected}', got '{got}'"
          Category.RUNTIME,
          "Client error could not be traced to Jac source: {message}",
          help="The dev loop kept the raw location it was given, but nothing under .jac/client/compiled claims it -- a browser extension, a dependency with no source map, or an artifact from a build that has since been replaced. Reload after a clean build if the location should be yours."
-     ),
-     E0059 = _err(
-         "E0059",
-         Category.SYNTAX,
-         "'continue' is not valid inside a loop's else block",
-         help="the else block runs after the loop has already exhausted, so there"
-         " is no next iteration for 'continue' to skip to (Python would re-enter"
-         " the loop test here, usually re-running the else forever). Use 'break'"
-         " to leave the loop from the else block, or restructure the condition."
      );

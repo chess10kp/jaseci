@@ -693,7 +693,7 @@ impl NaIRGenPass._codegen_name(nd: uni.Name) -> (ir.Value | None) {
     }
     if var_name == "__file__" and self.module?.loc and self.module.loc.mod_path {
         import os;
-        return self._make_global_string(os.path.realpath(self.module.loc.mod_path));
+        return self._make_global_string(real_path(self.module.loc.mod_path));
     }
 
     _np = nd.parent;
@@ -2375,6 +2375,27 @@ impl NaIRGenPass._codegen_if_else_expr(nd: uni.IfElseExpr) -> (ir.Value | None) 
             }
         }
         if then_val.type != else_val.type {
+            if isinstance(else_val.type, ir.LiteralStructType)
+                and isinstance(then_val.type, ir.PointerType)
+                and isinstance(then_val.type.pointee, ir.LiteralStructType)
+                and else_open {
+                self.builder.position_at_end(else_end_bb);
+                else_val = self._box_value_tuple(
+                    self._coerce_tuple_to_struct(else_val, then_val.type.pointee)
+                );
+                else_end_bb = self.builder.block;
+            } elif isinstance(then_val.type, ir.LiteralStructType)
+                and isinstance(else_val.type, ir.PointerType)
+                and isinstance(else_val.type.pointee, ir.LiteralStructType)
+                and then_open {
+                self.builder.position_at_end(then_end_bb);
+                then_val = self._box_value_tuple(
+                    self._coerce_tuple_to_struct(then_val, else_val.type.pointee)
+                );
+                then_end_bb = self.builder.block;
+            }
+        }
+        if then_val.type != else_val.type {
             _uni_ty = self._unify_repr_lowering([then_val.type, else_val.type]);
             if _uni_ty is not None and then_val.type != _uni_ty and then_open {
                 self.builder.position_at_end(then_end_bb);
@@ -2799,16 +2820,16 @@ impl NaIRGenPass._codegen_plain_trailer(nd: uni.AtomTrailer) -> (ir.Value | None
                     return self._emit_sys_argv();
                 }
                 if right_name == "platform" {
-                    return self._make_global_string(
-                        active_host().native_fact(FACT_OS, "").lower()
-                    );
+                    return self._emit_platform_name();
                 }
                 if right_name == "maxsize" {
                     return ir.Constant(ir.IntType(64), 0x7FFFFFFFFFFFFFFF);
                 }
                 if right_name == "byteorder" {
-                    import sys as _sys;
-                    return self._make_global_string(_sys.byteorder);
+                    layout = str(self.llvm_module.data_layout or "");
+                    return self._make_global_string(
+                        "big" if layout.startswith("E") else "little"
+                    );
                 }
                 if right_name == "stdout" or right_name == "stderr" {
                     return self._emit_sys_stream(right_name);
@@ -3132,7 +3153,14 @@ impl NaIRGenPass._codegen_plain_trailer(nd: uni.AtomTrailer) -> (ir.Value | None
                             name="chr.len"
                         );
                         result = self._codegen_string_index(
-                            _ddata, _didx_val, len_val=_dlen
+                            _ddata,
+                            _didx_val,
+                            len_val=_dlen,
+                            root_val=_ddata
+                                if self._nogc_headerless()
+                                else self.builder.extract_value(
+                                    target_val, 0, name="chr.root"
+                                )
                         );
                         return self._finish_borrowed_read(target_val, result);
                     }
@@ -3374,7 +3402,7 @@ impl NaIRGenPass._ct_type_param_owner(nd: uni.Name) -> (str | None) {
     if not (isinstance(owner, uni.TypeParam) and owner.is_comptime) {
         return None;
     }
-    arch = owner.find_parent_of_type(uni.Archetype);
+    arch = owner.enclosing_decl(uni.Archetype);
     return self._arch_key(arch) if arch is not None else None;
 }
 
@@ -3392,8 +3420,8 @@ impl NaIRGenPass._final_variant_value(
     if mod is None or mod.loc is None or not mod.loc.mod_path {
         return value;
     }
-    variant = os.path.realpath(native_variant_of(mod.loc.mod_path));
-    if variant == os.path.realpath(mod.loc.mod_path) {
+    variant = real_path(native_variant_of(mod.loc.mod_path));
+    if variant == real_path(mod.loc.mod_path) {
         return value;
     }
     variant_mod = self.prog.mod.hub.get(variant);
