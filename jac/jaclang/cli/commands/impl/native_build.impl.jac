@@ -400,9 +400,26 @@ def _build_native_entry_lib(filename: str, output: str) -> int {
         return 1;
     }
     (prog, plan, ir_module) = built;
-    manifest = ir_module.gen.interop_manifest if ir_module else None;
-    plan.callback_bindings = list(manifest.native_imports) if manifest else [];
+    plan.callback_bindings = _all_callback_bindings(plan, prog, ir_module);
     return _entry_lib_link(plan, output);
+}
+
+
+def _record_proj_dir(filename: str) -> str {
+    """The root the interop record's paths are relative to.
+
+    The runner resolves them against the sealed image root, which preserves
+    the project tree, so the record must hold project-root-relative paths --
+    not paths relative to the entry file's directory (a nested entry at
+    `src/main.jac` with a provider at `src/helper.jac` must record
+    `src/helper.jac`). Falls back to the entry's directory outside a project.
+    """;
+
+    proj_root = project_root_of(os.path.abspath(filename));
+    if proj_root {
+        return os.path.realpath(proj_root);
+    }
+    return os.path.dirname(os.path.abspath(filename));
 }
 
 
@@ -412,10 +429,131 @@ def _callback_source_path(binding: any, proj_dir: str) -> str {
         import from jaclang.compiler.frontend.unitree { Module }
         mod = nd.find_parent_of_type(Module);
         if mod is not None and mod.loc.mod_path {
-            return os.path.relpath(mod.loc.mod_path, proj_dir);
+            return os.path.relpath(
+                os.path.realpath(mod.loc.mod_path), proj_dir
+            ).replace(
+                os.sep, "/"
+            );
         }
     }
     return binding.source_module or "";
+}
+
+
+def _type_name_of(expr: any) -> str {
+    if expr is None {
+        return "int";
+    }
+    if isinstance(expr, Name) or isinstance(expr, Token) {
+        return expr.value;
+    }
+    return "int";
+}
+
+
+def _callback_binding_from_module(mod: any, name: str) -> (any | None) {
+    """Synthesize the na->sv binding for `name` from its defining module.
+
+    A dependency's callback is often absent from every recorded manifest
+    (e.g. a function-scoped server import), so the seal derives the binding
+    from the module that defines the function.
+    """;
+    if mod is None or mod.loc is None {
+        return None;
+    }
+    for nd in mod.body {
+        if not isinstance(nd, Ability) or nd.name_ref.sym_name != name {
+            continue;
+        }
+        ret_type = "int";
+        param_types: list[str] = [];
+        if isinstance(nd.signature, FuncSignature) {
+            if nd.signature.return_type is not None {
+                ret_type = _type_name_of(nd.signature.return_type);
+            }
+            for p in nd.signature.get_parameters() {
+                if p.type_tag {
+                    param_types.append(_type_name_of(p.type_tag.tag));
+                } else {
+                    param_types.append("int");
+                }
+            }
+        }
+        return InteropBinding(
+            name=name,
+            source_context=InteropContext.SERVER,
+            callers={InteropContext.NATIVE},
+            ret_type=ret_type,
+            param_types=param_types,
+            ast_node=nd,
+            source_module=mod.loc.mod_path or None
+        );
+    }
+    return None;
+}
+
+
+def _all_callback_bindings(plan: any, prog: any, entry_module: any) -> list {
+    """Union the na->sv callback bindings of every native unit in the plan,
+    not just the entry's.
+
+    `link_artifact` refuses a shared/entry-lib link when ANY unit's Python
+    imports lack a callback binding, and `native_build`'s own
+    standalone-binary check already aggregates `iface.python_imports` across
+    all units. Collecting entry-only let a dependency's callbacks reach
+    neither the lane choice nor the interop record.
+    """;
+    wanted: list[str] = [];
+    seen: set = set();
+    for unit in plan.units {
+        for name in unit.iface.python_imports {
+            if name not in seen {
+                seen.add(name);
+                wanted.append(name);
+            }
+        }
+    }
+    if not wanted {
+        return [];
+    }
+    mods: list = [];
+    if entry_module is not None {
+        mods.append(entry_module);
+    }
+    for mod in prog.mod.hub.values() {
+        if mod is not entry_module {
+            mods.append(mod);
+        }
+    }
+    bindings: dict = {};
+    for mod in mods {
+        manifest = mod.gen.interop_manifest if mod.gen else None;
+        if manifest is None {
+            continue;
+        }
+        for binding in manifest.native_imports {
+            if binding.name in seen and binding.name not in bindings {
+                bindings[binding.name] = binding;
+            }
+        }
+    }
+    for name in wanted {
+        if name in bindings {
+            continue;
+        }
+        for mod in mods {
+            binding = _callback_binding_from_module(mod, name);
+            if binding is not None {
+                bindings[name] = binding;
+                break;
+            }
+        }
+    }
+    return [
+        bindings[name]
+        for name in wanted
+        if name in bindings
+    ];
 }
 
 
@@ -428,16 +566,11 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
         return 1;
     }
     (prog, plan, ir_module) = built;
-    manifest = ir_module.gen.interop_manifest if ir_module else None;
-    bindings = list(manifest.native_imports) if manifest else [];
-    plan.callback_bindings = bindings;
-    import from jaclang.compiler.backends.native.link_plan {
-        resolved_callback_bindings
-    }
+    plan.callback_bindings = _all_callback_bindings(plan, prog, ir_module);
     (glue_bindings, _) = resolved_callback_bindings(plan);
     _interop_record = interop_record_path(lib_output);
-    _proj_dir = os.path.dirname(os.path.abspath(filename));
-    if manifest and manifest.native_imports {
+    _proj_dir = _record_proj_dir(filename);
+    if plan.callback_bindings {
         console.warning(
             "App calls from native code into Python (native_imports): "
             "dropping the standalone executable (it cannot be "
