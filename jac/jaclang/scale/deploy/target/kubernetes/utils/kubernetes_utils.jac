@@ -1,13 +1,6 @@
 import os;
 import time;
 import from pathlib { Path }
-import from jaclang.scale._optdeps.kubernetes {
-    client,
-    config,
-    ApiException,
-    ConfigException
-}
-import from jaclang.scale.deploy.target.kubernetes.cluster_provider { ClusterProvider }
 
 glob _LOCAL_FALLBACK_NOTE: str = (
          "Falling back to local provider semantics: service URLs will be "
@@ -47,6 +40,15 @@ def create_k8s_secret(
     secret_data: dict[str, str]
 ) -> str;
 
+def resolve_minted_secret(
+    core_v1: client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    secret_data: dict[str, str],
+    key: str,
+    fresh: str
+) -> bool;
+
 def delete_k8s_secret(
     core_v1: client.CoreV1Api, namespace: str, secret_name: str
 ) -> None;
@@ -59,7 +61,7 @@ def ensure_namespace_exists(namespace: str, owner: str) -> None;
 
 def namespace_is_owned(core_v1: client.CoreV1Api, namespace: str, owner: str) -> bool;
 
-def delete_namespace(namespace: str) -> None;
+def delete_namespace(core_v1: client.CoreV1Api, namespace: str) -> None;
 
 def cluster_type -> str;
 
