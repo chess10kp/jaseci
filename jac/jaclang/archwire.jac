@@ -231,6 +231,7 @@ graph import {
             | client.vite_bundler
             | compiler.driver.application.prepare_application
             | compiler.tools.lang_tools
+            | dist.self_update
             | dist.precompile_bytecode
             | dist.seal
             | lsp.server.engine
@@ -1820,6 +1821,7 @@ graph import {
         cli.commands.project.install { add_packages },
         cli.commands.project.remove { remove_packages },
     ]
+    packages.github ++> dist.self_update.update_self { GitHub, GitHubError, find_token }
     packages.install ++> [
         client.config_loader._package_npm_deps {
             InstallError,
@@ -1837,6 +1839,7 @@ graph import {
     }
     packages.publish ++> cli.commands.project.publish { publish_project }
     packages.publish --> cli.commands.project.publish { yank_version }
+    packages.semver ++> dist.self_update.up_to_date { SemverError, Version }
     packages.templates ++> cli.commands.project._resolve_template {
         TemplateError,
         fetch_template,
@@ -4310,6 +4313,7 @@ graph import {
     ]
     toolchains.manager --> client.cli.setup { setup_toolchain }
     toolchains.store ++> [
+        dist.self_update.update_self { Artifact, fetch },
         client.targets.mobile_target.MobileTarget.ensure_ready
             | client.targets.node_tooling_common.run_manifest_install
             | client.targets.react_native.build.run_eas_local_build
@@ -14660,17 +14664,13 @@ graph import data.storage {
 }
 
 graph import dist {
-    cli.console ++> self_update { console }
+    archive ++> seal.build_jab { tar_gz_dir }
     fused_binary ++> self_update.update_self {
         linked_source_dir,
         materialized_runtime_dir,
         running_executable,
         runtime_trailer
     }
-    packages.github ++> self_update.update_self { GitHub, GitHubError, find_token }
-    packages.semver ++> self_update.up_to_date { SemverError, Version }
-    toolchains.store ++> self_update.update_self { Artifact, fetch }
-    archive ++> seal.build_jab { tar_gz_dir }
     jab ++> seal.build_jab { jab_app_meta }
     jab_vendor ++> [
         jab { activate_vendored },

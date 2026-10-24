@@ -140,8 +140,8 @@ impl GitHub.write_file(
 impl GitHub.release(repo: str, tag: str) -> (dict[str, any] | None) {
     path = (
         f"/repos/{repo}/releases/latest"
-        if not tag
-        else f"/repos/{repo}/releases/tags/{quote(tag)}"
+            if not tag
+            else f"/repos/{repo}/releases/tags/{quote(tag)}"
     );
     return self.call("GET", path, allow_missing=True);
 }
