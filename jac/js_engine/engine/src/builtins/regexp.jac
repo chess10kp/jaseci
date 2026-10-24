@@ -59,7 +59,8 @@ import from engine.src.runtime.jsvalue {
     jsv_to_double,
     jsv_to_table_id,
     jsv_from_string_id,
-    jsv_hole
+    jsv_hole,
+    jsv_coerce_to_bool
 }
 import from engine.src.builtins.regexp_type { JSRegExpState }
 import from engine.src.runtime.realm { Realm }
@@ -85,6 +86,7 @@ import from engine.src.runtime.jsstring {
     _str_utf8_bytes,
     utf8_byte_len
 }
+import from engine.src.vm.vm_obs { js_object_get_observable }
 import from engine.src.runtime.jsobject {
     js_object_create_null,
     js_object_create,
@@ -3379,12 +3381,25 @@ def:pub js_str_replace_re(
                 + str_byte_substr(s7, res7[1], slen7)
         );
     }
-    return _mk_jstr(_re_replace_global_build(re10, s7, r7, _DM_ASCII));
+    # @@replace reads the observable `unicode` property for AdvanceStringIndex;
+    # it is not necessarily the RegExp's internal `u` flag (e.g. a user may
+    # redefine `unicode` as in test262's coerce-unicode.js).
+    full_unicode: bool = jsv_coerce_to_bool(
+        js_object_get_observable(search3, str_intern("unicode"), search3)
+    );
+    if vm_has_native_exc() {
+        return js_undefined();
+    }
+    return _mk_jstr(
+        _re_replace_global_build(re10, s7, r7, _DM_ASCII, full_unicode)
+    );
 }
 
 """Global regexp replace body: one PCRE2 scan per match, pieces joined once
 (was `out = out + piece` — O(n²) copying and a leaked intermediate per match)."""
-def _re_replace_global_build(re10: JSRegExpState, s7: str, r7: str, asc: bool) -> str {
+def _re_replace_global_build(
+    re10: JSRegExpState, s7: str, r7: str, asc: bool, full_unicode: bool
+) -> str {
     parts: list[str] = [];
     has_dollar: bool = r7.find("$") >= 0;
     slen7: int = utf8_byte_len(s7);
@@ -3409,7 +3424,7 @@ def _re_replace_global_build(re10: JSRegExpState, s7: str, r7: str, asc: bool) -
         if res8[1] > res8[0] {
             pos7 = res8[1];
         } else {
-            pos7 = res8[1] + _re_char_len(s7, res8[1]);
+            pos7 = res8[1] + _re_char_len(s7, res8[1], full_unicode);
         }
     }
     parts.append(str_byte_substr(s7, nsp7, slen7));
@@ -3418,7 +3433,7 @@ def _re_replace_global_build(re10: JSRegExpState, s7: str, r7: str, asc: bool) -
 
 """Byte length of the UTF-8 character at byte `i` of `s` (1 past the end):
 the matchers' AdvanceStringIndex step."""
-def _re_char_len(s: str, i: int) -> int {
+def _re_char_len(s: str, i: int, full_unicode: bool = False) -> int {
     if s.isascii() {
         return 1;
     }
@@ -3428,6 +3443,16 @@ def _re_char_len(s: str, i: int) -> int {
         return 1;
     }
     cl_b: int = _raw_byte_at(raw, i);
+    # JS strings store escaped surrogate pairs as two CESU-8 3-byte sequences.
+    # In full-Unicode mode AdvanceStringIndex skips both code units together.
+    if full_unicode and cl_b == 237 and i + 5 < n {
+        b1: int = _raw_byte_at(raw, i + 1);
+        b3: int = _raw_byte_at(raw, i + 3);
+        b4: int = _raw_byte_at(raw, i + 4);
+        if b1 >= 160 and b1 <= 175 and b3 == 237 and b4 >= 176 and b4 <= 191 {
+            return 6;
+        }
+    }
     if cl_b < 192 {
         return 1;
     }

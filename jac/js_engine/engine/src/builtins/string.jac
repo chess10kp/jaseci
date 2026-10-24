@@ -55,6 +55,8 @@ import from engine.src.runtime.jsstring {
     str_from_id,
     str_char_at,
     str_substr,
+    str_byte_substr,
+    str_is_nul_escape,
     str_to_float,
     utf8_encode_scalar,
     js_string_utf16_units,
@@ -1155,7 +1157,7 @@ def:pub js_str_slice(v: JSValue, start: JSValue, end_v: JSValue) -> JSValue {
             b0_x: int = u16ix_unit_to_byte(ix_sl, s, st_x);
             b1_x: int = u16ix_unit_to_byte(ix_sl, s, en_x);
             if b0_x >= 0 and b1_x >= 0 {
-                return _mk_str(str_substr(s, b0_x, b1_x));
+                return _mk_str(str_byte_substr(s, b0_x, b1_x));
             }
             # A bound splits a surrogate pair: cut the code units instead.
             return _units_substr(js_string_utf16_units(s), st_x, en_x);
@@ -2295,6 +2297,14 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
     i: int = 0;
     slen: int = len(s);
     while i < slen {
+        # The engine stores U+0000 as the two-byte C0 80 sentinel. Treat it as
+        # one JS code unit; iterating the raw Jac string would otherwise copy
+        # the two encoded bytes separately and change the value.
+        if str_is_nul_escape(s, i) {
+            result = result + utf8_encode_scalar(0);
+            i = i + 2;
+            continue;
+        }
         ch: str = str_char_at(s, i);
         if ch == "%" {
             # Must have exactly 2 hex digits following % — §19.2.6.2 Decode step 4

@@ -1710,7 +1710,7 @@ def:pub _utf8_bytes_to_codepoints(raw: list[int]) -> list[int] {
 }
 
 """True when s[i..i+1] is the NUL code-unit sentinel (bytes C0 80)."""
-def _str_is_nul_escape(s: str, i: int) -> bool {
+def:pub str_is_nul_escape(s: str, i: int) -> bool {
     raw: bytes = _str_utf8_bytes(s);
     return i >= 0
         and i + 1 < len(raw)
