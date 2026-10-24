@@ -57,6 +57,7 @@ import from engine.src.runtime.jsstring {
     str_substr,
     str_byte_substr,
     str_is_nul_escape,
+    utf8_byte_len,
     str_to_float,
     utf8_encode_scalar,
     js_string_utf16_units,
@@ -2295,14 +2296,16 @@ decodeURIComponent("%3B") is ";"."""
 def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
     result: str = "";
     i: int = 0;
+    byte_i: int = 0;
     slen: int = len(s);
     while i < slen {
         # The engine stores U+0000 as the two-byte C0 80 sentinel. Treat it as
         # one JS code unit; iterating the raw Jac string would otherwise copy
         # the two encoded bytes separately and change the value.
-        if str_is_nul_escape(s, i) {
+        if str_is_nul_escape(s, byte_i) {
             result = result + utf8_encode_scalar(0);
             i = i + 2;
+            byte_i = byte_i + 2;
             continue;
         }
         ch: str = str_char_at(s, i);
@@ -2328,6 +2331,7 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
                     result = result + chr(byte1);
                 }
                 i = i + 3;
+                byte_i = byte_i + 3;
             } elif byte1 >= 192 and byte1 < 224 {
                 # 2-byte UTF-8: 110xxxxx 10xxxxxx — need %XX%XX
                 if i + 5 >= slen {
@@ -2346,6 +2350,7 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
                 }
                 result = result + utf8_encode_scalar(cp);
                 i = i + 6;
+                byte_i = byte_i + 6;
             } elif byte1 >= 224 and byte1 < 240 {
                 # 3-byte UTF-8: 1110xxxx 10xxxxxx 10xxxxxx — need %XX%XX%XX
                 if i + 8 >= slen {
@@ -2365,6 +2370,7 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
                 }
                 result = result + utf8_encode_scalar(cp);
                 i = i + 9;
+                byte_i = byte_i + 9;
             } elif byte1 >= 240 and byte1 < 248 {
                 # 4-byte UTF-8: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx — need %XX%XX%XX%XX
                 if i + 11 >= slen {
@@ -2388,6 +2394,7 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
                 }
                 result = result + utf8_encode_scalar(cp);
                 i = i + 12;
+                byte_i = byte_i + 12;
             } else {
                 # Byte 0x80-0xBF (continuation without lead) or 0xF8+ — not valid UTF-8 lead
                 vm_throw_native(make_uri_error("URI malformed"));
@@ -2396,6 +2403,7 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
         } else {
             result = result + ch;
             i = i + 1;
+            byte_i = byte_i + utf8_byte_len(ch);
         }
     }
     return _mk_str(result);
