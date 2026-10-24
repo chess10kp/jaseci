@@ -130,6 +130,20 @@ impl update_self(release: str, current: str, verbose: bool) -> int {
         );
         return 1;
     }
+    marker = target.parent / ".jac-install";
+    if not marker.is_file()
+        or marker.read_text().strip() != "installed-by-jaseci-labs-install-script" {
+        console.error(
+            "jac update --self only updates installs managed by the Jac installer.",
+            hint=(
+                "Install or reinstall with: curl -fsSL "
+                f"https://raw.githubusercontent.com/{SELF_UPDATE_REPO}/main/"
+                "scripts/install.sh | bash. Use your system package manager to "
+                "update Jac installations owned by another manager."
+            )
+        );
+        return 1;
+    }
     if not os.access(str(target), os.W_OK)
         or not os.access(str(target.parent), os.W_OK) {
         console.error(

@@ -59,6 +59,7 @@ def run_flow(
     readonly: bool = False,
     jacpython: bool = False,
     managed: bool = False,
+    installer_managed: bool = True,
     sidecar: str = "ok"
 ) -> (int, Path, any, list[str], Path) {
     tmp = Path(tempfile.mkdtemp(prefix="upd_self_"));
@@ -66,6 +67,9 @@ def run_flow(
     body = fake_bin() if real_bin else b"#!/bin/sh\necho nope\n";
     target.write_bytes(body);
     os.chmod(target, 0o755);
+    if installer_managed {
+        (tmp / ".jac-install").write_text("installed-by-jaseci-labs-install-script\n");
+    }
     if managed {
         (tmp / "metadata.json").write_text(
             '{"installed_at":"2026-01-01T00:00:00Z","sha256":"'
@@ -241,11 +245,23 @@ test "guard: JacPython install refuses before any download" {
 
 
 test "guard: jacup-managed install refuses before any download" {
-    (rc, target, fetchm, tags, tmp) = run_flow(managed=True);
+    (rc, target, fetchm, tags, tmp) = run_flow(managed=True, installer_managed=False);
     try {
         assert rc == 1 and fetchm.call_count == 0;
         assert b"fake launcher" in target.read_bytes();
         assert sorted(p.name for p in tmp.iterdir()) == ["jac", "metadata.json"];
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "guard: unmarked install refuses before any download" {
+    (rc, target, fetchm, tags, tmp) = run_flow(installer_managed=False);
+    try {
+        assert rc == 1 and fetchm.call_count == 0;
+        assert b"fake launcher" in target.read_bytes();
+        assert not (tmp / ".jac-install").exists();
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }
