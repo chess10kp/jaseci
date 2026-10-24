@@ -109,6 +109,10 @@ def run_flow(
         return Path(destination);
     }
 
+    patch(
+        "jaclang.dist.self_update.platform_triple",
+        return_value=("linux", "x86_64")
+    ).start();
     fetchm = patch("jaclang.toolchains.store.fetch", side_effect=fake_fetch).start();
     patch("jaclang.dist.self_update._fetch_text", side_effect=fake_sidecar).start();
     patch(
