@@ -330,6 +330,110 @@ test "the served app registers its scheduled targets with the scheduler" {
     }
 }
 
+"""A colocated service app's static schedules run in the serving process too.
+Colocated services are only registered for bridged calls, so their @schedule
+targets never reached the scheduler: a service's scheduled job (a repo sync, a
+digest) silently never ran under `jac run`, only in a fleet."""
+test "a colocated service's static schedules are registered under its app" {
+    import from tempfile { TemporaryDirectory }
+    import from jaclang { JacRuntime }
+    import from jaclang.runtime.build_services { build_services }
+    import from jaclang.runtime.prepared { load_prepared_module }
+    import from jaclang.server { sv_client }
+    import from jaclang.testing.testing { JacTestClient }
+    with TemporaryDirectory() as tmpdir {
+        client = JacTestClient.from_file(
+            str(Path(FIXTURES) / "scheduled_tasks.jac"), base_path=tmpdir
+        );
+        try {
+            server: any = client.server;
+            prepared = build_services().prepare_application(
+                str(Path(FIXTURES) / "colocated_scheduled_svc.jac"),
+                JacRuntime.get_program(),
+                FIXTURES,
+                default_codespace="server"
+            );
+            svc = load_prepared_module(prepared.entry, prepared);
+            sv_client.register_local("colo", svc);
+            server._register_scheduled_tasks();
+            names = {task.name for task in server.scheduler._tasks};
+            assert "colo.svc_tick" in names , f"not registered: {sorted(names)}";
+            assert "IntervalWalker" in names;
+            task = [
+                t
+                for t in server.scheduler._tasks
+                if t.name == "colo.svc_tick"
+            ][0];
+            server.scheduler._execute(task);
+            assert svc.TICKS == [1] , "the colocated schedule must run its own target";
+        } finally {
+            sv_client.unregister_local("colo");
+            client.close();
+        }
+    }
+}
+
+"""A colocated service schedules what it would schedule standalone, including a
+function it imports from another module. Discovery once kept only functions
+defined in the service's entry module, so a service that imported `tick` from
+`tasks.jac` ran it in a fleet but never under `jac run`."""
+test "a colocated service's schedule imported from another module is registered" {
+    import sys;
+    import from tempfile { TemporaryDirectory }
+    import from jaclang { JacRuntime }
+    import from jaclang.runtime.build_services { build_services }
+    import from jaclang.runtime.prepared { load_prepared_module }
+    import from jaclang.server { sv_client }
+    import from jaclang.testing.testing { JacTestClient }
+    with TemporaryDirectory() as tmpdir {
+        base = Path(tmpdir);
+        (base / "jac.toml").write_text(
+            '[project]\nname = "colo_imported"\ndefault-app = "api"\n\n'
+                + '[apps.api]\nkind = "service"\nentry-point = "main"\n\n'
+                + '[apps.jobs]\nkind = "service"\nentry-point = "jobs"\n'
+        );
+        (base / "tasks.jac").write_text(
+            "glob TICKS: list[int] = [];\n\n"
+            "@schedule(interval=3600, trigger=ScheduleTrigger.STATIC)\n"
+            "def:protect tick -> None {\n    TICKS.append(1);\n}\n"
+        );
+        (base / "jobs.jac").write_text(
+            "import from tasks { tick }\n\n"
+            "def:pub status -> str {\n    return \"ok\";\n}\n"
+        );
+        (base / "main.jac").write_text("def:pub ping -> int {\n    return 1;\n}\n");
+        client = JacTestClient.from_file(str(base / "main.jac"), base_path=tmpdir);
+        try {
+            server: any = client.server;
+            # What `jac run` does for each service app: prepare it, load its
+            # entry, and register it as a colocated provider.
+            prepared = build_services().prepare_application(
+                str(base / "jobs.jac"),
+                JacRuntime.get_program(),
+                tmpdir,
+                default_codespace="server"
+            );
+            jobs = load_prepared_module(prepared.entry, prepared);
+            sv_client.register_local("jobs", jobs);
+            server.scheduler._tasks.clear();
+            server._register_scheduled_tasks();
+            names = {task.name for task in server.scheduler._tasks};
+            assert "jobs.tick" in names , f"not registered: {sorted(names)}";
+            task = [
+                t
+                for t in server.scheduler._tasks
+                if t.name == "jobs.tick"
+            ][0];
+            server.scheduler._execute(task);
+            ticks = sys.modules[jobs.tick.__module__].TICKS;
+            assert ticks == [1] , "the imported schedule must run its own target";
+        } finally {
+            sv_client.unregister_local("jobs");
+            client.close();
+        }
+    }
+}
+
 class _Records(logging.Handler) {
     def init(self: _Records) {
         super.__init__();
@@ -338,6 +442,58 @@ class _Records(logging.Handler) {
 
     def emit(self: _Records, record: logging.LogRecord) {
         self.messages.append(f"{record.levelname} {record.getMessage()}");
+    }
+}
+
+
+"""A hot reload replaces the served module. Scheduled targets are looked up
+when they fire, and that lookup read the introspector's state without the
+freshness check requests get, so after a reload every tick of a scheduled
+function failed with "'<name>' is no longer registered" until a restart."""
+test "a scheduled function still fires after a hot reload" {
+    import from tempfile { TemporaryDirectory }
+    import from jaclang.testing.testing { JacTestClient }
+    with TemporaryDirectory() as tmpdir {
+        base = Path(tmpdir);
+        (base / "jac.toml").write_text(
+            '[project]\nname = "reloaded"\ndefault-app = "api"\n\n'
+                + '[apps.api]\nkind = "service"\nentry-point = "main"\n'
+        );
+        (base / "tasks.jac").write_text(
+            "glob TICKS: list[int] = [];\n\n"
+            "@schedule(interval=60, trigger=ScheduleTrigger.STATIC)\n"
+            "def:protect tick -> None {\n    TICKS.append(1);\n}\n"
+        );
+        app = base / "main.jac";
+        app.write_text("import tasks;\n\ndef:pub ping -> int {\n    return 1;\n}\n");
+        client = JacTestClient.from_file(str(app), base_path=tmpdir);
+        records = _Records();
+        log = logging.getLogger("jaclang.serve");
+        log.addHandler(records);
+        try {
+            server: any = client.server;
+            server._register_scheduled_tasks();
+            names = [t.name for t in server.scheduler._tasks];
+            assert "tick" in names , f"the submodule's schedule must register: {names}";
+            app.write_text(app.read_text() + "\n# reloaded\n");
+            client.reload();
+            server.introspector._reset_targets();
+            task = [
+                t
+                for t in server.scheduler._tasks
+                if t.name == "tick"
+            ][0];
+            server.scheduler._execute(task);
+            failures = [
+                m
+                for m in records.messages
+                if "no longer registered" in m
+            ];
+            assert not failures , f"a scheduled function was lost on reload: {failures}";
+        } finally {
+            log.removeHandler(records);
+            client.close();
+        }
     }
 }
 
@@ -377,9 +533,18 @@ test "a served scheduled walker runs each tick without an error record" {
             ][0];
             served_log = sys.modules[walker_cls.__module__].execution_log;
             before = served_log.count("interval-walker");
-            server.scheduler._execute(task);
-            server.scheduler._execute(task);
+            import io;
+            import from contextlib { redirect_stdout }
+            printed = io.StringIO();
+            with redirect_stdout(printed) {
+                server.scheduler._execute(task);
+                server.scheduler._execute(task);
+            }
             assert served_log.count("interval-walker") == before + 2 , served_log;
+            assert "interval-walker-report" not in printed.getvalue() , (
+                "a scheduled run inside the server printed its report to stdout, "
+                "the server log"
+            );
             errors = [
                 m
                 for m in records.messages
@@ -625,7 +790,7 @@ test "the namespace is the fleet service name, else the served module" {
 }
 
 
-test "a tick whose claim cannot be checked is skipped, and logged once" {
+test "a claim or run hold that cannot be checked is logged once" {
     # #9030: a failed lease check used to return True on every worker of
     # every pod, so a database blip ran the task everywhere at once.
     calls: list[int] = [];
@@ -664,6 +829,112 @@ test "a tick whose claim cannot be checked is skipped, and logged once" {
     ];
     assert len(warnings) == 1 , records.messages;
     assert len(recovered) == 1 , records.messages;
+
+    renewals: list[int] = [];
+    def lost(key: str, ttl: int, owner: str) -> bool {
+        renewals.append(ttl);
+        if len(renewals) == 1 {
+            raise ConnectionError("database is restarting");
+        }
+        return len(renewals) == 2;
+    }
+    sched.hold = lost;
+    sched.hold_ttl = 1;
+    records.messages.clear();
+    beat = threading.Event();
+    keeper = threading.Thread(target=sched._keep_hold, args=(task, beat));
+    log.addHandler(records);
+    try {
+        keeper.start();
+        deadline = time.monotonic() + 5.0;
+        while len(renewals) < 5 and time.monotonic() < deadline {
+            time.sleep(0.02);
+        }
+    } finally {
+        beat.set();
+        keeper.join();
+        log.removeHandler(records);
+    }
+    assert len(renewals) >= 5 , renewals;
+    lost_each_time = [
+        m
+        for m in records.messages
+        if m.startswith("WARNING") and "lost its run hold" in m
+    ];
+    back = [
+        m
+        for m in records.messages
+        if m.startswith("INFO") and "run hold back" in m
+    ];
+    assert len(lost_each_time) == 2 , records.messages;
+    assert len(back) == 1 , records.messages;
+    assert len(records.messages) == 3 , records.messages;
+}
+
+
+"""Make `threading.Thread.start` refuse the thread named `name`, as the OS does when it is out of threads."""
+def _start_refusing(
+    name: str, real: Callable[[threading.Thread], None]
+) -> Callable[[threading.Thread], None] {
+    def start(thread: threading.Thread) {
+        if thread.name == name {
+            raise RuntimeError("can't start new thread");
+        }
+        real(thread);
+    }
+    return start;
+}
+
+
+test "a run whose thread cannot start gives its hold back and skips the run" {
+    # Either thread failing to start used to leave the hold held until its TTL,
+    # and a failed run thread escaped the tick loop and ended the scheduler.
+    real_start = threading.Thread.start;
+    for refused in ["jac-schedule-mailer", "jac-schedule-hold-mailer"] {
+        probe = _Probe();
+        released: list[str] = [];
+        def grant(key: str, ttl: int, owner: str) -> bool {
+            return True;
+        }
+        def give_back(key: str, owner: str, into: list[str] = released) -> bool {
+            into.append(key);
+            return True;
+        }
+        sched = fresh_scheduler();
+        sched.hold = grant;
+        sched.release = give_back;
+        sched.namespace = "orders";
+        sched.register(
+            "mailer", _slow_run(probe, 0.0), ScheduleSpec(interval=60), False
+        );
+        task = sched._tasks[0];
+        sched._running = True;
+        records = _Records();
+        log = logging.getLogger("jaclang.server.task_scheduler");
+        log.addHandler(records);
+        threading.Thread.start = _start_refusing(refused, real_start);
+        try {
+            sched._launch(task);
+            with sched._flight_lock {
+                flights = list(sched._in_flight.values());
+            }
+            for (_name, thread) in flights {
+                thread.join(timeout=5.0);
+            }
+        } finally {
+            threading.Thread.start = real_start;
+            log.removeHandler(records);
+        }
+        assert probe.started == 0 , (refused, probe.started);
+        assert released == [sched._run_key(task)] , (refused, released);
+        assert sched._in_flight == {} , (refused, sched._in_flight);
+        refusals = [
+            m
+            for m in records.messages
+            if m.startswith("WARNING") and "could not start a thread for 'mailer'" in m
+        ];
+        assert len(refusals) == 1 , (refused, records.messages);
+    }
 }
 
 
@@ -726,13 +997,16 @@ test "a static task never runs alongside an earlier run of itself" {
 }
 
 
+"""A scheduled function that holds `probe` busy for `seconds`."""
+def _slow_run(probe: _Probe, seconds: float) -> Callable[[], None] {
+    return lambda { probe.slow(seconds); };
+}
+
 test "stopping past its budget returns on time and names the runs it abandons" {
     for (name, budget, limit) in [("stuck_fn", 0.3, 1.0), ("late_fn", 0.0, 0.5)] {
         probe = _Probe();
         sched = fresh_scheduler();
-        sched.register(
-            name, lambda { probe.slow(2.0); }, ScheduleSpec(interval=0.2), False
-        );
+        sched.register(name, _slow_run(probe, 2.0), ScheduleSpec(interval=0.2), False);
         records = _Records();
         log = logging.getLogger("jaclang.server.task_scheduler");
         log.addHandler(records);
@@ -813,6 +1087,8 @@ test "a served worker starts no runs once draining, and stops after its run in f
         server.scheduler.register(
             "quick", lambda { quick.slow(0.0); }, ScheduleSpec(interval=0.2), False
         );
+        store: any = server.user_manager._identity_storage.store;
+        lease = f"lease:sched-run:{schedule_namespace(server.module_name)}:long_run";
         stop = server.serve_background(no_client=True);
         try {
             deadline = time.monotonic() + 5.0;
@@ -826,11 +1102,15 @@ test "a served worker starts no runs once draining, and stops after its run in f
             assert quick.started == before , f"{quick.started
                 - before} run(s) started while draining";
             assert long_run.finished < long_run.started , "no run was in flight at stop";
+            holder = store.kv_get(lease);
         } finally {
             stop();
+            released = store.kv_get(lease);
             server.scheduler._tasks.clear();
             client.close();
         }
     }
     assert long_run.finished == long_run.started , "the run in flight was abandoned";
+    assert holder == server.scheduler._hold_owner() , f"run hold held by {holder}";
+    assert released is None , f"run hold left behind by {released}";
 }
