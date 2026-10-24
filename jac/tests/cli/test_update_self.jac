@@ -333,6 +333,7 @@ test "flow: explicit --release reinstalls even when current" {
     (rc, target, fetchm, tags, tmp) = run_flow(release="1.2.3", ver="1.2.3");
     try {
         assert rc == 0 and fetchm.call_count == 1;
+        assert tags == ["v1.2.3"];
         assert target.read_bytes() == fake_bin(b"new body");
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
@@ -340,10 +341,20 @@ test "flow: explicit --release reinstalls even when current" {
 }
 
 
-test "flow: v-prefixed --release pins the stripped tag" {
+test "flow: pinned --release queries the published v-prefixed tag" {
+    (rc, target, fetchm, tags, tmp) = run_flow(release="1.2.3");
+    try {
+        assert rc == 0 and tags == ["v1.2.3"];
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "flow: v-prefixed --release keeps the published tag" {
     (rc, target, fetchm, tags, tmp) = run_flow(release="v1.2.3");
     try {
-        assert rc == 0 and tags == ["1.2.3"];
+        assert rc == 0 and tags == ["v1.2.3"];
     } finally {
         shutil.rmtree(tmp, ignore_errors=True);
     }

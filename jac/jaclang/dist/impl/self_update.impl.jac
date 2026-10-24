@@ -142,7 +142,7 @@ impl update_self(release: str, current: str, verbose: bool) -> int {
         return 1;
     }
 
-    tag = release[1:] if release.startswith("v") else release;
+    tag = f"v{release.lstrip('v')}" if release else "";
     console.info("Fetching release info...");
     try {
         rel = GitHub(token=find_token()).release(SELF_UPDATE_REPO, tag);
@@ -156,7 +156,7 @@ impl update_self(release: str, current: str, verbose: bool) -> int {
     if rel is None {
         if tag {
             console.error(
-                f"No release v{tag} on {SELF_UPDATE_REPO}.",
+                f"No release {tag} on {SELF_UPDATE_REPO}.",
                 hint=f"See https://github.com/{SELF_UPDATE_REPO}/releases"
             );
         } else {
@@ -164,7 +164,7 @@ impl update_self(release: str, current: str, verbose: bool) -> int {
         }
         return 1;
     }
-    rel_tag = str(rel.get("tag_name", "")) or f"v{tag}";
+    rel_tag = str(rel.get("tag_name", "")) or tag;
     found = release_asset(rel.get("assets", []), plat, arch);
     if found is None {
         console.error(

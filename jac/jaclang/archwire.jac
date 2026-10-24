@@ -231,9 +231,9 @@ graph import {
             | client.vite_bundler
             | compiler.driver.application.prepare_application
             | compiler.tools.lang_tools
-            | dist.self_update
             | dist.precompile_bytecode
             | dist.seal
+            | dist.self_update
             | lsp.server.engine
             | lsp.server.server
             | packages.commands
@@ -4313,7 +4313,6 @@ graph import {
     ]
     toolchains.manager --> client.cli.setup { setup_toolchain }
     toolchains.store ++> [
-        dist.self_update.update_self { Artifact, fetch },
         client.targets.mobile_target.MobileTarget.ensure_ready
             | client.targets.node_tooling_common.run_manifest_install
             | client.targets.react_native.build.run_eas_local_build
@@ -4321,11 +4320,10 @@ graph import {
         client.targets.react_native.build.run_gradle_assemble { offline },
         client.targets.react_native.build.run_xcodebuild_ios { offline },
         data.pg_dist._unpack { Artifact as Download, extract, fetch },
+        dist.self_update.update_self
+            | packages.index.fetch_verified
+            | scale.injector.binary._fetch_verified_asset { Artifact, fetch },
         packages.index.Registry._read { allowed_url, offline },
-        packages.index.fetch_verified | scale.injector.binary._fetch_verified_asset {
-            Artifact,
-            fetch
-        },
     ]
     toolchains.system ++> client.targets.desktop.desktop_build._patchelf_rpath {
         ensure_patchelf
