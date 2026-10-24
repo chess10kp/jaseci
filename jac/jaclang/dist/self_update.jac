@@ -9,11 +9,11 @@ import from pathlib { Path }
 
 glob SELF_UPDATE_REPO: str = "jaseci-labs/jaseci";
 
-def platform_triple(system: str = "", machine: str = "") -> ((str, str) | None);
+def platform_triple(system: str = "", machine: str = "") -> (tuple[str, str] | None);
 
 def release_asset(
     assets: list[any], plat: str, arch: str
-) -> ((dict[str, any], str) | None);
+) -> (tuple[dict[str, any], str] | None);
 
 def up_to_date(current: str, latest: str) -> bool;
 

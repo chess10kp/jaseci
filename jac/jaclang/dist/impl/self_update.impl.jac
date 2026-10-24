@@ -1,4 +1,4 @@
-impl platform_triple(system: str = "", machine: str = "") -> ((str, str) | None) {
+impl platform_triple(system: str = "", machine: str = "") -> (tuple[str, str] | None) {
     os_name = (system or platform.system()).lower();
     cpu = (machine or platform.machine()).lower();
     if os_name == "linux" {
@@ -20,7 +20,7 @@ impl platform_triple(system: str = "", machine: str = "") -> ((str, str) | None)
 
 impl release_asset(
     assets: list[any], plat: str, arch: str
-) -> ((dict[str, any], str) | None) {
+) -> (tuple[dict[str, any], str] | None) {
     pattern = re.compile(rf"^jac-(\d+\.\d+\.\d+)-{re.escape(plat)}-{re.escape(arch)}$");
     for asset in assets {
         m = pattern.match(str(asset.get("name", "")));

@@ -1612,6 +1612,7 @@ graph import {
         cli.commands.project { build_jab, make_sealed_image as _make_sealed_image },
         client.targets.desktop.desktop_build.stage_program { build_jab },
     ]
+    dist.self_update --> cli.commands.project.update { update_self }
     dist.source.project --> cli.commands.build._build_app { export_project }
     jac0 ++> dist.precompile_bytecode._seal_boot_unit {
         compile_jac as jac0_compile,
@@ -4756,6 +4757,7 @@ graph import cli {
         cli.jac_version { resolve_cli_version },
         cli.start_cli { handle_manifest_route },
     ]
+    manifest_route --> commands.project.update { resolve_cli_version }
     mcp.mode --> commands.mcp.mcp_cmd { set_mcp_mode }
     mcp.prompts ++> commands.mcp._print_mcp_inventory { PromptProvider }
     mcp.resources ++> commands.mcp._print_mcp_inventory { ResourceProvider }
@@ -14663,12 +14665,15 @@ graph import data.storage {
 
 graph import dist {
     archive ++> seal.build_jab { tar_gz_dir }
-    fused_binary ++> self_update.update_self {
-        linked_source_dir,
-        materialized_runtime_dir,
-        running_executable,
-        runtime_trailer
-    }
+    fused_binary ++> [
+        payload.assemble { LINKED_SOURCE_FILE },
+        self_update.update_self {
+            linked_source_dir,
+            materialized_runtime_dir,
+            running_executable,
+            runtime_trailer
+        },
+    ]
     jab ++> seal.build_jab { jab_app_meta }
     jab_vendor ++> [
         jab { activate_vendored },

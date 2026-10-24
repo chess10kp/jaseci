@@ -4,7 +4,6 @@ import sys;
 import tarfile;
 
 import from compression.zstd { CompressionParameter, compress, decompress }
-import from jaclang.dist.fused_binary { LINKED_SOURCE_FILE }
 
 impl mk_payload(python_dir: str, repo_root: str, out: str, opts: MkPayloadOpts) {
     py = resolve_python(python_dir);
