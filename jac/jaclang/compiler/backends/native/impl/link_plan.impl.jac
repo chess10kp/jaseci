@@ -1677,7 +1677,6 @@ impl resolved_callback_bindings(
     crossing is refused here (and, as a backstop, by
     `register_py_callbacks` at load time) rather than sealing or loading
     a library whose calls misread every argument.""";
-    import from jaclang.compiler.boundary_rules { crossing_refusal }
     wanted = {binding.name for binding in plan.callback_bindings};
     declarations: dict[str, str] = {};
     defined: set[str] = set();

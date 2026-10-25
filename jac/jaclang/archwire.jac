@@ -1403,6 +1403,7 @@ graph import {
     compiler.target_spec ++> [
         dist.precompile_bytecode._shared_suffix { host_target_spec },
         dist.precompile_bytecode.adopt_kernel { host_target_spec },
+        server.sealed_serve.native_lib_suffix { host_target_spec },
     ]
     compiler.target_spec --> dist.precompile_bytecode.seal_native { host_target_spec }
     compiler.tools.code_intel ++> cli.commands.code | studio.native_agent {
