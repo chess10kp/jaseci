@@ -39,14 +39,16 @@ def _build_and_run(name: str) -> str {
 
 test "a None segment renders None, not (null)" {
     got = _build_and_run("fstring_none");
-    assert got == (
-        "start\n"
-        "None\n"      # f"{n}"
-        "xNoney\n"    # f"x{n}y"
-        "'None'\n"    # f"{n!r}"
-        "None\n"      # f"{None}"
-        "  None\n"    # f"{None:>6}" — the spec path pads the string, not the pointer
-        "None\n"      # f"{s}", str | None — unchanged by the fix
-        "end\n"
-    ) , got;
+    assert got
+        == (
+            "start\n"
+            "None\n"  # f"{n}"
+            "xNoney\n"  # f"x{n}y"
+            "None\n"  # f"{n!r}" — repr(None), not repr("None")
+            "  None\n"  # f"{None!r:>6}" — the spec pads the repr, not the pointer
+            "None\n"  # f"{None}"
+            "  None\n"  # f"{None:>6}" — the spec path pads the string, not the pointer
+            "None\n"  # f"{s}", str | None — unchanged by the fix
+            "end\n"
+        ) , got;
 }
