@@ -680,9 +680,18 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
             text = text.replace("%", "%%");
             fmt_parts.append(text);
         } elif isinstance(part, uni.FormattedValue) {
+            _refusals_before = len(self.ctx.errors_had);
             val = self._str_norm_optional(self._codegen_expr(part.format_part));
             if val is None {
                 continue;
+            }
+            # A None-valued segment lowered to a null `i8*`; fed raw to the
+            # `%s` slot it rendered `(null)` (and is UB). Route it through the
+            # same "None" string `print` uses (#9349), or the format spec
+            # branches below would pad a null pointer too.
+            if len(self.ctx.errors_had) == _refusals_before
+                and self._type_key_of(part.format_part) in ("None", "NoneType") {
+                val = self._make_global_string("None", name_prefix=".repr.none");
             }
             _conv = part.conversion if part.conversion is not None else -1;
             if self._opt_payload_of(val.type) is not None {
@@ -858,6 +867,8 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                     }
                     val = obj_s;
                     obj_strs.append(obj_s);
+                } elif self._is_null_ptr_const(val) {
+                    val = self._make_global_string("None", name_prefix=".repr.none");
                 } elif val.type != ir.IntType(8).as_pointer() {
                     self.emit(
                         E5092,
