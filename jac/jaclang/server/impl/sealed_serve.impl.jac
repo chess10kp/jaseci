@@ -137,3 +137,46 @@ impl client_dist_for(path: str) -> (Path | None) {
     }
     return None;
 }
+
+impl native_lib_suffix -> str {
+    return host_target_spec().shared_suffix;
+}
+
+impl native_lib_name(stem: str) -> str {
+    return stem + native_lib_suffix();
+}
+
+impl interop_record_path(lib_output: str) -> Path {
+    return Path(str(lib_output) + INTEROP_RECORD_SUFFIX);
+}
+
+impl read_interop_record(lib_output: str) -> (dict[(str, any)] | None) {
+    import json;
+
+    record = interop_record_path(lib_output);
+    if not record.is_file() {
+        return {};
+    }
+    try {
+        return json.loads(record.read_text(encoding="utf-8"));
+    } except Exception {
+        return None;
+    }
+}
+
+impl write_interop_record(
+    lib_output: str, callbacks: list[dict[(str, any)]], unresolved: list[str]
+) -> None {
+    import json;
+
+    record = interop_record_path(lib_output);
+    record.parent.mkdir(parents=True, exist_ok=True);
+    record.write_text(
+        json.dumps(
+            {"interop": True, "unresolved": unresolved, "callbacks": callbacks},
+            sort_keys=True
+        )
+            + "\n",
+        encoding="utf-8"
+    );
+}

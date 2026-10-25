@@ -6,6 +6,8 @@ glob SHARED_INIT_SYMBOL: str = "__jac_shared_init",
      STR_NEW_SYMBOL: str = "__jac_str_new",
      RC_THREADED_SYMBOL: str = "__jac_rc_threaded";
 
+glob ENTRY_LIB_EXPORTS: list[str] = [ENTRY_SYMBOL, "__jac_argc", "__jac_argv"];
+
 obj GlueUnit {
     has prefix: str,
         init_symbol: str = "",

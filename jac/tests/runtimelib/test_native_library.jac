@@ -49,3 +49,43 @@ test "global lookups do not initialize and the JIT event hook is inert" {
     engine.enable_jit_events();
     assert engine.record == {"path": engine.lib_path};
 }
+
+
+test "register_py_callbacks refuses types the ctypes wire cannot convert" {
+    import from jaclang.runtime.interop_bridge { NativeCallback, register_py_callbacks }
+
+    def sink(name: str, addr: int) {
+        _ = (name, addr);
+    }
+
+    # int bindings register fine (the map's contract).
+    table: dict[(str, Callable)] = {};
+    keeps: list[object] = [];
+    register_py_callbacks(
+        [NativeCallback(name="ok_fn", ret_type="int", param_types=["int"])],
+        table,
+        keeps,
+        sink
+    );
+    assert keeps , "an int-binding callback must register";
+
+    # A `str` lowers to a by-value JacStr carrier that c_char_p can
+    # neither receive nor return -- refusing beats silently misbinding.
+    for bad in [
+        NativeCallback(name="bad_param", ret_type="int", param_types=["str"]),
+        NativeCallback(name="bad_ret", ret_type="str", param_types=["int"])
+    ] {
+        raised = None;
+        try {
+            register_py_callbacks([bad], {}, [], sink);
+        } except ValueError as e {
+            raised = str(e);
+        }
+        assert raised is not None , (
+            f"{bad.name} must be refused, not bound to a wrong ctypes type"
+        );
+        assert "cannot bind" in (raised or "") and "'str'" in (raised or "") , (
+            f"the refusal must name the callback and the type; got: {raised}"
+        );
+    }
+}

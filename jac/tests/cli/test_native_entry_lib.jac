@@ -30,7 +30,7 @@ def _llvm_available -> bool {
 }
 
 
-def _bake(config: any, pkg_copy: Path) -> bool {
+def _bake(config: JacConfig, pkg_copy: Path) -> bool {
     import from jaclang.dist.seal { bake_native_payloads }
     return bake_native_payloads(config, pkg_copy);
 }
@@ -89,7 +89,7 @@ test "native_lib_name uses the platform shared-library suffix" {
 
 
 test "resolve_sv_callbacks finds a nested provider under the image root" {
-    import from jaclang.runtime.interop_bridge { resolve_sv_callbacks }
+    import from jaclang.runtime.interop_bridge { NativeCallback, resolve_sv_callbacks }
     tmp = tempfile.mkdtemp(prefix="jac_sv_resolve_");
     try {
         img = Path(tmp);
@@ -101,12 +101,12 @@ test "resolve_sv_callbacks finds a nested provider under the image root" {
         );
         for src in ["lib/nested_helper.jac", "lib.nested_helper"] {
             callbacks = [
-                {
-                    "name": "nested_double",
-                    "ret_type": "int",
-                    "param_types": ["int"],
-                    "source_module": src
-                }
+                NativeCallback(
+                    name="nested_double",
+                    ret_type="int",
+                    param_types=["int"],
+                    source_module=src
+                )
             ];
             fns = resolve_sv_callbacks(callbacks, str(img));
             assert "nested_double" in fns , (

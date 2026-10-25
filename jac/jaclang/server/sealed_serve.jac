@@ -7,10 +7,23 @@ glob SERVE_MANIFEST_REL: str = os.path.join(".jac", "serve_manifest.json"),
      SERVE_MANIFEST_FORMAT: int = 3,
      CLIENT_DIST_REL: str = os.path.join(".jac", "client", "dist"),
      NATIVE_DIR_REL: str = os.path.join(".jac", "native"),
+     INTEROP_RECORD_SUFFIX: str = ".interop.json",
      _MODULE_KEYS_CACHE: dict[str, tuple[float, set]] = {};
 
 
 def _image_module_keys(img_root: str) -> set;
+
+def native_lib_suffix -> str;
+
+def native_lib_name(stem: str) -> str;
+
+def interop_record_path(lib_output: str) -> Path;
+
+def read_interop_record(lib_output: str) -> (dict[(str, any)] | None);
+
+def write_interop_record(
+    lib_output: str, callbacks: list[dict[(str, any)]], unresolved: list[str]
+) -> None;
 
 
 def _image_key(abs_path: str, img_root: str) -> str;

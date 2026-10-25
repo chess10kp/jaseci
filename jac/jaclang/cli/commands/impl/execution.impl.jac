@@ -1376,18 +1376,9 @@ impl _cli_port(text: str) -> (int | None) {
 }
 
 impl _jab_native_bin(img_root: Path, entry_rel: str) -> (str | None) {
-    try {
-        import jaclang.compiler.backends.native.llvm.binding as llvm;
-        triple = str(llvm.get_default_triple());
-    } except Exception {
-        return None;
-    }
-    stem = base_stem(os.path.basename(entry_rel));
-    cand = os.path.join(str(img_root), NATIVE_DIR_REL, triple, stem);
-    if os.path.isfile(cand) and os.access(cand, os.X_OK) {
-        return cand;
-    }
-    return None;
+    return _jab_native_artifact(
+        img_root, base_stem(os.path.basename(entry_rel)), need_exec=True
+    );
 }
 
 

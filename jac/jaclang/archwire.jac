@@ -11151,6 +11151,7 @@ graph import compiler.backends.native {
     lexical_scope ++> na_ir_gen_pass { FunctionSource, LexicalScope }
     link_glue ++> [
         link_plan {
+            ENTRY_LIB_EXPORTS,
             GlueSpec,
             GlueUnit,
             RC_THREADED_SYMBOL,

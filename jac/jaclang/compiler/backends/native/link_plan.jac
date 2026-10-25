@@ -16,6 +16,8 @@ enum ArtifactKind {
     JIT = "jit"
 }
 
+def is_shared_like(kind: ArtifactKind) -> bool;
+
 glob LIBC_SHARED_NAMES: tuple[str, ...] = ("libc.so.6", "libm.so.6"),
      EXECUTABLE_ENTRY_SYMBOLS: list[str] = ["main", "_start", "_jac_win_start"];
 

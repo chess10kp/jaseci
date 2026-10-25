@@ -328,12 +328,106 @@ impl _restore_target(prev_target: (str | None)) {
 }
 
 
-def _sealed_native_plan(filename: str) -> (tuple[object, LinkPlan, any] | None) {
-    import from jaclang.jac0core.ext_registry { is_jac, is_retired_native_marker }
-    import from jaclang.compiler.driver.program { JacProgram }
-    import from jaclang.compiler.driver.compile_options { CompileOptions }
-    import from jaclang.compiler.backends.native.link_plan { build_link_plan }
+def _sealed_native_plan(filename: str) -> (tuple[JacProgram, LinkPlan, any] | None);
 
+
+def _entry_lib_link(plan: LinkPlan, output: str) -> int;
+
+
+def _build_native_entry_lib(filename: str, output: str) -> int;
+
+
+def _record_proj_dir(filename: str) -> str;
+
+
+def _callback_source_path(binding: any, proj_dir: str) -> str;
+
+
+def _type_name_of(expr: (Expr | None)) -> str;
+
+
+def _callback_binding_from_module(mod: any, name: str) -> (any | None);
+
+
+def _all_callback_bindings(plan: LinkPlan, prog: any, entry_module: any) -> list[any];
+
+
+impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -> int {
+    built = _sealed_native_plan(filename);
+    if built is None {
+        return 1;
+    }
+    (prog, plan, ir_module) = built;
+    plan.callback_bindings = _all_callback_bindings(plan, prog, ir_module);
+    import from jaclang.compiler.backends.native.link_plan { LinkPlanError }
+    try {
+        (glue_bindings, _) = resolved_callback_bindings(plan);
+    } except LinkPlanError as e {
+        console.error(str(e));
+        console.error("Seal aborted.");
+        return 1;
+    }
+    _interop_record = interop_record_path(lib_output);
+    _proj_dir = _record_proj_dir(filename);
+    if plan.callback_bindings {
+        console.warning(
+            "App calls from native code into Python (native_imports): "
+            "dropping the standalone executable (it cannot be "
+            "self-contained) and sealing the host-driven native library only."
+        );
+        lib_rc = _entry_lib_link(plan, lib_output);
+        if lib_rc != 0 {
+            console.error(
+                "Host-driven native library compilation failed; seal aborted."
+            );
+            return lib_rc;
+        }
+        write_interop_record(
+            lib_output,
+            callbacks=[
+                {
+                    "name": b.name,
+                    "symbol": b.symbol or b.name,
+                    "ret_type": b.ret_type,
+                    "param_types": list(b.param_types),
+                    "source_module": _callback_source_path(b, _proj_dir)
+                } for b in glue_bindings
+            ],
+            unresolved=[b.name for b in glue_bindings]
+        );
+    } else {
+        import from jaclang.compiler.backends.native.link_plan {
+            ArtifactKind,
+            LinkPlanError,
+            link_artifact
+        }
+        if _interop_record.exists() {
+            _interop_record.unlink();
+        }
+        try {
+            link_artifact(plan, exe_output, ArtifactKind.EXECUTABLE, log=console.print);
+        } except LinkPlanError as e {
+            console.error(str(e));
+            console.error("Native compilation failed; seal aborted.");
+            return 1;
+        } except Exception as e {
+            console.error(f"Native link failed: {e}");
+            import traceback;
+            traceback.print_exc();
+            return 1;
+        }
+        lib_rc = _entry_lib_link(plan, lib_output);
+        if lib_rc != 0 {
+            console.warning(
+                "In-process native library compilation failed; the sealed bundle "
+                "will run via the standalone binary only."
+            );
+        }
+    }
+    return 0;
+}
+
+impl _sealed_native_plan(filename: str) -> (tuple[JacProgram, LinkPlan, any] | None) {
     if not is_jac(filename) {
         console.error("Input must be a .jac file.");
         return None;
@@ -373,12 +467,7 @@ def _sealed_native_plan(filename: str) -> (tuple[object, LinkPlan, any] | None) 
 }
 
 
-def _entry_lib_link(plan: LinkPlan, output: str) -> int {
-    import from jaclang.compiler.backends.native.link_plan {
-        ArtifactKind,
-        LinkPlanError,
-        link_artifact
-    }
+impl _entry_lib_link(plan: LinkPlan, output: str) -> int {
     try {
         link_artifact(plan, output, ArtifactKind.ENTRY_LIB, log=console.print);
     } except LinkPlanError as e {
@@ -394,7 +483,7 @@ def _entry_lib_link(plan: LinkPlan, output: str) -> int {
 }
 
 
-def _build_native_entry_lib(filename: str, output: str) -> int {
+impl _build_native_entry_lib(filename: str, output: str) -> int {
     built = _sealed_native_plan(filename);
     if built is None {
         return 1;
@@ -405,16 +494,7 @@ def _build_native_entry_lib(filename: str, output: str) -> int {
 }
 
 
-def _record_proj_dir(filename: str) -> str {
-    """The root the interop record's paths are relative to.
-
-    The runner resolves them against the sealed image root, which preserves
-    the project tree, so the record must hold project-root-relative paths --
-    not paths relative to the entry file's directory (a nested entry at
-    `src/main.jac` with a provider at `src/helper.jac` must record
-    `src/helper.jac`). Falls back to the entry's directory outside a project.
-    """;
-
+impl _record_proj_dir(filename: str) -> str {
     proj_root = project_root_of(os.path.abspath(filename));
     if proj_root {
         return os.path.realpath(proj_root);
@@ -423,10 +503,9 @@ def _record_proj_dir(filename: str) -> str {
 }
 
 
-def _callback_source_path(binding: any, proj_dir: str) -> str {
+impl _callback_source_path(binding: any, proj_dir: str) -> str {
     nd = binding.ast_node;
     if nd is not None {
-        import from jaclang.compiler.frontend.unitree { Module }
         mod = nd.find_parent_of_type(Module);
         if mod is not None and mod.loc.mod_path {
             return os.path.relpath(
@@ -440,7 +519,7 @@ def _callback_source_path(binding: any, proj_dir: str) -> str {
 }
 
 
-def _type_name_of(expr: any) -> str {
+impl _type_name_of(expr: (Expr | None)) -> str {
     if expr is None {
         return "int";
     }
@@ -451,18 +530,16 @@ def _type_name_of(expr: any) -> str {
 }
 
 
-def _callback_binding_from_module(mod: any, name: str) -> (any | None) {
-    """Synthesize the na->sv binding for `name` from its defining module.
-
-    A dependency's callback is often absent from every recorded manifest
-    (e.g. a function-scoped server import), so the seal derives the binding
-    from the module that defines the function.
-    """;
+impl _callback_binding_from_module(mod: any, name: str) -> (any | None) {
     if mod is None or mod.loc is None {
         return None;
     }
     for nd in mod.body {
-        if not isinstance(nd, Ability) or nd.name_ref.sym_name != name {
+        if (
+            not isinstance(nd, Ability)
+            or nd.name_ref is None
+            or nd.name_ref.sym_name != name
+        ) {
             continue;
         }
         ret_type = "int";
@@ -481,6 +558,7 @@ def _callback_binding_from_module(mod: any, name: str) -> (any | None) {
         }
         return InteropBinding(
             name=name,
+            symbol=name,
             source_context=InteropContext.SERVER,
             callers={InteropContext.NATIVE},
             ret_type=ret_type,
@@ -493,16 +571,7 @@ def _callback_binding_from_module(mod: any, name: str) -> (any | None) {
 }
 
 
-def _all_callback_bindings(plan: any, prog: any, entry_module: any) -> list {
-    """Union the na->sv callback bindings of every native unit in the plan,
-    not just the entry's.
-
-    `link_artifact` refuses a shared/entry-lib link when ANY unit's Python
-    imports lack a callback binding, and `native_build`'s own
-    standalone-binary check already aggregates `iface.python_imports` across
-    all units. Collecting entry-only let a dependency's callbacks reach
-    neither the lane choice nor the interop record.
-    """;
+impl _all_callback_bindings(plan: LinkPlan, prog: any, entry_module: any) -> list[any] {
     wanted: list[str] = [];
     seen: set = set();
     for unit in plan.units {
@@ -516,7 +585,7 @@ def _all_callback_bindings(plan: any, prog: any, entry_module: any) -> list {
     if not wanted {
         return [];
     }
-    mods: list = [];
+    mods: list[any] = [];
     if entry_module is not None {
         mods.append(entry_module);
     }
@@ -525,7 +594,7 @@ def _all_callback_bindings(plan: any, prog: any, entry_module: any) -> list {
             mods.append(mod);
         }
     }
-    bindings: dict = {};
+    bindings: dict[str, any] = {};
     for mod in mods {
         manifest = mod.gen.interop_manifest if mod.gen else None;
         if manifest is None {
@@ -549,95 +618,15 @@ def _all_callback_bindings(plan: any, prog: any, entry_module: any) -> list {
             }
         }
     }
-    return [
+    result = [
         bindings[name]
         for name in wanted
         if name in bindings
     ];
-}
-
-
-impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -> int {
-    import json;
-
-
-    built = _sealed_native_plan(filename);
-    if built is None {
-        return 1;
-    }
-    (prog, plan, ir_module) = built;
-    plan.callback_bindings = _all_callback_bindings(plan, prog, ir_module);
-    import from jaclang.compiler.backends.native.link_plan { LinkPlanError }
-    try {
-        (glue_bindings, _) = resolved_callback_bindings(plan);
-    } except LinkPlanError as e {
-        console.error(str(e));
-        console.error("Seal aborted.");
-        return 1;
-    }
-    _interop_record = interop_record_path(lib_output);
-    _proj_dir = _record_proj_dir(filename);
-    if plan.callback_bindings {
-        console.warning(
-            "App calls from native code into Python (native_imports): "
-            "dropping the standalone executable (it cannot be "
-            "self-contained) and sealing the host-driven native library only."
-        );
-        lib_rc = _entry_lib_link(plan, lib_output);
-        if lib_rc != 0 {
-            console.error(
-                "Host-driven native library compilation failed; seal aborted."
-            );
-            return lib_rc;
-        }
-        _interop_record.parent.mkdir(parents=True, exist_ok=True);
-        _interop_record.write_text(
-            json.dumps(
-                {
-                    "interop": True,
-                    "unresolved": [b.name for b in glue_bindings],
-                    "callbacks": [
-                        {
-                            "name": b.name,
-                            "ret_type": b.ret_type,
-                            "param_types": list(b.param_types),
-                            "source_module": _callback_source_path(b, _proj_dir)
-                        } for b in glue_bindings
-                    ]
-                },
-                sort_keys=True
-            )
-                + "\n",
-            encoding="utf-8"
-        );
-    } else {
-        import from jaclang.compiler.backends.native.link_plan {
-            ArtifactKind,
-            LinkPlanError,
-            link_artifact
-        }
-        if _interop_record.exists() {
-            _interop_record.unlink();
-        }
-        try {
-            link_artifact(plan, exe_output, ArtifactKind.EXECUTABLE, log=console.print);
-        } except LinkPlanError as e {
-            console.error(str(e));
-            console.error("Native compilation failed; seal aborted.");
-            return 1;
-        } except Exception as e {
-            console.error(f"Native link failed: {e}");
-            import traceback;
-            traceback.print_exc();
-            return 1;
-        }
-        lib_rc = _entry_lib_link(plan, lib_output);
-        if lib_rc != 0 {
-            console.warning(
-                "In-process native library compilation failed; the sealed bundle "
-                "will run via the standalone binary only."
-            );
+    for binding in result {
+        if not binding.symbol {
+            binding.symbol = binding.name;
         }
     }
-    return 0;
+    return result;
 }

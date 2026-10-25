@@ -12,11 +12,16 @@ obj NativeCallback {
     has name: str,
         symbol: str,
         ret_type: str,
-        param_types: list[str];
+        param_types: list[str],
+        source_module: str = "";
 }
 
 def native_callback_of(record: dict[str, any], product: str) -> NativeCallback;
 def callback_ctype(type_name: str) -> (type | None);
+
+def resolve_sv_callbacks(
+    callbacks: Iterable[NativeCallback], img_root: str
+) -> dict[(str, Callable)];
 
 obj NativeLibrary {
     has path: str,

@@ -220,3 +220,43 @@ impl register_py_callbacks(
         register_symbol(binding.symbol, cb_addr);
     }
 }
+
+
+impl resolve_sv_callbacks(
+    callbacks: Iterable[NativeCallback], img_root: str
+) -> dict[(str, Callable)] {
+    import os;
+    import sys;
+    functions: dict[(str, Callable)] = {};
+    for cb in callbacks {
+        name = cb.name;
+        src = cb.source_module;
+        if not (name and src) {
+            sys.stderr.write(
+                f"na->sv callback {name!r} has no recorded source module; "
+                "calls into it return 0\n"
+            );
+            continue;
+        }
+        mod_path = src if os.path.isabs(src) else os.path.join(img_root, src);
+        if (not os.path.exists(mod_path) and "." in src and not src.endswith(".jac")) {
+            alt = os.path.join(img_root, src.replace(".", os.sep) + ".jac");
+            if os.path.exists(alt) {
+                mod_path = alt;
+            }
+        }
+        try {
+            mod = _pyb_import_module(mod_path);
+            fn = getattr(mod, name, None);
+        } except Exception as e {
+            sys.stderr.write(f"failed to load '{src}' for callback '{name}': {e}\n");
+            continue;
+        }
+        if fn is None {
+            sys.stderr.write(f"'{name}' not found in {src}; calls into it return 0\n");
+            continue;
+        }
+        functions[cb.symbol or name] = fn;
+    }
+    return functions;
+}

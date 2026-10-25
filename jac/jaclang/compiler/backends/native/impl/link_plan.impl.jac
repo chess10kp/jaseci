@@ -214,12 +214,13 @@ impl LinkPlan.glue_spec(
     return GlueSpec(
         units=units,
         root_index=root_index,
-        shared=(kind == ArtifactKind.SHARED),
+        shared=is_shared_like(kind),
+        entry_lib=kind == ArtifactKind.ENTRY_LIB,
         platform=platform if kind != ArtifactKind.JIT else "jit",
         static_musl=static_musl,
         triple=self.triple,
         clib_paths=self.clib_paths(),
-        needs_atexit_shim=(is_elf and (kind == ArtifactKind.SHARED or not static_musl)),
+        needs_atexit_shim=(is_elf and (is_shared_like(kind) or not static_musl)),
         needs_region_hook=not hook_supplied
     );
 }
@@ -917,7 +918,7 @@ impl optimize_whole_program(
     assert isinstance(pb, llvm.PassBuilder);
     mpm = pb.getModulePassManager();
     assert isinstance(mpm, llvm.ModulePassManager);
-    if kind == ArtifactKind.SHARED {
+    if is_shared_like(kind) {
         exports = plan.pub_exports()
             + [
                 SHARED_INIT_SYMBOL,
@@ -929,7 +930,10 @@ impl optimize_whole_program(
                 "jac_heap_size",
                 "jac_list_heap_size"
             ];
-        exports.extend(callback_bind_exports(plan));
+        if kind == ArtifactKind.ENTRY_LIB {
+            exports.extend(ENTRY_LIB_EXPORTS);
+        }
+        exports.extend('__jac_bind_' + b.name for b in plan.callback_bindings);
         internalize_native_implementation(merged, exports);
     }
     if kind == ArtifactKind.EXECUTABLE {
@@ -1118,7 +1122,7 @@ impl link_artifact(
     log: any = None,
     app_imports: (set | None) = None
 ) -> LinkResult {
-    if kind == ArtifactKind.SHARED {
+    if is_shared_like(kind) {
         for unit in plan.units {
             if set(unit.iface.python_imports)
                 - {b.name for b in plan.callback_bindings} {
@@ -1135,7 +1139,7 @@ impl link_artifact(
     platform = _platform_of(plan.triple);
     is_macos = platform == "macho";
     is_windows = platform == "pe";
-    shared = kind == ArtifactKind.SHARED;
+    shared = is_shared_like(kind);
 
     clib_paths = plan.clib_paths();
     clib_symbol_lib = plan.clib_symbol_lib();
@@ -1652,6 +1656,14 @@ impl internalize_native_implementation(module: ModuleRef, exports: list[str]) {
     }
 }
 
+impl is_shared_like(kind: ArtifactKind) -> bool {
+    """Kinds linked through the shared-library machinery: `SHARED` and the
+    host-driven `ENTRY_LIB`. Every shared-vs-executable decision goes
+    through here so a new shared-like kind only changes one place.""";
+    return kind in (ArtifactKind.SHARED, ArtifactKind.ENTRY_LIB);
+}
+
+
 impl resolved_callback_bindings(
     plan: LinkPlan
 ) -> tuple[list[InteropBinding], dict[str, str]] {
@@ -1662,8 +1674,9 @@ impl resolved_callback_bindings(
     The runtime trampoline map (`JAC_TO_CTYPES`) converts int/float/bool
     and the sized scalars only -- a `str` lowers to a by-value `JacStr`
     carrier that `c_char_p` can neither receive nor return, so the
-    crossing is refused here (the same refusal placement applies) rather
-    than sealing a library whose calls misread every argument.""";
+    crossing is refused here (and, as a backstop, by
+    `register_py_callbacks` at load time) rather than sealing or loading
+    a library whose calls misread every argument.""";
     import from jaclang.compiler.boundary_rules { crossing_refusal }
     wanted = {binding.name for binding in plan.callback_bindings};
     declarations: dict[str, str] = {};
@@ -1705,7 +1718,7 @@ impl resolved_callback_bindings(
     }
     for b in bindings {
         for pt in b.param_types {
-            why = crossing_refusal(pt, "native", "server", False, True);
+            why = crossing_refusal(pt, "native", "server", placing=True);
             if why is not None {
                 raise LinkPlanError(
                     f"na->sv callback {b.name!r} cannot seal: its '{pt}' "
@@ -1713,7 +1726,9 @@ impl resolved_callback_bindings(
                 );
             }
         }
-        why = crossing_refusal(b.ret_type, "native", "server", True, True);
+        why = crossing_refusal(
+            b.ret_type, "native", "server", is_return=True, placing=True
+        );
         if why is not None {
             raise LinkPlanError(
                 f"na->sv callback {b.name!r} cannot seal: its "
