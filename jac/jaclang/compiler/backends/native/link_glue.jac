@@ -62,6 +62,10 @@ def platform_entry_ir(spec: GlueSpec) -> str;
 
 def entry_lib_protocol_ir(spec: GlueSpec) -> str;
 
+def entry_lib_dll_main_ir -> str;
+
+def shared_init_registration_ir(spec: GlueSpec) -> str;
+
 def link_glue_ir(spec: GlueSpec) -> tuple[str, list[str]];
 
 def init_object_codegen;

@@ -789,3 +789,85 @@ test "seal succeeds when a native module imports a server fn it never calls" {
         shutil.rmtree(tmp, ignore_errors=True);
     }
 }
+
+
+test "entry-lib PE glue keeps a DllMain so /entry: resolves (init stays host-driven)" {
+    import from jaclang.compiler.backends.native.link_glue {
+        GlueSpec,
+        GlueUnit,
+        link_glue_ir
+    }
+    spec = GlueSpec(
+        units=[GlueUnit(prefix="m")],
+        root_index=0,
+        shared=True,
+        entry_lib=True,
+        platform="pe"
+    );
+    (glue_ir, exports) = link_glue_ir(spec);
+    assert "define i32 @__jac_dll_main(" in glue_ir , (
+        "a PE entry library must still define __jac_dll_main: lld-link "
+        "resolves /entry:__jac_dll_main for every /dll link and under "
+        "/nodefaultlib there is no CRT default -- without the stub every "
+        "Windows entry-library seal fails to link"
+    );
+    dll_main = glue_ir.split("define i32 @__jac_dll_main(")[1].split("\n}\n")[0];
+    assert "__jac_shared_init" not in dll_main , (
+        "the entry-lib DllMain must not run __jac_shared_init: callbacks "
+        "bind and argv populates only after the host loads the library"
+    );
+    assert "ret i32 1" in dll_main , "DllMain reports success";
+    assert "__jac_shared_init" in exports , exports;
+    plain = GlueSpec(
+        units=[GlueUnit(prefix="m")],
+        root_index=0,
+        shared=True,
+        entry_lib=False,
+        platform="pe"
+    );
+    (plain_ir, _exports) = link_glue_ir(plain);
+    assert "call void @__jac_shared_init()" in plain_ir , (
+        "a plain shared PE library keeps the init-calling DllMain"
+    );
+}
+
+
+test "_run_native_lib refuses unresolvable helpers instead of binding zero stubs" {
+    tmp = tempfile.mkdtemp(prefix="jac_missing_helper_");
+    try {
+        loaded: list[str] = [];
+        inits: list[bool] = [];
+
+        def _boom_cdll(*a: object, **k: object) -> object {
+            loaded.append("cdll");
+            raise AssertionError("CDLL must not be reached");
+        }
+
+        with patch("ctypes.CDLL", _boom_cdll) {
+            rc = exec_cmds._run_native_lib(
+                "fake.so",
+                ["app.jac"],
+                callbacks=[
+                    {
+                        "name": "pyz",
+                        "ret_type": "int",
+                        "param_types": ["int"],
+                        "source_module": "ghost.jac"
+                    }
+                ],
+                img_root=Path(tmp)
+            );
+        }
+        assert rc is None , (
+            "a recorded helper the image cannot resolve must refuse the "
+            "in-process load, not register a trampoline returning 0"
+        );
+        assert not loaded , (
+            "the refusal must precede dlopen: register_py_callbacks binds "
+            "zero-returning stubs during initialize()"
+        );
+        assert not inits , "__jac_shared_init must not run for a refused load";
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}

@@ -268,6 +268,8 @@ impl platform_entry_ir(spec: GlueSpec) -> str {
     return entry_elf_ir();
 }
 
+
+
 impl shared_init_registration_ir(spec: GlueSpec) -> str {
     if spec.platform == "pe" {
         return (
@@ -334,7 +336,11 @@ impl link_glue_ir(spec: GlueSpec) -> tuple[str, list[str]] {
         parts.append(posix_floor_ir(floor_osarch));
     }
     if spec.shared {
-        parts.append(shared_init_registration_ir(spec));
+        if not spec.entry_lib {
+            parts.append(shared_init_registration_ir(spec));
+        } elif spec.platform == "pe" {
+            parts.append(entry_lib_dll_main_ir());
+        }
         exports.append(SHARED_INIT_SYMBOL);
     }
     if shared_entry_symbol(spec) {
