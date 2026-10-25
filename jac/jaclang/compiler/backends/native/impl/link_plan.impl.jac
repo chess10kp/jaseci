@@ -1651,3 +1651,75 @@ impl internalize_native_implementation(module: ModuleRef, exports: list[str]) {
         value.linkage = "internal";
     }
 }
+
+impl resolved_callback_bindings(
+    plan: LinkPlan
+) -> tuple[list[InteropBinding], dict[str, str]] {
+    """Resolve callbacks against all unit bitcode; skip unreferenced imports.
+
+    Bindings that survive get bind slots and interop-record entries, so
+    each one must be a signature the ctypes bridge can actually honor.
+    The runtime trampoline map (`JAC_TO_CTYPES`) converts int/float/bool
+    and the sized scalars only -- a `str` lowers to a by-value `JacStr`
+    carrier that `c_char_p` can neither receive nor return, so the
+    crossing is refused here (the same refusal placement applies) rather
+    than sealing a library whose calls misread every argument.""";
+    import from jaclang.compiler.boundary_rules { crossing_refusal }
+    wanted = {binding.name for binding in plan.callback_bindings};
+    declarations: dict[str, str] = {};
+    defined: set[str] = set();
+    registry = plan.prog.native_units();
+    for unit in plan.units {
+        bitcode = registry.bitcode_for(unit.path, plan.options);
+        if bitcode is None {
+            raise LinkPlanError(f"No bitcode for {unit.path}");
+        }
+        module = llvm.parse_bitcode(bitcode);
+        for function in module.functions {
+            if function.name in wanted {
+                if function.is_declaration {
+                    declarations[function.name] = str(function);
+                } else {
+                    defined.add(function.name);
+                }
+            }
+        }
+    }
+    bindings = [
+        b
+        for b in plan.callback_bindings
+        if b.name not in defined
+    ];
+    unreferenced = {b.name for b in bindings} - set(declarations);
+    if unreferenced {
+        sys.stderr.write(
+            f"[link plan] no IR references for na->sv callback(s) {', '.join(
+                sorted(unreferenced)
+            )}; skipping their bind slots\n"
+        );
+        bindings = [
+            b
+            for b in bindings
+            if b.name in declarations
+        ];
+    }
+    for b in bindings {
+        for pt in b.param_types {
+            why = crossing_refusal(pt, "native", "server", False, True);
+            if why is not None {
+                raise LinkPlanError(
+                    f"na->sv callback {b.name!r} cannot seal: its '{pt}' "
+                    f"parameter crosses the ctypes wire; {why}"
+                );
+            }
+        }
+        why = crossing_refusal(b.ret_type, "native", "server", True, True);
+        if why is not None {
+            raise LinkPlanError(
+                f"na->sv callback {b.name!r} cannot seal: its "
+                f"'{b.ret_type}' return crosses the ctypes wire; {why}"
+            );
+        }
+    }
+    return (bindings, declarations);
+}

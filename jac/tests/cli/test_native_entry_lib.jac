@@ -871,3 +871,113 @@ test "_run_native_lib refuses unresolvable helpers instead of binding zero stubs
         shutil.rmtree(tmp, ignore_errors=True);
     }
 }
+
+
+test "_jab_run_entry_lib refuses untrusted or missing interop records" {
+    if not _llvm_available() {
+        testskip("LLVM toolchain unavailable");
+    }
+    import jaclang.compiler.backends.native.llvm.binding as llvm;
+    triple = str(llvm.get_default_triple());
+    tmp = tempfile.mkdtemp(prefix="jac_record_guard_");
+    try {
+        pkg = Path(tmp) / "pkg";
+        triple_dir = pkg / ".jac" / "native" / triple;
+        triple_dir.mkdir(parents=True);
+        (pkg / "main.jac").write_text("with entry { }\n", encoding="utf-8");
+        lib = triple_dir / native_lib_name("main");
+        record = triple_dir / (native_lib_name("main") + ".interop.json");
+        lib.write_bytes(b"");
+        record.write_text("{ not json", encoding="utf-8");
+        for lane in (True, False) {
+            rc = exec_cmds._jab_run_entry_lib(
+                pkg, "main.jac", ["app.jac"], interop=lane
+            );
+            assert rc is None , (
+                "a corrupt interop record must refuse the in-process load "
+                f"in the {'interop' if lane else 'plain'} lane: the library "
+                "was sealed with callbacks its slots cannot receive"
+            );
+        }
+        record.unlink();
+        rc = exec_cmds._jab_run_entry_lib(pkg, "main.jac", ["app.jac"], interop=True);
+        assert rc is None , (
+            "an interop jab whose record went missing must fall back, not "
+            "run a library whose bind slots stay null"
+        );
+        reached: list[bool] = [];
+
+        def _probe_cdll(*a: object, **k: object) -> object {
+            reached.append(True);
+            raise OSError("probe");
+        }
+
+        with patch("ctypes.CDLL", _probe_cdll) {
+            rc = exec_cmds._jab_run_entry_lib(
+                pkg, "main.jac", ["app.jac"], interop=False
+            );
+        }
+        assert rc is None and reached , (
+            "a plain (record-less) library must stay loadable in the "
+            "non-interop lane: the record guard refuses before dlopen "
+            "only for corrupt or missing records on interop seals"
+        );
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}
+
+
+test "seal refuses a str-crossing callback with the designed error" {
+    # The refusal fires during binding resolution, before any linking, so
+    # the test runs on every host with an LLVM toolchain.
+    if not _llvm_available() {
+        testskip("LLVM toolchain unavailable");
+    }
+    tmp = tempfile.mkdtemp(prefix="jac_str_callback_");
+    try {
+        proj = Path(tmp) / "proj";
+        proj.mkdir();
+        (proj / "helper.jac").write_text(
+            "def:pub shout(s: str) -> str {\n    return s + '!';\n}\n", encoding="utf-8"
+        );
+        (proj / "main.jac").write_text(
+            "import from .helper { shout }\n\n"
+            "with entry {\n    print(shout(\"hey\"));\n}\n",
+            encoding="utf-8"
+        );
+        (proj / "jac.toml").write_text(
+            '[project]\nname = "strcb"\nversion = "0.1.0"\n'
+                + 'entry-point = "main"\nkind = "cli-native"\n'
+                + '[placement.pins]\nmain = "native"\nhelper = "server"\n',
+            encoding="utf-8"
+        );
+        import from jaclang.cli.commands.native_build { native_build_sealed_pair }
+        import from jaclang.cli.console { console as _console }
+        errors: list[object] = [];
+        with patch.object(
+            _console, "error", side_effect=lambda (m: object) { errors.append(m); }
+        ) {
+            rc = native_build_sealed_pair(
+                filename=str(proj / "main.jac"),
+                exe_output=str(proj / "main"),
+                lib_output=str(proj / "libmain.entry.so")
+            );
+        }
+        assert rc == 1 , "a str-crossing callback must refuse the seal";
+        assert not Path(str(proj / "libmain.entry.so")).is_file() , (
+            "no library may be sealed for a signature the ctypes bridge "
+            "cannot convert"
+        );
+        assert not Path(str(proj / "libmain.entry.so") + ".interop.json").is_file() , (
+            "no interop record may be written for a refused callback"
+        );
+        text = " ".join(str(m) for m in errors);
+        assert "'shout'" in text and "'str'" in text , (
+            "the refusal must name the callback and the unconvertible type "
+            f"instead of failing inside LLVM; got: {text}"
+        );
+    } finally {
+        shutil.rmtree(tmp, ignore_errors=True);
+    }
+}

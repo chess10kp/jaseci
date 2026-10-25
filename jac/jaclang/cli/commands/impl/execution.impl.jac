@@ -42,25 +42,6 @@ obj NativeArgv {
     }
 }
 
-def _set_native_argv_in_dll(lib: CDLL, argv: list[str]) -> bool {
-    import ctypes;
-
-    native_argv = NativeArgv(argv);
-    try {
-        ctypes.c_int32.in_dll(lib, "__jac_argc").value = native_argv.argc;
-        ctypes.c_void_p.in_dll(lib, "__jac_argv").value = ctypes.cast(
-            native_argv.vector, ctypes.c_void_p
-        ).value;
-    } except ValueError as e {
-        console.warning(
-            f"native library missing __jac_argc/__jac_argv globals ({e}); "
-            "running entry with argc=0"
-        );
-        return False;
-    }
-    setattr(lib, "_jac_argv_refs", (native_argv.refs, native_argv.vector));
-    return True;
-}
 
 def _populate_native_argv(
     engine: ExecutionEngine | SharedNativeEngine, argv: list[str]

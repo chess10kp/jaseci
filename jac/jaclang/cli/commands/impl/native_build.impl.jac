@@ -567,7 +567,14 @@ impl native_build_sealed_pair(filename: str, exe_output: str, lib_output: str) -
     }
     (prog, plan, ir_module) = built;
     plan.callback_bindings = _all_callback_bindings(plan, prog, ir_module);
-    (glue_bindings, _) = resolved_callback_bindings(plan);
+    import from jaclang.compiler.backends.native.link_plan { LinkPlanError }
+    try {
+        (glue_bindings, _) = resolved_callback_bindings(plan);
+    } except LinkPlanError as e {
+        console.error(str(e));
+        console.error("Seal aborted.");
+        return 1;
+    }
     _interop_record = interop_record_path(lib_output);
     _proj_dir = _record_proj_dir(filename);
     if plan.callback_bindings {

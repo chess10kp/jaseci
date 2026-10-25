@@ -5585,6 +5585,7 @@ graph import compiler {
         JcirGenPass
     }
     boundary_rules ++> [
+        backends.native.link_plan.resolved_callback_bindings { crossing_refusal },
         passes.placement_pass.NativeLegality.settle { ability_crossing },
         passes.placement_pass.bridged_use_crosses { ability_crossing },
         passes.placement_pass.uncrossable_native { ability_crossing },
