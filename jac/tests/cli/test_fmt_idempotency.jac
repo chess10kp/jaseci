@@ -49,10 +49,10 @@ def reset_state {
 """Format `path` twice, returning the bytes after each pass."""
 def fmt_twice(path: Path) -> tuple[str, str] {
     reset_state();
-    fmt_cmd([str(path)]);
+    assert fmt_cmd([str(path)]) == 0 , "first format pass must succeed";
     after_first = path.read_text();
     reset_state();
-    fmt_cmd([str(path)]);
+    assert fmt_cmd([str(path)]) == 0 , "second format pass must succeed";
     after_second = path.read_text();
     return (after_first, after_second);
 }
