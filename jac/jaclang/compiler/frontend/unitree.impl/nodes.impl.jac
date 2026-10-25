@@ -3516,12 +3516,6 @@ impl EmptyToken.init(orig_src: (Source | None) = None) -> None {
         pos_start=0,
         pos_end=0
     );
-    # An EmptyToken stands in for an empty production and never corresponds to
-    # source text (degenerate zero loc by construction). Marking it synthetic
-    # keeps token-anchoring passes -- e.g. CommentAttachPass, which skips
-    # synthetic tokens -- from treating it as a real anchor; a comment-only
-    # module's comments must attach to the module, not trail this placeholder
-    # (issue #8564).
     self._is_synthetic = True;
 }
 
