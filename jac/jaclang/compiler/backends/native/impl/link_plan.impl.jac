@@ -779,7 +779,7 @@ impl callback_glue_ir(plan: LinkPlan) -> str {
         );
     }
     (text, _) = bind_shared_callbacks(
-        "\n".join(declarations[b.symbol] for b in bindings), bindings
+        "\n".join(declarations[b.symbol or b.name] for b in bindings), bindings
     );
     return text;
 }
@@ -1657,9 +1657,6 @@ impl internalize_native_implementation(module: ModuleRef, exports: list[str]) {
 }
 
 impl is_shared_like(kind: ArtifactKind) -> bool {
-    """Kinds linked through the shared-library machinery: `SHARED` and the
-    host-driven `ENTRY_LIB`. Every shared-vs-executable decision goes
-    through here so a new shared-like kind only changes one place.""";
     return kind in (ArtifactKind.SHARED, ArtifactKind.ENTRY_LIB);
 }
 
@@ -1677,7 +1674,7 @@ impl resolved_callback_bindings(
     crossing is refused here (and, as a backstop, by
     `register_py_callbacks` at load time) rather than sealing or loading
     a library whose calls misread every argument.""";
-    wanted = {binding.name for binding in plan.callback_bindings};
+    wanted = {binding.symbol or binding.name for binding in plan.callback_bindings};
     declarations: dict[str, str] = {};
     defined: set[str] = set();
     registry = plan.prog.native_units();
@@ -1702,7 +1699,7 @@ impl resolved_callback_bindings(
         for b in plan.callback_bindings
         if b.name not in defined
     ];
-    unreferenced = {b.name for b in bindings} - set(declarations);
+    unreferenced = {(b.symbol or b.name) for b in bindings} - set(declarations);
     if unreferenced {
         sys.stderr.write(
             f"[link plan] no IR references for na->sv callback(s) {', '.join(

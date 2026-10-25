@@ -531,12 +531,6 @@ impl _type_name_of(expr: (Expr | None)) -> str {
 
 
 impl _callback_binding_from_module(mod: any, name: str) -> (any | None) {
-    """Synthesize the na->sv binding for `name` from its defining module.
-
-    A dependency's callback is often absent from every recorded manifest
-    (e.g. a function-scoped server import), so the seal derives the binding
-    from the module that defines the function.
-    """;
     if mod is None or mod.loc is None {
         return None;
     }
@@ -578,15 +572,6 @@ impl _callback_binding_from_module(mod: any, name: str) -> (any | None) {
 
 
 impl _all_callback_bindings(plan: LinkPlan, prog: any, entry_module: any) -> list[any] {
-    """Union the na->sv callback bindings of every native unit in the plan,
-    not just the entry's.
-
-    `link_artifact` refuses a shared/entry-lib link when ANY unit's Python
-    imports lack a callback binding, and `native_build`'s own
-    standalone-binary check already aggregates `iface.python_imports` across
-    all units. Collecting entry-only let a dependency's callbacks reach
-    neither the lane choice nor the interop record.
-    """;
     wanted: list[str] = [];
     seen: set = set();
     for unit in plan.units {
