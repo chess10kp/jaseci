@@ -416,6 +416,16 @@ def _fake_jab_image(img_root: Path, interop: bool) {
     };
     (pre / "MANIFEST.json").write_text(json.dumps(meta), encoding="utf-8");
     (img_root / "main.jac").write_text("with entry { }\n", encoding="utf-8");
+    if interop {
+        # A real interop seal always writes the sidecar beside the
+        # library, and the runner refuses an interop library whose record
+        # is missing -- an image that claims interop without one is
+        # broken. The fake library path is <img_root>/lib, so the sidecar
+        # is <img_root>/lib.interop.json with an empty callback list.
+        (img_root / "lib.interop.json").write_text(
+            json.dumps({"interop": True, "callbacks": []}), encoding="utf-8"
+        );
+    }
 }
 
 
