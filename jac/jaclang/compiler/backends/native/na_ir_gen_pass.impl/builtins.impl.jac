@@ -686,13 +686,6 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                 continue;
             }
             _conv = part.conversion if part.conversion is not None else -1;
-            # A None-valued segment lowered to a null `i8*`; fed raw to the
-            # `%s` slot it rendered `(null)` (and is UB). Route it through the
-            # same "None" string `print` uses (#9349), or the format spec
-            # branches below would pad a null pointer too. `!r` is excluded:
-            # `_repr_str_fn`'s null case already yields the unquoted `None`
-            # repr(None) must be, while repr-ing this substitute string would
-            # render it quoted.
             if _conv != 114
                 and len(self.ctx.errors_had) == _refusals_before
                 and self._type_key_of(part.format_part) in ("None", "NoneType") {
