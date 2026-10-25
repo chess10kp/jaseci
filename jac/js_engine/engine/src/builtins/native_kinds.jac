@@ -998,7 +998,8 @@ glob:pub NATIVE_KIND_CONSOLE_LOG: int = 1,
      NATIVE_KIND_WASM_TABLE_SET_VALUE: int = 1109,
      NATIVE_KIND_WASM_EXTERN_VALUE: int = 1110,
      NATIVE_KIND_WASM_TABLE_ELEM_KIND: int = 1111,
-     NATIVE_KIND_LAST: int = 1112;
+     NATIVE_KIND_WASM_FUNC_INVOKE_FAST: int = 1112,
+     NATIVE_KIND_LAST: int = 1113;
 
 
 # ── Global numeric / string utilities ────────────────────────────────────────

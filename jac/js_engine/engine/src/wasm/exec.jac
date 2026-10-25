@@ -715,6 +715,36 @@ def:pub invoke_result_count -> int {
     return len(_RESULTS);
 }
 
+"""Direct i32 fast entry for `invoke`: up to 4 i32 args written straight into
+the frame, no list marshaling. Results land in _RESULTS as usual (0 or 1
+entry). Same rc contract as invoke (0 ok, 1 trap)."""
+def:pub invoke_i32_fast(f: int, n: int, a0: int, a1: int, a2: int, a3: int) -> int {
+    _ensure_stacks();
+    _TRAP = "";
+    fp: int = _VS_TOP;
+    need: int = _ld(f, 3);
+    if fp + need * 8 > _VS_END { return _trap("call stack exhausted"); }
+    if n > 0 { __mem_store_i64(fp, a0); }
+    if n > 1 { __mem_store_i64(fp + 8, a1); }
+    if n > 2 { __mem_store_i64(fp + 16, a2); }
+    if n > 3 { __mem_store_i64(fp + 24, a3); }
+    saved_top: int = _VS_TOP;
+    saved_fs: int = _FS_TOP;
+    rc: int = 0;
+    if _ld(f, 0) == 0 {
+        _VS_TOP = fp + need * 8;
+        hcb: Callable[[int, int, int], int] = _HOST[0];
+        rc = hcb(_ld(f, 7), fp, f);
+    } else {
+        rc = _run(f, fp);
+    }
+    _VS_TOP = saved_top;
+    _FS_TOP = saved_fs;
+    _RESULTS = [];
+    if rc == 0 and _ld(f, 4) > 0 { _RESULTS.append(__mem_load_i64(fp)); }
+    return rc;
+}
+
 # ── Numeric helpers ──────────────────────────────────────────────────────────
 
 def _fdiv(a: float, b: float) -> float {
@@ -1089,6 +1119,50 @@ def _run(entry_f: int, entry_fp: int) -> int {
                 __mem_store_i8(mb + ea2, i8.wrap(v));
                 __mem_store_i8(mb + ea2 + 1, i8.wrap(v >> 8));
             }
+        } elif op == 108 {      # i32.mul (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), int(i32.wrap(__mem_load_i64(fp + __mem_load_i64(pc + 16)) * __mem_load_i64(fp + __mem_load_i64(pc + 24)))));
+            pc = pc + 32;
+        } elif op == 124 {      # i64.add (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), wrapping_add(__mem_load_i64(fp + __mem_load_i64(pc + 16)), __mem_load_i64(fp + __mem_load_i64(pc + 24))));
+            pc = pc + 32;
+        } elif op == 126 {      # i64.mul (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), wrapping_mul(__mem_load_i64(fp + __mem_load_i64(pc + 16)), __mem_load_i64(fp + __mem_load_i64(pc + 24))));
+            pc = pc + 32;
+        } elif op == 115 {      # i32.xor (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), __mem_load_i64(fp + __mem_load_i64(pc + 16)) ^ __mem_load_i64(fp + __mem_load_i64(pc + 24)));
+            pc = pc + 32;
+        } elif op == 133 {      # i64.xor (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), __mem_load_i64(fp + __mem_load_i64(pc + 16)) ^ __mem_load_i64(fp + __mem_load_i64(pc + 24)));
+            pc = pc + 32;
+        } elif op == 136 {      # i64.shr_u (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), _shr_u64(__mem_load_i64(fp + __mem_load_i64(pc + 16)), __mem_load_i64(fp + __mem_load_i64(pc + 24)) & 63));
+            pc = pc + 32;
+        } elif op == 160 {      # f64.add (hot)
+            x2h: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 16)));
+            y2h: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 24)));
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), __float_bits(x2h + y2h));
+            pc = pc + 32;
+        } elif op == 161 {      # f64.sub (hot)
+            x2s: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 16)));
+            y2s: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 24)));
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), __float_bits(x2s - y2s));
+            pc = pc + 32;
+        } elif op == 162 {      # f64.mul (hot)
+            x2m: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 16)));
+            y2m: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 24)));
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), __float_bits(x2m * y2m));
+            pc = pc + 32;
+        } elif op == 75 {       # i32.gt_u (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), 1 if (__mem_load_i64(fp + __mem_load_i64(pc + 16)) & M32) > (__mem_load_i64(fp + __mem_load_i64(pc + 24)) & M32) else 0);
+            pc = pc + 32;
+        } elif op == 73 {       # i32.lt_u (hot)
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), 1 if (__mem_load_i64(fp + __mem_load_i64(pc + 16)) & M32) < (__mem_load_i64(fp + __mem_load_i64(pc + 24)) & M32) else 0);
+            pc = pc + 32;
+        } elif op == 101 {      # f64.le (hot)
+            x3l: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 16)));
+            y3l: float = __bits_float(__mem_load_i64(fp + __mem_load_i64(pc + 24)));
+            __mem_store_i64(fp + __mem_load_i64(pc + 8), 1 if x3l <= y3l else 0);
+            pc = pc + 32;
         } elif op >= 69 and op <= 196 {
             d: int = fp + __mem_load_i64(pc + 8);
             a: int = __mem_load_i64(fp + __mem_load_i64(pc + 16));
@@ -1523,10 +1597,7 @@ def _run(entry_f: int, entry_fp: int) -> int {
                 inst = ninst;
                 funcs = __mem_load_i64(inst);
                 mem = __mem_load_i64(inst + 8);
-            }
-            if mem != 0 {
-                mb = __mem_load_i64(mem);
-                ms = __mem_load_i64(mem + 8);
+                if mem != 0 { mb = __mem_load_i64(mem); ms = __mem_load_i64(mem + 8); }
             }
         } elif op == 6 {  # RET src n
             src: int = __mem_load_i64(pc + 8);
@@ -1551,10 +1622,7 @@ def _run(entry_f: int, entry_fp: int) -> int {
                 inst = pinst;
                 funcs = __mem_load_i64(inst);
                 mem = __mem_load_i64(inst + 8);
-            }
-            if mem != 0 {
-                mb = __mem_load_i64(mem);
-                ms = __mem_load_i64(mem + 8);
+                if mem != 0 { mb = __mem_load_i64(mem); ms = __mem_load_i64(mem + 8); }
             }
         } elif op == 5 {  # BR_TABLE i n tgt*
             idx: int = __mem_load_i64(fp + __mem_load_i64(pc + 8)) & M32;

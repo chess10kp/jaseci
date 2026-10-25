@@ -845,6 +845,7 @@ import from engine.src.builtins.native_kinds {
     NATIVE_KIND_WASM_EXPORT_NAME,
     NATIVE_KIND_WASM_EXPORT_KIND,
     NATIVE_KIND_WASM_BIND_FUNC,
+    NATIVE_KIND_WASM_FUNC_INVOKE_FAST,
     NATIVE_KIND_WASM_FUNC_INVOKE,
     NATIVE_KIND_WASM_EXPORT_MEMORY,
     NATIVE_KIND_WASM_MEM_CREATE,
@@ -1053,6 +1054,8 @@ import from engine.src.wasm.bridge {
     wasm_inst_export_name,
     wasm_inst_export_kind,
     wasm_bind_export_func,
+    wasm_func_sig_class,
+    wasm_func_invoke_i32_fast,
     wasm_func_param_count,
     wasm_func_param_kind,
     wasm_func_invoke,
@@ -8570,6 +8573,47 @@ def _dn_native_kind_wasm_bind_func(
     return js_int(wasm_bind_export_func(inst_h, name));
 }
 
+def _dn_wasm_i32_arg(args: list[JSValue], i: int) -> int {
+    av: JSValue = args[i];
+    if jsv_is_int32(av) { return jsv_to_int32(av); }
+    if jsv_is_double(av) { return wasm_f64_to_i32(jsv_to_double(av)); }
+    return 0;
+}
+
+def _dn_native_kind_wasm_func_invoke_fast(
+    realm: Realm, this_val: JSValue, args: list[JSValue]
+) -> JSValue {
+    # __wasm.invokeFast(funcHandle, ...args) ->
+    #   false     : signature not fast-class — caller must use __wasm.invoke
+    #   Number    : single i32 result
+    #   undefined : void result, or trap (check wasm.lastErrorClass / lastError)
+    if len(args) < 1 {
+        return js_undefined();
+    }
+    func_h: int = _dn_ptr_arg(args, 0);
+    if wasm_func_sig_class(func_h) != 1 {
+        return js_false();
+    }
+    nparams: int = wasm_func_param_count(func_h);
+    na: int = len(args) - 1;
+    if na > nparams { na = nparams; }
+    # All param slots must be written: missing JS args read as 0 (spec
+    # undefined-to-0), matching the generic path's 0-fill.
+    a0: int = 0; a1: int = 0; a2: int = 0; a3: int = 0;
+    if na > 0 { a0 = _dn_wasm_i32_arg(args, 1); }
+    if na > 1 { a1 = _dn_wasm_i32_arg(args, 2); }
+    if na > 2 { a2 = _dn_wasm_i32_arg(args, 3); }
+    if na > 3 { a3 = _dn_wasm_i32_arg(args, 4); }
+    ok: bool = wasm_func_invoke_i32_fast(func_h, nparams, a0, a1, a2, a3);
+    if not ok {
+        return js_undefined();
+    }
+    if wasm_call_result_count() == 0 {
+        return js_undefined();
+    }
+    return jsv_from_int32(wasm_call_result_int(0));
+}
+
 def _dn_native_kind_wasm_func_invoke(
     realm: Realm, this_val: JSValue, args: list[JSValue]
 ) -> JSValue {
@@ -11768,6 +11812,7 @@ def:pub init_dispatch_table {
     _DISPATCH_TABLE[NATIVE_KIND_WASM_EXPORT_KIND] = _dn_native_kind_wasm_export_kind;
     _DISPATCH_TABLE[NATIVE_KIND_WASM_BIND_FUNC] = _dn_native_kind_wasm_bind_func;
     _DISPATCH_TABLE[NATIVE_KIND_WASM_FUNC_INVOKE] = _dn_native_kind_wasm_func_invoke;
+    _DISPATCH_TABLE[NATIVE_KIND_WASM_FUNC_INVOKE_FAST] = _dn_native_kind_wasm_func_invoke_fast;
     _DISPATCH_TABLE[NATIVE_KIND_WASM_EXPORT_MEMORY] = _dn_native_kind_wasm_export_memory;
     _DISPATCH_TABLE[NATIVE_KIND_WASM_MEM_CREATE] = _dn_native_kind_wasm_mem_create;
     _DISPATCH_TABLE[NATIVE_KIND_WASM_MEM_PTR] = _dn_native_kind_wasm_mem_ptr;
