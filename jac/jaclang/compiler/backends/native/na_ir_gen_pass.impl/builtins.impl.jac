@@ -841,8 +841,6 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                     }
                     if val.type == ir.IntType(8).as_pointer()
                         and not self._is_owned(val) {
-                        # a runtime-null `str` (an `and` short-circuit phi)
-                        # must format as the "None" text, not pad a null ptr
                         val = self._fstr_none_select(val);
                     }
                     (fit_directive, fit_args) = self._fstring_str_fit(val, directive);
@@ -889,9 +887,6 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                     );
                     return None;
                 } elif not self._is_owned(val) {
-                    # a runtime-null `str` (an `and` short-circuit phi) reaches
-                    # %s: null there is UB and printed (null), while str() of
-                    # it is None. Only the value knows, so select at runtime.
                     val = self._fstr_none_select(val);
                 }
                 fmt_parts.append("%s");
