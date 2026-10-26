@@ -1627,6 +1627,18 @@ def _raw_byte_at(data: bytes, i: int) -> int {
     return int.from_bytes(data[i:i + 1], "big");
 }
 
+"""Byte view of s for offset-based scans. One encode per string: helpers
+like str_is_nul_escape re-encode the whole string on every call, which is
+O(n^2) when a loop consults them per character (URI decode did)."""
+def:pub str_utf8_byte_view(s: str) -> bytes {
+    return _str_utf8_bytes(s);
+}
+
+"""Byte at offset i of a str_utf8_byte_view view."""
+def:pub str_view_byte_at(data: bytes, i: int) -> int {
+    return _raw_byte_at(data, i);
+}
+
 def _raw_bytes_to_ints(data: bytes) -> list[int] {
     out: list[int] = [];
     i: int = 0;
