@@ -9,6 +9,12 @@ def run_cases {
     print(f"{None:>6}");
     s: (str | None) = None;
     print(f"{s}");
+    print(f"{n!s}");
+    print(f"{None!s:>6}");
+    q = "t";
+    print(f"{q and 'u'}");
+    print(f"{n and 'u'}");
+    print(f"{(n and 'u'):>6}|");
     print("end");
 }
 

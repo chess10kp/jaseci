@@ -49,6 +49,11 @@ test "a None segment renders None, not (null)" {
             "None\n"  # f"{None}"
             "  None\n"  # f"{None:>6}" — the spec path pads the string, not the pointer
             "None\n"  # f"{s}", str | None — unchanged by the fix
+            "None\n"  # f"{n!s}" — str(None), the same door as the plain path
+            "  None\n"  # f"{None!s:>6}"
+            "u\n"  # f"{q and 'u'}", q truthy — the and result is not clobbered
+            "None\n"  # f"{n and 'u'}" — a runtime-null str phi, not (null)
+            "  None|\n"  # f"{(n and 'u'):>6}|" — the spec pads the None text
             "end\n"
         ) , got;
 }

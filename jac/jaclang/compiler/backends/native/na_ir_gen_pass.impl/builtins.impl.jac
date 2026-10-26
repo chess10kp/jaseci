@@ -668,6 +668,14 @@ impl NaIRGenPass._emit_optional_str(
     return _phi;
 }
 
+impl NaIRGenPass._fstr_none_select(val: ir.Value) -> ir.Value {
+    _none_s = self._make_global_string("None", name_prefix=".repr.none");
+    _is_null = self.builder.icmp_unsigned(
+        "==", val, ir.Constant(val.type, None), name="fstr.isnull"
+    );
+    return self.builder.select(_is_null, _none_s, val, name="fstr.none");
+}
+
 impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
     fmt_parts: list[str] = [];
     args: list[ir.Value] = [];
@@ -831,6 +839,12 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                             return None;
                         }
                     }
+                    if val.type == ir.IntType(8).as_pointer()
+                        and not self._is_owned(val) {
+                        # a runtime-null `str` (an `and` short-circuit phi)
+                        # must format as the "None" text, not pad a null ptr
+                        val = self._fstr_none_select(val);
+                    }
                     (fit_directive, fit_args) = self._fstring_str_fit(val, directive);
                     fmt_parts.append(fit_directive);
                     args.extend(fit_args);
@@ -874,6 +888,11 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                         name=type(part.format_part).__name__
                     );
                     return None;
+                } elif not self._is_owned(val) {
+                    # a runtime-null `str` (an `and` short-circuit phi) reaches
+                    # %s: null there is UB and printed (null), while str() of
+                    # it is None. Only the value knows, so select at runtime.
+                    val = self._fstr_none_select(val);
                 }
                 fmt_parts.append("%s");
                 args.append(val);
@@ -1978,6 +1997,10 @@ impl NaIRGenPass._emit_dyn_spec_format(
         }
     } elif isinstance(val.type, ir.PointerType) and val.type == i8p {
         kname = "jac_fmt_str";
+        if not self._is_owned(val) {
+            val = self._fstr_none_select(val);
+            sval = val;
+        }
     } elif isinstance(val.type, (ir.PointerType, ir.LiteralStructType)) {
         _s: (ir.Value | None) = None;
         if isinstance(val.type, ir.PointerType) {
