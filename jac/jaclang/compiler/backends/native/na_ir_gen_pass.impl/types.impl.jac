@@ -2963,7 +2963,11 @@ impl NaIRGenPass._coerce_type_inner(val: ir.Value, target_type: ir.Type) -> ir.V
             }
             if isinstance(val, ir.Constant) and isinstance(val.constant, int) {
                 _w = target_type.width;
-                if -(1 << (_w - 1)) <= val.constant < (1 << _w) {
+                _fits = _int_min_bits(_w) <= val.constant;
+                if _fits and _w < 64 {
+                    _fits = val.constant <= (1 << _w) - 1;
+                }
+                if _fits {
                     return ir.Constant(target_type, val.constant);
                 }
             }
@@ -3419,7 +3423,6 @@ impl NaIRGenPass._emit_binary_op(
     left: ir.Value,
     right: ir.Value,
     unsigned: bool = False,
-    checked: bool = False,
     inplace_slot: (ir.Value | None) = None
 ) -> (ir.Value | None) {
     if op == Tok.PLUS and inplace_slot is not None {
@@ -3802,15 +3805,9 @@ impl NaIRGenPass._emit_binary_op(
         }
         (left, right) = self._unify_int_widths(left, right);
         if op == Tok.LSHIFT {
-            if checked {
-                return self._emit_checked_shl(left, right, unsigned);
-            }
-            return self.builder.shl(left, right, name="shl");
+            return self._emit_checked_shl(left, right, unsigned);
         } elif op == Tok.RSHIFT {
-            if checked {
-                return self._emit_shr(left, right, unsigned);
-            }
-            return self.builder.ashr(left, right, name="ashr");
+            return self._emit_shr(left, right, unsigned);
         }
         if left.type != right.type {
             self.emit(

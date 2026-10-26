@@ -9,6 +9,10 @@ glob OVERFLOW_MSG: str = "integer overflow",
 
 def _signed_repr(width: int, value: int) -> int;
 
+def _int_min_bits(width: int) -> int;
+
+def _int_max_bits(width: int) -> int;
+
 impl NaIRGenPass._scalar_shape_named(name: (str | None)) -> (ScalarShape | None) {
     if name is None {
         return None;
@@ -378,7 +382,7 @@ impl NaIRGenPass._emit_checked_abs(val: ir.Value) -> ir.Value {
     int_ty = val.type;
     assert isinstance(int_ty, ir.IntType) , "a sized integer op needs an integer";
     zero = ir.Constant(int_ty, 0);
-    min_val = ir.Constant(int_ty, -(1 << (int_ty.width - 1)));
+    min_val = ir.Constant(int_ty, _int_min_bits(int_ty.width));
     is_min = self.builder.icmp_signed("==", val, min_val, name="abs.min");
     self._emit_runtime_raise(is_min, "OverflowError", OVERFLOW_MSG);
     is_neg = self.builder.icmp_signed("<", val, zero, name="abs.neg");
@@ -445,7 +449,7 @@ impl NaIRGenPass._emit_int_divmod(
             self.builder.urem(left, right, name="urem")
         );
     }
-    min_val = ir.Constant(int_ty, -(1 << (int_ty.width - 1)));
+    min_val = ir.Constant(int_ty, _int_min_bits(int_ty.width));
     is_min = self.builder.icmp_signed("==", left, min_val, name="div.min");
     is_m1 = self.builder.icmp_signed(
         "==", right, ir.Constant(int_ty, -1), name="div.m1"
@@ -472,4 +476,21 @@ impl _signed_repr(width: int, value: int) -> int {
         out -= 1 << width;
     }
     return out;
+}
+
+# Signed bounds of a fixed-width int, computed without touching values that
+# do not fit i64: `1 << 63` and wider would itself raise now that shifts are
+# overflow-checked (the compiler runs this same code on itself).
+impl _int_min_bits(width: int) -> int {
+    if width >= 64 {
+        return -9223372036854775807 - 1;
+    }
+    return -(1 << (width - 1));
+}
+
+impl _int_max_bits(width: int) -> int {
+    if width >= 64 {
+        return 9223372036854775807;
+    }
+    return (1 << (width - 1)) - 1;
 }
