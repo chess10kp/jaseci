@@ -37,8 +37,8 @@ The 5,000-term change is about **4.8x faster** versus the immediate pre-edit run
 
 ## Verification
 
-- `jac test jac/tests/compiler/tools/test_jac_format_pass.jac` — **43 passed**.
-- `git diff --check` — clean.
+- `jac test jac/tests/compiler/tools/test_jac_format_pass.jac` - **43 passed**.
+- `git diff --check` - clean.
 - Existing tests cover long plus/comparison chains, line wrapping, operator placement, and idempotency.
 - Benchmark files were created in `/tmp` and removed after each run.
 

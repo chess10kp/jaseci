@@ -1747,7 +1747,6 @@ impl DocIRGenPass.exit_binary_expr with uni.BinaryExpr exit {
         and isinstance(here.parent.op, uni.Token)
         and (here.parent.op.name == here.op.name)
     ) {
-        # The parent flattens this chain and reads only its leaf operands.
         return;
     }
     operands: list[uni.UniNode] = [];
