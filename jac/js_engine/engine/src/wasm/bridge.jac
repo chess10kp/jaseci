@@ -38,6 +38,7 @@ import from engine.src.wasm.exec {
     WInstance,
     instantiate,
     invoke,
+    invoke_i32_fast,
     invoke_result,
     invoke_result_count,
     wasm_trap_message,
@@ -689,6 +690,63 @@ def:pub wasm_func_invoke(
             _RES_INT.append(v);
             _RES_DBL.append(0.0);
         }
+        j = j + 1;
+    }
+    return True;
+}
+
+# ── Fast-path invoke (i32-only signatures) ──────────────────────────────────
+# Classify exported functions once per handle: class 1 = all-i32 params (<=4)
+# with 0 or 1 i32 result. `_SIGCLASS` stores class+1 so 0 stays "unclassified".
+
+glob _SIGCLASS: list[int] = [0];
+
+def:pub wasm_func_sig_class(fh: int) -> int {
+    if not _valid(fh, len(_FUNCS)) { return 0; }
+    while fh >= len(_SIGCLASS) { _SIGCLASS.append(0); }
+    c: int = _SIGCLASS[fh];
+    if c != 0 { return c - 1; }
+    f: int = _FUNCS[fh];
+    tid: int = func_type_id(f);
+    ps: list[int] = type_params(tid);
+    n: int = len(ps);
+    if n > 4 { c = 2; }
+    else {
+        c = 1;
+        i: int = 0;
+        while i < n {
+            if ps[i] != T_I32 { c = 2; break; }
+            i = i + 1;
+        }
+    }
+    if c == 1 {
+        rs: list[int] = type_results(tid);
+        if len(rs) > 1 { c = 2; }
+        elif len(rs) == 1 and rs[0] != T_I32 { c = 2; }
+    }
+    _SIGCLASS[fh] = c + 1;
+    return c;
+}
+
+"""Fast invoke for class-1 signatures: no per-call list marshaling on the
+arg side. Results are read via wasm_call_result_* as usual. Returns False
+on trap (wasm_last_error() set)."""
+def:pub wasm_func_invoke_i32_fast(fh: int, n: int, a0: int, a1: int, a2: int, a3: int) -> bool {
+    _set_err("", WASM_ERRCLASS_NONE);
+    if not _valid(fh, len(_FUNCS)) { _set_err("invalid function handle", WASM_ERRCLASS_RUNTIME); return False; }
+    f: int = _FUNCS[fh];
+    if invoke_i32_fast(f, n, a0, a1, a2, a3) != 0 {
+        _set_err(wasm_trap_message(), WASM_ERRCLASS_RUNTIME);
+        return False;
+    }
+    _RES_KIND = [];
+    _RES_INT = [];
+    _RES_DBL = [];
+    j: int = 0;
+    while j < invoke_result_count() {
+        _RES_KIND.append(WASMTIME_I32);
+        _RES_INT.append(invoke_result(j));
+        _RES_DBL.append(0.0);
         j = j + 1;
     }
     return True;

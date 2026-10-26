@@ -449,6 +449,25 @@
         var w = _funcrefCache[funcH];
         if (w) return w;
         var f = function() {
+            // Fast path: all-i32 signatures (<=4 params, <=1 i32 result) skip
+            // the generic marshaling. false => not fast-class, fall through.
+            var n = arguments.length;
+            if (__wasm.invokeFast && n <= 4) {
+                var fr;
+                if (n === 0) fr = __wasm.invokeFast(funcH);
+                else if (n === 1) fr = __wasm.invokeFast(funcH, arguments[0]);
+                else if (n === 2) fr = __wasm.invokeFast(funcH, arguments[0], arguments[1]);
+                else if (n === 3) fr = __wasm.invokeFast(funcH, arguments[0], arguments[1], arguments[2]);
+                else fr = __wasm.invokeFast(funcH, arguments[0], arguments[1], arguments[2], arguments[3]);
+                if (fr !== false) {
+                    if (fr === undefined) {
+                        var clsF = lastWasmErrorClass();
+                        var msgF = lastWasmError();
+                        if (clsF === ERR_RUNTIME && msgF) throw new RuntimeError(msgF);
+                    }
+                    return fr;
+                }
+            }
             var args = [funcH];
             for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
             // __wasm.invoke(funcHandle, ...args) → result | [results] | undefined.

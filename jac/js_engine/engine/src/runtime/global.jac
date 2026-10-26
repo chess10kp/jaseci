@@ -776,6 +776,7 @@ import from engine.src.builtins.native_kinds {
     NATIVE_KIND_WASM_EXPORT_KIND,
     NATIVE_KIND_WASM_BIND_FUNC,
     NATIVE_KIND_WASM_FUNC_INVOKE,
+    NATIVE_KIND_WASM_FUNC_INVOKE_FAST,
     NATIVE_KIND_WASM_EXPORT_MEMORY,
     NATIVE_KIND_WASM_MEM_CREATE,
     NATIVE_KIND_WASM_MEM_PTR,
@@ -5108,6 +5109,11 @@ def:pub init_global(ctx: GlobalContext) {
         wasm_obj,
         str_intern("invoke"),
         js_native_create("invoke", 1, NATIVE_KIND_WASM_FUNC_INVOKE)
+    );
+    js_object_set(
+        wasm_obj,
+        str_intern("invokeFast"),
+        js_native_create("invokeFast", 1, NATIVE_KIND_WASM_FUNC_INVOKE_FAST)
     );
     js_object_set(
         wasm_obj,
