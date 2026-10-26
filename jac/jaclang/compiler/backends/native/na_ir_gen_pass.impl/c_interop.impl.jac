@@ -277,7 +277,8 @@ impl NaIRGenPass._c_interop_store(
             nd.aug_op.value,
             nd.value,
             target_type=target.type,
-            unsigned=self._is_unsigned_node(target)
+            unsigned=self._is_unsigned_node(target),
+            sized=self._is_sized_node(target)
         );
         if updated is None {
             self.ctx.emit(
@@ -1250,7 +1251,8 @@ impl NaIRGenPass._c_global_store(
             nd.aug_op.value,
             nd.value,
             unsigned=self._is_unsigned_node(target),
-            target_type=ctype
+            target_type=ctype,
+            sized=self._is_sized_node(target)
         );
         if updated is None {
             self.ctx.emit(

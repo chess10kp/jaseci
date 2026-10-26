@@ -3423,7 +3423,8 @@ impl NaIRGenPass._emit_binary_op(
     left: ir.Value,
     right: ir.Value,
     unsigned: bool = False,
-    inplace_slot: (ir.Value | None) = None
+    inplace_slot: (ir.Value | None) = None,
+    sized: bool = True
 ) -> (ir.Value | None) {
     if op == Tok.PLUS and inplace_slot is not None {
         _ipr = self._emit_str_concat_inplace(left, right, inplace_slot);
@@ -3805,9 +3806,13 @@ impl NaIRGenPass._emit_binary_op(
         }
         (left, right) = self._unify_int_widths(left, right);
         if op == Tok.LSHIFT {
-            return self._emit_checked_shl(left, right, unsigned);
+            return self._emit_checked_shl(left, right, unsigned)
+                if sized
+                else self._emit_plain_int_shl(left, right);
         } elif op == Tok.RSHIFT {
-            return self._emit_shr(left, right, unsigned);
+            return self._emit_shr(left, right, unsigned)
+                if sized
+                else self._emit_plain_int_shr(left, right);
         }
         if left.type != right.type {
             self.emit(

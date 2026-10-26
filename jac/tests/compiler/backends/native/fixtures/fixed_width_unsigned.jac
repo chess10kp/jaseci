@@ -357,6 +357,23 @@ def:pub plain_int_shl_overflow_traps -> int {
     return out;
 }
 
+def:pub plain_int_large_shift_results -> int {
+    positive = 1 >> 64;
+    negative = -1 >> 64;
+    zero = 0 << 64;
+    return int(positive + negative + zero);
+}
+
+def:pub plain_int_aug_large_shift_results -> int {
+    positive = 1;
+    positive >>= 64;
+    negative = -1;
+    negative >>= 64;
+    zero = 0;
+    zero <<= 64;
+    return int(positive + negative + zero);
+}
+
 def:pub plain_int_neg_min_traps -> int {
     m = -9223372036854775807 - 1;
     out: int = 0;

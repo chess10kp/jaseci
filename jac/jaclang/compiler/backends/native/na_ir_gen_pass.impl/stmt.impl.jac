@@ -1920,7 +1920,8 @@ impl NaIRGenPass._apply_scalar_aug_op(
     aug_op: str,
     rhs_node: (uni.Expr | None) = None,
     unsigned: bool = False,
-    target_type: any = None
+    target_type: any = None,
+    sized: bool = True
 ) -> (ir.Value | None) {
     (is_ptr_aug, stepped) = self._c_ptr_aug(current, rhs, aug_op, target_type);
     if is_ptr_aug {
@@ -1955,7 +1956,9 @@ impl NaIRGenPass._apply_scalar_aug_op(
         return self._codegen_pow(current, rhs, rhs_node, unsigned=unsigned);
     }
     coerced = self._coerce_type(rhs, current.type);
-    result = self._emit_binary_op(op_toks[aug_op], current, coerced, unsigned=unsigned);
+    result = self._emit_binary_op(
+        op_toks[aug_op], current, coerced, unsigned=unsigned, sized=sized
+    );
     if result is not None and result.type != current.type {
         result = self._coerce_type(result, current.type);
     }
@@ -2227,7 +2230,8 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                                             value,
                                             nd.aug_op.value,
                                             nd.value,
-                                            target_type=target_expr.type
+                                            target_type=target_expr.type,
+                                            sized=self._is_sized_node(target_expr)
                                         );
                                     }
                                 }
@@ -2269,7 +2273,8 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                                             value,
                                             nd.aug_op.value,
                                             nd.value,
-                                            target_type=target_expr.type
+                                            target_type=target_expr.type,
+                                            sized=self._is_sized_node(target_expr)
                                         );
                                     }
                                 }
@@ -2423,7 +2428,8 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                         aug_op_val,
                         nd.value,
                         target_type=target_expr.type,
-                        unsigned=self._is_unsigned_node(target_expr)
+                        unsigned=self._is_unsigned_node(target_expr),
+                        sized=self._is_sized_node(target_expr)
                     );
                 }
                 _is_cplx_lhs = current.type == self.complex_struct_type.as_pointer();
@@ -2448,10 +2454,7 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                 } elif aug_op_val == "+=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self._emit_overflow_op(
-                            "add",
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                            "add", current, coerced, self._is_unsigned_node(target_expr)
                         );
                     } elif isinstance(current.type, ir.DoubleType) {
                         value = self.builder.fadd(
@@ -2515,10 +2518,7 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                 } elif aug_op_val == "-=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self._emit_overflow_op(
-                            "sub",
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                            "sub", current, coerced, self._is_unsigned_node(target_expr)
                         );
                     } elif isinstance(current.type, ir.PointerType) {
                         _se = self._ensure_emitters().get("set");
@@ -2543,10 +2543,7 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                 } elif aug_op_val == "*=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self._emit_overflow_op(
-                            "mul",
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                            "mul", current, coerced, self._is_unsigned_node(target_expr)
                         );
                     } else {
                         value = self.builder.fmul(
@@ -2763,18 +2760,22 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                     }
                 } elif aug_op_val == "<<=" {
                     if isinstance(current.type, ir.IntType) {
-                        value = self._emit_checked_shl(
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                        value = (
+                            self._emit_checked_shl(
+                                current, coerced, self._is_unsigned_node(target_expr)
+                            )
+                                if self._is_sized_node(target_expr)
+                                else self._emit_plain_int_shl(current, coerced)
                         );
                     }
                 } elif aug_op_val == ">>=" {
                     if isinstance(current.type, ir.IntType) {
-                        value = self._emit_shr(
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                        value = (
+                            self._emit_shr(
+                                current, coerced, self._is_unsigned_node(target_expr)
+                            )
+                                if self._is_sized_node(target_expr)
+                                else self._emit_plain_int_shr(current, coerced)
                         );
                     }
                 } elif aug_op_val == "**=" {
@@ -2999,10 +3000,7 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                 if aug_op_val == "+=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self._emit_overflow_op(
-                            "add",
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                            "add", current, coerced, self._is_unsigned_node(target_expr)
                         );
                     } elif isinstance(current.type, ir.DoubleType) {
                         value = self.builder.fadd(
@@ -3034,10 +3032,7 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                 } elif aug_op_val == "-=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self._emit_overflow_op(
-                            "sub",
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                            "sub", current, coerced, self._is_unsigned_node(target_expr)
                         );
                     } elif isinstance(current.type, ir.DoubleType) {
                         value = self.builder.fsub(
@@ -3061,10 +3056,7 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                 } elif aug_op_val == "*=" {
                     if isinstance(current.type, ir.IntType) {
                         value = self._emit_overflow_op(
-                            "mul",
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                            "mul", current, coerced, self._is_unsigned_node(target_expr)
                         );
                     } elif isinstance(current.type, ir.DoubleType) {
                         value = self.builder.fmul(
@@ -3186,18 +3178,22 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                     }
                 } elif aug_op_val == "<<=" {
                     if isinstance(current.type, ir.IntType) {
-                        value = self._emit_checked_shl(
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                        value = (
+                            self._emit_checked_shl(
+                                current, coerced, self._is_unsigned_node(target_expr)
+                            )
+                                if self._is_sized_node(target_expr)
+                                else self._emit_plain_int_shl(current, coerced)
                         );
                     }
                 } elif aug_op_val == ">>=" {
                     if isinstance(current.type, ir.IntType) {
-                        value = self._emit_shr(
-                            current,
-                            coerced,
-                            self._is_unsigned_node(target_expr)
+                        value = (
+                            self._emit_shr(
+                                current, coerced, self._is_unsigned_node(target_expr)
+                            )
+                                if self._is_sized_node(target_expr)
+                                else self._emit_plain_int_shr(current, coerced)
                         );
                     }
                 }

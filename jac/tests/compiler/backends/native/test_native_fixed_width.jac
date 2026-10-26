@@ -118,6 +118,8 @@ test "plain int arithmetic traps on overflow and stays exact in range" {
     assert probe("plain_int_pow_overflow_traps") == 1;
     assert probe("plain_int_pow_in_range") == 3;
     assert probe("plain_int_shl_overflow_traps") == 1;
+    assert probe("plain_int_large_shift_results") == -1;
+    assert probe("plain_int_aug_large_shift_results") == -1;
     assert probe("plain_int_neg_min_traps") == 1;
     assert probe("plain_int_abs_min_traps") == 1;
     assert probe("plain_int_aug_mul_traps") == 1;

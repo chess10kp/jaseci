@@ -4368,7 +4368,8 @@ impl NaIRGenPass._codegen_field_aug_assign(
         aug_op,
         rhs_node,
         target_type=target.type,
-        unsigned=self._is_unsigned_node(target)
+        unsigned=self._is_unsigned_node(target),
+        sized=self._is_sized_node(target)
     );
     if scalar is not None {
         return scalar;

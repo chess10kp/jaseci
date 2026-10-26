@@ -2934,6 +2934,8 @@ walker NaIRGenPass(CompilerPass) {
     def _emit_checked_abs(val: ir.Value) -> ir.Value;
     def _emit_shift_count_check(count: ir.Value, width: int) -> None;
     def _shift_count_as(count: ir.Value, target: ir.IntType) -> ir.Value;
+    def _emit_plain_int_shl(left: ir.Value, right: ir.Value) -> ir.Value;
+    def _emit_plain_int_shr(left: ir.Value, right: ir.Value) -> ir.Value;
     def _emit_checked_shl(left: ir.Value, right: ir.Value, unsigned: bool) -> ir.Value;
     def _emit_shr(left: ir.Value, right: ir.Value, unsigned: bool) -> ir.Value;
     def _emit_int_divmod(
@@ -3091,7 +3093,8 @@ walker NaIRGenPass(CompilerPass) {
         aug_op: str,
         rhs_node: (uni.Expr | None) = None,
         unsigned: bool = False,
-        target_type: any = None
+        target_type: any = None,
+        sized: bool = True
     ) -> (ir.Value | None);
 
     def _try_flow_for_parallel(nd: uni.InForStmt) -> bool;
@@ -3338,7 +3341,8 @@ walker NaIRGenPass(CompilerPass) {
         left: ir.Value,
         right: ir.Value,
         unsigned: bool = False,
-        inplace_slot: (ir.Value | None) = None
+        inplace_slot: (ir.Value | None) = None,
+        sized: bool = True
     ) -> (ir.Value | None);
 
     def _str_concat_fresh(

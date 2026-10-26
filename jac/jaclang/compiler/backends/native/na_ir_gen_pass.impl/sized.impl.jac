@@ -407,6 +407,52 @@ impl NaIRGenPass._shift_count_as(count: ir.Value, target: ir.IntType) -> ir.Valu
     return self.builder.zext(count, target, name="shift.count");
 }
 
+impl NaIRGenPass._emit_plain_int_shl(left: ir.Value, right: ir.Value) -> ir.Value {
+    i64 = ir.IntType(64);
+    neg = self.builder.icmp_signed(
+        "<", right, ir.Constant(right.type, 0), name="shift.neg"
+    );
+    self._emit_runtime_raise(neg, "ValueError", "negative shift count");
+    count = self._coerce_type(right, i64);
+    wide = self.builder.icmp_unsigned(
+        ">=", count, ir.Constant(i64, 64), name="shift.wide"
+    );
+    nonzero = self.builder.icmp_signed(
+        "!=", left, ir.Constant(i64, 0), name="shl.nonzero"
+    );
+    self._emit_runtime_raise(
+        self.builder.and_(wide, nonzero, name="shl.wide.overflow"),
+        "OverflowError",
+        OVERFLOW_MSG
+    );
+    safe_count = self.builder.and_(count, ir.Constant(i64, 63), name="shl.safe.count");
+    shifted = self.builder.shl(left, safe_count, name="shl");
+    back = self.builder.ashr(shifted, safe_count, name="shl.back");
+    lost = self.builder.icmp_signed("!=", back, left, name="shl.lost");
+    self._emit_runtime_raise(
+        self.builder.and_(self.builder.not_(wide), lost, name="shl.overflow"),
+        "OverflowError",
+        OVERFLOW_MSG
+    );
+    return self.builder.select(wide, ir.Constant(i64, 0), shifted, name="shl.result");
+}
+
+impl NaIRGenPass._emit_plain_int_shr(left: ir.Value, right: ir.Value) -> ir.Value {
+    i64 = ir.IntType(64);
+    neg = self.builder.icmp_signed(
+        "<", right, ir.Constant(right.type, 0), name="shift.neg"
+    );
+    self._emit_runtime_raise(neg, "ValueError", "negative shift count");
+    count = self._coerce_type(right, i64);
+    wide = self.builder.icmp_unsigned(
+        ">=", count, ir.Constant(i64, 64), name="shift.wide"
+    );
+    safe_count = self.builder.and_(count, ir.Constant(i64, 63), name="shr.safe.count");
+    shifted = self.builder.ashr(left, safe_count, name="ashr");
+    sign = self.builder.ashr(left, ir.Constant(i64, 63), name="shr.sign");
+    return self.builder.select(wide, sign, shifted, name="shr.result");
+}
+
 impl NaIRGenPass._emit_checked_shl(
     left: ir.Value, right: ir.Value, unsigned: bool
 ) -> ir.Value {

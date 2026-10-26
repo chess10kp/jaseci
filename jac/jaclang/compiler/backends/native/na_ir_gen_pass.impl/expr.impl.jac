@@ -796,7 +796,17 @@ impl NaIRGenPass._codegen_binary(nd: uni.BinaryExpr) -> (ir.Value | None) {
     if op == Tok.STAR_POW {
         result = self._codegen_pow(left, right, nd.right, unsigned=_unsigned);
     } else {
-        result = self._emit_binary_op(op, left, right, unsigned=_unsigned);
+        result = self._emit_binary_op(
+            op,
+            left,
+            right,
+            unsigned=_unsigned,
+            sized=(
+                self._is_sized_node(nd)
+                or self._is_sized_node(nd.left)
+                or self._is_sized_node(nd.right)
+            )
+        );
     }
 
     if result is not None {
