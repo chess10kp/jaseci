@@ -57,6 +57,8 @@ import from engine.src.runtime.jsstring {
     str_substr,
     str_byte_substr,
     str_is_nul_escape,
+    str_utf8_byte_view,
+    str_view_byte_at,
     utf8_byte_len,
     str_to_float,
     utf8_encode_scalar,
@@ -2298,11 +2300,17 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
     i: int = 0;
     byte_i: int = 0;
     slen: int = len(s);
+    # One byte view per decode: checking the NUL sentinel must not re-encode
+    # the whole string for every character (str_is_nul_escape does, which
+    # made decoding an N-length input copy O(n^2) bytes).
+    sraw: bytes = str_utf8_byte_view(s);
+    nraw: int = len(sraw);
     while i < slen {
         # The engine stores U+0000 as the two-byte C0 80 sentinel. Treat it as
         # one JS code unit; iterating the raw Jac string would otherwise copy
         # the two encoded bytes separately and change the value.
-        if str_is_nul_escape(s, byte_i) {
+        if byte_i + 1 < nraw and str_view_byte_at(sraw, byte_i) == 192
+            and str_view_byte_at(sraw, byte_i + 1) == 128 {
             result = result + utf8_encode_scalar(0);
             # The sentinel is one JS code unit: one Jac char (i) but two
             # raw UTF-8 bytes (byte_i). Advancing i by 2 desynced the char
