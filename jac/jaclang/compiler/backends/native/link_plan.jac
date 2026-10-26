@@ -5,7 +5,8 @@ import os;
 import sys;
 import time;
 
-glob PLAN_DIGEST_FORMAT: int = 3;
+glob PLAN_DIGEST_FORMAT: int = 3,
+     PARTITION_FUNCTIONS: int = 4096;
 
 enum ArtifactKind {
     EXECUTABLE = "executable",
@@ -112,6 +113,8 @@ def _build_link_plan(
 
 def _target_machine(plan: LinkPlan, kind: ArtifactKind) -> TargetMachine;
 
+def unique_callbacks(bindings: list[InteropBinding]) -> list[InteropBinding];
+def callback_bind_exports(plan: LinkPlan) -> list[str];
 def callback_glue_ir(plan: LinkPlan) -> str;
 
 def heap_glue_ir(plan: LinkPlan) -> tuple[str, list[str]];

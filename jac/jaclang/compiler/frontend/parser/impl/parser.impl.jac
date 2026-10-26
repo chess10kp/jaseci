@@ -2721,6 +2721,7 @@ impl Parser.parse_lambda_expr -> Expr {
     rbrace_uni: Token | None = None;
     if self.match_tok(TokenKind.LBRACE) {
         lbrace_uni = self.make_uni_token(self.previous());
+        self._lambda_block = True;
         body_stmts2 = self._apply_implicit_return(self.parse_code_block_stmts());
         rbrace_uni = self.consume_uni(TokenKind.RBRACE);
     } else {
@@ -3482,15 +3483,17 @@ impl Parser.parse_module_code -> ModuleCode {
 
 impl Parser.parse_code_block_stmts -> list[CodeBlockStmt] {
     stmts: list[CodeBlockStmt] = [];
-    checked_first = False;
+    lambda_block = self._lambda_block;
+    self._lambda_block = False;
+    flagged: list[SourceLoc] = [];
+    flagged_at: list[int] = [];
     while not self.check(TokenKind.RBRACE) and not self.at_end() {
         before = self.pos;
         stmt = self.parse_statement();
         if stmt is not None {
             is_docstring = False;
             if (
-                not checked_first
-                and self._view_body_depth == 0
+                self._view_body_depth == 0
                 and isinstance(stmt, ExprStmt)
                 and not stmt.in_fstring
                 and stmt.has_semi
@@ -3506,14 +3509,8 @@ impl Parser.parse_code_block_stmts -> list[CodeBlockStmt] {
                 }
             }
             if is_docstring {
-                self.emit_warn(
-                    "Docstrings in Jac go before the declaration, not inside the body. Move this string before the enclosing test/can/obj/etc.",
-                    "W0060",
-                    loc=self.tokens[before].loc
-                );
-            }
-            if not isinstance(stmt, Semi) {
-                checked_first = True;
+                flagged.append(self.tokens[before].loc);
+                flagged_at.append(len(stmts));
             }
             stmts.append(stmt);
 
@@ -3538,6 +3535,34 @@ impl Parser.parse_code_block_stmts -> list[CodeBlockStmt] {
         if self.pos == before {
             self.advance();
         }
+    }
+    if lambda_block {
+        real = [
+            i
+            for i in range(len(stmts))
+            if not isinstance(stmts[i], Semi)
+        ];
+        rest = [
+            i
+            for i in real
+            if i not in flagged_at
+        ];
+        if len(real) == 1 {
+            return stmts;
+        }
+        if len(rest) == 1 {
+            lone = stmts[rest[0]];
+            if isinstance(lone, ExprStmt) and lone.has_semi {
+                return stmts;
+            }
+        }
+    }
+    for loc in flagged {
+        self.emit_warn(
+            "A string on its own does nothing. Docstrings go before the declaration, not inside the body; write a note inside a body as a # comment.",
+            "W0060",
+            loc=loc
+        );
     }
     return stmts;
 }
@@ -4733,13 +4758,6 @@ impl Parser.parse_class_pattern_args(
 }
 
 impl Parser.parse_return_stmt -> ReturnStmt {
-    """`return expr;`, or `return tail call(...);` for a guaranteed tail call.
-
-    `tail` is contextual: it marks a tail call only directly after `return`
-    and before a name that starts the call, so `return tail;`,
-    `return tail(x);` and `return tail.next;` still read a variable named
-    `tail`. The operand of `return tail` must be a call.
-    """;
     ret_uni = self.consume_uni(TokenKind.KW_RETURN);
     expr = None;
     tail_uni: Token | None = None;
@@ -6634,6 +6652,16 @@ impl Parser.parse_impl_def -> ImplDef {
         target_names.append(self.parse_impl_target_name());
     }
 
+    impl_tp_list: (list[TypeParam] | None) = None;
+    impl_tp_lb_uni: Token | None = None;
+    impl_tp_rb_uni: Token | None = None;
+    impl_tp_comma_unis: list[Token] = [];
+    if self.match_tok(TokenKind.LSQUARE) {
+        impl_tp_lb_uni = self.make_uni_token(self.previous());
+        (impl_tp_list, impl_tp_comma_unis) = self.parse_type_params();
+        impl_tp_rb_uni = self.consume_uni(TokenKind.RSQUARE);
+    }
+
     spec_sig: UniNode | None = None;
     spec_is_inh = False;
     base_classes: list[Expr] = [];
@@ -6718,6 +6746,18 @@ impl Parser.parse_impl_def -> ImplDef {
             kid.append(dot_unis[i]);
         }
     }
+    if impl_tp_list is not None
+        and impl_tp_lb_uni is not None
+        and impl_tp_rb_uni is not None {
+        kid.append(impl_tp_lb_uni);
+        for (i, tp) in enumerate(impl_tp_list) {
+            if i > 0 {
+                kid.append(impl_tp_comma_unis[i - 1]);
+            }
+            kid.append(tp);
+        }
+        kid.append(impl_tp_rb_uni);
+    }
     if spec_sig is not None {
         kid.append(spec_sig);
     } elif spec_is_inh and len(base_classes) > 0 and impl_inh_lp_tok is not None {
@@ -6763,6 +6803,7 @@ impl Parser.parse_impl_def -> ImplDef {
     return ImplDef(
         decorators=decorators,
         target=target_names,
+        type_params=impl_tp_list,
         spec=spec_arg,
         body=impl_body_arg,
         kid=kid,

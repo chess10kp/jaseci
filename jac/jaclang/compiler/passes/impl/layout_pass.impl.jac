@@ -154,7 +154,7 @@ impl LayoutPass._build_hierarchy(archetypes: dict[str, Archetype]) -> None {
 
     for aname in archetypes {
         if aname not in reg.mro_order {
-            reg.mro_order[aname] = self._compute_c3_mro(aname);
+            reg.set_mro(aname, self._compute_c3_mro(aname));
         }
     }
 }
@@ -170,7 +170,7 @@ impl LayoutPass._compute_c3_mro(class_name: str) -> list[str] {
     parent_mros: list[list[str]] = [];
     for p in parents {
         if p not in reg.mro_order {
-            reg.mro_order[p] = self._compute_c3_mro(p);
+            reg.set_mro(p, self._compute_c3_mro(p));
         }
         parent_mros.append(list(reg.mro_order[p]));
     }
@@ -232,7 +232,6 @@ impl LayoutPass._topo_sort(arch_map: dict[str, Archetype]) -> list[str] {
 }
 
 impl LayoutRegistry.dependency_order(names: list[str]) -> list[str] {
-    """Order layouts after their ancestors, including incomplete imported MROs.""";
     visited: set[str] = set();
     order: list[str] = [];
 
@@ -264,17 +263,6 @@ impl LayoutRegistry.dependency_order(names: list[str]) -> list[str] {
 }
 
 impl LayoutPass._build_layout(arch: Archetype) -> ArchetypeLayout {
-    """Assign header and field slots with stable dispatch requirements.
-
-    Abstract interfaces reserve a vtable even when their implementations live
-    in other modules, and so does every class other modules can subclass
-    whose own methods they could override (`open_dispatch`). Local parents,
-    isinstance targets, and OSP archetypes likewise require dispatch. A concrete class may initially acquire a slot
-    merely because it declares a base; imported-base adoption can remove that
-    provisional slot when neither the class nor its ancestors need dispatch,
-    or when an isinstance test is its only use and the build's allocation
-    header carries the class identity instead.
-    """;
     reg = self.registry;
     aname = archetype_native_name(arch);
     mro = reg.mro_order.get(aname, [aname]);
@@ -781,6 +769,36 @@ impl LayoutRegistry.resolve_method_owner(
     return None;
 }
 
+impl LayoutRegistry.set_mro(name: str, mro: list[str]) -> None {
+    self.mro_order[name] = mro;
+    self._descendants = None;
+}
+
+impl LayoutRegistry.descendants_of(names: list[str]) -> list[str] {
+    index = self._descendants;
+    if index is None {
+        index = {};
+        for cls in self.mro_order {
+            for anc in self.get_mro(cls) {
+                index.setdefault(anc, []).append(cls);
+            }
+        }
+        self._descendants = index;
+    }
+    if len(names) == 1 {
+        return index.get(names[0], []);
+    }
+    found: set[str] = set();
+    for name in names {
+        found.update(index.get(name, []));
+    }
+    return [
+        cls
+        for cls in self.mro_order
+        if cls in found
+    ];
+}
+
 impl LayoutRegistry.get_mro(name: str) -> list[str] {
     return self.mro_order.get(name, [name]);
 }
@@ -1002,21 +1020,6 @@ impl archetype_accessors(arch: Archetype) -> list[tuple[(str, HasVar, Ability)]]
 }
 
 impl open_dispatch(arch: Archetype) -> bool {
-    """Can a module this one never sees override a method dispatched through it?
-
-    Layout is decided per module, and a subclass in an importing module is
-    invisible here. A class other modules can name, whose own body declares a
-    method or accessor a subclass may override, must carry a vtable so a call
-    through a reference typed as this class reaches the override wherever it
-    was declared; without one the call binds to this class's body. A private
-    class cannot be named, so cannot be subclassed, outside its module, whose
-    registry is therefore complete for it. A foreign (C-layout) struct is
-    plain data, and constructors, static and class methods never dispatch
-    through an instance. A `drop` hook alone does not open a class either: it
-    runs only when the owner lets go, and a class whose only behavior is its
-    hook stays flat so a headerless build can embed it inline in an own field.
-    """;
-
     if arch.access_type == SymbolAccess.PRIVATE or is_clib_archetype(arch) {
         return False;
     }
@@ -1066,7 +1069,7 @@ impl archetype_native_name(arch: Archetype) -> str {
         import from jaclang.compiler.frontend.codeinfo { bundled_stdlib_module_of }
         twin = _NATIVE_NAME_BY_DECL.get(
             (
-                os.path.realpath(arch.loc.mod_path),
+                real_path(arch.loc.mod_path),
                 arch.loc.first_line,
                 arch.loc.col_start,
                 name
@@ -1082,7 +1085,7 @@ impl archetype_native_name(arch: Archetype) -> str {
     if arch.loc is not None and arch.loc.mod_path {
         import os;
         key = (
-            os.path.realpath(arch.loc.mod_path),
+            real_path(arch.loc.mod_path),
             arch.loc.first_line,
             arch.loc.col_start,
             name
@@ -1136,7 +1139,7 @@ impl record_interface_twins(native_mod: Module, prog: JacProgram) {
         if key is None or not key[0].endswith(".pyi") {
             continue;
         }
-        _NATIVE_NAME_BY_DECL[(os.path.realpath(key[0]), key[1], key[2], key[3])] = (
+        _NATIVE_NAME_BY_DECL[(real_path(key[0]), key[1], key[2], key[3])] = (
             archetype_native_name(stmt)
         );
         _NATIVE_NAMED_CLASSES.add(key[3]);
@@ -1162,9 +1165,7 @@ impl _recorded_native_name(shared: ClassDetailsShared) -> (str | None) {
         return None;
     }
     import os;
-    found = _NATIVE_NAME_BY_DECL.get(
-        (os.path.realpath(key[0]), key[1], key[2], key[3])
-    );
+    found = _NATIVE_NAME_BY_DECL.get((real_path(key[0]), key[1], key[2], key[3]));
     if found is None {
         import from jaclang.compiler.frontend.codeinfo { bundled_stdlib_module_of }
         stdlib_module = bundled_stdlib_module_of(key[0]);
@@ -1294,7 +1295,7 @@ impl declaring_module_path(base_expr: Expr) -> str {
     if isinstance(base_type, ClassType) and base_type._shared is not None {
         scope = base_type.shared.symbol_table;
         if isinstance(scope, Archetype) and scope.loc.mod_path {
-            return os.path.realpath(scope.loc.mod_path);
+            return real_path(scope.loc.mod_path);
         }
     }
     if not isinstance(base_expr, AstSymbolNode) {
@@ -1305,7 +1306,7 @@ impl declaring_module_path(base_expr: Expr) -> str {
         return "";
     }
     decl = sym.decl;
-    base_arch = decl.find_parent_of_type(Archetype);
+    base_arch = decl.enclosing_decl(Archetype);
     if base_arch is None {
         return "";
     }
@@ -1314,7 +1315,7 @@ impl declaring_module_path(base_expr: Expr) -> str {
         return "";
     }
     path = decl_mod.loc.mod_path;
-    return os.path.realpath(path) if path else "";
+    return real_path(path) if path else "";
 }
 
 impl headers_agree(child: ArchetypeLayout, base: ArchetypeLayout) -> bool {
@@ -1326,34 +1327,6 @@ impl headers_agree(child: ArchetypeLayout, base: ArchetypeLayout) -> bool {
 impl relax_vtable_header(
     lay: ArchetypeLayout, ancestors: list[ArchetypeLayout], header_identity: bool = True
 ) -> bool {
-    """Drop a vtable header a class carries only for having had a base.
-
-    `needs_vtable` is decided per module, where a base's subclasses in other
-    modules are not visible. A base that is nobody's parent in its own
-    registry comes out flat; its subclass, merely for having a base, comes
-    out with a vtable pointer in header slot 0 -- so every field the base
-    declared sits one slot further along in the child, `headers_agree`
-    refuses the pair, and the inherited access stays demoted.
-
-    Here both layouts are in hand, so the question can be asked properly: is
-    anything actually dispatched through this class? `vtable_by_dispatch`
-    records the answer the defining module gave -- it is someone's parent, an
-    isinstance target, or an OSP archetype. When nothing is, and no ancestor
-    carries a header either, the child's vtable slot is a habit rather than a
-    requirement and dropping it makes the two units agree.
-
-    An `isinstance` target is not dispatched through: it needs a runtime
-    identity, and a build whose allocations carry a header already stamps the
-    class name there, which answers `isinstance` for a flat class as well as
-    the vtable pointer would. `header_identity` says the build has that
-    header; only then does an `isinstance`-only header count as a habit. A
-    headerless build keeps the vtable, the one identity it has.
-
-    Every ancestor is checked, not just the primary: relaxing a child whose
-    grandparent carries a header would trade one disagreement for another.
-    A class that IS dispatched through keeps its header and its refusal --
-    that pair genuinely has no assignment satisfying both.
-    """;
     identity_only = lay.vtable_by_isinstance_only and header_identity;
     if lay.is_osp
         or (lay.vtable_by_dispatch and not identity_only)
@@ -1413,7 +1386,7 @@ impl adopt_imported_bases(module: Module, header_identity: bool = True) -> list[
             lay.mro = full;
         }
         if len(full) > len(reg.mro_order.get(name) or []) {
-            reg.mro_order[name] = list(full);
+            reg.set_mro(name, list(full));
         }
     }
     layouts = reg.layouts;

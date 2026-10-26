@@ -1,6 +1,12 @@
 impl NativeUnitRegistry.postinit {
     self.building = set();
-    self.checking = set();
+}
+
+impl NativeUnitRegistry.begin_parse(path: str) {
+    if self.session is not None {
+        self.session.settle_heap();
+    }
+    self.note_step("parse", path);
 }
 
 impl NativeUnitRegistry.note_step(
@@ -39,9 +45,6 @@ impl NativeUnitRegistry.clear {
 }
 
 impl NativeUnitRegistry.release_products {
-    """Between the compiles of one program the interfaces stay, each
-        checked against its source key on its next use; the products and the
-        per-compile bookkeeping go.""";
     for ent in self.entries.values() {
         ent.object_bytes = None;
         ent.bitcode = None;
@@ -114,6 +117,7 @@ impl NativeUnitRegistry._miss(path: str, why: str) {
 impl NativeUnitRegistry._event(name: str) {
     counters = self.prog.analysis.cache_events;
     counters[name] = counters.get(name, 0) + 1;
+    stat_note(name);
 }
 
 impl NativeUnitRegistry._add_time(name: str, seconds: float) {
@@ -199,13 +203,13 @@ impl NativeUnitRegistry._module_jir(
     try {
         cache_path = get_module_cache_path(resolved);
         why = module_cache_invalid_reason(resolved, cache_path);
-        data = b"" if why else cache_path.read_bytes();
+        data = b"" if why else read_jir(cache_path);
         if stamp is not None
             and native_section_payload(read_section_bytes(data, SEC_NIFACE), stamp)
                 is None
             and self._carry(resolved, stamp) {
             why = module_cache_invalid_reason(resolved, cache_path);
-            data = b"" if why else cache_path.read_bytes();
+            data = b"" if why else read_jir(cache_path);
         }
         if not why {
             return (data, "", );
@@ -220,18 +224,16 @@ impl NativeUnitRegistry._module_jir(
 }
 
 impl NativeUnitRegistry._entry_fresh(ent: NativeUnitEntry) -> bool {
-    """Use the shared source key, including annex membership and content.
-        A deleted file differs from a unit that never had a source file.""";
     return ent.source_key == NativeUnitRegistry._source_key(ent.path)
         and ct_dep_text_fresh(ent.compile_deps.decode("utf-8"), ent.compile_deps_base);
 }
 
 impl NativeUnitRegistry._register(
-    resolved: str, iface: NativeIface, stamp: NativeStamp, source: str
+    resolved: str, iface: NativeIface, stamp: NativeStamp, source: str, digest: str = ""
 ) -> NativeUnitEntry {
     ent = NativeUnitEntry(
         path=resolved,
-        digest=iface.digest(),
+        digest=digest or iface.digest(),
         iface=iface,
         stamp=stamp,
         source=source,
@@ -263,9 +265,6 @@ impl NativeUnitRegistry.record(
 impl NativeUnitRegistry.record_module(
     module: Module, options: (CompileOptions | None) = None
 ) -> (NativeUnitEntry | None) {
-    """A module this process just lowered enters the registry with the
-        digests of the dependencies it was lowered against, which are the
-        entries those dependencies registered before it.""";
     if not (module?.loc and module.loc.mod_path) {
         return None;
     }
@@ -294,7 +293,7 @@ impl NativeUnitRegistry._explain_iface_change(
 ) {
     resolved = os.path.realpath(path);
     try {
-        data = get_module_cache_path(resolved).read_bytes();
+        data = read_jir(get_module_cache_path(resolved));
     } except Exception {
         return;
     }
@@ -337,14 +336,12 @@ impl NativeUnitRegistry.recorded_native_deps(
 }
 
 impl NativeUnitRegistry._deps_match(
-    data: bytes,
-    stamp: NativeStamp,
-    base_dir: str,
-    anchor: str = "",
-    options: (CompileOptions | None) = None
+    dep_digests: list[tuple[str, str]], options: (CompileOptions | None) = None
 ) -> bool {
-    for (dep, recorded) in read_native_dep_hashes(data, stamp, base_dir, anchor) {
-        ent = self.ensure(dep, compile_on_miss=False, options=options);
+    for (dep, recorded) in dep_digests {
+        ent = self.ensure(
+            dep, compile_on_miss=False, options=options, check_deps=False
+        );
         if ent is None or ent.digest != recorded {
             return False;
         }
@@ -359,6 +356,11 @@ impl NativeUnitRegistry.dep_digests(paths: list[str]) -> dict[str, str] {
         out[real] = self.known_digest(real);
     }
     return out;
+}
+
+impl NativeUnitRegistry._dep_miss(resolved: str) {
+    self._event("native_dep_miss");
+    self._miss(resolved, "a dependency's native interface changed");
 }
 
 impl NativeUnitRegistry._read_from_disk(
@@ -394,15 +396,18 @@ impl NativeUnitRegistry._read_from_disk(
         return None;
     }
     iface.resolve_deps(resolved);
-    if check_deps and not self._deps_match(data, stamp, base_dir, resolved, options) {
-        self._event("native_dep_miss");
-        self._miss(resolved, "a dependency's native interface changed");
+    dep_digests = read_native_dep_hashes(data, stamp, base_dir, resolved);
+    if check_deps and not self._deps_match(dep_digests, options) {
+        self._dep_miss(resolved);
         return None;
     }
-    ent = self._register(resolved, iface, stamp, "disk");
+    ent = self._register(
+        resolved, iface, stamp, "disk", digest=NativeIface.read_digest(payload) or ""
+    );
     ent.compile_deps = compile_deps;
     ent.compile_deps_base = base_dir;
-    ent.dep_digests = dict(read_native_dep_hashes(data, stamp, base_dir, resolved));
+    ent.dep_digests = dict(dep_digests);
+    ent.deps_checked = check_deps;
     ent.object_bytes = native_section_payload(
         read_section_bytes(data, SEC_NOBJ), stamp
     );
@@ -424,8 +429,17 @@ impl NativeUnitRegistry.ensure(
     }
     stamp = self.stamp_for(options, resolved);
     ent = self.entries.get(resolved);
+    stale_deps = False;
     if ent is not None and ent.stamp.matches(stamp) and self._entry_fresh(ent) {
-        return ent;
+        if not check_deps or ent.deps_checked {
+            return ent;
+        }
+        if self._deps_match(sorted(ent.dep_digests.items()), options) {
+            ent.deps_checked = True;
+            return ent;
+        }
+        self._dep_miss(resolved);
+        stale_deps = True;
     }
     if ent is not None {
         del self.entries[resolved];
@@ -433,19 +447,11 @@ impl NativeUnitRegistry.ensure(
     if resolved in self.building {
         return None;
     }
-    if resolved in self.checking and not options.no_ir_cache {
-        return self._read_from_disk(resolved, stamp, check_deps=False, options=options);
-    }
     (rebuild, _) = cache_mode();
-    if not rebuild and not options.no_ir_cache and not self.cold {
-        self.checking.add(resolved);
-        try {
-            found = self._read_from_disk(
-                resolved, stamp, check_deps=check_deps, options=options
-            );
-        } finally {
-            self.checking.discard(resolved);
-        }
+    if not stale_deps and not rebuild and not options.no_ir_cache and not self.cold {
+        found = self._read_from_disk(
+            resolved, stamp, check_deps=check_deps, options=options
+        );
         if found is not None {
             self._event("native_iface_hit");
             return found;
@@ -463,11 +469,6 @@ impl NativeUnitRegistry.ensure(
 impl NativeUnitRegistry.dep_iface(
     path: str, options: CompileOptions, products: bool = True
 ) -> (NativeIface | None) {
-    """The interface a unit being lowered consumes from a dependency.
-        While a session discovers a unit's dependencies, a dependency with no
-        entry yet is recorded for the session to lower first instead of being
-        lowered inside the consumer's pass: a nested lowering keeps every
-        consumer's partial IR alive down the whole import chain.""";
     resolved = os.path.realpath(path);
     session = self.session;
     if session is not None and resolved in session.unlowerable {
@@ -507,8 +508,6 @@ impl NativeUnitRegistry.dep_discovery_open -> bool {
 }
 
 impl NativeUnitRegistry.close_dep_deferral -> bool {
-    """End dependency discovery for the unit being lowered; True when it
-        deferred a dependency, so its lowering stops before emitting code.""";
     return self.session.close_discovery() if self.session is not None else False;
 }
 
@@ -582,10 +581,6 @@ impl NativeUnitRegistry.compile_unit(
     use_str: (str | None) = None,
     products: bool = True
 ) -> (NativeUnitEntry | None) {
-    """Lower a unit and, when `products` is set, optimize, emit and persist
-        its products. An analysis-only consumer needs the interface and
-        layouts that lowering records; a build that later needs the products
-        compiles the unit again through `bitcode_for` or `object_for`.""";
     if self.session is not None {
         if self.session.discovery_open {
             self._event("native_nested_lower");
@@ -723,16 +718,41 @@ impl NativeUnitRegistry.known_digest(path: str) -> str {
     return NativeIface.verified_digest(payload) or "";
 }
 
+impl NativeUnitRegistry._with_products(
+    path: str, options: (CompileOptions | None) = None
+) -> (NativeUnitEntry | None) {
+    ent = self.ensure(path, options=options, check_deps=False);
+    if ent is None or ent.bitcode is not None or ent.object_bytes is not None {
+        return ent;
+    }
+    found = self._module_jir(ent.path, ent.stamp);
+    if found is not None {
+        data = found[0];
+        cached = native_section_payload(
+            read_section_bytes(data, SEC_NIFACE), ent.stamp
+        );
+        if NativeIface.verified_digest(cached) == ent.digest {
+            ent.bitcode = native_section_payload(
+                read_section_bytes(data, SEC_NBITCODE), ent.stamp
+            );
+            ent.object_bytes = native_section_payload(
+                read_section_bytes(data, SEC_NOBJ), ent.stamp
+            );
+        }
+    }
+    if ent.bitcode is None and ent.object_bytes is None {
+        return self.compile_unit(path, options);
+    }
+    return ent;
+}
+
 impl NativeUnitRegistry.emit_objects(
     paths: list[str], options: (CompileOptions | None) = None
 ) {
     pending: list[NativeUnitEntry] = [];
     bitcodes: list[bytes] = [];
     for path in paths {
-        ent = self.ensure(path, options=options, check_deps=False);
-        if ent is not None and ent.object_bytes is None and ent.bitcode is None {
-            ent = self.compile_unit(path, options);
-        }
+        ent = self._with_products(path, options);
         if ent is not None and ent.object_bytes is None and ent.bitcode is not None {
             pending.append(ent);
             bitcodes.append(ent.bitcode);
@@ -760,11 +780,8 @@ impl NativeUnitRegistry.emit_objects(
 impl NativeUnitRegistry.object_for(
     path: str, options: (CompileOptions | None) = None
 ) -> (bytes | None) {
-    ent = self.ensure(path, options=options, check_deps=False);
+    ent = self._with_products(path, options);
     if ent is not None and ent.object_bytes is None {
-        if ent.bitcode is None {
-            ent = self.compile_unit(path, options);
-        }
         if ent is not None and ent.bitcode is not None {
             import from jaclang.compiler.backends.native.na_compile_pass {
                 emit_unit_object
@@ -787,7 +804,7 @@ impl NativeUnitRegistry.object_for(
 impl NativeUnitRegistry.bitcode_for(
     path: str, options: (CompileOptions | None) = None
 ) -> (bytes | None) {
-    ent = self.ensure(path, options=options, check_deps=False);
+    ent = self._with_products(path, options);
     if ent is not None and ent.bitcode is None {
         ent = self.compile_unit(path, options);
     }
@@ -1063,8 +1080,6 @@ impl NativeBuildSession.finish(paths: list[str]) {
 }
 
 impl NativeBuildSession._optimize_in_parallel(paths: list[str]) -> set[str] {
-    """Ahead-of-time units with no cached bitcode are optimized together
-        on a thread pool; each worker parses into its own LLVM context.""";
     opts = self.prog.options;
     if opts.native_debug
         or opts.dump_ir_path
@@ -1107,11 +1122,6 @@ impl NativeBuildSession._optimize_in_parallel(paths: list[str]) -> set[str] {
 }
 
 impl NativeBuildSession._finish(paths: list[str]) {
-    """Optimize and persist only after every consumed interface agrees.
-        Cyclic interface settlement reuses the analyzed trees and never emits
-        optimized products for an intermediate state.""";
-    import from jaclang.compiler.driver.pipeline { require }
-    import from jaclang.compiler.driver.pipeline_types { CompilationProduct }
     self.prog.options = self.options.clone_for_native_import();
     for path in paths {
         if path in self.source_keys
@@ -1206,65 +1216,6 @@ impl _ir_referenced_symbols(unit_ir: any) -> set[str] {
         }
     }
     return used;
-}
-
-impl _stat_key(path: str) -> (tuple[int, int] | None) {
-    try {
-        st = os.stat(path);
-        return (st.st_mtime_ns, st.st_size);
-    } except OSError {
-        return None;
-    }
-}
-
-impl _module_files_and_imports(path: str) -> tuple[list[str], list[str]] {
-    files = [path]
-        + discover_annex_files(path, '.impl.jac')
-        + discover_annex_files(path, '.test.jac');
-    fresh = tuple(_stat_key(f) for f in files);
-    cached = _closure_memo.get(path);
-    if cached is not None and cached[0] == fresh {
-        return (cached[1], cached[2]);
-    }
-    import from jaclang.project.textio { read_file_with_encoding }
-    import from jaclang.compiler.driver.program { JacProgram }
-    import from jaclang.compiler.frontend.parser.frontend { parse as rd_parse }
-    import from jaclang.compiler.placement.placement { jac_import_targets }
-    imports: list[str] = [];
-    for f in files {
-        try {
-            (mod, _had_err) = rd_parse(
-                read_file_with_encoding(f), f, prog=JacProgram()
-            );
-        } except Exception {
-            continue;
-        }
-        for target in jac_import_targets(mod) {
-            if target not in imports {
-                imports.append(target);
-            }
-        }
-    }
-    _closure_memo[path] = (fresh, files, imports);
-    return (files, imports);
-}
-
-impl _file_digest(path: str) -> str {
-    key = _stat_key(path);
-    if key is None {
-        return "";
-    }
-    cached = _dep_digest_memo.get(path);
-    if cached is not None and cached[0] == key {
-        return cached[1];
-    }
-    try {
-        digest = compute_content_sha256(path);
-    } except OSError {
-        return "";
-    }
-    _dep_digest_memo[path] = (key, digest);
-    return digest;
 }
 
 impl _interface_changes(before: any, after: any, path: str, out: list[str]) {
