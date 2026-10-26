@@ -187,7 +187,10 @@ impl ProjectHost.lint_settings(path: str) -> LintSettings {
     config = (get_config_for_path(Path(path)) if path else get_explicit_config())
         or JacConfig();
     if path {
-        app = context_app(str(Path(path).resolve()));
+        owner = (self.base_file(path) or path)
+            if self.path_facts(path).is_annex
+            else path;
+        app = context_app(str(Path(owner).resolve()));
         if app is not None and not app.implicit and app.name in config.apps {
             config = config.effective_for_app(app.name);
         }
@@ -452,8 +455,8 @@ impl ProjectHost.native_parse(
     load_kernel: bool = True
 ) -> (tuple[Module, bool] | None) {
     natives = program._natives if program is not None else None;
-    if natives is not None and natives.progress is not None {
-        natives.note_step("parse", file_path);
+    if natives is not None {
+        natives.begin_parse(file_path);
     }
     kernel = _jc.ensure_loaded()
         if load_kernel
@@ -562,6 +565,31 @@ impl ProjectHost.host_platform -> HostPlatform {
 impl ProjectHost.ct_environment -> CtEnvironment {
     import sys;
     import platform;
+
+    triple = effective_native_target().lower();
+    if triple {
+        arch = "";
+        if "aarch64" in triple or "arm64" in triple {
+            arch = "aarch64";
+        } elif "x86_64" in triple or "amd64" in triple {
+            arch = "x86_64";
+        }
+        if arch {
+            if "darwin" in triple or "apple" in triple or "macos" in triple {
+                return CtEnvironment(
+                    os="darwin", arch=("arm64" if arch == "aarch64" else arch)
+                );
+            }
+            if "windows" in triple or "msvc" in triple or "mingw" in triple {
+                return CtEnvironment(
+                    os="windows", arch=("AMD64" if arch == "x86_64" else arch)
+                );
+            }
+            if "linux" in triple {
+                return CtEnvironment(os="linux", arch=arch);
+            }
+        }
+    }
     host_os = "linux";
     if sys.platform.startswith("win") {
         host_os = "windows";
@@ -606,6 +634,15 @@ impl UnitCollectBudget.due -> bool {
         }
     }
     def peak_rss_mb -> int {
+        try {
+            with open("/proc/self/status", encoding="utf-8") as status {
+                for line in status {
+                    if line.startswith("VmHWM:") {
+                        return int(line.split()[1]) // 1024;
+                    }
+                }
+            }
+        } except (OSError, ValueError, IndexError) {}
         try {
             import resource;
         } except ImportError {

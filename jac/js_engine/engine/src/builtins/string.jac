@@ -2304,7 +2304,10 @@ def _uri_decode(s: str, preserve_reserved: bool) -> JSValue {
         # the two encoded bytes separately and change the value.
         if str_is_nul_escape(s, byte_i) {
             result = result + utf8_encode_scalar(0);
-            i = i + 2;
+            # The sentinel is one JS code unit: one Jac char (i) but two
+            # raw UTF-8 bytes (byte_i). Advancing i by 2 desynced the char
+            # index and dropped the character after every NUL.
+            i = i + 1;
             byte_i = byte_i + 2;
             continue;
         }

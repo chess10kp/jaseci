@@ -20,7 +20,8 @@ obj NativeUnitEntry {
         bitcode: (bytes | None) = None,
         compile_deps: bytes = b"",
         compile_deps_base: str = "",
-        dep_digests: dict[str, str] = {};
+        dep_digests: dict[str, str] = {},
+        deps_checked: bool = True;
 }
 
 obj NativeUnitRegistry {
@@ -28,7 +29,6 @@ obj NativeUnitRegistry {
         session: (NativeBuildSession | None) = None,
         entries: dict[str, NativeUnitEntry] = {},
         building: set[str] postinit,
-        checking: set[str] postinit,
         not_native: dict[str, str] = {},
         failures: dict[str, str] = {},
         compiled_paths: list[str] = [],
@@ -41,6 +41,7 @@ obj NativeUnitRegistry {
         unit_functions: dict[str, tuple[int, int]] = {};
 
     def postinit;
+    def begin_parse(path: str);
     def note_step(verb: str, path: str = "", detail: str = "") -> float;
     def note_slow_step(verb: str, path: str, started: float);
     def clear;
@@ -68,7 +69,11 @@ obj NativeUnitRegistry {
 
     def _entry_fresh(ent: NativeUnitEntry) -> bool;
     def _register(
-        resolved: str, iface: NativeIface, stamp: NativeStamp, source: str
+        resolved: str,
+        iface: NativeIface,
+        stamp: NativeStamp,
+        source: str,
+        digest: str = ""
     ) -> NativeUnitEntry;
 
     def record(
@@ -92,14 +97,11 @@ obj NativeUnitRegistry {
     ) -> list[tuple[str, str]];
 
     def _deps_match(
-        data: bytes,
-        stamp: NativeStamp,
-        base_dir: str,
-        anchor: str = "",
-        options: (CompileOptions | None) = None
+        dep_digests: list[tuple[str, str]], options: (CompileOptions | None) = None
     ) -> bool;
 
     def dep_digests(paths: list[str]) -> dict[str, str];
+    def _dep_miss(resolved: str);
     def _read_from_disk(
         resolved: str,
         stamp: NativeStamp,
@@ -142,6 +144,10 @@ obj NativeUnitRegistry {
 
     def _stash_products(resolved: str, gen: CodeGenTarget);
     def known_digest(path: str) -> str;
+    def _with_products(
+        path: str, options: (CompileOptions | None) = None
+    ) -> (NativeUnitEntry | None);
+
     def emit_objects(paths: list[str], options: (CompileOptions | None) = None);
     def object_for(
         path: str, options: (CompileOptions | None) = None
@@ -188,19 +194,10 @@ obj NativeBuildSession {
     def close;
 }
 
-glob _closure_memo:
-         dict[str, tuple[tuple[(tuple[int, int] | None), ...], list[str], list[str]]] = {},
-     _dep_digest_memo: dict[str, tuple[tuple[int, int], str]] = {},
-     VERDICT_CLOSURE_LIMIT: int = 4096;
+glob VERDICT_CLOSURE_LIMIT: int = 4096;
 
 def _ir_symbols(unit_ir: any) -> (tuple[set[str], set[str]] | None);
 
 def _ir_referenced_symbols(unit_ir: any) -> set[str];
-
-def _stat_key(path: str) -> (tuple[int, int] | None);
-
-def _module_files_and_imports(path: str) -> tuple[list[str], list[str]];
-
-def _file_digest(path: str) -> str;
 
 def _interface_changes(before: any, after: any, path: str, out: list[str]);
