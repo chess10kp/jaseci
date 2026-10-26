@@ -839,8 +839,10 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                             return None;
                         }
                     }
-                    if val.type == ir.IntType(8).as_pointer()
-                        and not self._is_owned(val) {
+                    if val.type == ir.IntType(8).as_pointer() {
+                        if self._is_owned(val) and val not in obj_strs {
+                            obj_strs.append(val);
+                        }
                         val = self._fstr_none_select(val);
                     }
                     (fit_directive, fit_args) = self._fstring_str_fit(val, directive);
@@ -886,7 +888,10 @@ impl NaIRGenPass._codegen_fstring(nd: uni.FString) -> (ir.Value | None) {
                         name=type(part.format_part).__name__
                     );
                     return None;
-                } elif not self._is_owned(val) {
+                } else {
+                    if self._is_owned(val) and val not in obj_strs {
+                        obj_strs.append(val);
+                    }
                     val = self._fstr_none_select(val);
                 }
                 fmt_parts.append("%s");
@@ -1992,7 +1997,9 @@ impl NaIRGenPass._emit_dyn_spec_format(
         }
     } elif isinstance(val.type, ir.PointerType) and val.type == i8p {
         kname = "jac_fmt_str";
-        if not self._is_owned(val) {
+        if self._is_owned(val) {
+            sval = self._fstr_none_select(val);
+        } else {
             val = self._fstr_none_select(val);
             sval = val;
         }

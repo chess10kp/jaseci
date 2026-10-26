@@ -14,6 +14,7 @@ def run_cases {
     q = "t";
     print(f"{q and 'u'}");
     print(f"{n and 'u'}");
+    print(f"{n and f'{1}'}");
     print(f"{(n and 'u'):>6}|");
     print("end");
 }

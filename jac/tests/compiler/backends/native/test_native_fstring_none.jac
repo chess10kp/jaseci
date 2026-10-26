@@ -53,6 +53,7 @@ test "a None segment renders None, not (null)" {
             "  None\n"  # f"{None!s:>6}"
             "u\n"  # f"{q and 'u'}", q truthy — the and result is not clobbered
             "None\n"  # f"{n and 'u'}" — a runtime-null str phi, not (null)
+            "None\n"  # owned runtime-null string from an inner f-string
             "  None|\n"  # f"{(n and 'u'):>6}|" — the spec pads the None text
             "end\n"
         ) , got;
