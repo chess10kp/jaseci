@@ -283,7 +283,6 @@ impl serving_app_for(config: any, entry_file: Path, backend: str) -> str {
     if config is None or not config.is_workspace or not config.apps {
         return "";
     }
-    import from jaclang.project.app_kinds { kind_has_server }
     selected_app = config.app_for_path(str(entry_file.resolve()));
     if backend != "embedded" {
         return selected_app.name if selected_app is not None else "";
