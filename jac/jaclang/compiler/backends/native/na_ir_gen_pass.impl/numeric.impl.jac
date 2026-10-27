@@ -29,9 +29,6 @@ impl NaIRGenPass._emit_pow_zero_guard(base: ir.Value) -> None {
 impl NaIRGenPass._codegen_int_pow(
     base: ir.Value, exp: ir.Value, unsigned: bool = False
 ) -> ir.Value {
-    # Repeated checked multiplication: an in-range power's magnitudes grow
-    # monotonically, so the first overflowing step is exactly where the true
-    # result stops fitting; raising there never rejects a representable power.
     int_ty = base.type;
     one = ir.Constant(int_ty, 1);
     func = self.builder.function;

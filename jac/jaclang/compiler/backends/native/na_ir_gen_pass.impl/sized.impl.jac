@@ -524,9 +524,6 @@ impl _signed_repr(width: int, value: int) -> int {
     return out;
 }
 
-# Signed bounds of a fixed-width int, computed without touching values that
-# do not fit i64: `1 << 63` and wider would itself raise now that shifts are
-# overflow-checked (the compiler runs this same code on itself).
 impl _int_min_bits(width: int) -> int {
     if width >= 64 {
         return -9223372036854775807 - 1;
