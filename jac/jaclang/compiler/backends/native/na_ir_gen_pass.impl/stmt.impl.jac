@@ -2498,19 +2498,14 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                         }
                         value = current;
                     } elif isinstance(current.type, ir.PointerType)
-                        and self._spec_from_list_slot_type(current.type)
-                            is not None
+                        and self._spec_from_list_slot_type(current.type) is not None
                         and coerced.type == current.type {
-                        # list += list mutates in place (CPython list.__iadd__):
-                        # aliases must observe the extension, identity preserved.
                         _aug_spec = self._spec_from_list_slot_type(current.type);
                         _le = self._ensure_emitters().get("list");
                         if _aug_spec is not None
                             and isinstance(_le, NativeListEmitter) {
                             _le.emit_extend(
-                                NativeEmitCtx(
-                                    pass_ref=self, type_key=_aug_spec
-                                ),
+                                NativeEmitCtx(pass_ref=self, type_key=_aug_spec),
                                 current,
                                 [coerced]
                             );
@@ -2583,18 +2578,13 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                             current, coerced, name=f"{var_name}.mul"
                         );
                     } elif isinstance(current.type, ir.PointerType)
-                        and self._spec_from_list_slot_type(current.type)
-                            is not None {
-                        # list *= int mutates in place (CPython list.__imul__):
-                        # repeat the original elements onto the same object.
+                        and self._spec_from_list_slot_type(current.type) is not None {
                         _mul_spec = self._spec_from_list_slot_type(current.type);
                         _le_mul = self._ensure_emitters().get("list");
                         if _mul_spec is not None
                             and isinstance(_le_mul, NativeListEmitter) {
                             _le_mul.emit_repeat_inplace(
-                                NativeEmitCtx(
-                                    pass_ref=self, type_key=_mul_spec
-                                ),
+                                NativeEmitCtx(pass_ref=self, type_key=_mul_spec),
                                 current,
                                 value
                             );
@@ -3050,21 +3040,14 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                             current, coerced, name=f"glob.{var_name}.fadd"
                         );
                     } elif isinstance(current.type, ir.PointerType)
-                        and self._spec_from_list_slot_type(current.type)
-                            is not None
+                        and self._spec_from_list_slot_type(current.type) is not None
                         and coerced.type == current.type {
-                        # list += list mutates in place (CPython list.__iadd__):
-                        # aliases must observe the extension, identity preserved.
-                        _g_aug_spec = self._spec_from_list_slot_type(
-                            current.type
-                        );
+                        _g_aug_spec = self._spec_from_list_slot_type(current.type);
                         _g_le = self._ensure_emitters().get("list");
                         if _g_aug_spec is not None
                             and isinstance(_g_le, NativeListEmitter) {
                             _g_le.emit_extend(
-                                NativeEmitCtx(
-                                    pass_ref=self, type_key=_g_aug_spec
-                                ),
+                                NativeEmitCtx(pass_ref=self, type_key=_g_aug_spec),
                                 current,
                                 [coerced]
                             );
@@ -3127,20 +3110,13 @@ impl NaIRGenPass._codegen_assignment(nd: uni.Assignment) -> None {
                             current, coerced, name=f"glob.{var_name}.fmul"
                         );
                     } elif isinstance(current.type, ir.PointerType)
-                        and self._spec_from_list_slot_type(current.type)
-                            is not None {
-                        # list *= int mutates in place (CPython list.__imul__):
-                        # repeat the original elements onto the same object.
-                        _g_mul_spec = self._spec_from_list_slot_type(
-                            current.type
-                        );
+                        and self._spec_from_list_slot_type(current.type) is not None {
+                        _g_mul_spec = self._spec_from_list_slot_type(current.type);
                         _g_le_mul = self._ensure_emitters().get("list");
                         if _g_mul_spec is not None
                             and isinstance(_g_le_mul, NativeListEmitter) {
                             _g_le_mul.emit_repeat_inplace(
-                                NativeEmitCtx(
-                                    pass_ref=self, type_key=_g_mul_spec
-                                ),
+                                NativeEmitCtx(pass_ref=self, type_key=_g_mul_spec),
                                 current,
                                 value
                             );
