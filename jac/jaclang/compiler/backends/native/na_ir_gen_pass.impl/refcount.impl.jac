@@ -3862,21 +3862,15 @@ impl NaIRGenPass._emit_malloc_null_guard(
     _oom_msg = "jac native: out of memory\n";
     _oom_msg_gv = self._get_snprintf_fmt(_oom_msg);
 
-    """The `write` diagnostic and `abort` are only emitted when no clib import
-    in the module binds those names. The guard runs while the runtime externs
-    are declared -- before user clib abilities -- so an unconditional
-    `_get_or_declare_extern("write", <POSIX ABI>)` would claim `write` first
-    and make the module's own `def write(...) -> i32` declaration fail the
-    whole compile. When the import wins the name the guard still terminates
-    with `unreachable`, just without the diagnostic calls.""";
+    # Do not declare POSIX write before user clib declarations: a module may
+    # import write with a different ABI. If shadowed, trap without the message.
     _foreign_names = self._foreign_fns();
     if "write" not in _foreign_names {
         _oom_msg_ptr = _b_oom.gep(
             _oom_msg_gv, [ir.Constant(i32, 0), ir.Constant(i32, 0)], name="oom.msg"
         );
 
-        _triple = str(self.llvm_module.triple or "").lower();
-        if "wasm" in _triple {
+        if self._target_is_wasm() {
             _write_fn = self._get_or_declare_extern("write", i32, [i32, i8_ptr, i32]);
             _b_oom.call(
                 _write_fn,
