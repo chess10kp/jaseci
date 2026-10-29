@@ -292,6 +292,13 @@ impl serving_app_for(config: any, entry_file: Path, backend: str) -> str {
     } except ValueError {
         chosen = None;
     }
+    if (
+        selected_app is not None
+        and selected_app.kind == "desktop"
+        and (chosen is None or chosen.name != selected_app.name)
+    ) {
+        return selected_app.name;
+    }
     if chosen is not None and kind_has_server(chosen.kind) {
         return chosen.name;
     }
