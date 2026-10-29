@@ -15,7 +15,7 @@ import shutil;
 import tempfile;
 import from pathlib { Path }
 import from jaclang.compiler.driver.compile_options { CompileOptions }
-import from jaclang.compiler.driver.modresolver { resolve_module }
+import from jaclang.project.modresolver { resolve_module }
 import from jaclang.compiler.driver.program { JacProgram }
 
 
