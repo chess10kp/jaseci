@@ -24358,17 +24358,14 @@ graph import runtime.python {
         MPD_MIN_ETINY,
         MPD_Overflow,
         MPD_Underflow,
-        mpd_callocfunc,
         mpd_callocfunc_em,
         mpd_context_t,
-        mpd_free,
-        mpd_mallocfunc,
         mpd_maxcontext,
-        mpd_reallocfunc,
         mpd_round_string,
         mpd_setminalloc,
-        mpd_traphandler,
-        mpd_version
+        mpd_version,
+        set_mpd_memory_hooks,
+        set_mpd_trap_handler
     }
     modules.multibytecodec ++> [
         bindings.clinic.multibytecodec {
@@ -25230,6 +25227,7 @@ graph import runtime.python {
         },
         bindings.socket {
             netdb_lock,
+            set_netdb_lock,
             socket_CMSG_LEN,
             socket_CMSG_SPACE,
             socket_close,
@@ -30011,6 +30009,7 @@ graph import runtime.python.modules {
             ntohs,
             set_gaierror,
             set_herror,
+            set_sock_cloexec_works,
             sock_cloexec_works,
             socket_error,
             socket_parse_timeout,
@@ -30049,6 +30048,7 @@ graph import runtime.python.modules {
             internal_setblocking,
             module_of_type,
             set_error,
+            set_sock_cloexec_works,
             set_sock_fd,
             set_sock_timeout,
             sock_call,
