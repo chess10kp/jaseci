@@ -7981,7 +7981,6 @@ graph import compiler {
             UnaryOp,
             Yield,
             YieldFrom,
-            alias,
             arguments,
             ast_node,
             comprehension,
@@ -11852,7 +11851,7 @@ graph import compiler.backends.py.jacpython {
             same_loc,
             stmt_cont
         },
-        compiler_match { basicblock, cfg_builder, cloc, loc, stmt_cont },
+        compiler_match { basicblock, cfg_builder, cloc, stmt_cont },
         flowgraph {
             basicblock,
             cinstr,
@@ -16261,11 +16260,13 @@ graph import runtime.python {
             | modules.sqlite3 { MemberField },
         modules.multiprocessing | modules.posix_stat { MemberField, MemberType },
         modules.pickle { record_int, record_set_int },
-    ]
-    bindings.members --> [
-        modules.lzma { record_set_byte, record_set_int, record_set_object },
         modules.unicodedata { record_set_address },
     ]
+    bindings.members --> modules.lzma {
+        record_set_byte,
+        record_set_int,
+        record_set_object
+    }
     bindings.module ++> [
         modules.abc {
             FunctionTable,
