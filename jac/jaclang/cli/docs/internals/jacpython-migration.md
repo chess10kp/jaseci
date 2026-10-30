@@ -46,7 +46,7 @@ Steps for a module `_foo` built from `Modules/_foomodule.c`:
    declaration.
 5. Wire the binding module into
    `compiler/backends/py/jacpython/native_api.jac` in `jaclang/archwire.jac`
-   with an unaliased module wire (`runtime.python.bindings.foo ++> ` +
+   with an unaliased module wire (`runtime.python.bindings.foo ++>` +
    `compiler.backends.py.jacpython.native_api;`), then add the registry line,
    comment the C files in `cpython-sources.txt` as `# removed: 0 source lines`,
    and run `jac run scripts/jacpython_manifest.jac --write`.
