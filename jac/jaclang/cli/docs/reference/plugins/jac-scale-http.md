@@ -1958,6 +1958,7 @@ Serving an app (`jac run <app>`) also brings up every service app it bridges to,
 - **Colocated** (default): each service app's entry module is loaded into the served app's process and registered with `sv_client.register_local(app, module)`. Bridged calls invoke the provider's function or spawn its walker in-process -- still awaited, no sockets. One process, the boundary still compiled as a cut.
 - **Fleet**: `jac run <app> --fleet`, or `[scale.gateway] colocate = false`, runs each service app as its own local process behind the served app's gateway (one public port, one `/docs`, one `/metrics`, `X-Trace-Id` threaded through every hop). Peers are wired with `JAC_APP_<APP>_URL`. `jac scale status` / `logs` / `restart` / `stop` manage the members.
 - **Peer URLs are used as given.** A fleet member (and a deployed pod) mounts its endpoints at its root -- `/walker/<name>`, `/function/<name>` -- and the gateway strips the app's public route (`/api/<app>`) before forwarding. A consumer therefore never appends the route it compiled against to a peer URL: `JAC_APP_<APP>_URL=http://127.0.0.1:8011` is called at `http://127.0.0.1:8011/walker/<name>`. Only a route registered _together with_ a URL is appended -- `JAC_APP_<APP>_ROUTE`, or `sv_client.register(app, url, route)` -- which is how a consumer is pointed at a public gateway instead of a member.
+- **HTTP forwarding.** The serving HTTP client skips provisional `1xx` response headers until the final response; `101 Switching Protocols` remains terminal for WebSocket upgrades. The gateway removes `Expect` when forwarding requests to a service.
 - **Service identity between members.** Set `JAC_BRIDGE_TOKEN` on every member: consumers send it as a bearer on bridged calls (when no end-user `Authorization` is being forwarded), and a provider whose own `JAC_BRIDGE_TOKEN` matches the presented bearer runs the walker or function as the fixed service user `__bridge__`, which satisfies `requires_auth` endpoints and owns its own root. A mismatching bearer is still a 401; a provider without the variable set never honors it.
 - **Deployed**: `jac scale deploy` is always a fleet; see [Service Apps in Kubernetes](jac-scale-kubernetes.md#service-apps-in-kubernetes).
 
@@ -2091,17 +2092,20 @@ When server is running:
 
 ## Graph Visualization
 
-Navigate to `http://localhost:8000/graph` to view an interactive visualization of your application's graph directly in the browser.
+Navigate to `http://localhost:8000/graph` to explore your application's graph directly in the browser.
 
-- **Without authentication** - displays the public graph (super root), useful for applications with public endpoints
-- **With authentication** - click the **Login** button in the header to sign in and view your user-specific graph
+- **Without authentication** - explores the public graph (the guest root), useful for applications with public endpoints
+- **With authentication** - click the **Login** button in the header to sign in and explore your user-specific graph
 
-The visualizer uses a force-directed layout with color-coded node types, edge labels, tooltips on hover, and controls for refresh, fit-to-view, and physics toggle. If a user has previously logged in (via a jac-client app or the login modal), the existing `jac_token` in localStorage is picked up automatically.
+The explorer opens on the root and its first page of neighbors. Click a node to see its type, a short summary of its fields and its neighbor counts per node and edge type, and to load its neighbors one page at a time (**Load more** while more remain, **Collapse** to fold them away). The header picks which edges an expansion follows (outgoing, incoming or both), and the canvas stops adding nodes at 1500 with a message, so a large graph never freezes the tab. Every request reads one page and only what the caller may read. If a user has previously logged in (via a jac-client app or the login modal), the existing `jac_token` in localStorage is picked up automatically.
 
 | Endpoint | Description |
 |---|---|
-| `GET /graph` | Serves the graph visualization UI |
-| `GET /graph/data` | Returns graph nodes and edges as JSON (optional `Authorization` header) |
+| `GET /graph` | Serves the graph explorer UI |
+| `GET /graph/node?id=` | One node the caller can read (`id` defaults to the caller's root): `id`, `type`, `root`, a truncated `fields` summary, and `counts` of neighbors per node and edge type, `out` and `in`. `404` if the caller cannot read it |
+| `GET /graph/neighbors?id=&dir=&type=&edge=&limit=&cursor=` | One page of neighbors (`dir` is `out`, `in` or `both`; `type` and `edge` filter by node and edge type; `limit` defaults to 50, at most 200) with the edges that reach them, and `next_cursor` for the following page (`null` on the last) |
+
+Both take an optional `Authorization` header. The whole-graph dump `GET /graph/data` was removed: its cost grew with everything stored, not with what is on screen.
 
 ---
 

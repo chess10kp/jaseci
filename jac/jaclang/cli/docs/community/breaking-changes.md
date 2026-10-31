@@ -7,33 +7,38 @@ This page documents significant breaking changes in Jac and Jaseci that may affe
 
 ---
 
-### A closure kept past its loop iteration cannot capture a local the loop assigns ([#8168](https://github.com/jaseci-labs/jac/issues/8168), unreleased)
+### The Ops Console's Role is bound to its own `<app>-ops` ServiceAccount ([#10023](https://github.com/jaseci-labs/jac/pull/10023), unreleased)
 
-A local assigned in a loop body is owned by the enclosing function, so every closure the loop creates over it shares one binding and sees the value the last iteration assigned. That was accepted silently: in a JSX `for` slot every per-item handler acted on the last item. When the loop keeps the closure (a JSX attribute, a container, a field or a subscript that outlives the iteration, a `yield`), it is now `E2097`, reported by `jac check` in every codespace.
+With `[scale.kubernetes] ops_console = true` and no `service_account_name`, the Ops Console's Role was bound to the namespace's `default` ServiceAccount, so every pod that names no account of its own (the app's other containers and any co-tenant workload) received the console's read rights, and its patch and delete rights when `ops_console_mutations` was set. The Role is now bound to a ServiceAccount named `<app>-ops` that jac-scale creates, and only the gateway pod runs as it.
 
-Scoping is unchanged. A type annotation is not a scoping construct, so the annotated form is reported exactly like the bare one:
+With the console on, three things change for an app that is already deployed:
 
-<!-- jac-skip -->
+| Before | Now | What to do |
+|---|---|---|
+| The gateway ran as `service_account_name` | The gateway runs as `<app>-ops`; microservice pods still run as `service_account_name` | If the gateway got a cloud identity (IRSA, Workload Identity) from `service_account_name`, create `<app>-ops` with the same annotations before the next deploy. jac-scale uses an existing account as is and never overwrites it. |
+| `service_account_name = "<app>-ops"` was accepted | The deploy fails, since every pod would run as the account the Role is bound to | Choose a different `service_account_name`, or leave it empty. |
+| Creating ServiceAccounts was needed only for the in-cluster database or monitoring | Every deploy with the console on creates `<app>-ops` | Grant the identity that runs `jac scale deploy` `create` on `serviceaccounts` in the namespace. |
+
+The next deploy rolls the gateway pods once and replaces the old RoleBinding in place, which revokes the grant to `default`. A deployment that has already switched the console off keeps that old binding until it is deleted by hand (`kubectl delete rolebinding <app>-ops-console -n <namespace>`). See [Ops Console ServiceAccount](../reference/plugins/jac-scale-kubernetes.md#ops-console-serviceaccount).
+
+---
+
+### A closure created in a loop body keeps its own iteration's values (unreleased)
+
+A `lambda` or nested `def` created in a loop body used to share every name with the rest of the function, so a closure kept past its iteration saw whatever the last iteration assigned: in a JSX `for` slot every per-item handler acted on the last item, and on the server a list of callbacks built in a loop all read the final value. A name whose every assignment is inside the loop (the loop target, or a local the body introduces) is now shared with such a closure only while its pass through the body lasts; when the pass ends, the closure keeps that pass's value. This holds in every codespace.
+
 ```jac
-{for item in items {
-    row_id = str(item.id);            # also E2097 as `row_id: str = str(item.id);`
-    <li onClick={lambda { show(row_id); }}>{row_id}</li>;
-}}
-```
-
-Bind the value through a parameter, which is bound per call:
-
-```jac
-def opener(row_id: str, show: Callable[[str], None]) -> Callable[[], None] {
-    return lambda { show(row_id); };
+def openers(items: list[str], show: Callable[[str], None]) -> list[Callable[[], None]] {
+    handlers: list[Callable[[], None]] = [];
+    for item in items {
+        row_id = item.strip();
+        handlers.append(lambda { show(row_id); });    # each handler shows its own row
+    }
+    return handlers;
 }
 ```
 
-and write `<li onClick={opener(row_id, show)}>` in the loop. The same applies to server code that stores a closure built in a loop (`handlers.append(lambda { ... })`, `table[key] = lambda { ... }`).
-
-A closure that is only handed to a callee the compiler cannot see into (`register(lambda { ... })`) is a warning, `W2084`, not an error: the callee may run it before returning, in which case the code is correct. It does not fail `jac check`, and the same parameter binding removes it.
-
-Closures that cannot outlive their iteration are not reported (called on the spot, a local helper that is only called, the callback of `map` / `filter` / `sorted(key=...)` and similar, or one in a `return`), and neither is a capture of the loop target. See [E2097 and W2084](../reference/diagnostics.md#closures-created-in-a-loop).
+Code that relied on a loop's closures reading the final value of a loop-local name now sees each pass's value instead. A name that is also assigned outside the loop (a flag, a running total) is shared as before. See [Variables and Scope](../reference/language/variables-and-scope.md#4-scope-rules).
 
 ---
 

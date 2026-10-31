@@ -28,20 +28,22 @@ Pods run a prebuilt `jac` binary that carries the jaclang runtime (including the
 | **stable** | no `[dev]` or `[experimental]` stanza in `jac.toml` (default) | Latest published release, or the release matching a `[project] jac-version` pin |
 | **experimental** | an `[experimental]` stanza (`pr = <N>`) in `jac.toml` | The `experimental-<PR#>` build; pods run the `jaseci/jaclang:experimental-<PR#>` image |
 | **dev** | a `[dev]` stanza in `jac.toml` | Rolling `dev` prerelease (main HEAD) |
-| **local** | `JAC_SCALE_BINARY_PATH` set | The exact binary at that path |
+| **local** | `pod_binary` in the `[dev]` stanza | The exact binary at that path |
 
-Channel precedence is local, then experimental, then dev, then stable -- an `[experimental]` stanza wins over `[dev]`, and `JAC_SCALE_BINARY_PATH` wins over both.
+Channel precedence is local, then experimental, then dev, then stable -- an `[experimental]` stanza wins over `[dev]`, and `[dev] pod_binary` wins over both.
 
 `stable` and `dev` download the binary from [GitHub Releases](https://github.com/jaseci-labs/jac/releases) and run it as-is - there is no source overlay. On the stable channel, a `[project] jac-version` version spec is resolved against the published releases and that exact version is shipped; the deploy errors if the spec matches no release.
 
-**Local binary (`JAC_SCALE_BINARY_PATH`).** Point this environment variable at a `jac` binary you built (or an air-gapped mirror) and the deploy ships that exact file to pods instead of downloading a release. It takes precedence over the `[dev]` stanza:
+**Local binary (`[dev] pod_binary`).** Point `pod_binary` at a `jac` binary you built (or an air-gapped mirror); a relative path resolves against the project root. The deploy ships that exact file to pods instead of downloading a release, and it takes precedence over every other channel:
 
-```bash
-export JAC_SCALE_BINARY_PATH=/path/to/jac
-jac scale deploy app.jac
+```toml
+[dev]
+pod_binary = "../jac/zig-out/bin/jac"
 ```
 
 Use this for air-gapped clusters, to pin an exact build, or to deploy a binary you compiled locally. The driver checksum-caches downloaded release binaries per channel and architecture, so an unchanged `stable`/`dev` deploy does not re-download on every run.
+
+**GitHub API rate limit.** Once the release version is known, the binary, its checksum and the admin console download straight from `github.com/jaseci-labs/jac/releases/download/`, which uses no API quota. An exact `jac-version` pin therefore makes no `api.github.com` request, a range makes one listing request, and an unpinned deploy asks the Releases API for the latest release. Unauthenticated, that API allows 60 requests per hour per IP, which a shared CI runner can use up. Set `GH_TOKEN` (or `GITHUB_TOKEN`; `GH_TOKEN` wins) in the environment that runs `jac scale deploy` and those requests use your own quota instead. The token is sent only to `api.github.com`, never to a redirect target or any other host. When the quota is exhausted the deploy stops with an error naming `GH_TOKEN` and the exact-pin alternative.
 
 ---
 
@@ -387,7 +389,7 @@ jac-scale supports two autoscaler engines selected via `autoscaler_engine`. Both
 | `autoscaler_scale_up_stabilization` | `60` | Scale-up stabilization window in seconds (HPA `behavior.scaleUp`), applied under both engines. |
 | `autoscaler_scale_up_max_pods` | `2` | Maximum pods added per scale-up step, applied under both engines. |
 
-> **Note:** CPU-based scaling requires `cpu_request` to be set. Without a CPU request, Kubernetes cannot compute a utilization percentage. Likewise, memory triggers require `memory_request`; a memory trigger whose resolved request is empty is skipped with a warning under both deploy paths. In microservice deployments the request defaults to `1Gi` (`2Gi` for the gateway), so the skip only occurs when `memory_request` is explicitly set to `""`.
+> **Note:** CPU-based scaling requires `cpu_request` to be set. Without a CPU request, Kubernetes cannot compute a utilization percentage. Likewise, memory triggers require `memory_request`; a memory trigger whose resolved request is empty is skipped with a warning under both deploy paths. The default memory trigger is added only when `memory_request` is set for the app or under `[scale.kubernetes]`; the `1Gi` (`2Gi` for the gateway) fallback request never adds one, because a jac server can idle above 80% of it and pin the HPA at `max_replicas`.
 
 #### HPA Engine (Default)
 
@@ -679,7 +681,7 @@ additional_packages = ["xz-utils", "zstd"]
 
 The runtime version in the pod is pinned through the same channels as everywhere else -- there is no separate cluster-side pinning config:
 
-- **Runtime**: pin `[project] jac-version` in `jac.toml` (stable channel), use the `[dev]` / `[experimental]` stanzas, or ship an exact binary via `JAC_SCALE_BINARY_PATH`. See [Runtime Binary](#runtime-binary).
+- **Runtime**: pin `[project] jac-version` in `jac.toml` (stable channel), use the `[dev]` / `[experimental]` stanzas, or ship an exact binary via `[dev] pod_binary`. See [Runtime Binary](#runtime-binary).
 - **Project dependencies** (PyPI/npm): pinned in `jac.toml` as usual; the bootstrap init container runs `jac install` against the shipped, sanitized `jac.toml`, so the pod resolves exactly what you pinned.
 
 Scale, the frontend/client framework, byLLM, and the MCP server are part of `jaclang` core and arrive with the `jac` binary, so there is no plugin package to pin: `jaclang` is not on PyPI, and nothing is pip-installed from GitHub during a deploy.
@@ -1172,7 +1174,15 @@ service_account_name = "myapp-sa"
 
 `jac-scale` references the SA but does not create it. Both the SA itself and any RoleBindings or ClusterRoleBindings it needs must already exist in the target namespace before deploy -- typically managed by your platform layer (Helm chart, Terraform module, or `kubectl apply` of cluster-scoped policy). When the field is unset (or empty), pods fall back to the namespace's `default` SA.
 
-Once set, every microservice pod and the gateway pod runs under that SA, and any in-pod Kubernetes client (e.g. `kubernetes` Python package's `load_incluster_config()`) picks up the SA token automatically from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
+Once set, every microservice pod and the gateway pod runs under that SA (the one exception is the gateway when `ops_console = true`, below), and any in-pod Kubernetes client (e.g. `kubernetes` Python package's `load_incluster_config()`) picks up the SA token automatically from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
+
+### Ops Console ServiceAccount
+
+With `ops_console = true`, `jac-scale` creates a ServiceAccount named `<app_name>-ops`, binds the Ops Console Role to it, and runs only the gateway pod as it. Microservice pods keep `service_account_name`, or the namespace `default` when it is empty, and do not receive the console's permissions. The account is removed with the rest of the console's RBAC when the app is destroyed. The `--show-yaml` output includes the account without jac-scale's labels, so applying it over an account you pre-created never marks yours for deletion; an account created by applying that YAML is likewise left in place by destroy and has to be deleted by hand. The identity that runs the deploy needs permission to create ServiceAccounts in the namespace (it already does when `jac-scale` provisions the in-cluster database or monitoring).
+
+This holds whatever `service_account_name` is: the console's Role is never bound to `default` or to the account your workloads share, because every pod running as that account would inherit it. A gateway that needs `service_account_name` for something else (for example a cloud identity annotated on it) therefore cannot also serve the console; the deploy logs a warning saying so. To give the gateway such an identity, pre-create `<app_name>-ops` with the annotations before the first deploy: an existing account of that name is used as it is and never overwritten. Destroying the app deletes it only when it carries the `managed=jac-scale` and `app=<app_name>` labels, so an account you created without them is left in place.
+
+Redeploying an app that already has the console enabled moves its gateway from the previous account to `<app_name>-ops`, which rolls the gateway pods once.
 
 ---
 
@@ -1246,7 +1256,7 @@ Each app takes optional scale overrides in its `[apps.<name>.scale]` overlay (th
 | `hpa.enabled` | bool | Set to `false` to fix replicas at the configured `replicas` count. Applies to both `"hpa"` and `"keda"` engines. |
 | `hpa.min` / `hpa.max` | int | Autoscaler replica bounds. Applies to both engines. |
 | `hpa.cpu_target` | int (percent) | Target CPU utilization percentage. Default 50%. Applies to both engines. |
-| `hpa.memory_target` | int (percent) | Target memory utilization percentage (default 80). A memory trigger is added alongside CPU whenever the app resolves a memory request -- always, unless `memory_request` is explicitly set to `""`. |
+| `hpa.memory_target` | int (percent) | Target memory utilization percentage (default 80). A memory trigger is added alongside CPU only when `memory_request` is set for the app or under `[scale.kubernetes]`. |
 | `pdb.enabled` / `pdb.max_unavailable` | bool / int | PodDisruptionBudget controls for this app. |
 | `deployment_overlay` | table | Raw manifest fragment deep-merged onto the generated Deployment (escape hatch for fields not exposed above). |
 | `[[apps.NAME.scale.triggers]]` | list | Per-app KEDA event-driven triggers. Each entry: `type` (str), `metadata` (dict), optional `name` (str), optional `auth.secret_refs` (dict). Requires `autoscaler_engine = "keda"` in `[scale.kubernetes]`. |

@@ -82,6 +82,21 @@ def is_native_lowered(rel: str) -> bool:
     rel = rel.replace(os.sep, "/")
     return any(rel == p or rel.startswith(p + "/") for p in NATIVE_LOWERED_PATHS)
 
+
+# Inputs the payload stager ships REWRITTEN instead of copied, named by file
+# name. A wiring file is shipped with its edges to natively lowered providers
+# blanked (dist/payload ship_wiring), so the staged copy is a function of the
+# source copy and NATIVE_LOWERED_PATHS, yet hashes differently from it. Like a
+# lowered input, a staging resolves these from the hashes COMPILER_IDENTITY_NAME
+# recorded from the complete tree, so a payload reports the identity of the
+# checkout it was built from and that checkout reuses the payload's units.
+STAGING_REWRITTEN_NAMES: tuple[str, ...] = ("archwire.jac",)
+
+
+def is_staging_rewritten(rel: str) -> bool:
+    """Does a staging ship ``rel`` rewritten, so its recorded hash names it?"""
+    return rel.replace(os.sep, "/").rsplit("/", 1)[-1] in STAGING_REWRITTEN_NAMES
+
 # Everything the jac0 tier compiles. Directory entries cover subtrees.
 # compiler/passes/ and compiler/backends/ are deliberately listed file by
 # file (or implementation/parser subtree): their siblings (backends/es/,
@@ -98,6 +113,7 @@ SEED_PATHS: tuple[str, ...] = (
     "compiler/frontend/source_layout.jac",
     "compiler/types/stubcat/resolver.jac",
     "compiler/frontend/impl/",
+    "compiler/frontend/loop_links.jac",
     "compiler/frontend/module_facts.jac",
     "compiler/frontend/parser/",
     "compiler/frontend/relations.jac",
@@ -115,8 +131,6 @@ SEED_PATHS: tuple[str, ...] = (
     "compiler/backends/py/jcir_gen_pass.impl/",
     "compiler/backends/py/jcir_gen_pass.jac",
     "compiler/backends/common/fmt_kernel.jac",
-    "compiler/backends/native/wasm_linker.jac",
-    "compiler/backends/native/linker_common.jac",
     "compiler/passes/annex_weave.jac",
     "compiler/passes/ast_validation_pass.jac",
     "compiler/passes/graph_lowering_pass.jac",
@@ -152,6 +166,7 @@ SEED_PATHS: tuple[str, ...] = (
     "runtime/archetype.jac",
     "runtime/constructs.jac",
     "runtime/graph_query.jac",
+    "runtime/pass_link.jac",
     "runtime/interop_bridge.jac",
     "runtime/traceback_render.jac",
     "runtime/debugger.jac",
@@ -167,6 +182,8 @@ SEED_PATHS: tuple[str, ...] = (
     "runtime/semantic.jac",
     "cli/cli_boot.jac",
     "jac0core/cli_boot.jac",
+    "jac0core/handoff.jac",
+    "jac0core/artifact_registry.jac",
     "project/__init__.jac",
     "project/tomlio.jac",
     "project/source.jac",

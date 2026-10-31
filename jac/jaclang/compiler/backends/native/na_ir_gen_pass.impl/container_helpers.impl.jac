@@ -1,17 +1,8 @@
-def _layout_data_fields(layout: dict[str, any]) -> list[tuple[int, ir.Type]] {
-    fields: list[tuple[int, ir.Type]] = layout["data_fields"];
-    return fields;
-}
+def _layout_data_fields(layout: dict[str, any]) -> list[tuple[int, ir.Type]];
 
-def _layout_elem_kinds(layout: dict[str, any]) -> list[str] {
-    kinds: list[str] = layout["elem_kinds"];
-    return kinds;
-}
+def _layout_elem_kinds(layout: dict[str, any]) -> list[str];
 
-def _layout_index(layout: dict[str, any], key: str) -> int {
-    index: int = layout[key];
-    return index;
-}
+def _layout_index(layout: dict[str, any], key: str) -> int;
 
 impl NaIRGenPass._elem_kind(elem_type: ir.Type) -> str {
     if self._str_desc_ty is not None and elem_type == self._str_desc_ty {
@@ -395,6 +386,20 @@ impl NaIRGenPass._emit_spread_copy(
     _dest_elem = dest_helpers["elem_type"];
     if isinstance(_elem.type, ir.PointerType) and _dest_elem == i8p {
         _elem = self.builder.bitcast(_elem, i8p, name="spread.elem.cast");
+    } elif _elem.type == i8p
+        and _dest_elem == self?.jacval_type
+        and not self._nogc_headerless() {
+        _tag = self.builder.call(
+            self._heap_ref_jacval_tag_fn(), [_elem], name="spread.elem.jvtag"
+        );
+        _elem = self.builder.insert_value(
+            self.builder.insert_value(
+                ir.Constant(self.jacval_type, None), _tag, 0, name="spread.elem.jv.tag"
+            ),
+            self.builder.ptrtoint(_elem, i64, name="spread.elem.p2i"),
+            1,
+            name="spread.elem.jv"
+        );
     } else {
         _elem = self._coerce_type(_elem, _dest_elem);
     }
@@ -820,7 +825,7 @@ impl NaIRGenPass._emit_release_header_free(
 
     _cl_aid_ptr = b.bitcast(_cont_raw, _i64_ptr_c, name="cl.aid.ptr");
     _cl_aid_raw = b.load(_cl_aid_ptr, name="cl.aid.raw");
-    _cl_aid = b.and_(_cl_aid_raw, ir.Constant(_i64c, 4294967295), name="cl.aid");
+    _cl_aid = b.and_(_cl_aid_raw, ir.Constant(_i64c, ALLOC_ID_MASK), name="cl.aid");
     _cl_tag_raw = b.gep(_cont_i8, [ir.Constant(_i64c, HDR_TAG_OFF)], name="cl.tag.raw");
     _cl_tag_pp = b.bitcast(_cl_tag_raw, _i8pc.as_pointer(), name="cl.tag.pp");
     _cl_tag = b.load(_cl_tag_pp, name="cl.tag");
@@ -839,7 +844,7 @@ impl NaIRGenPass._emit_release_header_free(
         _cl_tag
     );
     b = ir.IRBuilder(actual_free_cont_bb);
-    b.call(self.rc_safe_free_fn, [_cont_raw]);
+    b.call(self.rc_free_block_fn, [_cont_raw]);
     b.branch(done_bb);
     b = ir.IRBuilder(done_bb);
     b.ret_void();
@@ -1198,7 +1203,7 @@ impl NaIRGenPass._tuple_box_release_fn(
     free_bb = release_fn.append_basic_block("tup_free");
     self._emit_live_list_remove(b, tup_i8, i8_ptr, i64_ptr, free_bb, free_bb);
     b = ir.IRBuilder(free_bb);
-    b.call(self.rc_safe_free_fn, [tup_raw]);
+    b.call(self.rc_free_block_fn, [tup_raw]);
     b.branch(done_bb);
     b = ir.IRBuilder(done_bb);
     b.ret_void();
@@ -1301,4 +1306,19 @@ impl NaIRGenPass._coerce_container_element(
         return self._coerce_type(nullable, element_type);
     }
     return self._coerce_type(value, element_type);
+}
+
+impl _layout_data_fields(layout: dict[str, any]) -> list[tuple[int, ir.Type]] {
+    fields: list[tuple[int, ir.Type]] = layout["data_fields"];
+    return fields;
+}
+
+impl _layout_elem_kinds(layout: dict[str, any]) -> list[str] {
+    kinds: list[str] = layout["elem_kinds"];
+    return kinds;
+}
+
+impl _layout_index(layout: dict[str, any], key: str) -> int {
+    index: int = layout[key];
+    return index;
 }
