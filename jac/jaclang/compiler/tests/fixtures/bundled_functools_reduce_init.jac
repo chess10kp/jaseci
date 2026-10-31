@@ -6,8 +6,8 @@ None)` starts the fold at `None` and answers `None` for an empty list, where
 bundled module keeps the two apart with a private sentinel default, so a
 fold that seeds its accumulator with `None` runs the same steps natively.
 
-Native-only: the sv checker resolves every call spelled against `reduce` to
-its first overload, so the three-argument form cannot sit in a cross-backend
+Native-only: the shared checker resolves every call spelled against `reduce`
+to its first overload, so the three-argument form cannot sit in a cross-backend
 fixture. The expected values in the test are CPython's.
 """
 

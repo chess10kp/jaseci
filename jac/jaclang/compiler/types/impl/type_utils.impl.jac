@@ -371,7 +371,8 @@ impl collect_member_syms(
 
     def descend(s: UniScopeNode) -> list[Symbol] {
         gathered: list[Symbol] = list(s.lookup_all(name, deep=False) or []);
-        if gathered and not is_overload_sym(gathered[0]) {
+        has_overload = any(is_overload_sym(sym) for sym in gathered);
+        if gathered and not has_overload {
             return gathered;
         }
         for kid in s.kid_scope {
@@ -390,7 +391,7 @@ impl collect_member_syms(
                 if not gathered {
                     return found;
                 }
-                if is_overload_sym(gathered[0]) {
+                if has_overload {
                     for extra in found {
                         if is_overload_sym(extra) {
                             gathered.append(extra);

@@ -10657,6 +10657,7 @@ graph import compiler {
         backends.native.na_ir_gen_pass.NaIRGenPass._sort_key_unsigned {
             primitive_type_name_of
         },
+        native_bindings { collect_member_syms },
         passes.rc_facts_pass.RcFactsPass._asn_makes_region_handle {
             expr_is_builtin_region
         },
