@@ -3028,6 +3028,12 @@ graph import {
         compiler.frontend.python.parser_actions.pa_warn_escape { warn },
         compiler.frontend.python.source_encoding { take_buffer },
     ]
+    runtime.python.object_model.cell ++> compiler.backends.py.jacpython.native_api;
+    runtime.python.object_model.enumerate ++> compiler.backends.py.jacpython.native_api;
+    runtime.python.object_model.interpolation ++> compiler.backends.py.jacpython.native_api;
+    runtime.python.object_model.picklebuffer ++> compiler.backends.py.jacpython.native_api;
+    runtime.python.object_model.range ++> compiler.backends.py.jacpython.native_api;
+    runtime.python.object_model.template ++> compiler.backends.py.jacpython.native_api;
     runtime.python.objects ++> [
         compiler.backends.py.jacpython.assembler { PyCode },
         compiler.backends.py.jacpython.codegen_util {
