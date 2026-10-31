@@ -55,6 +55,31 @@ def undefined_exports(module, expected):
     return missing
 
 
+def native_plan(root, triple):
+    """The compiled link plan for native_api.jac and its compile program.
+
+    Both the build and the test suite compile the same entry with the same
+    options, so the export contract the build checks is exactly what the
+    regression test exercises. Plan construction is pure Jac lowering: it
+    needs no LLVM shim and no CPython source tree.
+    """
+    import jaclang
+    from jaclang.compiler.driver.program import JacProgram
+    from jaclang.compiler.driver.compile_options import CompileOptions
+    from jaclang.compiler.backends.native.link_plan import build_link_plan
+
+    root = Path(root)
+    program = JacProgram()
+    entry = root / "jaclang/compiler/backends/py/jacpython/native_api.jac"
+    options = CompileOptions(
+        aot_mode=True, default_codespace="native", skip_native_engine=True,
+        native_required=True,
+        memory_profile="rc", no_ir_cache=False, opt_level=2, native_target=triple,
+    )
+    plan = build_link_plan(program, [str(entry)], options)
+    return program, plan
+
+
 def main(argv):
     root = Path(argv[1]).resolve()
     output = Path(argv[2]).resolve()
@@ -66,26 +91,16 @@ def main(argv):
     os.environ.pop("JAC_HANDOFF", None)
     output.mkdir(parents=True, exist_ok=True)
 
-    import jaclang
-    from jaclang.compiler.driver.program import JacProgram
-    from jaclang.compiler.driver.compile_options import CompileOptions
     from jaclang.compiler.backends.native.lowering import native_fallbacks_in_ir
     from jaclang.compiler.backends.native.link_glue import init_object_codegen
     from jaclang.compiler.backends.native.link_plan import (
-        ArtifactKind, build_link_plan, whole_program_module,
+        ArtifactKind, whole_program_module,
         internalize_native_implementation, _platform_of,
     )
     import jaclang.compiler.backends.native.llvm.binding as llvm
 
     expected = registered_exports(root)
-    program = JacProgram()
-    entry = root / "jaclang/compiler/backends/py/jacpython/native_api.jac"
-    options = CompileOptions(
-        aot_mode=True, default_codespace="native", skip_native_engine=True,
-        native_required=True,
-        memory_profile="rc", no_ir_cache=False, opt_level=2, native_target=triple,
-    )
-    plan = build_link_plan(program, [str(entry)], options)
+    program, plan = native_plan(root, triple)
     if program.errors_had:
         for error in program.errors_had:
             print(error.pretty_print(), file=sys.stderr)
