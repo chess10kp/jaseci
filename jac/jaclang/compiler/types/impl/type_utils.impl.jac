@@ -389,7 +389,12 @@ impl collect_member_syms(
                     continue;
                 }
                 if not gathered {
-                    return found;
+                    gathered = found;
+                    has_overload = any(is_overload_sym(sym) for sym in gathered);
+                    if not has_overload {
+                        return gathered;
+                    }
+                    continue;
                 }
                 if has_overload {
                     for extra in found {
