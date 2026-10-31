@@ -150,6 +150,10 @@ impl _lru_cache_wrapper.__call__(x: any) -> any {
         use_i = True;
     } elif isinstance(x, float) {
         f: float = x;
+        if f != f {
+            self.misses += 1;
+            return self.fn(x);
+        }
         if f == 0.0 {
             sk = "f:0.0";
         } else {

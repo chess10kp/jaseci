@@ -14164,7 +14164,10 @@ graph import compiler.tests {
             run_py_fixture
         },
     ]
-    xbackend_equiv --> test_osp_equivalence { compile_native, run_native_function }
+    xbackend_equiv --> [
+        test_native_functools { compile_native, get_func },
+        test_osp_equivalence { compile_native, run_native_function },
+    ]
 }
 
 graph import compiler.tools {

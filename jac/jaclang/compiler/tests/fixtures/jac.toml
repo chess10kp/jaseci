@@ -1,4 +1,6 @@
 [placement.pins]
+"bundled_functools_nan_cache.ftn_identity" = "native"
+"bundled_functools_nan_cache.nan_cache_counts" = "native"
 "bundled_functools_reduce_init.fold_step" = "native"
 "bundled_functools_reduce_init.reduce_empty_none_initial" = "native"
 "bundled_functools_reduce_init.reduce_int_initial" = "native"

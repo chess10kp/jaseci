@@ -846,10 +846,9 @@ native layout records the emitted name separately from its source-level key.
   `f(True)` are separate entries, hits=0, as on CPython 3.14; the classic
   "1 == 1.0 shares an entry" folding is pre-3.12 behavior), `typed` is
   accepted but no longer changes key shape (3.14 splits types either way),
-  and `-0.0`/`0.0` normalize to one entry as on CPython; every NaN argument
-  shares one entry (a native float carries no identity, where CPython keys a
-  NaN by object identity: reusing one NaN object hits on both, two
-  separately built NaNs miss only on CPython); `partial` binds
+  and `-0.0`/`0.0` normalize to one entry as on CPython; NaN arguments bypass
+  the native cache because a float carries no object identity, while CPython
+  keys NaNs by identity (reusing one NaN object may hit); `partial` binds
   exactly one
   leading argument and its result takes exactly one argument (native calls
   are fixed-arity -- CPython's `*args`/`**kwargs` partials fail at compile
