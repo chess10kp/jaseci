@@ -157,8 +157,7 @@ impl JacProgram.load_dependency_module(
         catalog = self.stub_catalog();
         if catalog is not None {
             cat_mod = catalog.module_for_path(resolved_path);
-            if cat_mod is not None
-                and not (need_tree and isinstance(cat_mod, CatModule)) {
+            if cat_mod is not None {
                 if importer_path is not None {
                     self.record_dependency(importer_path, resolved_path);
                 }

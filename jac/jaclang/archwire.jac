@@ -14560,6 +14560,7 @@ graph import compiler.types {
             apply_solved_type_vars,
             build_type_var_solution
         },
+        stubcat.writer { origin_of_local_name },
         type_evaluator {
             ClassMember,
             ParamAssignmentTracker,

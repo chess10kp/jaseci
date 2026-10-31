@@ -7,7 +7,6 @@ against the stub on every backend, so anything else could not be named."""
 
 import os;
 import from jaclang.compiler.driver.program { JacProgram }
-import from jaclang.compiler.types.stubcat.reader { CatModule }
 import from jaclang.compiler.frontend.codeinfo { native_stdlib_root }
 import from jaclang.compiler.native_bindings {
     conformance_mismatches,
@@ -111,9 +110,6 @@ test "the interface is read from symbols: branches, re-exports and bases include
     );
     functools = prog.load_dependency_module(
         typeshed_stub_path("functools") or "", need_tree=True
-    );
-    assert not isinstance(functools, CatModule) , (
-        "need_tree=True must load the stub source, not a catalog-only module"
     );
     reduce_symbols = collect_member_syms(functools, "reduce");
     assert len(reduce_symbols) > 1 , (
